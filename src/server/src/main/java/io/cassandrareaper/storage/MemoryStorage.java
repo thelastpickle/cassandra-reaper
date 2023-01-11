@@ -31,6 +31,7 @@ import io.cassandrareaper.resources.view.RepairScheduleStatus;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -48,6 +49,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import org.apache.cassandra.tools.nodetool.Repair;
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
@@ -193,7 +195,17 @@ public final class MemoryStorage implements IStorage {
     return foundRepairRuns;
   }
   @Override
-  public Collection<RepairRun> getRepairRunsForClusterPrioritiseRunning(String clusterName, Optional<Integer> limit);
+  public List<RepairRun> getRepairRunsForClusterPrioritiseRunning(String clusterName, Optional<Integer> limit) {
+    List<RepairRun> foundRepairRuns = repairRuns.values().stream().filter(row -> row.getClusterName() == clusterName).collect(Collectors.toList());
+    Comparator<RepairRun> comparator = new Comparator<RepairRun>() {
+      @Override
+      public int compare(RepairRun o1, RepairRun o2) {
+        return o1.getRunState().compareTo(o2.getRunState());
+      }
+    };
+    Collections.sort(foundRepairRuns, comparator);
+    return foundRepairRuns;
+  }
 
   @Override
   public Collection<RepairRun> getRepairRunsForUnit(UUID repairUnitId) {
