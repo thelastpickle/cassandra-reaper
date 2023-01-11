@@ -181,13 +181,13 @@ public final class RepairRun implements Comparable<RepairRun> {
   }
 
   public enum RunState {
-    NOT_STARTED,
     RUNNING,
+    NOT_STARTED,
     ERROR,
-    DONE,
     PAUSED,
     ABORTED,
-    DELETED;
+    DELETED,
+    DONE;
 
     public boolean isActive() {
       return this == RUNNING || this == PAUSED;
