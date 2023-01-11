@@ -209,7 +209,7 @@ public final class MemoryStorage implements IStorage {
       }
     };
     Collections.sort(foundRepairRuns, comparator);
-    return foundRepairRuns;
+    return foundRepairRuns.subList(0, limit.orElse(1000));
   }
 
   @Override
