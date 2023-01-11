@@ -49,7 +49,6 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import org.apache.cassandra.tools.nodetool.Repair;
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
@@ -194,9 +193,15 @@ public final class MemoryStorage implements IStorage {
     }
     return foundRepairRuns;
   }
+
   @Override
   public List<RepairRun> getRepairRunsForClusterPrioritiseRunning(String clusterName, Optional<Integer> limit) {
-    List<RepairRun> foundRepairRuns = repairRuns.values().stream().filter(row -> row.getClusterName() == clusterName).collect(Collectors.toList());
+    List<RepairRun> foundRepairRuns = repairRuns
+        .values()
+        .stream()
+        .filter(
+            row -> row.getClusterName() == clusterName).collect(Collectors.toList()
+        );
     Comparator<RepairRun> comparator = new Comparator<RepairRun>() {
       @Override
       public int compare(RepairRun o1, RepairRun o2) {

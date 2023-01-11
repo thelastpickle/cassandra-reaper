@@ -47,7 +47,6 @@ import io.cassandrareaper.storage.cassandra.Migration025;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
@@ -1009,7 +1008,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
             resSet -> resSet.getUninterruptibly().forEach(
                 row -> flattenedRows.add(buildRepairRunFromRow(row, row.getUUID("id")))
             )
-        );
+      );
     return flattenedRows.subList(0, limit.orElse(MAX_RETURNED_REPAIR_RUNS));
   }
 
