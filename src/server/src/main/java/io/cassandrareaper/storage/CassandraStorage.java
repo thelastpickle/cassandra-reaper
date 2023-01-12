@@ -424,7 +424,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
     getRepairRunForClusterPrepStmt = session.prepare(
         "SELECT * FROM repair_run_by_cluster_v2 WHERE cluster_name = ? limit ?");
     getRepairRunForClusterWhereStatusPrepStmt = session.prepare(
-        "SELECT * FROM repair_run_by_cluster_v2 WHERE cluster_name = ? AND state = ? limit ?");
+        "SELECT * FROM repair_run_by_cluster_v2 WHERE cluster_name = ? AND repair_run_state = ? limit ?");
     getRepairRunForUnitPrepStmt = session.prepare("SELECT * FROM repair_run_by_unit WHERE repair_unit_id = ?");
     deleteRepairRunPrepStmt = session.prepare("DELETE FROM repair_run WHERE id = ?");
     deleteRepairRunByClusterPrepStmt
