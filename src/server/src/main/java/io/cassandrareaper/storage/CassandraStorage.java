@@ -114,6 +114,8 @@ import systems.composable.dropwizard.cassandra.CassandraFactory;
 import systems.composable.dropwizard.cassandra.pooling.PoolingOptionsFactory;
 import systems.composable.dropwizard.cassandra.retry.RetryPolicyFactory;
 
+import static java.lang.Math.min;
+
 public final class CassandraStorage implements IStorage, IDistributedStorage {
 
   private static final int METRICS_PARTITIONING_TIME_MINS = 10;
@@ -985,7 +987,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
               row -> flattenedUuids.add(row.getUUID("id"))
         );
     }
-    flattenedUuids.subList(0, limit.orElse(MAX_RETURNED_REPAIR_RUNS));
+    flattenedUuids.subList(0, min(flattenedUuids.size(), limit.orElse(MAX_RETURNED_REPAIR_RUNS)) + 1);
     // Run an async query on each UUID in the flattened list, against the main repair_run table with
     // all columns required as an input to `buildRepairRunFromRow`.
     List<ResultSetFuture> repairRunFutures = Lists.<ResultSetFuture>newArrayList();

@@ -54,6 +54,8 @@ import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static java.lang.Math.min;
+
 /**
  * Implements the StorageAPI using transient Java classes.
  */
@@ -209,7 +211,7 @@ public final class MemoryStorage implements IStorage {
       }
     };
     Collections.sort(foundRepairRuns, comparator);
-    return foundRepairRuns.subList(0, limit.orElse(1000));
+    return foundRepairRuns.subList(0, min(foundRepairRuns.size(), limit.orElse(1000)) + 1);
   }
 
   @Override
