@@ -184,12 +184,13 @@ public final class RepairRun implements Comparable<RepairRun> {
   // this is used to order RepairRuns in the UI so that e.g. RUNNING runs come first.
   public enum RunState {
     RUNNING,
-    NOT_STARTED,
-    ERROR,
     PAUSED,
+    NOT_STARTED,
+
+    ERROR,
+    DONE,
     ABORTED,
-    DELETED,
-    DONE;
+    DELETED;
 
     public boolean isActive() {
       return this == RUNNING || this == PAUSED;
