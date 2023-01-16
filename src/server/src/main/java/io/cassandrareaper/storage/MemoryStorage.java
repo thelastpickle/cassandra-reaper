@@ -34,6 +34,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
@@ -202,7 +203,7 @@ public final class MemoryStorage implements IStorage {
         .values()
         .stream()
         .filter(
-            row -> row.getClusterName() == clusterName).collect(Collectors.toList()
+            row -> row.getClusterName().equals(clusterName.toLowerCase(Locale.ROOT))).collect(Collectors.toList()
         );
     Comparator<RepairRun> comparator = new Comparator<RepairRun>() {
       @Override
@@ -211,7 +212,7 @@ public final class MemoryStorage implements IStorage {
       }
     };
     Collections.sort(foundRepairRuns, comparator);
-    return foundRepairRuns.subList(0, min(foundRepairRuns.size(), limit.orElse(1000)) + 1);
+    return foundRepairRuns.subList(0, min(foundRepairRuns.size(), limit.orElse(1000)));
   }
 
   @Override

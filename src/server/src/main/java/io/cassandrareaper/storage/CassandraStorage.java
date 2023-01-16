@@ -47,6 +47,7 @@ import io.cassandrareaper.storage.cassandra.Migration025;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.time.LocalDate;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
@@ -967,7 +968,14 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
     List<ResultSetFuture> repairUuidFuturesByState = Lists.<ResultSetFuture>newArrayList();
     // We've set up the RunState enum so that values are declared in order of "interestingness",
     // we iterate over the table via the secondary index according to that ordering.
-    for (RunState state : RepairRun.RunState.values()) {
+    for (RunState state :
+        Arrays
+            .stream(RunState.values())
+            .filter(v ->
+                Arrays.asList("RUNNING", "PAUSED", "NOT_STARTED")
+                    .contains(v.toString()))
+            .collect(Collectors.toList())
+    ) {
       repairUuidFuturesByState.add(
           // repairUUIDFutures will be a List of resultSetFutures, each of which contains a ResultSet of
           // UUIDs for one status.
@@ -978,8 +986,14 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
               )
       );
     }
+    ResultSetFuture repairUuidFuturesNoState = session
+            .executeAsync(getRepairRunForClusterPrepStmt
+                .bind(clusterName, limit.orElse(MAX_RETURNED_REPAIR_RUNS)
+                )
+            );
+
     List<UUID> flattenedUuids = Lists.<UUID>newArrayList();
-    // Flatten the UUIDs from each status down into a single array and trim.
+    // Flatten the UUIDs from each status down into a single array.
     for (ResultSetFuture idResSetFuture : repairUuidFuturesByState) {
       idResSetFuture
           .getUninterruptibly()
@@ -987,7 +1001,16 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
               row -> flattenedUuids.add(row.getUUID("id"))
         );
     }
-    flattenedUuids.subList(0, min(flattenedUuids.size(), limit.orElse(MAX_RETURNED_REPAIR_RUNS)) + 1);
+    // Merge the two lists and trim.
+    repairUuidFuturesNoState.getUninterruptibly().forEach(row -> {
+          UUID uuid = row.getUUID("id");
+          if (!flattenedUuids.contains(uuid)) {
+            flattenedUuids.add(uuid);
+          }
+        }
+    );
+    flattenedUuids.subList(0, min(flattenedUuids.size(), limit.orElse(MAX_RETURNED_REPAIR_RUNS)));
+
     // Run an async query on each UUID in the flattened list, against the main repair_run table with
     // all columns required as an input to `buildRepairRunFromRow`.
     List<ResultSetFuture> repairRunFutures = Lists.<ResultSetFuture>newArrayList();

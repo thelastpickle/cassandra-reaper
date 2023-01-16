@@ -2935,7 +2935,6 @@ public final class BasicSteps {
         }
       });
     }
-
   }
 
   @Then("^when I list the last (\\d+) repairs, I can see (\\d+) repairs at (\\d+) state$")
