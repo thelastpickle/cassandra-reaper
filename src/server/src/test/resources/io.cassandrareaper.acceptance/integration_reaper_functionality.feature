@@ -422,7 +422,7 @@ Feature: Using Reaper
     When an add-cluster request is made to reaper with authentication
     Then reaper has the last added cluster in storage
     And a new repair is added for "test" and keyspace "test_keyspace"
-    And I add and abort 10 repairs for "test" and keyspace "test_keyspace2"
+    And I add 11 and abort the most recent 10 repairs for cluster "test" and keyspace "test_keyspace2"
     Then when I list the last 10 repairs, I can see 1 repairs at "NOT_STARTED" state
     And when I list the last 10 repairs, I can see 9 repairs at "ABORTED" state
     When the last added cluster is deleted

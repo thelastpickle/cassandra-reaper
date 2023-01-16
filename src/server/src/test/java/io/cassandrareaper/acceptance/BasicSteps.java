@@ -45,7 +45,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
-
 import javax.ws.rs.client.Client;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.sse.SseEventSource;
@@ -57,6 +56,7 @@ import com.datastax.driver.core.SocketOptions;
 import com.datastax.driver.core.VersionNumber;
 import com.datastax.driver.core.exceptions.AlreadyExistsException;
 import com.datastax.driver.core.utils.UUIDs;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -2895,4 +2895,89 @@ public final class BasicSteps {
           Response.Status.NOT_FOUND);
     });
   }
+
+  @And("^I add 11 and abort the most recent 10 repairs for cluster \"([^\"]*)\" and keyspace \"([^\"]*)\"$")
+  public void addAndAbortRepairs(Integer repairsAdded, String clusterName, String keyspace) throws Throwable {
+    synchronized (BasicSteps.class) {
+      testContext.TEST_CLUSTER = (String) clusterName;
+      Set<String> tables = Sets.newHashSet();
+      testContext.addClusterInfo(clusterName, keyspace, tables);
+      HashMap<String, String> params = Maps.newHashMap();
+      params.put("clusterName", clusterName);
+      params.put("keyspace", keyspace);
+      params.put("owner", "test_user");
+
+      RUNNERS.parallelStream().forEach(runner -> {
+        Integer iter = 1;
+        while (iter <= 11) {
+          Response response = runner.callReaper("POST", "/repair_run", Optional.of(params));
+          String responseData = response.readEntity(String.class);
+          Assertions
+              .assertThat(response.getStatus())
+              .isEqualTo(Response.Status.CREATED.getStatusCode())
+              .withFailMessage(responseData);
+          String id = "";
+          try {
+            id = new ObjectMapper().readValue(responseData, String.class);
+            testContext.addCurrentRepairId(UUID.fromString(id));
+          } catch (Throwable e) {
+            Assertions.fail("response deserialisation failed");
+          }
+          response = runner.callReaper(
+              "PUT",
+              String.format("/%s/state/%s", id, "ABORTED"),
+              Optional.empty());
+          Assertions
+              .assertThat(response.getStatus())
+              .isEqualTo(Response.Status.OK.getStatusCode())
+              .withFailMessage(responseData);
+          iter = iter ++;
+        }
+      });
+    }
+
+  }
+
+  @Then("^when I list the last (\\d+) repairs, I can see (\\d+) repairs at (\\d+) state$")
+  public void listRepairs(Integer limit, Integer expectedRepairsCount, String expectedState) {
+    synchronized (BasicSteps.class) {
+      RUNNERS.parallelStream().forEach(runner -> {
+        HashMap<String, String> params = Maps.newHashMap();
+        params.put("limit", limit.toString());
+        Response resp = runner.callReaper(
+            "GET",
+            "/repair_run/cluster/" + TestContext.TEST_CLUSTER,
+            Optional.of(params)
+        );
+        String responseData = resp.readEntity(String.class);
+        Assertions
+            .assertThat(resp.getStatus())
+            .isEqualTo(Response.Status.OK.getStatusCode())
+            .withFailMessage(responseData);
+        Assertions
+            .assertThat(responseData).isNotBlank();
+
+        List<RepairRunStatus> runs = SimpleReaperClient.parseRepairRunStatusListJSON(responseData)
+            .stream()
+            .filter(r -> RepairRun.RunState.RUNNING == r.getState() || RepairRun.RunState.DONE == r.getState())
+            .filter(r -> r.getCause().contains(testContext.getCurrentScheduleId().toString()))
+            .collect(Collectors.toList());
+        Integer countInState = runs.stream()
+            .filter(run -> run.getState() == RepairRun.RunState.valueOf(expectedState))
+            .collect(Collectors.toList())
+            .size();
+        Assertions
+            .assertThat(countInState)
+            .isEqualTo(expectedRepairsCount)
+            .withFailMessage(
+                "actual number %i of repairs in state %s did not match expected number %i",
+                countInState,
+                expectedState,
+                expectedRepairsCount);
+      });
+
+    }
+  }
+
 }
+
