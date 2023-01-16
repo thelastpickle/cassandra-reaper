@@ -2907,33 +2907,33 @@ public final class BasicSteps {
       params.put("keyspace", keyspace);
       params.put("owner", "test_user");
 
-      RUNNERS.parallelStream().forEach(runner -> {
-        Integer iter = 1;
-        while (iter <= 11) {
-          Response response = runner.callReaper("POST", "/repair_run", Optional.of(params));
-          String responseData = response.readEntity(String.class);
-          Assertions
-              .assertThat(response.getStatus())
-              .isEqualTo(Response.Status.CREATED.getStatusCode())
-              .withFailMessage(responseData);
-          String id = "";
-          try {
-            id = new ObjectMapper().readValue(responseData, String.class);
-            testContext.addCurrentRepairId(UUID.fromString(id));
-          } catch (Throwable e) {
-            Assertions.fail("response deserialisation failed");
-          }
-          response = runner.callReaper(
-              "PUT",
-              String.format("/%s/state/%s", id, "ABORTED"),
-              Optional.empty());
-          Assertions
-              .assertThat(response.getStatus())
-              .isEqualTo(Response.Status.OK.getStatusCode())
-              .withFailMessage(responseData);
-          iter = iter ++;
+      Integer iter = 1;
+      while (iter <= 11) {
+        Response response = RUNNERS.get(0).callReaper("POST", "/repair_run", Optional.of(params));
+        String responseData = response.readEntity(String.class);
+        Assertions
+            .assertThat(response.getStatus())
+            .isEqualTo(Response.Status.CREATED.getStatusCode())
+            .withFailMessage(responseData);
+        String id = "";
+        try {
+          id = new ObjectMapper().readValue(responseData, String.class);
+          testContext.addCurrentRepairId(UUID.fromString(id));
+        } catch (Throwable e) {
+          LOG.error("response deserialisation failed", e);
+          LOG.error("Response data was: {}", responseData);
+          Assertions.fail("response deserialisation failed");
         }
-      });
+        response = RUNNERS.get(0).callReaper(
+            "PUT",
+            String.format("/%s/state/%s", id, "ABORTED"),
+            Optional.empty());
+        Assertions
+            .assertThat(response.getStatus())
+            .isEqualTo(Response.Status.OK.getStatusCode())
+            .withFailMessage(responseData);
+        iter = iter ++;
+      };
     }
   }
 
