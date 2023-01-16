@@ -2897,7 +2897,7 @@ public final class BasicSteps {
   }
 
   @And("^I add 11 and abort the most recent 10 repairs for cluster \"([^\"]*)\" and keyspace \"([^\"]*)\"$")
-  public void addAndAbortRepairs(Integer repairsAdded, String clusterName, String keyspace) throws Throwable {
+  public void addAndAbortRepairs(String clusterName, String keyspace) throws Throwable {
     synchronized (BasicSteps.class) {
       testContext.TEST_CLUSTER = (String) clusterName;
       Set<String> tables = Sets.newHashSet();
