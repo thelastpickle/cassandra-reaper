@@ -2915,10 +2915,11 @@ public final class BasicSteps {
             .assertThat(response.getStatus())
             .isEqualTo(Response.Status.CREATED.getStatusCode())
             .withFailMessage(responseData);
-        String id = "";
+        UUID id = UUID.randomUUID();
         try {
-          id = new ObjectMapper().readValue(responseData, String.class);
-          testContext.addCurrentRepairId(UUID.fromString(id));
+          RepairRun repairRun = new ObjectMapper().readValue(responseData, RepairRun.class);
+          id = repairRun.getId();
+          testContext.addCurrentRepairId(id);
         } catch (Throwable e) {
           LOG.error("response deserialisation failed", e);
           LOG.error("Response data was: {}", responseData);
@@ -2926,7 +2927,7 @@ public final class BasicSteps {
         }
         response = RUNNERS.get(0).callReaper(
             "PUT",
-            String.format("/%s/state/%s", id, "ABORTED"),
+            String.format("/%s/state/%s", id.toString(), "ABORTED"),
             Optional.empty());
         Assertions
             .assertThat(response.getStatus())
