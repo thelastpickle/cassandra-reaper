@@ -2917,7 +2917,7 @@ public final class BasicSteps {
             .withFailMessage(responseData);
         UUID id = UUID.randomUUID();
         try {
-          RepairRun repairRun = new ObjectMapper().readValue(responseData, RepairRun.class);
+          RepairRunStatus repairRun = new ObjectMapper().readValue(responseData, RepairRunStatus.class);
           id = repairRun.getId();
           testContext.addCurrentRepairId(id);
         } catch (Throwable e) {
@@ -2925,14 +2925,25 @@ public final class BasicSteps {
           LOG.error("Response data was: {}", responseData);
           Assertions.fail("response deserialisation failed");
         }
-        response = RUNNERS.get(0).callReaper(
-            "PUT",
-            String.format("/%s/state/%s", id.toString(), "ABORTED"),
-            Optional.empty());
-        Assertions
-            .assertThat(response.getStatus())
-            .isEqualTo(Response.Status.OK.getStatusCode())
-            .withFailMessage(responseData);
+        if (iter > 1) {
+          response = RUNNERS.get(0).callReaper(
+              "PUT",
+              String.format("repair_run/%s/state/%s", id.toString(), "ABORTED"),
+              Optional.empty());
+          Assertions
+              .assertThat(response.getStatus())
+              .isEqualTo(Response.Status.OK.getStatusCode())
+              .withFailMessage(responseData);
+        } else {
+          response = RUNNERS.get(0).callReaper(
+              "PUT",
+              String.format("repair_run/%s/state/%s", id.toString(), "PAUSED"),
+              Optional.empty());
+          Assertions
+              .assertThat(response.getStatus())
+              .isEqualTo(Response.Status.OK.getStatusCode())
+              .withFailMessage(responseData);
+        }
         iter = iter ++;
       };
     }
