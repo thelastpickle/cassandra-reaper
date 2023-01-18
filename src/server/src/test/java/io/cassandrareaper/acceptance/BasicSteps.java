@@ -2907,8 +2907,7 @@ public final class BasicSteps {
       params.put("keyspace", keyspace);
       params.put("owner", "test_user");
 
-      Integer iter = 1;
-      while (iter <= 11) {
+      for (int iter = 1; iter < 12; iter++) {
         Response response = RUNNERS.get(0).callReaper("POST", "/repair_run", Optional.of(params));
         String responseData = response.readEntity(String.class);
         Assertions
@@ -2952,7 +2951,6 @@ public final class BasicSteps {
               .isEqualTo(Response.Status.OK.getStatusCode())
               .withFailMessage(responseData);
         }
-        iter = iter ++;
       };
     }
   }
