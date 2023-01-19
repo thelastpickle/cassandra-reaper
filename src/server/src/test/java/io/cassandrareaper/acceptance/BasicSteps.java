@@ -2896,8 +2896,11 @@ public final class BasicSteps {
     });
   }
 
-  @And("^I add 11 and abort the most recent 10 repairs for cluster \"([^\"]*)\" and keyspace \"([^\"]*)\"$")
-  public void addAndAbortRepairs(String clusterName, String keyspace) throws Throwable {
+  @And("^I add (\\d+) and abort the most recent (\\d+) repairs for cluster \"([^\"]*)\" and keyspace \"([^\"]*)\"$")
+  public void addAndAbortRepairs(Integer repairsAdded,
+                                 Integer repairsAborted,
+                                 String clusterName,
+                                 String keyspace) throws Throwable {
     synchronized (BasicSteps.class) {
       testContext.TEST_CLUSTER = (String) clusterName;
       Set<String> tables = Sets.newHashSet();
@@ -2907,7 +2910,7 @@ public final class BasicSteps {
       params.put("keyspace", keyspace);
       params.put("owner", "test_user");
 
-      for (int iter = 1; iter < 12; iter++) {
+      for (int iter = 1; iter <= repairsAdded; iter++) {
         Response response = RUNNERS.get(0).callReaper("POST", "/repair_run", Optional.of(params));
         String responseData = response.readEntity(String.class);
         Assertions
@@ -2932,7 +2935,7 @@ public final class BasicSteps {
             .assertThat(response.getStatus())
             .isEqualTo(Response.Status.OK.getStatusCode())
             .withFailMessage(responseData);
-        if (iter > 1) {
+        if (iter > (repairsAdded - repairsAborted)) {
           response = RUNNERS.get(0).callReaper(
               "PUT",
               String.format("repair_run/%s/state/%s", id.toString(), "ABORTED"),
