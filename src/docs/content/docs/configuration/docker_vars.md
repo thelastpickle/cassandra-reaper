@@ -242,3 +242,16 @@ Some variable names have changed between the release of Docker-support and Reape
 <h4>Pre Reaper 1.0</h4> | <h4>Post Reaper 1.0</h4>
 ---|---
 `REAPER_DB_DRIVER_CLASS` | N/A - The associated parameter has been deprecated
+
+## Using Kubernetes secrets
+
+While it is possible to pass credentials as environment variables, it is also
+possible to use credentials stored on the filesystem, with a typical k8s layout.
+
+More info on [using secrets as files from a pod](https://kubernetes.io/docs/concepts/configuration/secret/#using-secrets-as-files-from-a-pod) and [consuming secret values from volumes](https://kubernetes.io/docs/concepts/configuration/secret/#consuming-secret-values-from-volumes).
+
+<h4>Environment Variable</h4> | <h4>Configuration settings</h4> | <h4>What should it contain</h4> | <h4>Default value</h4>
+---|---|---|---
+<code class="codeLarge">REAPER_JMX_CREDENTIALS_K8S_PATH</code> | [jmxCredentials]({{< relref "reaper_specific.md#jmxcredentials" >}}) | Folder with a subfolder per cluster, containing 2 files named `username` and `password`. | Undef
+<code class="codeLarge">REAPER_JMX_AUTH_K8S_PATH</code> | [username]({{< relref "reaper_specific.md#username" >}}) and [password]({{< relref "reaper_specific.md#password" >}})  | A folder containing 2 files `username` and `password`. | Undef
+<code class="codeLarge">CRYPTO_SYSTEM_PROPERTY_SECRET_K8S_PATH</code> | [cryptograph/systemPropertySecret]({{< relref "reaper_specific.md#cryptograph" >}}) | Folder with a single `password` file. | Undef
