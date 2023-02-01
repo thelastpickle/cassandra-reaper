@@ -204,10 +204,11 @@ final class RepairRunner implements Runnable {
   public void run() {
     Thread.currentThread().setName(clusterName + ":" + repairRunId);
     Map<UUID, RepairRunner> currentRunners = context.repairManager.repairRunners;
-    // We only want the repair runners that are in RUNNING state.
+    // We only want the repair runners that are in RUNNING state for the same cluster
     List<UUID> repairRunIds
         = new ArrayList<UUID>(currentRunners.entrySet().stream()
           .filter(entry -> entry.getValue().isRunning())
+          .filter(entry -> entry.getValue().clusterName == clusterName)
           .map(Entry::getKey)
           .collect(Collectors.toList()));
 
