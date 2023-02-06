@@ -1,4 +1,4 @@
-# Copyright 2020-2020 The Last Pickle Ltd
+# Copyright 2022-2022 DataStax, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,21 +11,18 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-name: Dependency and License Scan
 on:
-  push:
-    branches:
-      - master
+  pull_request_target:
+    types: [opened, edited, reopened, synchronize]
+
 jobs:
-  scan-repo:
+  check_pull_requests:
     runs-on: ubuntu-latest
+    name: Check linked issues
     steps:
-      - name: Check out code
-        uses: actions/checkout@v3
-      - name: Install Fossa CLI
-        run: |
-          curl -H 'Cache-Control: no-cache' https://raw.githubusercontent.com/fossas/fossa-cli/master/install-latest.sh | bash -s -- -b .
-      - name: Scan for dependencies and licenses
-        run: |
-          FOSSA_API_KEY=${{ secrets.FOSSA_PUSH_ONLY_API_KEY }} ./fossa analyze
+      - uses: nearform/github-action-check-linked-issues@v1
+        continue-on-error: true
+        id: check-linked-issues
+        with:
+          exclude-branches: "dependabot/**"
+          comment: true

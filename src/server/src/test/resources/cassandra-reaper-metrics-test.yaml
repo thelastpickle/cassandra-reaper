@@ -1,0 +1,80 @@
+# Copyright 2014-2017 Spotify AB
+# Copyright 2016-2019 The Last Pickle Ltd
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# Reaper for Apache Cassandra Configuration for Acceptance Tests.
+#
+segmentCountPerNode: 1
+repairParallelism: PARALLEL
+repairIntensity: 1.0
+scheduleDaysBetween: 7
+repairRunThreadCount: 15
+hangingRepairTimeoutMins: 1
+storageType: memory
+incrementalRepair: false
+blacklistTwcsTables: true
+enableDynamicSeedList: false
+jmxConnectionTimeoutInSeconds: 10
+datacenterAvailability: LOCAL
+percentRepairedCheckIntervalMinutes: 1
+repairManagerSchedulingIntervalSeconds: 0
+
+logging:
+  level: WARN
+  appenders:
+    - type: console
+
+server:
+  type: default
+  applicationConnectors:
+    - type: http
+      port: 8083
+      bindHost: 127.0.0.1
+  adminConnectors:
+    - type: http
+      port: 8084
+      bindHost: 127.0.0.1
+
+jmxPorts:
+  127.0.0.1: 7100
+  127.0.0.2: 7200
+  127.0.0.3: 7300
+  127.0.0.4: 7400
+  127.0.0.5: 7500
+  127.0.0.6: 7600
+  127.0.0.7: 7700
+  127.0.0.8: 7800
+
+jmxCredentials:
+  test:
+    username: cassandra
+    password: cassandrapassword
+
+# Config used to automatically add/remove sheduled repair for all keyspaces
+autoScheduling:
+  enabled: false
+  initialDelayPeriod: PT1S
+  periodBetweenPolls: PT10M
+  timeBeforeFirstSchedule: PT5M
+  scheduleSpreadPeriod: PT6H
+
+metrics:
+  frequency: 1 second
+  reporters:
+    - type: csv
+      file: target/dropwizard-metrics
+
+cryptograph:
+  type: symmetric
+  systemPropertySecret: REAPER_ENCRYPTION_KEY

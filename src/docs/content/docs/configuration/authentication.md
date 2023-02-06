@@ -39,6 +39,7 @@ user2 = password2
 
 …
 ```
+If you use a container, make sure you set the environment variable `REAPER_SHIRO_INI` to a valid path inside the container otherwise your custom shiro.ini will not be used.
 
 ## With encrypted passwords
 
