@@ -596,6 +596,21 @@
                         </goals>
                     </execution>
                     <execution>
+                        <id>exec-npm-run-bower</id>
+                        <phase>generate-sources</phase>
+                        <configuration>
+                            <executable>npm</executable>
+                            <workingDirectory>../ui</workingDirectory>
+                            <arguments>
+                                <argument>run</argument>
+                                <argument>bower</argument>
+                            </arguments>
+                        </configuration>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                    </execution>
+                    <execution>
                         <id>exec-npm-run</id>
                         <phase>generate-sources</phase>
                         <configuration>

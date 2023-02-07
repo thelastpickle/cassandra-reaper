@@ -38,10 +38,10 @@ prepare:
 	chmod 755 build/etc/init.d/cassandra-reaper
 
 deb: prepare
-	fpm -s dir -t deb -n reaper -v $(VERSION) --pre-install debian/preinstall.sh --post-install debian/postinstall.sh -C build .
+	fpm -s dir -t deb -a all -n reaper -v $(VERSION) --pre-install debian/preinstall.sh --post-install debian/postinstall.sh -C build .
 
 rpm: prepare
-	fpm -s dir -t rpm -n reaper -v $(VERSION) --pre-install redhat/preinstall.sh --post-install redhat/postinstall.sh --config-files /etc/cassandra-reaper/cassandra-reaper.yaml -C build .
+	fpm -s dir -t rpm -a all -n reaper -v $(VERSION) --pre-install redhat/preinstall.sh --post-install redhat/postinstall.sh --config-files /etc/cassandra-reaper/cassandra-reaper.yaml -C build .
 
 all: package deb rpm
 
