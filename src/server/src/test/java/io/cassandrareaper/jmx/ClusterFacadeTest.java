@@ -21,17 +21,21 @@ import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperApplicationConfiguration;
 import io.cassandrareaper.ReaperApplicationConfiguration.DatacenterAvailability;
 import io.cassandrareaper.ReaperException;
+import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.Compaction;
 import io.cassandrareaper.core.CompactionStats;
+import io.cassandrareaper.core.JmxCredentials;
 import io.cassandrareaper.core.StreamSession;
 
 import java.io.IOException;
 import java.net.URL;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
@@ -46,6 +50,8 @@ import static io.cassandrareaper.service.RepairRunnerTest.threeNodeClusterWithIp
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -189,6 +195,31 @@ public class ClusterFacadeTest {
     for (Map.Entry<List<String>, List<String>> entry : endpoints.entrySet()) {
       assertEquals(endpoints,threeNodeClusterWithIps());
     }
+  }
+
+  @Test(expected = ReaperException.class)
+  public void getRangeToEndpointMapArgumentExceptionTest() throws ReaperException {
+    final AppContext cxt = new AppContext();
+    cxt.config = new ReaperApplicationConfiguration();
+    AppContext contextSpy = Mockito.spy(cxt);
+    Mockito.doReturn("127.0.0.1").when(contextSpy).getLocalNodeAddress();
+
+    contextSpy.config.setDatacenterAvailability(DatacenterAvailability.SIDECAR);
+    JmxConnectionFactory jmxConnectionFactory = mock(JmxConnectionFactory.class);
+    JmxProxy mockProxy = mock(JmxProxy.class);
+    when(jmxConnectionFactory.connectAny(any(Collection.class))).thenReturn(mockProxy);
+    contextSpy.jmxConnectionFactory = jmxConnectionFactory;
+    final ClusterFacade cf = ClusterFacade.create(contextSpy);
+    JmxCredentials jmxCredentials = JmxCredentials.builder().withUsername("test").withPassword("testPwd").build();
+    Set<String> seedHosts = new HashSet<>();
+    seedHosts.add("127.0.0.1");
+    Cluster.Builder builder = Cluster.builder();
+    builder.withName("testCluster");
+    builder.withJmxCredentials(jmxCredentials);
+    builder.withSeedHosts(seedHosts);
+    Cluster mockCluster = builder.build();
+    when(mockProxy.getRangeToEndpointMap(eq("fake-ks"))).thenThrow(new AssertionError(""));
+    cf.getRangeToEndpointMap(mockCluster, "fake-ks");
   }
 
 }
