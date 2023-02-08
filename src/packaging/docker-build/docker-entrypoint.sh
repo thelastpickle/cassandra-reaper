@@ -16,6 +16,8 @@
 
 set -ex
 
+arch=$(dpkg-architecture -q DEB_BUILD_ARCH)
+
 # build jar
 # build web UI
 # build Debian and RPM packages
@@ -30,12 +32,12 @@ javac_path=""
 javadoc_path=""
 if [ "$(cut -d'.' -f1 <<<${VERSION})" -ge 3 ] && [ "$(cut -d'.' -f2 <<<${VERSION})" -ge 1 ]
 then
-  java_home="/usr/lib/jvm/java-11-openjdk-amd64"
+  java_home="/usr/lib/jvm/java-11-openjdk-${arch}"
   java_path="bin/java"
   javac_path="bin/javac"
   javadoc_path="bin/javadoc"
 else
-  java_home="/usr/lib/jvm/java-8-openjdk-amd64"
+  java_home="/usr/lib/jvm/java-8-openjdk-${arch}"
   java_path="jre/bin/java"
   javac_path="bin/javac"
   javadoc_path="bin/javadoc"

@@ -33,6 +33,7 @@ RUN apt-get update \
         openjdk-11-jdk \
         maven \
         nodejs \
+        python2 \
         rpm \
         ruby-dev \
     && mvn --version \
