@@ -44,6 +44,8 @@ public final class PrometheusMetricsConfiguration {
     final Map<String,String> millisSinceLastRepairMetricLabels = new HashMap<>();
     millisSinceLastRepairMetricLabels.put("cluster", "${0}");
     millisSinceLastRepairMetricLabels.put("keyspace", "${1}");
+    millisSinceLastRepairMetricLabels.put("repairid", "${2}");
+    // Legacy label replaced with repairid
     millisSinceLastRepairMetricLabels.put("runid", "${2}");
     mapperConfigs.add(new MapperConfig("io.cassandrareaper.service.RepairRunner.millisSinceLastRepair.*.*.*",
         "io.cassandrareaper.service.RepairRunner.millisSinceLastRepair", millisSinceLastRepairMetricLabels));
@@ -58,10 +60,11 @@ public final class PrometheusMetricsConfiguration {
         millisSinceLastScheduleRepairMetricLabels));
 
     final Map<String,String> repairProgressMetricLabels = new HashMap<>();
-    millisSinceLastScheduleRepairMetricLabels.put("cluster", "${0}");
-    millisSinceLastScheduleRepairMetricLabels.put("keyspace", "${1}");
+    repairProgressMetricLabels.put("cluster", "${0}");
+    repairProgressMetricLabels.put("keyspace", "${1}");
+    repairProgressMetricLabels.put("repairid", "${2}");
     mapperConfigs.add(new MapperConfig(
-        "io.cassandrareaper.service.RepairRunner.repairProgress.*.*",
+        "io.cassandrareaper.service.RepairRunner.repairProgress.*.*.*",
         "io.cassandrareaper.service.RepairRunner.repairProgress",
         repairProgressMetricLabels));
 
