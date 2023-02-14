@@ -15,4 +15,4 @@
 --
 -- Add a secondary index on `state` to the `repair_run` table.
 
-CREATE INDEX state2i ON repair_run_by_cluster_v2 (repair_run_state);
+CREATE INDEX IF NOT EXISTS state2i ON repair_run_by_cluster_v2 (repair_run_state);
