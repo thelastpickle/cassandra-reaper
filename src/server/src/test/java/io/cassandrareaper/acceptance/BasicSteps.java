@@ -2964,6 +2964,7 @@ public final class BasicSteps {
       RUNNERS.parallelStream().forEach(runner -> {
         HashMap<String, String> params = Maps.newHashMap();
         params.put("limit", limit.toString());
+        // Run query against /repair_run/cluster/
         Response resp = runner.callReaper(
             "GET",
             "/repair_run/cluster/" + TestContext.TEST_CLUSTER,
@@ -2995,7 +2996,41 @@ public final class BasicSteps {
                 expectedState,
                 expectedRepairsCount);
       });
+      RUNNERS.parallelStream().forEach(runner -> {
+        HashMap<String, String> params = Maps.newHashMap();
+        params.put("limit", limit.toString());
+        // Run query against /repair_run
+        Response resp = runner.callReaper(
+            "GET",
+            "/repair_run",
+            Optional.of(params)
+        );
+        String responseData = resp.readEntity(String.class);
+        Assertions
+            .assertThat(resp.getStatus())
+            .isEqualTo(Response.Status.OK.getStatusCode())
+            .withFailMessage(responseData);
+        Assertions
+            .assertThat(responseData).isNotBlank();
 
+        List<RepairRunStatus> runs = SimpleReaperClient.parseRepairRunStatusListJSON(responseData)
+            .stream()
+            .filter(r -> RepairRun.RunState.RUNNING == r.getState() || RepairRun.RunState.DONE == r.getState())
+            .filter(r -> r.getCause().contains(testContext.getCurrentScheduleId().toString()))
+            .collect(Collectors.toList());
+        Integer countInState = runs.stream()
+            .filter(run -> run.getState() == RepairRun.RunState.valueOf(expectedState))
+            .collect(Collectors.toList())
+            .size();
+        Assertions
+            .assertThat(countInState)
+            .isEqualTo(expectedRepairsCount)
+            .withFailMessage(
+                "actual number %i of repairs in state %s did not match expected number %i",
+                countInState,
+                expectedState,
+                expectedRepairsCount);
+      });
     }
   }
 
