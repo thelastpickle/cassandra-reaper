@@ -63,6 +63,8 @@ import org.apache.cassandra.repair.RepairParallelism;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static java.lang.Math.min;
+
 
 @Path("/repair_run")
 @Produces(MediaType.APPLICATION_JSON)
@@ -665,9 +667,10 @@ public final class RepairRunResource {
       List<RepairRunStatus> runStatuses = Lists.newArrayList();
       List<RepairRun> repairRuns = Lists.newArrayList();
       clusters.forEach(clstr -> repairRuns.addAll(context.storage.getRepairRunsForCluster(clstr.getName(), limit)));
-      RepairRun.SortByRunState(repairRuns);
+      RepairRun.sortByRunState(repairRuns);
       runStatuses.addAll(
-          (List<RepairRunStatus>) getRunStatuses(repairRuns, desiredStates)
+          (List<RepairRunStatus>) getRunStatuses(
+              repairRuns.subList(0, min(repairRuns.size(), limit.orElse(1000))), desiredStates)
               .stream()
               .filter((run) -> !keyspace.isPresent()
                   || ((RepairRunStatus)run).getKeyspaceName().equals(keyspace.get()))

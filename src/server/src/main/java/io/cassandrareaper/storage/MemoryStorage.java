@@ -31,7 +31,6 @@ import io.cassandrareaper.resources.view.RepairScheduleStatus;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -205,7 +204,7 @@ public final class MemoryStorage implements IStorage {
         .filter(
             row -> row.getClusterName().equals(clusterName.toLowerCase(Locale.ROOT))).collect(Collectors.toList()
         );
-    RepairRun.SortByRunState(foundRepairRuns);
+    RepairRun.sortByRunState(foundRepairRuns);
     return foundRepairRuns.subList(0, min(foundRepairRuns.size(), limit.orElse(1000)));
   }
 
