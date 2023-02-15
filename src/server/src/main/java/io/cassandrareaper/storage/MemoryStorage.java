@@ -205,13 +205,7 @@ public final class MemoryStorage implements IStorage {
         .filter(
             row -> row.getClusterName().equals(clusterName.toLowerCase(Locale.ROOT))).collect(Collectors.toList()
         );
-    Comparator<RepairRun> comparator = new Comparator<RepairRun>() {
-      @Override
-      public int compare(RepairRun o1, RepairRun o2) {
-        return o1.getRunState().compareTo(o2.getRunState());
-      }
-    };
-    Collections.sort(foundRepairRuns, comparator);
+    RepairRun.SortByRunState(foundRepairRuns);
     return foundRepairRuns.subList(0, min(foundRepairRuns.size(), limit.orElse(1000)));
   }
 

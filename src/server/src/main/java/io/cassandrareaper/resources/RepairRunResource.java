@@ -663,17 +663,15 @@ public final class RepairRunResource {
             : context.storage.getClusters();
 
       List<RepairRunStatus> runStatuses = Lists.newArrayList();
-      for (final Cluster clstr : clusters) {
-        Collection<RepairRun> runs = context.storage.getRepairRunsForCluster(clstr.getName(), limit);
-
-        runStatuses.addAll(
-            (List<RepairRunStatus>) getRunStatuses(runs, desiredStates)
-                .stream()
-                .filter((run) -> !keyspace.isPresent()
-                    || ((RepairRunStatus)run).getKeyspaceName().equals(keyspace.get()))
-                .collect(Collectors.toList()));
-      }
-
+      List<RepairRun> repairRuns = Lists.newArrayList();
+      clusters.forEach(clstr -> repairRuns.addAll(context.storage.getRepairRunsForCluster(clstr.getName(), limit)));
+      RepairRun.SortByRunState(repairRuns);
+      runStatuses.addAll(
+          (List<RepairRunStatus>) getRunStatuses(repairRuns, desiredStates)
+              .stream()
+              .filter((run) -> !keyspace.isPresent()
+                  || ((RepairRunStatus)run).getKeyspaceName().equals(keyspace.get()))
+              .collect(Collectors.toList()));
       return Response.ok().entity(runStatuses).build();
     } catch (IllegalArgumentException e) {
       return Response.serverError().entity("Failed find cluster " + cluster.get()).build();

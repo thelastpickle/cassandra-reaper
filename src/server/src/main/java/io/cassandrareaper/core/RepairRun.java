@@ -17,7 +17,11 @@
 
 package io.cassandrareaper.core;
 
+import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
@@ -26,6 +30,8 @@ import com.google.common.base.Preconditions;
 import org.apache.cassandra.repair.RepairParallelism;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeComparator;
+
+import static java.lang.Math.min;
 
 public final class RepairRun implements Comparable<RepairRun> {
 
@@ -343,5 +349,21 @@ public final class RepairRun implements Comparable<RepairRun> {
 
       return new RepairRun(this, id);
     }
+  }
+
+    public static void SortByRunState (List<RepairRun> repairRunCollection) {
+    Comparator<RepairRun> comparator = new Comparator<RepairRun>() {
+      @Override
+      public int compare(RepairRun o1, RepairRun o2) {
+        if ((!o1.getRunState().isTerminated()) && o2.getRunState().isTerminated()) {
+          return -1; // o1 appears first.
+        }  else if (o1.getRunState().isTerminated() && !o2.getRunState().isTerminated()) {
+          return 1; // o2 appears first.
+        } else { // Both RunStates have equal isFinished() values; compare on time instead.
+          return o1.getId().compareTo(o2.getId());
+        }
+      }
+    };
+    Collections.sort(repairRunCollection, comparator);
   }
 }
