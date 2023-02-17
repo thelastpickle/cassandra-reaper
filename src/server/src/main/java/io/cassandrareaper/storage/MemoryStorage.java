@@ -49,6 +49,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import io.cassandrareaper.service.RepairRunService;
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
@@ -204,7 +205,7 @@ public final class MemoryStorage implements IStorage {
         .filter(
             row -> row.getClusterName().equals(clusterName.toLowerCase(Locale.ROOT))).collect(Collectors.toList()
         );
-    RepairRun.sortByRunState(foundRepairRuns);
+    RepairRunService.sortByRunState(foundRepairRuns);
     return foundRepairRuns.subList(0, min(foundRepairRuns.size(), limit.orElse(1000)));
   }
 
