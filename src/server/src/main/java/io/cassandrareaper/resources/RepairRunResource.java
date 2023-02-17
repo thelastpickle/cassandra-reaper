@@ -666,7 +666,9 @@ public final class RepairRunResource {
 
       List<RepairRunStatus> runStatuses = Lists.newArrayList();
       List<RepairRun> repairRuns = Lists.newArrayList();
-      clusters.forEach(clstr -> repairRuns.addAll(context.storage.getRepairRunsForClusterPrioritiseRunning(clstr.getName(), limit)));
+      clusters.forEach(clstr -> repairRuns.addAll(
+          context.storage.getRepairRunsForClusterPrioritiseRunning(clstr.getName(), limit))
+      );
       RepairRunService.sortByRunState(repairRuns);
       runStatuses.addAll(
           (List<RepairRunStatus>) getRunStatuses(
