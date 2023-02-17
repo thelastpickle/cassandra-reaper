@@ -91,9 +91,9 @@ public final class RepairRunService {
       @Override
       public int compare(RepairRun o1, RepairRun o2) {
         if (!o1.getRunState().isTerminated() && o2.getRunState().isTerminated()) {
-          return 1; // o2 appears first.
-        }  else if (o1.getRunState().isTerminated() && !o2.getRunState().isTerminated()) {
           return -1; // o1 appears first.
+        }  else if (o1.getRunState().isTerminated() && !o2.getRunState().isTerminated()) {
+          return 1; // o2 appears first.
         } else { // Both RunStates have equal isFinished() values; compare on time instead.
           return o1.getId().compareTo(o2.getId());
         }
