@@ -968,14 +968,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
     List<ResultSetFuture> repairUuidFuturesByState = Lists.<ResultSetFuture>newArrayList();
     // We've set up the RunState enum so that values are declared in order of "interestingness",
     // we iterate over the table via the secondary index according to that ordering.
-    for (RunState state :
-        Arrays
-            .stream(RunState.values())
-            .filter(v ->
-                Arrays.asList("RUNNING", "PAUSED", "NOT_STARTED")
-                    .contains(v.toString()))
-            .collect(Collectors.toList())
-    ) {
+    for (String state:Arrays.asList("RUNNING", "PAUSED", "NOT_STARTED")) {
       repairUuidFuturesByState.add(
           // repairUUIDFutures will be a List of resultSetFutures, each of which contains a ResultSet of
           // UUIDs for one status.
