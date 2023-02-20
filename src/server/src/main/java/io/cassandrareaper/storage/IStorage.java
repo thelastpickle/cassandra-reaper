@@ -71,6 +71,8 @@ public interface IStorage extends Managed {
   /** return all the repair runs in a cluster, in reverse chronological order, with default limit is 1000 */
   Collection<RepairRun> getRepairRunsForCluster(String clusterName, Optional<Integer> limit);
 
+  Collection<RepairRun> getRepairRunsForClusterPrioritiseRunning(String clusterName, Optional<Integer> limit);
+
   Collection<RepairRun> getRepairRunsForUnit(UUID repairUnitId);
 
   Collection<RepairRun> getRepairRunsWithState(RepairRun.RunState runState);

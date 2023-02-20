@@ -180,12 +180,15 @@ public final class RepairRun implements Comparable<RepairRun> {
     return String.format("%s[%s] for %s", getClass().getSimpleName(), id.toString(), clusterName);
   }
 
+  // The values in this enum are declared in order of "interestingness",
+  // this is used to order RepairRuns in the UI so that e.g. RUNNING runs come first.
   public enum RunState {
-    NOT_STARTED,
     RUNNING,
+    PAUSED,
+    NOT_STARTED,
+
     ERROR,
     DONE,
-    PAUSED,
     ABORTED,
     DELETED;
 
@@ -341,4 +344,5 @@ public final class RepairRun implements Comparable<RepairRun> {
       return new RepairRun(this, id);
     }
   }
+
 }

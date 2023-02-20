@@ -63,6 +63,8 @@ import org.apache.cassandra.repair.RepairParallelism;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static java.lang.Math.min;
+
 
 @Path("/repair_run")
 @Produces(MediaType.APPLICATION_JSON)
@@ -608,7 +610,9 @@ public final class RepairRunResource {
       @QueryParam("limit") Optional<Integer> limit) {
 
     LOG.debug("get repair run for cluster called with: cluster_name = {}", clusterName);
-    final Collection<RepairRun> repairRuns = context.storage.getRepairRunsForCluster(clusterName, limit);
+    final Collection<RepairRun> repairRuns = context
+        .storage
+        .getRepairRunsForClusterPrioritiseRunning(clusterName, limit);
     final Collection<RepairRunStatus> repairRunViews = new ArrayList<>();
     for (final RepairRun repairRun : repairRuns) {
       repairRunViews.add(getRepairRunStatus(repairRun));
@@ -661,17 +665,18 @@ public final class RepairRunResource {
             : context.storage.getClusters();
 
       List<RepairRunStatus> runStatuses = Lists.newArrayList();
-      for (final Cluster clstr : clusters) {
-        Collection<RepairRun> runs = context.storage.getRepairRunsForCluster(clstr.getName(), limit);
-
-        runStatuses.addAll(
-            (List<RepairRunStatus>) getRunStatuses(runs, desiredStates)
-                .stream()
-                .filter((run) -> !keyspace.isPresent()
-                    || ((RepairRunStatus)run).getKeyspaceName().equals(keyspace.get()))
-                .collect(Collectors.toList()));
-      }
-
+      List<RepairRun> repairRuns = Lists.newArrayList();
+      clusters.forEach(clstr -> repairRuns.addAll(
+          context.storage.getRepairRunsForClusterPrioritiseRunning(clstr.getName(), limit))
+      );
+      RepairRunService.sortByRunState(repairRuns);
+      runStatuses.addAll(
+          (List<RepairRunStatus>) getRunStatuses(
+              repairRuns.subList(0, min(repairRuns.size(), limit.orElse(1000))), desiredStates)
+              .stream()
+              .filter((run) -> !keyspace.isPresent()
+                  || ((RepairRunStatus)run).getKeyspaceName().equals(keyspace.get()))
+              .collect(Collectors.toList()));
       return Response.ok().entity(runStatuses).build();
     } catch (IllegalArgumentException e) {
       return Response.serverError().entity("Failed find cluster " + cluster.get()).build();

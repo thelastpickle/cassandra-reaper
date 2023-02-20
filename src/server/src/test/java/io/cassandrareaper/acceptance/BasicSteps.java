@@ -45,7 +45,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
-
 import javax.ws.rs.client.Client;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.sse.SseEventSource;
@@ -57,6 +56,7 @@ import com.datastax.driver.core.SocketOptions;
 import com.datastax.driver.core.VersionNumber;
 import com.datastax.driver.core.exceptions.AlreadyExistsException;
 import com.datastax.driver.core.utils.UUIDs;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -2895,4 +2895,144 @@ public final class BasicSteps {
           Response.Status.NOT_FOUND);
     });
   }
+
+  @And("^I add (\\d+) and abort the most recent (\\d+) repairs for cluster \"([^\"]*)\" and keyspace \"([^\"]*)\"$")
+  public void addAndAbortRepairs(Integer repairsAdded,
+                                 Integer repairsAborted,
+                                 String clusterName,
+                                 String keyspace) throws Throwable {
+    synchronized (BasicSteps.class) {
+      testContext.TEST_CLUSTER = (String) clusterName;
+      Set<String> tables = Sets.newHashSet();
+      testContext.addClusterInfo(clusterName, keyspace, tables);
+      HashMap<String, String> params = Maps.newHashMap();
+      params.put("clusterName", clusterName);
+      params.put("keyspace", keyspace);
+      params.put("owner", "test_user");
+
+      for (int iter = 1; iter <= repairsAdded; iter++) {
+        Response response = RUNNERS.get(0).callReaper("POST", "/repair_run", Optional.of(params));
+        String responseData = response.readEntity(String.class);
+        Assertions
+            .assertThat(response.getStatus())
+            .isEqualTo(Response.Status.CREATED.getStatusCode())
+            .withFailMessage(responseData);
+        UUID id = UUID.randomUUID();
+        try {
+          RepairRunStatus repairRun = new ObjectMapper().readValue(responseData, RepairRunStatus.class);
+          id = repairRun.getId();
+          testContext.addCurrentRepairId(id);
+        } catch (Throwable e) {
+          LOG.error("response deserialisation failed", e);
+          LOG.error("Response data was: {}", responseData);
+          Assertions.fail("response deserialisation failed");
+        }
+        response = RUNNERS.get(0).callReaper(
+            "PUT",
+            String.format("repair_run/%s/state/%s", id.toString(), "RUNNING"),
+            Optional.empty());
+        Assertions
+            .assertThat(response.getStatus())
+            .isEqualTo(Response.Status.OK.getStatusCode())
+            .withFailMessage(responseData);
+        if (iter > (repairsAdded - repairsAborted)) {
+          response = RUNNERS.get(0).callReaper(
+              "PUT",
+              String.format("repair_run/%s/state/%s", id.toString(), "ABORTED"),
+              Optional.empty());
+          Assertions
+              .assertThat(response.getStatus())
+              .isEqualTo(Response.Status.OK.getStatusCode())
+              .withFailMessage(responseData);
+        } else {
+          response = RUNNERS.get(0).callReaper(
+              "PUT",
+              String.format("repair_run/%s/state/%s", id.toString(), "PAUSED"),
+              Optional.empty());
+          Assertions
+              .assertThat(response.getStatus())
+              .isEqualTo(Response.Status.OK.getStatusCode())
+              .withFailMessage(responseData);
+        }
+      };
+    }
+  }
+
+  @Then("^when I list the last (\\d+) repairs, I can see (\\d+) repairs at (\\d+) state$")
+  public void listRepairs(Integer limit, Integer expectedRepairsCount, String expectedState) {
+    synchronized (BasicSteps.class) {
+      RUNNERS.parallelStream().forEach(runner -> {
+        HashMap<String, String> params = Maps.newHashMap();
+        params.put("limit", limit.toString());
+        // Run query against /repair_run/cluster/
+        Response resp = runner.callReaper(
+            "GET",
+            "/repair_run/cluster/" + TestContext.TEST_CLUSTER,
+            Optional.of(params)
+        );
+        String responseData = resp.readEntity(String.class);
+        Assertions
+            .assertThat(resp.getStatus())
+            .isEqualTo(Response.Status.OK.getStatusCode())
+            .withFailMessage(responseData);
+        Assertions
+            .assertThat(responseData).isNotBlank();
+
+        List<RepairRunStatus> runs = SimpleReaperClient.parseRepairRunStatusListJSON(responseData)
+            .stream()
+            .filter(r -> RepairRun.RunState.RUNNING == r.getState() || RepairRun.RunState.DONE == r.getState())
+            .filter(r -> r.getCause().contains(testContext.getCurrentScheduleId().toString()))
+            .collect(Collectors.toList());
+        Integer countInState = runs.stream()
+            .filter(run -> run.getState() == RepairRun.RunState.valueOf(expectedState))
+            .collect(Collectors.toList())
+            .size();
+        Assertions
+            .assertThat(countInState)
+            .isEqualTo(expectedRepairsCount)
+            .withFailMessage(
+                "actual number %i of repairs in state %s did not match expected number %i",
+                countInState,
+                expectedState,
+                expectedRepairsCount);
+      });
+      RUNNERS.parallelStream().forEach(runner -> {
+        HashMap<String, String> params = Maps.newHashMap();
+        params.put("limit", limit.toString());
+        // Run query against /repair_run
+        Response resp = runner.callReaper(
+            "GET",
+            "/repair_run",
+            Optional.of(params)
+        );
+        String responseData = resp.readEntity(String.class);
+        Assertions
+            .assertThat(resp.getStatus())
+            .isEqualTo(Response.Status.OK.getStatusCode())
+            .withFailMessage(responseData);
+        Assertions
+            .assertThat(responseData).isNotBlank();
+
+        List<RepairRunStatus> runs = SimpleReaperClient.parseRepairRunStatusListJSON(responseData)
+            .stream()
+            .filter(r -> RepairRun.RunState.RUNNING == r.getState() || RepairRun.RunState.DONE == r.getState())
+            .filter(r -> r.getCause().contains(testContext.getCurrentScheduleId().toString()))
+            .collect(Collectors.toList());
+        Integer countInState = runs.stream()
+            .filter(run -> run.getState() == RepairRun.RunState.valueOf(expectedState))
+            .collect(Collectors.toList())
+            .size();
+        Assertions
+            .assertThat(countInState)
+            .isEqualTo(expectedRepairsCount)
+            .withFailMessage(
+                "actual number %i of repairs in state %s did not match expected number %i",
+                countInState,
+                expectedState,
+                expectedRepairsCount);
+      });
+    }
+  }
+
 }
+

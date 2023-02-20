@@ -47,6 +47,7 @@ import io.cassandrareaper.storage.cassandra.Migration025;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.time.LocalDate;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
@@ -114,6 +115,8 @@ import systems.composable.dropwizard.cassandra.CassandraFactory;
 import systems.composable.dropwizard.cassandra.pooling.PoolingOptionsFactory;
 import systems.composable.dropwizard.cassandra.retry.RetryPolicyFactory;
 
+import static java.lang.Math.min;
+
 public final class CassandraStorage implements IStorage, IDistributedStorage {
 
   private static final int METRICS_PARTITIONING_TIME_MINS = 10;
@@ -157,6 +160,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   private PreparedStatement insertRepairRunUnitIndexPrepStmt;
   private PreparedStatement getRepairRunPrepStmt;
   private PreparedStatement getRepairRunForClusterPrepStmt;
+  private PreparedStatement getRepairRunForClusterWhereStatusPrepStmt;
   private PreparedStatement getRepairRunForUnitPrepStmt;
   private PreparedStatement deleteRepairRunPrepStmt;
   private PreparedStatement deleteRepairRunByClusterPrepStmt;
@@ -422,6 +426,8 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
         .setConsistencyLevel(ConsistencyLevel.QUORUM);
     getRepairRunForClusterPrepStmt = session.prepare(
         "SELECT * FROM repair_run_by_cluster_v2 WHERE cluster_name = ? limit ?");
+    getRepairRunForClusterWhereStatusPrepStmt = session.prepare(
+        "SELECT id FROM repair_run_by_cluster_v2 WHERE cluster_name = ? AND repair_run_state = ? limit ?");
     getRepairRunForUnitPrepStmt = session.prepare("SELECT * FROM repair_run_by_unit WHERE repair_unit_id = ?");
     deleteRepairRunPrepStmt = session.prepare("DELETE FROM repair_run WHERE id = ?");
     deleteRepairRunByClusterPrepStmt
@@ -956,6 +962,69 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
 
     return getRepairRunsAsync(repairRunFutures);
   }
+
+  @Override
+  public List<RepairRun> getRepairRunsForClusterPrioritiseRunning(String clusterName, Optional<Integer> limit) {
+    List<ResultSetFuture> repairUuidFuturesByState = Lists.<ResultSetFuture>newArrayList();
+    // We've set up the RunState enum so that values are declared in order of "interestingness",
+    // we iterate over the table via the secondary index according to that ordering.
+    for (String state:Arrays.asList("RUNNING", "PAUSED", "NOT_STARTED")) {
+      repairUuidFuturesByState.add(
+          // repairUUIDFutures will be a List of resultSetFutures, each of which contains a ResultSet of
+          // UUIDs for one status.
+          session
+              .executeAsync(getRepairRunForClusterWhereStatusPrepStmt
+                  .bind(clusterName, state.toString(), limit.orElse(MAX_RETURNED_REPAIR_RUNS)
+                  )
+              )
+      );
+    }
+    ResultSetFuture repairUuidFuturesNoState = session
+            .executeAsync(getRepairRunForClusterPrepStmt
+                .bind(clusterName, limit.orElse(MAX_RETURNED_REPAIR_RUNS)
+                )
+            );
+
+    List<UUID> flattenedUuids = Lists.<UUID>newArrayList();
+    // Flatten the UUIDs from each status down into a single array.
+    for (ResultSetFuture idResSetFuture : repairUuidFuturesByState) {
+      idResSetFuture
+          .getUninterruptibly()
+          .forEach(
+              row -> flattenedUuids.add(row.getUUID("id"))
+        );
+    }
+    // Merge the two lists and trim.
+    repairUuidFuturesNoState.getUninterruptibly().forEach(row -> {
+          UUID uuid = row.getUUID("id");
+          if (!flattenedUuids.contains(uuid)) {
+            flattenedUuids.add(uuid);
+          }
+        }
+    );
+    flattenedUuids.subList(0, min(flattenedUuids.size(), limit.orElse(MAX_RETURNED_REPAIR_RUNS)));
+
+    // Run an async query on each UUID in the flattened list, against the main repair_run table with
+    // all columns required as an input to `buildRepairRunFromRow`.
+    List<ResultSetFuture> repairRunFutures = Lists.<ResultSetFuture>newArrayList();
+    flattenedUuids.forEach(uuid ->
+        repairRunFutures.add(
+            session
+                .executeAsync(getRepairRunPrepStmt.bind(uuid)
+                )
+        )
+    );
+    // Defuture the repair_run rows and build the strongly typed RepairRun objects from the contents.
+    return repairRunFutures
+        .stream()
+        .map(
+            row -> {
+              Row extractedRow = row.getUninterruptibly().one();
+              return buildRepairRunFromRow(extractedRow, extractedRow.getUUID("id"));
+            }
+        ).collect(Collectors.toList());
+  }
+
 
   @Override
   public Collection<RepairRun> getRepairRunsForUnit(UUID repairUnitId) {
