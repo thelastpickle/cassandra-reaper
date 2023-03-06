@@ -48,8 +48,7 @@
     "zip": "zip -jr release.zip build",
     "start": "node server.js --env.project=$REAPER_HOST",
     "navbar": "./build-navbar.sh",
-    "bower": "bower install",
-    "postinstall": "npm run bower"
+    "bower": "bower install"
   },
   "dependencies": {
     "core-js": "^2.6.11",

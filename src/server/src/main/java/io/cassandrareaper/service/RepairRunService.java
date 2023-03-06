@@ -30,14 +30,18 @@ import io.cassandrareaper.jmx.EndpointSnitchInfoProxy;
 import io.cassandrareaper.jmx.JmxProxy;
 
 import java.math.BigInteger;
+
 import java.util.Arrays;
+
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
@@ -82,6 +86,22 @@ public final class RepairRunService {
     return new RepairRunService(context, () -> ClusterFacade.create(context));
   }
 
+  public static void sortByRunState(List<RepairRun> repairRunCollection) {
+    Comparator<RepairRun> comparator = new Comparator<RepairRun>() {
+      @Override
+      public int compare(RepairRun o1, RepairRun o2) {
+        if (!o1.getRunState().isTerminated() && o2.getRunState().isTerminated()) {
+          return -1; // o1 appears first.
+        }  else if (o1.getRunState().isTerminated() && !o2.getRunState().isTerminated()) {
+          return 1; // o2 appears first.
+        } else { // Both RunStates have equal isFinished() values; compare on time instead.
+          return o1.getId().compareTo(o2.getId());
+        }
+      }
+    };
+    Collections.sort(repairRunCollection, comparator);
+  }
+
   /**
    * Creates a repair run but does not start it immediately.
    *
@@ -124,7 +144,7 @@ public final class RepairRunService {
 
     // the last preparation step is to generate actual repair segments
     List<RepairSegment.Builder> segmentBuilders = repairUnit.getIncrementalRepair()
-        ? createRepairSegmentsForIncrementalRepair(nodes, repairUnit)
+        ? createRepairSegmentsForIncrementalRepair(nodes, repairUnit, cluster, clusterFacade)
         : createRepairSegments(tokenSegments, repairUnit);
 
     RepairRun repairRun = context.storage.addRepairRun(runBuilder, segmentBuilders);
@@ -182,6 +202,9 @@ public final class RepairRunService {
 
     } catch (ReaperException e) {
       LOG.warn("couldn't connect to any host: {}, life sucks...", targetCluster.getSeedHosts(), e);
+    } catch (IllegalArgumentException e) {
+      LOG.error("Couldn't get endpoints for tokens");
+      throw new ReaperException("Couldn't get endpoints for tokens", e);
     }
 
     if (segments.isEmpty() && !repairUnit.getIncrementalRepair()) {
@@ -205,7 +228,6 @@ public final class RepairRunService {
     return segmentsWithReplicas;
   }
 
-  @VisibleForTesting
   Map<String, String> getDCsByNodeForRepairSegment(
       Cluster cluster,
       Segment segment,
@@ -331,23 +353,27 @@ public final class RepairRunService {
   @VisibleForTesting
   static List<RepairSegment.Builder> createRepairSegmentsForIncrementalRepair(
       Map<String, RingRange> nodes,
-      RepairUnit repairUnit) {
+      RepairUnit repairUnit,
+      Cluster cluster,
+      ClusterFacade clusterFacade) throws ReaperException {
+
+    Map<String, String> endpointHostIdMap = clusterFacade.getEndpointToHostId(cluster);
 
     List<RepairSegment.Builder> repairSegmentBuilders = Lists.newArrayList();
 
     nodes
         .entrySet()
-        .forEach(
-            range ->
-                repairSegmentBuilders.add(
-                    RepairSegment.builder(
-                            Segment.builder()
-                                .withTokenRanges(Arrays.asList(range.getValue()))
-                                .build(),
-                            repairUnit.getId())
-                        .withReplicas(Collections.emptyMap())
-                        .withCoordinatorHost(range.getKey())));
-
+        .forEach(range -> {
+          RepairSegment.Builder segment = RepairSegment.builder(
+                  Segment.builder()
+                      .withTokenRanges(Arrays.asList(range.getValue()))
+                      .build(),
+                  repairUnit.getId())
+              .withReplicas(Collections.emptyMap())
+              .withCoordinatorHost(range.getKey())
+              .withHostID(UUID.fromString(endpointHostIdMap.get(range.getKey())));
+          repairSegmentBuilders.add(segment);
+        });
     return repairSegmentBuilders;
   }
 

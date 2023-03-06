@@ -27,6 +27,7 @@ import io.cassandrareaper.crypto.NoopCrypotograph;
 import io.cassandrareaper.jmx.ClusterFacade;
 import io.cassandrareaper.jmx.JmxConnectionFactory;
 import io.cassandrareaper.jmx.JmxConnectionsInitializer;
+import io.cassandrareaper.metrics.PrometheusMetricsFilter;
 import io.cassandrareaper.resources.ClusterResource;
 import io.cassandrareaper.resources.CryptoResource;
 import io.cassandrareaper.resources.DiagEventSseResource;
@@ -37,6 +38,7 @@ import io.cassandrareaper.resources.ReaperHealthCheck;
 import io.cassandrareaper.resources.ReaperResource;
 import io.cassandrareaper.resources.RepairRunResource;
 import io.cassandrareaper.resources.RepairScheduleResource;
+import io.cassandrareaper.resources.RequestUtils;
 import io.cassandrareaper.resources.SnapshotResource;
 import io.cassandrareaper.resources.auth.LoginResource;
 import io.cassandrareaper.resources.auth.ShiroExceptionMapper;
@@ -86,6 +88,8 @@ import org.secnod.dropwizard.shiro.ShiroBundle;
 import org.secnod.dropwizard.shiro.ShiroConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static io.cassandrareaper.metrics.PrometheusMetricsConfiguration.getCustomSampleMethodBuilder;
 
 public final class ReaperApplication extends Application<ReaperApplicationConfiguration> {
 
@@ -155,7 +159,8 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
     checkConfiguration(config);
     context.config = config;
     context.metricRegistry = environment.metrics();
-    CollectorRegistry.defaultRegistry.register(new DropwizardExports(environment.metrics()));
+    CollectorRegistry.defaultRegistry.register(new DropwizardExports(environment.metrics(),
+        new PrometheusMetricsFilter(), getCustomSampleMethodBuilder()));
 
     environment
         .admin()
@@ -181,11 +186,12 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
         TimeUnit.SECONDS,
         maxParallelRepairs);
 
+    RequestUtils.setCorsEnabled(config.isEnableCrossOrigin());
     // Enable cross-origin requests for using external GUI applications.
     if (config.isEnableCrossOrigin() || System.getProperty("enableCrossOrigin") != null) {
       FilterRegistration.Dynamic co = environment.servlets().addFilter("crossOriginRequests", CrossOriginFilter.class);
       co.setInitParameter("allowedOrigins", "*");
-      co.setInitParameter("allowedHeaders", "X-Requested-With,Content-Type,Accept,Origin");
+      co.setInitParameter("allowedHeaders", "X-Requested-With,Content-Type,Accept,Origin,Authorization");
       co.setInitParameter("allowedMethods", "OPTIONS,GET,PUT,POST,DELETE,HEAD,PATCH");
       co.addMappingForUrlPatterns(EnumSet.allOf(DispatcherType.class), true, "/*");
     }
@@ -201,7 +207,6 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
     environment.jersey().register(pingResource);
 
     final ClusterResource addClusterResource = ClusterResource.create(context, cryptograph);
-
     environment.jersey().register(addClusterResource);
     final RepairRunResource addRepairRunResource = new RepairRunResource(context);
     environment.jersey().register(addRepairRunResource);
@@ -228,6 +233,7 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
     if (config.isAccessControlEnabled()) {
       SessionHandler sessionHandler = new SessionHandler();
       sessionHandler.setMaxInactiveInterval((int) config.getAccessControl().getSessionTimeout().getSeconds());
+      RequestUtils.setSessionTimeout(config.getAccessControl().getSessionTimeout());
       environment.getApplicationContext().setSessionHandler(sessionHandler);
       environment.servlets().setSessionHandler(sessionHandler);
       environment.jersey().register(new ShiroExceptionMapper());

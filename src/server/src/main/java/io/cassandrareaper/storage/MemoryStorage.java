@@ -27,12 +27,14 @@ import io.cassandrareaper.core.RepairUnit;
 import io.cassandrareaper.core.Snapshot;
 import io.cassandrareaper.resources.view.RepairRunStatus;
 import io.cassandrareaper.resources.view.RepairScheduleStatus;
+import io.cassandrareaper.service.RepairRunService;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
@@ -52,6 +54,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static java.lang.Math.min;
 
 /**
  * Implements the StorageAPI using transient Java classes.
@@ -191,6 +195,18 @@ public final class MemoryStorage implements IStorage {
       }
     }
     return foundRepairRuns;
+  }
+
+  @Override
+  public List<RepairRun> getRepairRunsForClusterPrioritiseRunning(String clusterName, Optional<Integer> limit) {
+    List<RepairRun> foundRepairRuns = repairRuns
+        .values()
+        .stream()
+        .filter(
+            row -> row.getClusterName().equals(clusterName.toLowerCase(Locale.ROOT))).collect(Collectors.toList()
+        );
+    RepairRunService.sortByRunState(foundRepairRuns);
+    return foundRepairRuns.subList(0, min(foundRepairRuns.size(), limit.orElse(1000)));
   }
 
   @Override

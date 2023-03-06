@@ -56,6 +56,8 @@ import org.joda.time.Seconds;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static io.cassandrareaper.metrics.MetricNameUtils.cleanHostName;
+import static io.cassandrareaper.metrics.MetricNameUtils.cleanName;
 
 final class SegmentRunner implements RepairStatusHandler, Runnable {
 
@@ -418,39 +420,30 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
   }
 
   private static String metricNameForPostpone(RepairUnit unit, RepairSegment segment) {
-    String cleanHostName = Optional.ofNullable(segment.getCoordinatorHost()).orElse("null")
-        .replace('.', 'x')
-        .replaceAll("[^A-Za-z0-9]", "");
     return MetricRegistry.name(
             SegmentRunner.class,
             "postpone",
-            cleanHostName,
-            unit.getClusterName().replaceAll("[^A-Za-z0-9]", ""),
-            unit.getKeyspaceName().replaceAll("[^A-Za-z0-9]", ""));
+            cleanHostName(segment.getCoordinatorHost()),
+            cleanName(unit.getClusterName()),
+            cleanName(unit.getKeyspaceName()));
   }
 
   private String metricNameForRepairing(RepairSegment rs) {
-    String cleanHostName = Optional.ofNullable(rs.getCoordinatorHost()).orElse("null")
-        .replace('.', 'x')
-        .replaceAll("[^A-Za-z0-9]", "");
     return MetricRegistry.name(
         SegmentRunner.class,
         "repairing",
-        cleanHostName,
-        clusterName.replaceAll("[^A-Za-z0-9]", ""),
-        repairUnit.getKeyspaceName().replaceAll("[^A-Za-z0-9]", ""));
+        cleanHostName(rs.getCoordinatorHost()),
+        cleanName(clusterName),
+        cleanName(repairUnit.getKeyspaceName()));
   }
 
   private String metricNameForRunRepair(RepairSegment rs) {
-    String cleanHostName = Optional.ofNullable(rs.getCoordinatorHost()).orElse("null")
-        .replace('.', 'x')
-        .replaceAll("[^A-Za-z0-9]", "");
     return MetricRegistry.name(
         SegmentRunner.class,
         "runRepair",
-        cleanHostName,
-        clusterName.replaceAll("[^A-Za-z0-9]", ""),
-        repairUnit.getKeyspaceName().replaceAll("[^A-Za-z0-9]", ""));
+        cleanHostName(rs.getCoordinatorHost()),
+        cleanName(clusterName),
+        cleanName(repairUnit.getKeyspaceName()));
   }
 
   /**

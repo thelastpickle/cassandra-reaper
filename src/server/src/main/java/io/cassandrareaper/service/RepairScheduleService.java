@@ -19,25 +19,34 @@ package io.cassandrareaper.service;
 
 import io.cassandrareaper.AppContext;
 import io.cassandrareaper.core.Cluster;
+import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairSchedule;
 import io.cassandrareaper.core.RepairUnit;
 
 import java.util.Collection;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.UUID;
 
+import com.codahale.metrics.Gauge;
+import com.codahale.metrics.MetricRegistry;
 import com.google.common.base.Preconditions;
 import org.apache.cassandra.repair.RepairParallelism;
 import org.joda.time.DateTime;
 
+import static io.cassandrareaper.metrics.MetricNameUtils.cleanId;
+import static io.cassandrareaper.metrics.MetricNameUtils.cleanName;
 
 public final class RepairScheduleService {
 
+  public static final String MILLIS_SINCE_LAST_REPAIR_METRIC_NAME = "millisSinceLastRepairForSchedule";
   private final AppContext context;
   private final RepairUnitService repairUnitService;
 
   private RepairScheduleService(AppContext context) {
     this.context = context;
     this.repairUnitService = RepairUnitService.create(context);
+    registerRepairScheduleMetrics(context.storage.getAllRepairSchedules());
   }
 
   public static RepairScheduleService create(AppContext context) {
@@ -117,6 +126,72 @@ public final class RepairScheduleService {
         .adaptive(adaptive)
         .percentUnrepairedThreshold(percentUnrepairedThreshold);
 
-    return context.storage.addRepairSchedule(scheduleBuilder);
+    RepairSchedule repairSchedule = context.storage.addRepairSchedule(scheduleBuilder);
+    registerScheduleMetrics(repairSchedule.getId());
+    return repairSchedule;
+  }
+
+  public void deleteRepairSchedule(UUID repairScheduleId) {
+    unregisterScheduleMetrics(repairScheduleId);
+    context.storage.deleteRepairSchedule(repairScheduleId);
+  }
+
+  private void registerRepairScheduleMetrics(Collection<RepairSchedule> allRepairSchedules) {
+    allRepairSchedules.forEach(schedule -> registerScheduleMetrics(schedule.getId()));
+  }
+
+
+  private void registerScheduleMetrics(UUID repairScheduleId) {
+    RepairSchedule schedule = context.storage.getRepairSchedule(repairScheduleId).get();
+    RepairUnit repairUnit = context.storage.getRepairUnit(schedule.getRepairUnitId());
+    String metricName = metricName(MILLIS_SINCE_LAST_REPAIR_METRIC_NAME,
+            repairUnit.getClusterName(),
+            repairUnit.getKeyspaceName(),
+            schedule.getId());
+
+    if (!context.metricRegistry.getMetrics().containsKey(metricName)) {
+      context.metricRegistry.register(metricName, getMillisSinceLastRepairForSchedule(schedule.getId()));
+    }
+  }
+
+  private void unregisterScheduleMetrics(UUID repairScheduleId) {
+    Optional<RepairSchedule> schedule = context.storage.getRepairSchedule(repairScheduleId);
+    schedule.ifPresent(sched -> {
+      RepairUnit repairUnit = context.storage.getRepairUnit(sched.getRepairUnitId());
+      String metricName = metricName(MILLIS_SINCE_LAST_REPAIR_METRIC_NAME,
+          repairUnit.getClusterName(),
+          repairUnit.getKeyspaceName(),
+          sched.getId());
+
+      if (context.metricRegistry.getMetrics().containsKey(metricName)) {
+        context.metricRegistry.remove(metricName);
+      }
+    });
+  }
+
+  private Gauge<Long> getMillisSinceLastRepairForSchedule(UUID repairSchedule) {
+    return () -> {
+      Optional<RepairSchedule> schedule = context.storage.getRepairSchedule(repairSchedule);
+
+      Optional<UUID> latestRepairUuid = Optional.ofNullable(schedule.orElseThrow(() ->
+              new IllegalArgumentException("Repair schedule not found"))
+          .getLastRun());
+
+      Long millisSinceLastRepair = latestRepairUuid.map(uuid -> context.storage.getRepairRun(uuid))
+          .filter(Optional::isPresent)
+          .map(Optional::get)
+          .map(RepairRun::getEndTime)
+          .filter(Objects::nonNull)
+          .map(dateTime -> DateTime.now().getMillis() - dateTime.getMillis())
+          .orElse(DateTime.now().getMillis()); // Return epoch if no repairs from this schedule were completed
+      return millisSinceLastRepair;
+    };
+  }
+
+  private String metricName(String metric, String clusterName, String keyspaceName, UUID scheduleId) {
+    return MetricRegistry.name(RepairScheduleService.class,
+        metric, cleanName(clusterName), cleanName(keyspaceName), cleanId(scheduleId));
+
   }
 }
+

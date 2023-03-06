@@ -17,21 +17,27 @@
 
 package io.cassandrareaper.resources.auth;
 
+import io.cassandrareaper.resources.RequestUtils;
+
 import java.util.Optional;
+
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletResponse;
 
+import com.google.common.annotations.VisibleForTesting;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.lang.Strings;
+
 import org.apache.shiro.subject.SimplePrincipalCollection;
 import org.apache.shiro.subject.Subject;
 import org.apache.shiro.web.filter.AccessControlFilter;
 import org.apache.shiro.web.subject.WebSubject;
 import org.apache.shiro.web.util.WebUtils;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,10 +45,17 @@ public final class ShiroJwtVerifyingFilter extends AccessControlFilter {
 
   private static final Logger LOG = LoggerFactory.getLogger(ShiroJwtVerifyingFilter.class);
 
-  public ShiroJwtVerifyingFilter() {}
+  @VisibleForTesting
+  boolean isCorsEnabled() {
+    return RequestUtils.isCorsEnabled();
+  }
 
   @Override
   protected boolean isAccessAllowed(ServletRequest req, ServletResponse res, Object mappedValue) throws Exception {
+    if (isCorsEnabled() && RequestUtils.isOptionsRequest(req)) {
+      return true;
+    }
+
     Subject nonJwt = getSubject(req, res);
 
     return null != nonJwt.getPrincipal() && (nonJwt.isRemembered() || nonJwt.isAuthenticated())

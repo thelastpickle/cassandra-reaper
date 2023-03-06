@@ -71,6 +71,8 @@ public interface IStorage extends Managed {
   /** return all the repair runs in a cluster, in reverse chronological order, with default limit is 1000 */
   Collection<RepairRun> getRepairRunsForCluster(String clusterName, Optional<Integer> limit);
 
+  Collection<RepairRun> getRepairRunsForClusterPrioritiseRunning(String clusterName, Optional<Integer> limit);
+
   Collection<RepairRun> getRepairRunsForUnit(UUID repairUnitId);
 
   Collection<RepairRun> getRepairRunsWithState(RepairRun.RunState runState);
@@ -99,8 +101,6 @@ public interface IStorage extends Managed {
 
   /**
    * @param runId the run id that the segment belongs to.
-   * @param range a ring range. The start of the range may be greater than or equal to the end. This case has to be
-   *      handled. When start = end, consider that as a range that covers the whole ring.
    * @return a segment enclosed by the range with state NOT_STARTED, or nothing.
    */
   List<RepairSegment> getNextFreeSegments(UUID runId);

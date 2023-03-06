@@ -34,6 +34,7 @@ import java.util.TimerTask;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
+import com.datastax.driver.core.exceptions.DriverException;
 import com.datastax.driver.core.exceptions.DriverInternalError;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Supplier;
@@ -105,8 +106,11 @@ public final class SchedulingManager extends TimerTask {
       LOG.debug("Checking for repair schedules...");
       UUID lastId = null;
       try {
+        Collection<RepairSchedule> schedules = context.storage.getAllRepairSchedules();
+        // Cleanup metric registry from deleted schedules
+        cleanupMetricsRegistry(schedules);
+        // Start repairs for schedules that require it
         if (currentReaperIsSchedulingLeader()) {
-          Collection<RepairSchedule> schedules = context.storage.getAllRepairSchedules();
           boolean anyRunStarted = false;
           for (RepairSchedule schedule : schedules) {
             lastId = schedule.getId();
@@ -121,9 +125,14 @@ public final class SchedulingManager extends TimerTask {
         }
       } catch (DriverInternalError expected) {
         LOG.debug("Driver connection closed, Reaper is shutting down.");
+      } catch (DriverException e) {
+        LOG.error("Error while scheduling repairs due to a connection problem with the database", e);
       } catch (Throwable ex) {
-        LOG.error("failed managing schedule for run with id: {}", lastId);
-        LOG.error("catch exception", ex);
+        if (lastId == null) {
+          LOG.error("Failed managing repair schedules", ex);
+        } else {
+          LOG.error("Failed managing repair schedule with id '{}'", lastId, ex);
+        }
         try {
           assert false : "if assertions are enabled then exit the jvm";
         } catch (AssertionError ae) {
@@ -136,10 +145,23 @@ public final class SchedulingManager extends TimerTask {
     }
   }
 
+  // Cleanup metric registry from deleted schedules
+  // Such metrics are named after the following pattern:
+  //   "millisSinceLastRepairForSchedule.<cluster>.<keyspace>.<schedule id>"
+  @VisibleForTesting
+  void cleanupMetricsRegistry(Collection<RepairSchedule> schedules) {
+    // Cycle through the metrics registry and delete any metrics that are not in the current schedules
+    context.metricRegistry.getMetrics().keySet().stream()
+        .filter(key -> key.startsWith(RepairScheduleService.MILLIS_SINCE_LAST_REPAIR_METRIC_NAME))
+        .filter(key -> !schedules.stream().anyMatch(
+            schedule -> schedule.getId().toString().equals(key.split("\\.")[3])))
+        .forEach(context.metricRegistry::remove);
+  }
+
   /**
    * Manage, i.e. check whether a new repair run should be started with this schedule.
    *
-   * @param schedule The schedule to be checked for activation.
+   * @param schdle The schedule to be checked for activation.
    * @return boolean indicating whether a new RepairRun instance was created and started.
    */
   @VisibleForTesting
@@ -181,15 +203,8 @@ public final class SchedulingManager extends TimerTask {
 
           try {
             RepairRun newRepairRun = createNewRunForUnit(schedule, unit);
-
-            boolean result
-                = context.storage.updateRepairSchedule(
-                    schedule.with().lastRun(newRepairRun.getId()).build(schedule.getId()));
-
-            if (result) {
-              context.repairManager.startRepairRun(newRepairRun);
-              return true;
-            }
+            context.repairManager.startRepairRun(newRepairRun);
+            return true;
           } catch (ReaperException e) {
             LOG.error(e.getMessage(), e);
           }
@@ -260,6 +275,12 @@ public final class SchedulingManager extends TimerTask {
     if (context.isDistributed.get()) {
       List<UUID> runningReapers = ((IDistributedStorage) context.storage).getRunningReapers();
       Collections.sort(runningReapers);
+      if (runningReapers.isEmpty()) {
+        // this should never happen, but if it does, we don't want to start a repair run
+        LOG.warn("No running reapers found but running in distributed mode."
+            + " No scheduling leader can be elected and no scheduled run will start.");
+        return false;
+      }
       return context.reaperInstanceId.equals(runningReapers.get(0));
     }
 
@@ -286,5 +307,15 @@ public final class SchedulingManager extends TimerTask {
       }
     }
     return true;
+  }
+
+  public void maybeRegisterRepairRunCompleted(RepairRun repairRun) {
+    Collection<RepairSchedule> repairSchedulesForCluster = context.storage
+        .getRepairSchedulesForCluster(repairRun.getClusterName());
+
+    repairSchedulesForCluster.stream().filter(schedule -> repairRunComesFromSchedule(repairRun, schedule))
+        .findFirst()
+        .ifPresent(schedule -> context.storage.updateRepairSchedule(
+            schedule.with().lastRun(repairRun.getId()).build(schedule.getId())));
   }
 }

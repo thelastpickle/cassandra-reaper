@@ -69,10 +69,14 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.util.concurrent.ExecutionError;
 import org.apache.commons.lang3.tuple.Pair;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static io.cassandrareaper.jmx.MetricsProxy.convertToGenericMetrics;
+import static io.cassandrareaper.jmx.MetricsProxy.updateGenericMetricAttribute;
 
 
 public final class ClusterFacade {
@@ -201,7 +205,6 @@ public final class ClusterFacade {
    * In SIDECAR : Enforce connecting to the local node to get the information
    *
    * @param cluster the cluster to connect to
-   * @param endpoints the list of endpoints to connect to
    * @return a NodeStatus object with all nodes state
    * @throws ReaperException any runtime exception we catch
    */
@@ -266,7 +269,7 @@ public final class ClusterFacade {
    * local node to get the information
    *
    * @param cluster the cluster to connect to
-   * @param keyspaceName the ks to get a map of token ranges for
+   * @param keyspace the ks to get a map of token ranges for
    * @return a map of token ranges with endpoints as items
    * @throws ReaperException any runtime exception we catch
    */
@@ -280,6 +283,12 @@ public final class ClusterFacade {
           () -> getRangeToEndpointMapImpl(cluster, keyspace));
     } catch (ExecutionException ex) {
       throw new ReaperException(ex);
+    } catch (ExecutionError ex) {
+      if ((ex.getCause() instanceof AssertionError)) {
+        throw new ReaperException(String.valueOf(ex));
+      } else {
+        throw ex;
+      }
     }
   }
 
@@ -533,7 +542,6 @@ public final class ClusterFacade {
    * Collect ClientRequest metrics through JMX on a specific node.
    *
    * @param node the node to collect metrics on
-   * @param collectedMetrics the list of metrics to collect
    * @return the list of collected metrics
    * @throws ReaperException any runtime exception we catch in the process
    */
@@ -543,7 +551,7 @@ public final class ClusterFacade {
       if (nodeIsAccessibleThroughJmx(nodeDc, node.getHostname())) {
         MetricsProxy metricsProxy = MetricsProxy.create(connect(node));
         return convertToMetricsHistogram(
-            MetricsProxy.convertToGenericMetrics(metricsProxy.collectLatencyMetrics(), node));
+            convertToGenericMetrics(metricsProxy.collectLatencyMetrics(), node));
       } else {
         // We look for metrics in the last two time based partitions to make sure we get a result
         return convertToMetricsHistogram(((IDistributedStorage)context.storage)
@@ -572,7 +580,7 @@ public final class ClusterFacade {
       String nodeDc = getDatacenter(node.getCluster().get(), node.getHostname());
       if (nodeIsAccessibleThroughJmx(nodeDc, node.getHostname())) {
         MetricsProxy proxy = MetricsProxy.create(connect(node));
-        return convertToDroppedMessages(MetricsProxy.convertToGenericMetrics(proxy.collectDroppedMessages(), node));
+        return convertToDroppedMessages(convertToGenericMetrics(proxy.collectDroppedMessages(), node));
       } else {
         return convertToDroppedMessages(((IDistributedStorage)context.storage)
             .getMetrics(
@@ -596,7 +604,7 @@ public final class ClusterFacade {
     for (Entry<String, List<GenericMetric>> pool : metricsByScope.entrySet()) {
       DroppedMessages.Builder builder = DroppedMessages.builder().withName(pool.getKey());
       for (GenericMetric stat : pool.getValue()) {
-        builder = MetricsProxy.updateGenericMetricAttribute(stat, builder);
+        builder = updateGenericMetricAttribute(stat, builder);
       }
       droppedMessages.add(builder.build());
     }
@@ -615,7 +623,7 @@ public final class ClusterFacade {
       String nodeDc = getDatacenter(node.getCluster().get(), node.getHostname());
       if (nodeIsAccessibleThroughJmx(nodeDc, node.getHostname())) {
         MetricsProxy proxy = MetricsProxy.create(connect(node));
-        return convertToThreadPoolStats(MetricsProxy.convertToGenericMetrics(proxy.collectTpStats(), node));
+        return convertToThreadPoolStats(convertToGenericMetrics(proxy.collectTpStats(), node));
       } else {
         return convertToThreadPoolStats(((IDistributedStorage)context.storage)
             .getMetrics(
@@ -639,7 +647,7 @@ public final class ClusterFacade {
     for (Entry<String, List<GenericMetric>> pool : metricsByScope.entrySet()) {
       ThreadPoolStat.Builder builder = ThreadPoolStat.builder().withName(pool.getKey());
       for (GenericMetric stat : pool.getValue()) {
-        builder = MetricsProxy.updateGenericMetricAttribute(stat, builder);
+        builder = updateGenericMetricAttribute(stat, builder);
       }
       tpstats.add(builder.build());
     }
@@ -666,7 +674,7 @@ public final class ClusterFacade {
                 .withName(metricByScope.getKey())
                 .withType(metricByName.getKey());
         for (GenericMetric stat : metricByName.getValue()) {
-          builder = MetricsProxy.updateGenericMetricAttribute(stat, builder);
+          builder = updateGenericMetricAttribute(stat, builder);
         }
         histograms.add(builder.build());
       }
@@ -860,7 +868,6 @@ public final class ClusterFacade {
    * In SIDECAR : We skip that code path as we don’t need to pre-heat connections
    *
    * @param cluster the cluster to connect to
-   * @param endpoints the list of endpoints to connect to
    * @return a JmxProxy object
    * @throws ReaperException any runtime exception we catch
    */

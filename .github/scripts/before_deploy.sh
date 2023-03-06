@@ -30,8 +30,8 @@ then
     sudo gem install --no-document fpm
     cd src/packaging
     make all
-    sudo mv reaper_*_amd64.deb ../packages/
-    sudo mv reaper-*.x86_64.rpm ../packages/
+    sudo mv reaper_*_*.deb ../packages/
+    sudo mv reaper-*.*.rpm ../packages/
     cd ../..
     tar czf cassandra-reaper-${VERSION}.tar.gz cassandra-reaper-master/
     sudo mv cassandra-reaper-${VERSION}.tar.gz src/packages/
@@ -54,8 +54,8 @@ then
     sudo gem install --no-document fpm
     cd src/packaging
     make all
-    sudo mv reaper_*_amd64.deb ../packages/
-    sudo mv reaper-*.x86_64.rpm ../packages/
+    sudo mv reaper_*_*.deb ../packages/
+    sudo mv reaper-*.*.rpm ../packages/
     cd ../..
     tar czf cassandra-reaper-${VERSION}-release.tar.gz cassandra-reaper-${VERSION}/
     sudo mv cassandra-reaper-${VERSION}-release.tar.gz src/packages/

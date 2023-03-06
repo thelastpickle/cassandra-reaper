@@ -22,10 +22,12 @@ import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.JmxCredentials;
 import io.cassandrareaper.core.RepairRun;
+import io.cassandrareaper.core.RepairSchedule;
 import io.cassandrareaper.crypto.Cryptograph;
 import io.cassandrareaper.jmx.ClusterFacade;
 import io.cassandrareaper.resources.view.ClusterStatus;
 import io.cassandrareaper.service.ClusterRepairScheduler;
+import io.cassandrareaper.service.RepairScheduleService;
 
 import java.net.URI;
 import java.time.LocalDate;
@@ -71,12 +73,14 @@ public final class ClusterResource {
   private final ClusterRepairScheduler clusterRepairScheduler;
   private final ClusterFacade clusterFacade;
   private final Cryptograph cryptograph;
+  private final RepairScheduleService repairScheduleService;
 
   private ClusterResource(AppContext context, Cryptograph cryptograph, Supplier<ClusterFacade> clusterFacadeSupplier) {
     this.context = context;
     this.clusterRepairScheduler = new ClusterRepairScheduler(context);
     this.clusterFacade = clusterFacadeSupplier.get();
     this.cryptograph = cryptograph;
+    this.repairScheduleService = RepairScheduleService.create(context);
   }
 
   @VisibleForTesting
@@ -384,8 +388,9 @@ public final class ClusterResource {
 
     LOG.info("delete cluster {}", clusterName);
     try {
+      Collection<RepairSchedule> repairSchedulesForCluster = context.storage.getRepairSchedulesForCluster(clusterName);
       if (!force.orElse(Boolean.FALSE)) {
-        if (!context.storage.getRepairSchedulesForCluster(clusterName).isEmpty()) {
+        if (!repairSchedulesForCluster.isEmpty()) {
           return Response.status(Response.Status.CONFLICT)
               .entity("cluster \"" + clusterName + "\" cannot be deleted, as it has repair schedules")
               .build();
@@ -410,6 +415,9 @@ public final class ClusterResource {
             .build();
       }
 
+      // delete existing repair schedules to properly unregister metrics associated with the schedules
+      repairSchedulesForCluster
+          .forEach(repairSchedule -> repairScheduleService.deleteRepairSchedule(repairSchedule.getId()));
       context.storage.deleteCluster(clusterName);
       return Response.accepted().build();
     } catch (IllegalArgumentException ex) {
