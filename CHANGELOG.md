@@ -1,5 +1,17 @@
 ## Change Log
 
+### 3.3.0 (2023/03/29 10:05 +00:00)
+- [#1262](https://github.com/thelastpickle/cassandra-reaper/pull/1262) Improve status reporting in UI (#1262) (@Miles-Garnsey)
+- [#1277](https://github.com/thelastpickle/cassandra-reaper/pull/1277) Fixes the release process as we're now building packages for no specific target architecture (#1277) (@adejanovski)
+- [#1255](https://github.com/thelastpickle/cassandra-reaper/pull/1255) Fix mapping of repairProgress metrics (#1255) (@max-melentyev)
+- [#1270](https://github.com/thelastpickle/cassandra-reaper/pull/1270) Fix running concurrent repairs on different clusters (#1270) (@max-melentyev)
+- [#1273](https://github.com/thelastpickle/cassandra-reaper/pull/1273) Changes Exception to a Reaper Exception (#1273) (@xgerman)
+- [#1274](https://github.com/thelastpickle/cassandra-reaper/pull/1274) Fix docker-build (#1274) (@max-melentyev)
+- [#1256](https://github.com/thelastpickle/cassandra-reaper/pull/1256) Add composite actions (#1256) (@taku333)
+- [#1254](https://github.com/thelastpickle/cassandra-reaper/pull/1254) Properly expire shiro sessions after timeout (#1254) (@adejanovski)
+- [4e53064](https://github.com/thelastpickle/cassandra-reaper/commit/4e5306470421e1cb312d929839058f1e6fce5034) Ninja fix missing license header (@adejanovski)
+- [#1244](https://github.com/thelastpickle/cassandra-reaper/pull/1244) Allow for OPTIONS requests to be passed through auth filters (#1244) (@jdonenine)
+
 ### 3.2.1 (2022/11/16 13:52 +00:00)
 - [#1235](https://github.com/thelastpickle/cassandra-reaper/pull/1235) Topology change resilience for incremental repair (#1235) (@Miles-Garnsey)
 - [#1237](https://github.com/thelastpickle/cassandra-reaper/pull/1237) Update Apache Shiro to v1.10.0 (#1237) (@emerkle826)
