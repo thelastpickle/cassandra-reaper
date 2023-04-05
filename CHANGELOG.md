@@ -1,5 +1,8 @@
 ## Change Log
 
+### 3.3.1 (2023/04/05 08:43 +00:00)
+- [2b22d4b](https://github.com/thelastpickle/cassandra-reaper/commit/2b22d4b2811a000048a445719c31f68290ef68ff) Revert change in shiro.ini that would break UI auth (@adejanovski)
+
 ### 3.3.0 (2023/03/29 10:05 +00:00)
 - [#1262](https://github.com/thelastpickle/cassandra-reaper/pull/1262) Improve status reporting in UI (#1262) (@Miles-Garnsey)
 - [#1277](https://github.com/thelastpickle/cassandra-reaper/pull/1277) Fixes the release process as we're now building packages for no specific target architecture (#1277) (@adejanovski)
