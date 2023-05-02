@@ -38,11 +38,11 @@ import io.cassandrareaper.core.Snapshot;
 import io.cassandrareaper.resources.view.RepairRunStatus;
 import io.cassandrareaper.resources.view.RepairScheduleStatus;
 import io.cassandrareaper.service.RingRange;
-import io.cassandrareaper.storage.cassandra.DateTimeCodec;
-import io.cassandrareaper.storage.cassandra.Migration016;
-import io.cassandrareaper.storage.cassandra.Migration021;
-import io.cassandrareaper.storage.cassandra.Migration024;
-import io.cassandrareaper.storage.cassandra.Migration025;
+import io.cassandrareaper.storage.cassandra.codecs.DateTimeCodec;
+import io.cassandrareaper.storage.cassandra.migrations.Migration016;
+import io.cassandrareaper.storage.cassandra.migrations.Migration021;
+import io.cassandrareaper.storage.cassandra.migrations.Migration024;
+import io.cassandrareaper.storage.cassandra.migrations.Migration025;
 
 import java.io.IOException;
 import java.math.BigInteger;

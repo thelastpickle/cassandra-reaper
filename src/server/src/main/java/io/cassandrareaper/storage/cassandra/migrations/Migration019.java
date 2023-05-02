@@ -15,13 +15,13 @@
  * limitations under the License.
  */
 
-package io.cassandrareaper.storage.cassandra;
+package io.cassandrareaper.storage.cassandra.migrations;
 
 import com.datastax.driver.core.Session;
 
-public final class Migration018 {
+public final class Migration019 {
 
-  private Migration018() {
+  private Migration019() {
   }
 
   /**

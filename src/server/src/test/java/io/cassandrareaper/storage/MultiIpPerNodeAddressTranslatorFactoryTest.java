@@ -17,9 +17,9 @@
 
 package io.cassandrareaper.storage;
 
-import io.cassandrareaper.storage.cassandra.MultiIpPerNodeAddressTranslator;
-import io.cassandrareaper.storage.cassandra.MultiIpPerNodeAddressTranslatorFactory;
-import io.cassandrareaper.storage.cassandra.MultiIpPerNodeAddressTranslatorFactory.AddressTranslation;
+import io.cassandrareaper.storage.cassandra.network.MultiIpPerNodeAddressTranslator;
+import io.cassandrareaper.storage.cassandra.network.MultiIpPerNodeAddressTranslatorFactory;
+import io.cassandrareaper.storage.cassandra.network.MultiIpPerNodeAddressTranslatorFactory.AddressTranslation;
 
 import java.net.InetSocketAddress;
 import java.util.ArrayList;

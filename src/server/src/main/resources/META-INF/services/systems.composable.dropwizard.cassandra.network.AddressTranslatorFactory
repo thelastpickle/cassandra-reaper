@@ -1,2 +1,2 @@
-io.cassandrareaper.storage.cassandra.MultiIpPerNodeAddressTranslatorFactory
+io.cassandrareaper.storage.cassandra.network.MultiIpPerNodeAddressTranslatorFactory
 systems.composable.dropwizard.cassandra.network.EC2MultiRegionAddressTranslatorFactory

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package io.cassandrareaper.storage.cassandra;
+package io.cassandrareaper.storage.cassandra.network;
 
 import java.net.InetSocketAddress;
 import java.util.HashMap;
