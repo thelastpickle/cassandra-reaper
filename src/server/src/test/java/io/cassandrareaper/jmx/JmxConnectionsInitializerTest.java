@@ -24,7 +24,7 @@ import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.Node;
 import io.cassandrareaper.crypto.Cryptograph;
-import io.cassandrareaper.storage.CassandraStorage;
+import io.cassandrareaper.storage.cassandra.CassandraStorage;
 
 import java.net.UnknownHostException;
 import java.util.concurrent.atomic.AtomicInteger;

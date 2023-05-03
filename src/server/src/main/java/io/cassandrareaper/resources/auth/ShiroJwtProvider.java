@@ -19,13 +19,12 @@ package io.cassandrareaper.resources.auth;
 
 import io.cassandrareaper.AppContext;
 import io.cassandrareaper.resources.RequestUtils;
-import io.cassandrareaper.storage.CassandraStorage;
+import io.cassandrareaper.storage.cassandra.CassandraStorage;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.util.Base64;
-
 import javax.crypto.spec.SecretKeySpec;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.GET;

@@ -25,8 +25,8 @@ import io.cassandrareaper.core.Cluster.State;
 import io.cassandrareaper.crypto.NoopCrypotograph;
 import io.cassandrareaper.jmx.JmxConnectionFactory;
 import io.cassandrareaper.jmx.JmxProxy;
-import io.cassandrareaper.storage.CassandraStorage;
 import io.cassandrareaper.storage.MemoryStorage;
+import io.cassandrareaper.storage.cassandra.CassandraStorage;
 
 import java.util.Arrays;
 import java.util.Collection;

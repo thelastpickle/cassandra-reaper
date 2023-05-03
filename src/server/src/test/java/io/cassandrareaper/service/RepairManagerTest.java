@@ -26,9 +26,9 @@ import io.cassandrareaper.core.RepairSegment;
 import io.cassandrareaper.core.RepairUnit;
 import io.cassandrareaper.core.Segment;
 import io.cassandrareaper.jmx.ClusterFacade;
-import io.cassandrareaper.storage.CassandraStorage;
 import io.cassandrareaper.storage.IDistributedStorage;
 import io.cassandrareaper.storage.IStorage;
+import io.cassandrareaper.storage.cassandra.CassandraStorage;
 
 import java.util.Arrays;
 import java.util.Collection;

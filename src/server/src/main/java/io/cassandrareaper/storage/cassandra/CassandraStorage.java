@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package io.cassandrareaper.storage;
+package io.cassandrareaper.storage.cassandra;
 
 import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperApplicationConfiguration;
@@ -38,6 +38,10 @@ import io.cassandrareaper.core.Snapshot;
 import io.cassandrareaper.resources.view.RepairRunStatus;
 import io.cassandrareaper.resources.view.RepairScheduleStatus;
 import io.cassandrareaper.service.RingRange;
+import io.cassandrareaper.storage.IDistributedStorage;
+import io.cassandrareaper.storage.IStorage;
+import io.cassandrareaper.storage.JsonParseUtils;
+import io.cassandrareaper.storage.OpType;
 import io.cassandrareaper.storage.cassandra.codecs.DateTimeCodec;
 import io.cassandrareaper.storage.cassandra.migrations.Migration016;
 import io.cassandrareaper.storage.cassandra.migrations.Migration021;
@@ -65,7 +69,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
-
 import javax.annotation.Nullable;
 
 import com.datastax.driver.core.BatchStatement;
