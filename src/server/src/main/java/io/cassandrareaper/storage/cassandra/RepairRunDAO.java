@@ -135,7 +135,7 @@ public class RepairRunDAO {
 
       if (isIncremental) {
         repairRunBatch.add(
-            cassandraStorage.insertRepairSegmentIncrementalPrepStmt.bind(
+            cassandraStorage.repairSegmentDAO.insertRepairSegmentIncrementalPrepStmt.bind(
                 segment.getRunId(),
                 segment.getId(),
                 segment.getRepairUnitId(),
@@ -151,7 +151,7 @@ public class RepairRunDAO {
       } else {
         try {
           repairRunBatch.add(
-              cassandraStorage.insertRepairSegmentPrepStmt.bind(
+              cassandraStorage.repairSegmentDAO.insertRepairSegmentPrepStmt.bind(
                   segment.getRunId(),
                   segment.getId(),
                   segment.getRepairUnitId(),
