@@ -51,7 +51,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class RepairRunDao {
-  private static final Logger LOG = LoggerFactory.getLogger(CassandraStorage.class);
+  private static final Logger LOG = LoggerFactory.getLogger(RepairRunDao.class);
   private static final int MAX_RETURNED_REPAIR_RUNS = 1000;
   PreparedStatement insertRepairRunPrepStmt;
   PreparedStatement insertRepairRunNoStatePrepStmt;
@@ -66,11 +66,14 @@ public class RepairRunDao {
   PreparedStatement deleteRepairRunByClusterByIdPrepStmt;
   PreparedStatement deleteRepairRunByUnitPrepStmt;
   private final CassandraStorage cassandraStorage;
+
+  private final RepairSegmentDao repairSegmentDao;
   private final Session session;
 
-  public RepairRunDao(CassandraStorage cassandraStorage, Session session ) {
+  public RepairRunDao(CassandraStorage cassandraStorage, Session session, RepairSegmentDao repairSegmentDao ) {
     this.cassandraStorage = cassandraStorage;
     this.session = session;
+    this.repairSegmentDao = repairSegmentDao;
   }
 
   private void prepareStatements() {
@@ -153,7 +156,7 @@ public class RepairRunDao {
 
       if (isIncremental) {
         repairRunBatch.add(
-            cassandraStorage.repairSegmentDao.insertRepairSegmentIncrementalPrepStmt.bind(
+            repairSegmentDao.insertRepairSegmentIncrementalPrepStmt.bind(
                 segment.getRunId(),
                 segment.getId(),
                 segment.getRepairUnitId(),
@@ -169,7 +172,7 @@ public class RepairRunDao {
       } else {
         try {
           repairRunBatch.add(
-              cassandraStorage.repairSegmentDao.insertRepairSegmentPrepStmt.bind(
+              repairSegmentDao.insertRepairSegmentPrepStmt.bind(
                   segment.getRunId(),
                   segment.getId(),
                   segment.getRepairUnitId(),
@@ -312,7 +315,7 @@ public class RepairRunDao {
     List<ResultSetFuture> repairRunFutures = Lists.<ResultSetFuture>newArrayList();
 
     // Grab all ids for the given cluster name
-    Collection<UUID> repairRunIds = cassandraStorage.getRepairRunIdsForCluster(clusterName, limit);
+    Collection<UUID> repairRunIds = getRepairRunIdsForCluster(clusterName, limit);
     // Grab repair runs asynchronously for all the ids returned by the index table
     for (UUID repairRunId : repairRunIds) {
       repairRunFutures.add(this.session.executeAsync(getRepairRunPrepStmt.bind(repairRunId)));
@@ -458,7 +461,7 @@ public class RepairRunDao {
 
 
   public Optional<RepairRun> deleteRepairRun(UUID id) {
-    Optional<RepairRun> repairRun = cassandraStorage.getRepairRun(id);
+    Optional<RepairRun> repairRun = getRepairRun(id);
     if (repairRun.isPresent()) {
       this.session.execute(deleteRepairRunByUnitPrepStmt.bind(id, repairRun.get().getRepairUnitId()));
       this.session.execute(deleteRepairRunByClusterByIdPrepStmt.bind(id, repairRun.get().getClusterName()));

@@ -130,7 +130,7 @@ public class RepairSegmentDao {
           .getLong(0);
     } else {
       // legacy mode for Cassandra-2 backends
-      return cassandraStorage.getSegmentsWithState(runId, state).size();
+      return getSegmentsWithState(runId, state).size();
     }
   }
 
@@ -141,7 +141,7 @@ public class RepairSegmentDao {
         && cassandraStorage.getRepairUnit(segment.getRepairUnitId()).getIncrementalRepair())
         : "non-leader trying to update repair segment " + segment.getId() + " of run " + segment.getRunId();
 
-    return cassandraStorage.updateRepairSegmentUnsafe(segment);
+    return updateRepairSegmentUnsafe(segment);
   }
 
   public boolean updateRepairSegmentUnsafe(RepairSegment segment) {
@@ -223,7 +223,7 @@ public class RepairSegmentDao {
       UUID runId,
       List<RingRange> ranges) {
     List<RepairSegment> segments
-        = Lists.<RepairSegment>newArrayList(cassandraStorage.getRepairSegmentsForRun(runId));
+        = Lists.<RepairSegment>newArrayList(getRepairSegmentsForRun(runId));
     Collections.shuffle(segments);
     Set<String> lockedNodes = cassandraStorage.getLockedNodesForRun(runId);
     List<RepairSegment> candidates = segments.stream()
