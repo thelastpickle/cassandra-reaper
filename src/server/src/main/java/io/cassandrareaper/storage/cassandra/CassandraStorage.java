@@ -88,9 +88,6 @@ import com.datastax.driver.core.policies.RetryPolicy;
 import com.datastax.driver.core.utils.UUIDs;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Preconditions;
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -118,19 +115,19 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   /* Simple stmts */
   private static final String SELECT_CLUSTER = "SELECT * FROM cluster";
   private static final String SELECT_REPAIR_SCHEDULE = "SELECT * FROM repair_schedule_v1";
-  private static final String SELECT_REPAIR_UNIT = "SELECT * FROM repair_unit_v1";
+  static final String SELECT_REPAIR_UNIT = "SELECT * FROM repair_unit_v1";
   private static final String SELECT_LEADERS = "SELECT * FROM leader";
   private static final String SELECT_RUNNING_REAPERS = "SELECT reaper_instance_id FROM running_reapers";
   private static final DateTimeFormatter TIME_BUCKET_FORMATTER = DateTimeFormat.forPattern("yyyyMMddHHmm");
   private static final Logger LOG = LoggerFactory.getLogger(CassandraStorage.class);
   private static final AtomicBoolean UNINITIALISED = new AtomicBoolean(true);
   public final RepairSegmentDao repairSegmentDao;
+  public final int defaultTimeout;
   private final com.datastax.driver.core.Cluster cassandra;
   private final Session session;
   private final ObjectMapper objectMapper = new ObjectMapper();
   private final VersionNumber version;
   private final UUID reaperInstanceId;
-  private final int defaultTimeout;
   private final AtomicReference<Collection<Cluster>> clustersCache = new AtomicReference(Collections.EMPTY_SET);
   private final AtomicLong clustersCacheAge = new AtomicLong(0);
   private final RepairRunDao repairRunDao;
@@ -138,16 +135,6 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   private PreparedStatement insertClusterPrepStmt;
   private PreparedStatement getClusterPrepStmt;
   private PreparedStatement deleteClusterPrepStmt;
-  private PreparedStatement insertRepairUnitPrepStmt;
-  private PreparedStatement getRepairUnitPrepStmt;
-  private final LoadingCache<UUID, RepairUnit> repairUnits = CacheBuilder.newBuilder()
-      .build(new CacheLoader<UUID, RepairUnit>() {
-        @Override
-        public RepairUnit load(UUID repairUnitId) throws Exception {
-          return getRepairUnitImpl(repairUnitId);
-        }
-      });
-  private PreparedStatement deleteRepairUnitPrepStmt;
   private PreparedStatement insertRepairSchedulePrepStmt;
   private PreparedStatement getRepairSchedulePrepStmt;
   private PreparedStatement getRepairScheduleByClusterAndKsPrepStmt;
@@ -179,6 +166,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   private PreparedStatement getRunningRepairsPrepStmt;
   private PreparedStatement storePercentRepairedForSchedulePrepStmt;
   private PreparedStatement getPercentRepairedForSchedulePrepStmt;
+  private final RepairUnitDao repairUnitDao;
 
   public CassandraStorage(
       UUID reaperInstanceId,
@@ -207,8 +195,10 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
     CodecRegistry codecRegistry = cassandra.getConfiguration().getCodecRegistry();
     codecRegistry.register(new DateTimeCodec());
     session = cassandra.connect(config.getCassandraFactory().getKeyspace());
-    this.repairRunDao =  new RepairRunDao(this, session);
+
     this.repairSegmentDao = new RepairSegmentDao(this, session);
+    this.repairRunDao =  new RepairRunDao(this, session, this.repairSegmentDao);
+    this.repairUnitDao  = new RepairUnitDao(this, session);
 
     version = cassandra.getMetadata().getAllHosts()
         .stream()
@@ -430,51 +420,17 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
         .setRetryPolicy(DowngradingConsistencyRetryPolicy.INSTANCE);
     deleteClusterPrepStmt = session.prepare("DELETE FROM cluster WHERE name = ?");
 
-    insertRepairUnitPrepStmt = session
+    repairUnitDao.insertRepairUnitPrepStmt = session
         .prepare(
             "INSERT INTO repair_unit_v1(id, cluster_name, keyspace_name, column_families, "
                 + "incremental_repair, nodes, \"datacenters\", blacklisted_tables, repair_thread_count, timeout) "
                 + "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
         .setConsistencyLevel(ConsistencyLevel.QUORUM);
-    getRepairUnitPrepStmt = session
+    repairUnitDao.getRepairUnitPrepStmt = session
         .prepare("SELECT * FROM repair_unit_v1 WHERE id = ?")
         .setConsistencyLevel(ConsistencyLevel.QUORUM);
-    deleteRepairUnitPrepStmt = session.prepare("DELETE FROM repair_unit_v1 WHERE id = ?");
-    repairSegmentDao.insertRepairSegmentPrepStmt = session
-        .prepare(
-            "INSERT INTO repair_run"
-                + "(id,segment_id,repair_unit_id,start_token,end_token,"
-                + " segment_state,fail_count, token_ranges, replicas,host_id)"
-                + " VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
-        .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM);
-    repairSegmentDao.insertRepairSegmentIncrementalPrepStmt = session
-        .prepare(
-            "INSERT INTO repair_run"
-                + "(id,segment_id,repair_unit_id,start_token,end_token,"
-                + "segment_state,coordinator_host,fail_count,replicas,host_id)"
-                + " VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
-        .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM);
-    repairSegmentDao.updateRepairSegmentPrepStmt = session
-        .prepare(
-            "INSERT INTO repair_run"
-                + "(id,segment_id,segment_state,coordinator_host,segment_start_time,fail_count,host_id)"
-                + " VALUES(?, ?, ?, ?, ?, ?, ?)")
-        .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM);
-    repairSegmentDao.insertRepairSegmentEndTimePrepStmt = session
-        .prepare("INSERT INTO repair_run(id, segment_id, segment_end_time) VALUES(?, ?, ?)")
-        .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM);
-    repairSegmentDao.getRepairSegmentPrepStmt = session
-        .prepare(
-            "SELECT id,repair_unit_id,segment_id,start_token,end_token,segment_state,coordinator_host,"
-                + "segment_start_time,segment_end_time,fail_count, token_ranges, replicas, host_id"
-                + " FROM repair_run WHERE id = ? and segment_id = ?")
-        .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM);
-    repairSegmentDao.getRepairSegmentsByRunIdPrepStmt = session.prepare(
-        "SELECT id,repair_unit_id,segment_id,start_token,end_token,segment_state,coordinator_host,segment_start_time,"
-            + "segment_end_time,fail_count, token_ranges, replicas, host_id FROM repair_run WHERE id = ?");
-    repairSegmentDao.getRepairSegmentCountByRunIdPrepStmt = session.prepare(
-        "SELECT count(*) FROM repair_run WHERE id = ?"
-    );
+    repairUnitDao.deleteRepairUnitPrepStmt = session.prepare("DELETE FROM repair_unit_v1 WHERE id = ?");
+
     prepareScheduleStatements();
     prepareLeaderElectionStatements(timeUdf);
     getRunningReapersCountPrepStmt = session.prepare(SELECT_RUNNING_REAPERS);
@@ -763,7 +719,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
     for (Row row : results) {
       if (row.getString("cluster_name").equals(clusterName)) {
         UUID id = row.getUUID("id");
-        session.executeAsync(deleteRepairUnitPrepStmt.bind(id));
+        session.executeAsync(repairUnitDao.deleteRepairUnitPrepStmt.bind(id));
       }
     }
     Cluster cluster = getCluster(clusterName);
@@ -865,80 +821,29 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
 
   @Override
   public RepairUnit addRepairUnit(RepairUnit.Builder newRepairUnit) {
-    RepairUnit repairUnit = newRepairUnit.build(UUIDs.timeBased());
-    updateRepairUnit(repairUnit);
 
-    repairUnits.put(repairUnit.getId(), repairUnit);
-    return repairUnit;
+    return repairUnitDao.addRepairUnit(newRepairUnit);
   }
 
   @Override
   public void updateRepairUnit(RepairUnit updatedRepairUnit) {
-    session.execute(
-        insertRepairUnitPrepStmt.bind(
-            updatedRepairUnit.getId(),
-            updatedRepairUnit.getClusterName(),
-            updatedRepairUnit.getKeyspaceName(),
-            updatedRepairUnit.getColumnFamilies(),
-            updatedRepairUnit.getIncrementalRepair(),
-            updatedRepairUnit.getNodes(),
-            updatedRepairUnit.getDatacenters(),
-            updatedRepairUnit.getBlacklistedTables(),
-            updatedRepairUnit.getRepairThreadCount(),
-            updatedRepairUnit.getTimeout()));
+    repairUnitDao.updateRepairUnit(updatedRepairUnit);
   }
 
   private RepairUnit getRepairUnitImpl(UUID id) {
-    Row repairUnitRow = session.execute(getRepairUnitPrepStmt.bind(id)).one();
-    if (repairUnitRow != null) {
-      return RepairUnit.builder()
-              .clusterName(repairUnitRow.getString("cluster_name"))
-              .keyspaceName(repairUnitRow.getString("keyspace_name"))
-              .columnFamilies(repairUnitRow.getSet("column_families", String.class))
-              .incrementalRepair(repairUnitRow.getBool("incremental_repair"))
-              .nodes(repairUnitRow.getSet("nodes", String.class))
-              .datacenters(repairUnitRow.getSet("datacenters", String.class))
-              .blacklistedTables(repairUnitRow.getSet("blacklisted_tables", String.class))
-              .repairThreadCount(repairUnitRow.getInt("repair_thread_count"))
-              .timeout(repairUnitRow.isNull("timeout") ? this.defaultTimeout : repairUnitRow.getInt("timeout"))
-              .build(id);
-    }
-    throw new IllegalArgumentException("No repair unit exists for " + id);
+    return repairUnitDao.getRepairUnitImpl(id);
   }
 
   @Override
   public RepairUnit getRepairUnit(UUID id) {
-    return repairUnits.getUnchecked(id);
+    return repairUnitDao.getRepairUnit(id);
   }
 
   @Override
   public Optional<RepairUnit> getRepairUnit(RepairUnit.Builder params) {
     // brute force again
-    RepairUnit repairUnit = null;
-    Statement stmt = new SimpleStatement(SELECT_REPAIR_UNIT);
-    stmt.setIdempotent(Boolean.TRUE);
-    ResultSet results = session.execute(stmt);
-    for (Row repairUnitRow : results) {
-      RepairUnit existingRepairUnit = RepairUnit.builder()
-            .clusterName(repairUnitRow.getString("cluster_name"))
-            .keyspaceName(repairUnitRow.getString("keyspace_name"))
-            .columnFamilies(repairUnitRow.getSet("column_families", String.class))
-            .incrementalRepair(repairUnitRow.getBool("incremental_repair"))
-            .nodes(repairUnitRow.getSet("nodes", String.class))
-            .datacenters(repairUnitRow.getSet("datacenters", String.class))
-            .blacklistedTables(repairUnitRow.getSet("blacklisted_tables", String.class))
-            .repairThreadCount(repairUnitRow.getInt("repair_thread_count"))
-            .timeout(repairUnitRow.isNull("timeout") ? this.defaultTimeout : repairUnitRow.getInt("timeout"))
-            .build(repairUnitRow.getUUID("id"));
-      if (existingRepairUnit.with().equals(params)) {
-        repairUnit = existingRepairUnit;
-        LOG.info("Found matching repair unit: {}", repairUnitRow.getUUID("id"));
-        // exit the loop once we find a match
-        break;
-      }
-    }
 
-    return Optional.ofNullable(repairUnit);
+    return repairUnitDao.getRepairUnit(params);
   }
 
   @Override
@@ -1059,7 +964,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   @Override
   public Collection<RepairSchedule> getRepairSchedulesForCluster(String clusterName, boolean incremental) {
     return getRepairSchedulesForCluster(clusterName).stream()
-        .filter(schedule -> getRepairUnit(schedule.getRepairUnitId()).getIncrementalRepair() == incremental)
+        .filter(schedule -> repairUnitDao.getRepairUnit(schedule.getRepairUnitId()).getIncrementalRepair() == incremental)
         .collect(Collectors.toList());
   }
 
@@ -1108,7 +1013,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   public boolean updateRepairSchedule(RepairSchedule newRepairSchedule) {
     final Set<UUID> repairHistory = Sets.newHashSet();
     repairHistory.addAll(newRepairSchedule.getRunHistory());
-    RepairUnit repairUnit = getRepairUnit(newRepairSchedule.getRepairUnitId());
+    RepairUnit repairUnit = repairUnitDao.getRepairUnit(newRepairSchedule.getRepairUnitId());
     List<ResultSetFuture> futures = Lists.newArrayList();
 
     futures.add(
@@ -1157,7 +1062,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   public Optional<RepairSchedule> deleteRepairSchedule(UUID id) {
     Optional<RepairSchedule> repairSchedule = getRepairSchedule(id);
     if (repairSchedule.isPresent()) {
-      RepairUnit repairUnit = getRepairUnit(repairSchedule.get().getRepairUnitId());
+      RepairUnit repairUnit = repairUnitDao.getRepairUnit(repairSchedule.get().getRepairUnitId());
 
       session.execute(
           deleteRepairScheduleByClusterAndKsByIdPrepStmt.bind(
@@ -1183,7 +1088,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
     Collection<RepairRun> repairRuns = repairRunDao.getRepairRunsForCluster(clusterName, Optional.of(limit));
     for (RepairRun repairRun : repairRuns) {
       Collection<RepairSegment> segments = repairSegmentDao.getRepairSegmentsForRun(repairRun.getId());
-      RepairUnit repairUnit = getRepairUnit(repairRun.getRepairUnitId());
+      RepairUnit repairUnit = repairUnitDao.getRepairUnit(repairRun.getRepairUnitId());
 
       int segmentsRepaired
           = (int) segments.stream().filter(seg -> seg.getState().equals(RepairSegment.State.DONE)).count();
@@ -1200,7 +1105,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
 
     Collection<RepairScheduleStatus> repairScheduleStatuses = repairSchedules
         .stream()
-        .map(sched -> new RepairScheduleStatus(sched, getRepairUnit(sched.getRepairUnitId())))
+        .map(sched -> new RepairScheduleStatus(sched, repairUnitDao.getRepairUnit(sched.getRepairUnitId())))
         .collect(Collectors.toList());
 
     return repairScheduleStatuses;

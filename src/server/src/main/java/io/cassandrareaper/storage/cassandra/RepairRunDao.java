@@ -74,6 +74,7 @@ public class RepairRunDao {
     this.cassandraStorage = cassandraStorage;
     this.session = session;
     this.repairSegmentDao = repairSegmentDao;
+    prepareStatements();
   }
 
   private void prepareStatements() {

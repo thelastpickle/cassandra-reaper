@@ -63,7 +63,46 @@ public class RepairSegmentDao {
   public RepairSegmentDao(CassandraStorage cassandraStorage, Session session) {
     this.cassandraStorage = cassandraStorage;
     this.session = session;
+    prepareStatements();
   }
+  
+  private void prepareStatements() {
+    insertRepairSegmentPrepStmt = session
+        .prepare(
+            "INSERT INTO repair_run"
+                + "(id,segment_id,repair_unit_id,start_token,end_token,"
+                + " segment_state,fail_count, token_ranges, replicas,host_id)"
+                + " VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+        .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM);
+    insertRepairSegmentIncrementalPrepStmt = session
+        .prepare(
+            "INSERT INTO repair_run"
+                + "(id,segment_id,repair_unit_id,start_token,end_token,"
+                + "segment_state,coordinator_host,fail_count,replicas,host_id)"
+                + " VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+        .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM);
+    updateRepairSegmentPrepStmt = session
+        .prepare(
+            "INSERT INTO repair_run"
+                + "(id,segment_id,segment_state,coordinator_host,segment_start_time,fail_count,host_id)"
+                + " VALUES(?, ?, ?, ?, ?, ?, ?)")
+        .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM);
+    insertRepairSegmentEndTimePrepStmt = session
+        .prepare("INSERT INTO repair_run(id, segment_id, segment_end_time) VALUES(?, ?, ?)")
+        .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM);
+    getRepairSegmentPrepStmt = session
+        .prepare(
+            "SELECT id,repair_unit_id,segment_id,start_token,end_token,segment_state,coordinator_host,"
+                + "segment_start_time,segment_end_time,fail_count, token_ranges, replicas, host_id"
+                + " FROM repair_run WHERE id = ? and segment_id = ?")
+        .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM);
+    getRepairSegmentsByRunIdPrepStmt = session.prepare(
+        "SELECT id,repair_unit_id,segment_id,start_token,end_token,segment_state,coordinator_host,segment_start_time,"
+            + "segment_end_time,fail_count, token_ranges, replicas, host_id FROM repair_run WHERE id = ?");
+    getRepairSegmentCountByRunIdPrepStmt = session.prepare(
+        "SELECT count(*) FROM repair_run WHERE id = ?"
+    );
+  } 
 
   static boolean segmentIsWithinRange(RepairSegment segment, RingRange range) {
     return range.encloses(new RingRange(segment.getStartToken(), segment.getEndToken()));
