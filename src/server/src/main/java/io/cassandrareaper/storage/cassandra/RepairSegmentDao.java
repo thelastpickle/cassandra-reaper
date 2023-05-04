@@ -1,6 +1,23 @@
+/*
+ * Copyright 2016-2017 Spotify AB
+ * Copyright 2016-2019 The Last Pickle Ltd
+ * Copyright 2020-2020 DataStax, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package io.cassandrareaper.storage.cassandra;
 
-import io.cassandrareaper.AppContext;
 import io.cassandrareaper.core.RepairSegment;
 import io.cassandrareaper.core.Segment;
 import io.cassandrareaper.service.RingRange;
@@ -28,10 +45,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.joda.time.DateTime;
 
-public class RepairSegmentDAO {
-  private final CassandraStorage cassandraStorage;
-
-  private final Session session;
+public class RepairSegmentDao {
   public PreparedStatement insertRepairSegmentPrepStmt;
   public PreparedStatement insertRepairSegmentIncrementalPrepStmt;
   PreparedStatement updateRepairSegmentPrepStmt;
@@ -43,107 +57,12 @@ public class RepairSegmentDAO {
   PreparedStatement getRepairSegmentsByRunIdAndStatePrepStmt = null;
   @Nullable // null on Cassandra-2 as it's not supported syntax
   PreparedStatement getRepairSegmentCountByRunIdAndStatePrepStmt = null;
+  private final CassandraStorage cassandraStorage;
+  private final Session session;
 
-  public RepairSegmentDAO(CassandraStorage cassandraStorage, Session session) {
+  public RepairSegmentDao(CassandraStorage cassandraStorage, Session session) {
     this.cassandraStorage = cassandraStorage;
     this.session = session;
-  }
-
-  
-  public int getSegmentAmountForRepairRun(UUID runId) {
-    return (int) session
-        .execute(getRepairSegmentCountByRunIdAndStatePrepStmt.bind(runId))
-        .one()
-        .getLong(0);
-  }
-
-
-  public int getSegmentAmountForRepairRunWithState(UUID runId, RepairSegment.State state) {
-    if (null != getRepairSegmentCountByRunIdAndStatePrepStmt) {
-      return (int) session
-          .execute(getRepairSegmentCountByRunIdAndStatePrepStmt.bind(runId, state.ordinal()))
-          .one()
-          .getLong(0);
-    } else {
-      // legacy mode for Cassandra-2 backends
-      return cassandraStorage.getSegmentsWithState(runId, state).size();
-    }
-  }
-
-  public boolean updateRepairSegment(RepairSegment segment) {
-
-    assert cassandraStorage.hasLeadOnSegment(segment)
-        || (cassandraStorage.hasLeadOnSegment(segment.getRunId())
-        && cassandraStorage.getRepairUnit(segment.getRepairUnitId()).getIncrementalRepair())
-        : "non-leader trying to update repair segment " + segment.getId() + " of run " + segment.getRunId();
-
-    return cassandraStorage.updateRepairSegmentUnsafe(segment);
-  }
-
-
-  public boolean updateRepairSegmentUnsafe(RepairSegment segment) {
-
-    BatchStatement updateRepairSegmentBatch = new BatchStatement(BatchStatement.Type.UNLOGGED);
-
-    updateRepairSegmentBatch.add(
-        updateRepairSegmentPrepStmt.bind(
-            segment.getRunId(),
-            segment.getId(),
-            segment.getState().ordinal(),
-            segment.getCoordinatorHost(),
-            segment.hasStartTime() ? segment.getStartTime().toDate() : null,
-            segment.getFailCount(),
-            segment.getHostID()
-        )
-    );
-
-    if (null != segment.getEndTime() || RepairSegment.State.NOT_STARTED == segment.getState()) {
-
-      Preconditions.checkArgument(
-          RepairSegment.State.RUNNING != segment.getState(),
-          "un/setting endTime not permitted when state is RUNNING");
-
-      Preconditions.checkArgument(
-          RepairSegment.State.NOT_STARTED != segment.getState() || !segment.hasEndTime(),
-          "endTime can only be nulled when state is NOT_STARTED");
-
-      Preconditions.checkArgument(
-          RepairSegment.State.DONE != segment.getState() || segment.hasEndTime(),
-          "endTime can't be null when state is DONE");
-
-      updateRepairSegmentBatch.add(
-          insertRepairSegmentEndTimePrepStmt.bind(
-              segment.getRunId(),
-              segment.getId(),
-              segment.hasEndTime() ? segment.getEndTime().toDate() : null));
-    } else if (RepairSegment.State.STARTED == segment.getState()) {
-      updateRepairSegmentBatch.setConsistencyLevel(ConsistencyLevel.EACH_QUORUM);
-    }
-    session.execute(updateRepairSegmentBatch);
-    return true;
-  }
-
-
-  public Optional<RepairSegment> getRepairSegment(UUID runId, UUID segmentId) {
-    RepairSegment segment = null;
-    Row segmentRow = session.execute(getRepairSegmentPrepStmt.bind(runId, segmentId)).one();
-    if (segmentRow != null) {
-      segment = createRepairSegmentFromRow(segmentRow);
-    }
-
-    return Optional.ofNullable(segment);
-  }
-
-
-  public Collection<RepairSegment> getRepairSegmentsForRun(UUID runId) {
-    Collection<RepairSegment> segments = Lists.newArrayList();
-    // First gather segments ids
-    ResultSet segmentsIdResultSet = session.execute(getRepairSegmentsByRunIdPrepStmt.bind(runId));
-    for (Row segmentRow : segmentsIdResultSet) {
-      segments.add(createRepairSegmentFromRow(segmentRow));
-    }
-
-    return segments;
   }
 
   static boolean segmentIsWithinRange(RepairSegment segment, RingRange range) {
@@ -196,6 +115,97 @@ public class RepairSegmentDAO {
     return builder.withId(segmentRow.getUUID("segment_id")).build();
   }
 
+  public int getSegmentAmountForRepairRun(UUID runId) {
+    return (int) session
+        .execute(getRepairSegmentCountByRunIdAndStatePrepStmt.bind(runId))
+        .one()
+        .getLong(0);
+  }
+
+  public int getSegmentAmountForRepairRunWithState(UUID runId, RepairSegment.State state) {
+    if (null != getRepairSegmentCountByRunIdAndStatePrepStmt) {
+      return (int) session
+          .execute(getRepairSegmentCountByRunIdAndStatePrepStmt.bind(runId, state.ordinal()))
+          .one()
+          .getLong(0);
+    } else {
+      // legacy mode for Cassandra-2 backends
+      return cassandraStorage.getSegmentsWithState(runId, state).size();
+    }
+  }
+
+  public boolean updateRepairSegment(RepairSegment segment) {
+
+    assert cassandraStorage.hasLeadOnSegment(segment)
+        || (cassandraStorage.hasLeadOnSegment(segment.getRunId())
+        && cassandraStorage.getRepairUnit(segment.getRepairUnitId()).getIncrementalRepair())
+        : "non-leader trying to update repair segment " + segment.getId() + " of run " + segment.getRunId();
+
+    return cassandraStorage.updateRepairSegmentUnsafe(segment);
+  }
+
+  public boolean updateRepairSegmentUnsafe(RepairSegment segment) {
+
+    BatchStatement updateRepairSegmentBatch = new BatchStatement(BatchStatement.Type.UNLOGGED);
+
+    updateRepairSegmentBatch.add(
+        updateRepairSegmentPrepStmt.bind(
+            segment.getRunId(),
+            segment.getId(),
+            segment.getState().ordinal(),
+            segment.getCoordinatorHost(),
+            segment.hasStartTime() ? segment.getStartTime().toDate() : null,
+            segment.getFailCount(),
+            segment.getHostID()
+        )
+    );
+
+    if (null != segment.getEndTime() || RepairSegment.State.NOT_STARTED == segment.getState()) {
+
+      Preconditions.checkArgument(
+          RepairSegment.State.RUNNING != segment.getState(),
+          "un/setting endTime not permitted when state is RUNNING");
+
+      Preconditions.checkArgument(
+          RepairSegment.State.NOT_STARTED != segment.getState() || !segment.hasEndTime(),
+          "endTime can only be nulled when state is NOT_STARTED");
+
+      Preconditions.checkArgument(
+          RepairSegment.State.DONE != segment.getState() || segment.hasEndTime(),
+          "endTime can't be null when state is DONE");
+
+      updateRepairSegmentBatch.add(
+          insertRepairSegmentEndTimePrepStmt.bind(
+              segment.getRunId(),
+              segment.getId(),
+              segment.hasEndTime() ? segment.getEndTime().toDate() : null));
+    } else if (RepairSegment.State.STARTED == segment.getState()) {
+      updateRepairSegmentBatch.setConsistencyLevel(ConsistencyLevel.EACH_QUORUM);
+    }
+    session.execute(updateRepairSegmentBatch);
+    return true;
+  }
+
+  public Optional<RepairSegment> getRepairSegment(UUID runId, UUID segmentId) {
+    RepairSegment segment = null;
+    Row segmentRow = session.execute(getRepairSegmentPrepStmt.bind(runId, segmentId)).one();
+    if (segmentRow != null) {
+      segment = createRepairSegmentFromRow(segmentRow);
+    }
+
+    return Optional.ofNullable(segment);
+  }
+
+  public Collection<RepairSegment> getRepairSegmentsForRun(UUID runId) {
+    Collection<RepairSegment> segments = Lists.newArrayList();
+    // First gather segments ids
+    ResultSet segmentsIdResultSet = session.execute(getRepairSegmentsByRunIdPrepStmt.bind(runId));
+    for (Row segmentRow : segmentsIdResultSet) {
+      segments.add(createRepairSegmentFromRow(segmentRow));
+    }
+
+    return segments;
+  }
 
   public List<RepairSegment> getNextFreeSegments(UUID runId) {
     List<RepairSegment> segments = Lists.<RepairSegment>newArrayList(cassandraStorage.getRepairSegmentsForRun(runId));

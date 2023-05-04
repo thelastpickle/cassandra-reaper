@@ -1,3 +1,21 @@
+/*
+ * Copyright 2016-2017 Spotify AB
+ * Copyright 2016-2019 The Last Pickle Ltd
+ * Copyright 2020-2020 DataStax, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package io.cassandrareaper.storage.cassandra;
 
 import io.cassandrareaper.core.RepairRun;
@@ -32,11 +50,8 @@ import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class RepairRunDAO {
-  private final CassandraStorage cassandraStorage;
-  private final Session session;
+public class RepairRunDao {
   private static final Logger LOG = LoggerFactory.getLogger(CassandraStorage.class);
-
   private static final int MAX_RETURNED_REPAIR_RUNS = 1000;
   PreparedStatement insertRepairRunPrepStmt;
   PreparedStatement insertRepairRunNoStatePrepStmt;
@@ -50,16 +65,12 @@ public class RepairRunDAO {
   PreparedStatement deleteRepairRunPrepStmt;
   PreparedStatement deleteRepairRunByClusterByIdPrepStmt;
   PreparedStatement deleteRepairRunByUnitPrepStmt;
+  private final CassandraStorage cassandraStorage;
+  private final Session session;
 
-  
-
-  public RepairRunDAO(CassandraStorage cassandraStorage, Session session ) {
-
+  public RepairRunDao(CassandraStorage cassandraStorage, Session session ) {
     this.cassandraStorage = cassandraStorage;
     this.session = session;
-    
-    
-
   }
 
   private void prepareStatements() {
@@ -77,8 +88,10 @@ public class RepairRunDAO {
                 + "intensity, last_event, segment_count, repair_parallelism, tables, adaptive_schedule) "
                 + "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
         .setConsistencyLevel(ConsistencyLevel.QUORUM);
-    insertRepairRunClusterIndexPrepStmt = session.prepare("INSERT INTO repair_run_by_cluster_v2(cluster_name, id, repair_run_state) values(?, ?, ?)");
-    insertRepairRunUnitIndexPrepStmt = session.prepare("INSERT INTO repair_run_by_unit(repair_unit_id, id) values(?, ?)");
+    insertRepairRunClusterIndexPrepStmt = session.prepare(
+        "INSERT INTO repair_run_by_cluster_v2(cluster_name, id, repair_run_state) values(?, ?, ?)");
+    insertRepairRunUnitIndexPrepStmt = session.prepare(
+        "INSERT INTO repair_run_by_unit(repair_unit_id, id) values(?, ?)");
     getRepairRunPrepStmt = session
         .prepare(
             "SELECT id,cluster_name,repair_unit_id,cause,owner,state,creation_time,start_time,end_time,"
@@ -91,13 +104,18 @@ public class RepairRunDAO {
         "SELECT id FROM repair_run_by_cluster_v2 WHERE cluster_name = ? AND repair_run_state = ? limit ?");
     getRepairRunForUnitPrepStmt = session.prepare("SELECT * FROM repair_run_by_unit WHERE repair_unit_id = ?");
 
-    deleteRepairRunByClusterPrepStmt = session.prepare("DELETE FROM repair_run_by_cluster_v2 WHERE cluster_name = ?");
-    deleteRepairRunByClusterByIdPrepStmt = session.prepare("DELETE FROM repair_run_by_cluster_v2 WHERE id = ? and cluster_name = ?");
+    deleteRepairRunByClusterPrepStmt = session.prepare(
+        "DELETE FROM repair_run_by_cluster_v2 WHERE cluster_name = ?");
+    deleteRepairRunByClusterByIdPrepStmt = session.prepare(
+        "DELETE FROM repair_run_by_cluster_v2 WHERE id = ? and cluster_name = ?");
     deleteRepairRunByUnitPrepStmt = session.prepare("DELETE FROM repair_run_by_unit "
         + "WHERE id = ? and repair_unit_id= ?");
   }
-  
-  public RepairRun addRepairRun(RepairRun.Builder repairRun, Collection<RepairSegment.Builder> newSegments, ObjectMapper objectMapper) {
+
+  public RepairRun addRepairRun(
+      RepairRun.Builder repairRun,
+      Collection<RepairSegment.Builder> newSegments,
+      ObjectMapper objectMapper) {
     RepairRun newRepairRun = repairRun.build(UUIDs.timeBased());
     BatchStatement repairRunBatch = new BatchStatement(BatchStatement.Type.UNLOGGED);
     List<ResultSetFuture> futures = Lists.newArrayList();
@@ -135,7 +153,7 @@ public class RepairRunDAO {
 
       if (isIncremental) {
         repairRunBatch.add(
-            cassandraStorage.repairSegmentDAO.insertRepairSegmentIncrementalPrepStmt.bind(
+            cassandraStorage.repairSegmentDao.insertRepairSegmentIncrementalPrepStmt.bind(
                 segment.getRunId(),
                 segment.getId(),
                 segment.getRepairUnitId(),
@@ -151,7 +169,7 @@ public class RepairRunDAO {
       } else {
         try {
           repairRunBatch.add(
-              cassandraStorage.repairSegmentDAO.insertRepairSegmentPrepStmt.bind(
+              cassandraStorage.repairSegmentDao.insertRepairSegmentPrepStmt.bind(
                   segment.getRunId(),
                   segment.getId(),
                   segment.getRepairUnitId(),
@@ -199,12 +217,10 @@ public class RepairRunDAO {
     return newRepairRun;
   }
 
-  
   public boolean updateRepairRun(RepairRun repairRun) {
     return updateRepairRun(repairRun, Optional.of(true));
   }
 
-  
   public boolean updateRepairRun(RepairRun repairRun, Optional<Boolean> updateRepairState) {
     if (updateRepairState.orElse(true)) {
       BatchStatement updateRepairRunBatch = new BatchStatement(BatchStatement.Type.LOGGED);
@@ -253,7 +269,6 @@ public class RepairRunDAO {
     return true;
   }
 
-  
   public Optional<RepairRun> getRepairRun(UUID id) {
     RepairRun repairRun = null;
     Row repairRunResult = this.session.execute(getRepairRunPrepStmt.bind(id)).one();
@@ -266,6 +281,7 @@ public class RepairRunDAO {
     }
     return Optional.ofNullable(repairRun);
   }
+
   public RepairRun buildRepairRunFromRow(Row repairRunResult, UUID id) {
     LOG.trace("buildRepairRunFromRow {} / {}", id, repairRunResult);
 
@@ -291,7 +307,7 @@ public class RepairRunDAO {
             : repairRunResult.getBool("adaptive_schedule"))
         .build(id);
   }
-  
+
   public Collection<RepairRun> getRepairRunsForCluster(String clusterName, Optional<Integer> limit) {
     List<ResultSetFuture> repairRunFutures = Lists.<ResultSetFuture>newArrayList();
 
@@ -308,7 +324,6 @@ public class RepairRunDAO {
     return getRepairRunsAsync(repairRunFutures);
   }
 
-  
   public List<RepairRun> getRepairRunsForClusterPrioritiseRunning(String clusterName, Optional<Integer> limit) {
     List<ResultSetFuture> repairUuidFuturesByState = Lists.<ResultSetFuture>newArrayList();
     // We've set up the RunState enum so that values are declared in order of "interestingness",
@@ -337,7 +352,7 @@ public class RepairRunDAO {
           .getUninterruptibly()
           .forEach(
               row -> flattenedUuids.add(row.getUUID("id"))
-          );
+        );
     }
     // Merge the two lists and trim.
     repairUuidFuturesNoState.getUninterruptibly().forEach(row -> {
@@ -370,7 +385,7 @@ public class RepairRunDAO {
         ).collect(Collectors.toList());
   }
 
-  
+
   public Collection<RepairRun> getRepairRunsForUnit(UUID repairUnitId) {
     List<ResultSetFuture> repairRunFutures = Lists.<ResultSetFuture>newArrayList();
 
@@ -403,7 +418,7 @@ public class RepairRunDAO {
     return repairRuns;
   }
 
-  
+
   public Collection<RepairRun> getRepairRunsWithState(RepairRun.RunState runState) {
     Set<RepairRun> repairRunsWithState = Sets.newHashSet();
 
@@ -441,7 +456,7 @@ public class RepairRunDAO {
     return repairRuns.stream().filter(repairRun -> repairRun.getRunState() == runState).collect(Collectors.toSet());
   }
 
-  
+
   public Optional<RepairRun> deleteRepairRun(UUID id) {
     Optional<RepairRun> repairRun = cassandraStorage.getRepairRun(id);
     if (repairRun.isPresent()) {
@@ -452,7 +467,7 @@ public class RepairRunDAO {
     return repairRun;
   }
 
-  
+
   public SortedSet<UUID> getRepairRunIdsForCluster(String clusterName, Optional<Integer> limit) {
     SortedSet<UUID> repairRunIds = Sets.newTreeSet((u0, u1) -> (int) (u0.timestamp() - u1.timestamp()));
     ResultSet results = this.session.execute(getRepairRunForClusterPrepStmt.bind(clusterName, limit.orElse(
@@ -467,7 +482,9 @@ public class RepairRunDAO {
 
   SortedSet<UUID> getRepairRunIdsForClusterWithState(String clusterName, RepairRun.RunState runState) {
     SortedSet<UUID> repairRunIds = Sets.newTreeSet((u0, u1) -> (int) (u0.timestamp() - u1.timestamp()));
-    ResultSet results = this.session.execute(getRepairRunForClusterPrepStmt.bind(clusterName, MAX_RETURNED_REPAIR_RUNS));
+    ResultSet results = this.session.execute(
+        getRepairRunForClusterPrepStmt.bind(clusterName, MAX_RETURNED_REPAIR_RUNS)
+    );
     results.all()
         .stream()
         .filter(run -> run.getString("repair_run_state").equals(runState.toString()))
