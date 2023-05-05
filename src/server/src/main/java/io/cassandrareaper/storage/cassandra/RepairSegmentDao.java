@@ -67,7 +67,7 @@ public class RepairSegmentDao {
     this.session = session;
     prepareStatements();
   }
-  
+
   private void prepareStatements() {
     insertRepairSegmentPrepStmt = session
         .prepare(
@@ -118,7 +118,7 @@ public class RepairSegmentDao {
             ex);
       }
     }
-  } 
+  }
 
   static boolean segmentIsWithinRange(RepairSegment segment, RingRange range) {
     return range.encloses(new RingRange(segment.getStartToken(), segment.getEndToken()));

@@ -81,7 +81,6 @@ import com.datastax.driver.core.Statement;
 import com.datastax.driver.core.VersionNumber;
 import com.datastax.driver.core.WriteType;
 import com.datastax.driver.core.exceptions.DriverException;
-import com.datastax.driver.core.exceptions.InvalidQueryException;
 import com.datastax.driver.core.policies.DefaultRetryPolicy;
 import com.datastax.driver.core.policies.DowngradingConsistencyRetryPolicy;
 import com.datastax.driver.core.policies.RetryPolicy;
@@ -110,12 +109,12 @@ import systems.composable.dropwizard.cassandra.retry.RetryPolicyFactory;
 
 
 public final class CassandraStorage implements IStorage, IDistributedStorage {
+  static final String SELECT_REPAIR_UNIT = "SELECT * FROM repair_unit_v1";
   private static final int METRICS_PARTITIONING_TIME_MINS = 10;
   private static final int LEAD_DURATION = 90;
   /* Simple stmts */
   private static final String SELECT_CLUSTER = "SELECT * FROM cluster";
   private static final String SELECT_REPAIR_SCHEDULE = "SELECT * FROM repair_schedule_v1";
-  static final String SELECT_REPAIR_UNIT = "SELECT * FROM repair_unit_v1";
   private static final String SELECT_LEADERS = "SELECT * FROM leader";
   private static final String SELECT_RUNNING_REAPERS = "SELECT reaper_instance_id FROM running_reapers";
   private static final DateTimeFormatter TIME_BUCKET_FORMATTER = DateTimeFormat.forPattern("yyyyMMddHHmm");
@@ -123,10 +122,10 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   private static final AtomicBoolean UNINITIALISED = new AtomicBoolean(true);
   public final RepairSegmentDao repairSegmentDao;
   public final int defaultTimeout;
+  final VersionNumber version;
   private final com.datastax.driver.core.Cluster cassandra;
   private final Session session;
   private final ObjectMapper objectMapper = new ObjectMapper();
-  final VersionNumber version;
   private final UUID reaperInstanceId;
   private final AtomicReference<Collection<Cluster>> clustersCache = new AtomicReference(Collections.EMPTY_SET);
   private final AtomicLong clustersCacheAge = new AtomicLong(0);
@@ -940,7 +939,9 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   @Override
   public Collection<RepairSchedule> getRepairSchedulesForCluster(String clusterName, boolean incremental) {
     return getRepairSchedulesForCluster(clusterName).stream()
-        .filter(schedule -> repairUnitDao.getRepairUnit(schedule.getRepairUnitId()).getIncrementalRepair() == incremental)
+        .filter(schedule -> repairUnitDao.getRepairUnit(
+            schedule.getRepairUnitId()).getIncrementalRepair() == incremental
+        )
         .collect(Collectors.toList());
   }
 

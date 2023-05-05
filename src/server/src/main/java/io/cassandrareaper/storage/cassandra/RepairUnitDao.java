@@ -1,3 +1,21 @@
+/*
+ * Copyright 2016-2017 Spotify AB
+ * Copyright 2016-2019 The Last Pickle Ltd
+ * Copyright 2020-2020 DataStax, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package io.cassandrareaper.storage.cassandra;
 
 import io.cassandrareaper.core.RepairUnit;
@@ -21,10 +39,25 @@ import org.slf4j.LoggerFactory;
 
 public class RepairUnitDao {
   private static final Logger LOG = LoggerFactory.getLogger(RepairUnitDao.class);
-  private final CassandraStorage cassandraStorage;
-  private final Session session;
   PreparedStatement insertRepairUnitPrepStmt;
   PreparedStatement getRepairUnitPrepStmt;
+  PreparedStatement deleteRepairUnitPrepStmt;
+  final LoadingCache<UUID, RepairUnit> repairUnits = CacheBuilder
+      .newBuilder()
+      .build(new CacheLoader<UUID, RepairUnit>() {
+        public RepairUnit load(UUID repairUnitId) throws Exception {
+          return getRepairUnitImpl(repairUnitId);
+        }
+      });
+
+  private final CassandraStorage cassandraStorage;
+  private final Session session;
+
+  public RepairUnitDao(CassandraStorage cassandraStorage, Session session) {
+    this.cassandraStorage = cassandraStorage;
+    this.session = session;
+    prepareStatements();
+  }
 
   private void prepareStatements() {
     insertRepairUnitPrepStmt = session
@@ -38,22 +71,7 @@ public class RepairUnitDao {
         .setConsistencyLevel(ConsistencyLevel.QUORUM);
     deleteRepairUnitPrepStmt = session.prepare("DELETE FROM repair_unit_v1 WHERE id = ?");
   }
-  final LoadingCache<UUID, RepairUnit> repairUnits = CacheBuilder.newBuilder()
-      .build(new CacheLoader<UUID, RepairUnit>() {
-        
-        public RepairUnit load(UUID repairUnitId) throws Exception {
-          return getRepairUnitImpl(repairUnitId);
-        }
-      });
-  PreparedStatement deleteRepairUnitPrepStmt;
 
-  public RepairUnitDao(CassandraStorage cassandraStorage, Session session) {
-    this.cassandraStorage = cassandraStorage;
-    this.session = session;
-    prepareStatements();
-  }
-
-  
   public RepairUnit addRepairUnit(RepairUnit.Builder newRepairUnit) {
     RepairUnit repairUnit = newRepairUnit.build(UUIDs.timeBased());
     updateRepairUnit(repairUnit);
@@ -62,7 +80,6 @@ public class RepairUnitDao {
     return repairUnit;
   }
 
-  
   public void updateRepairUnit(RepairUnit updatedRepairUnit) {
     session.execute(
         insertRepairUnitPrepStmt.bind(
@@ -96,12 +113,11 @@ public class RepairUnitDao {
     throw new IllegalArgumentException("No repair unit exists for " + id);
   }
 
-  
+
   public RepairUnit getRepairUnit(UUID id) {
     return repairUnits.getUnchecked(id);
   }
 
-  
   public Optional<RepairUnit> getRepairUnit(RepairUnit.Builder params) {
     // brute force again
     RepairUnit repairUnit = null;
