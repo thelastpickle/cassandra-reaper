@@ -90,10 +90,10 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   public final RepairSegmentDao repairSegmentDao;
   public final int defaultTimeout;
   final VersionNumber version;
+  final UUID reaperInstanceId;
   private final com.datastax.driver.core.Cluster cassandra;
   private final Session session;
   private final ObjectMapper objectMapper = new ObjectMapper();
-  final UUID reaperInstanceId;
   private final RepairRunDao repairRunDao;
   private PreparedStatement saveHeartbeatPrepStmt;
   private PreparedStatement deleteHeartbeatPrepStmt;
@@ -151,10 +151,6 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
     this.repairScheduleDao = new RepairScheduleDao(repairUnitDao, session);
     this.clusterDao  = new ClusterDao(repairScheduleDao, repairUnitDao, eventsDao, session, objectMapper);
     this.repairRunDao =  new RepairRunDao(repairUnitDao, clusterDao, repairSegmentDao, session);
-
-
-
-
 
     boolean skipMigration = System.getenv().containsKey("REAPER_SKIP_SCHEMA_MIGRATION")
         ? Boolean.parseBoolean(System.getenv("REAPER_SKIP_SCHEMA_MIGRATION"))
