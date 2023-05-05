@@ -84,7 +84,6 @@ import systems.composable.dropwizard.cassandra.retry.RetryPolicyFactory;
 
 
 public final class CassandraStorage implements IStorage, IDistributedStorage {
-  private static final DateTimeFormatter TIME_BUCKET_FORMATTER = DateTimeFormat.forPattern("yyyyMMddHHmm");
   private static final Logger LOG = LoggerFactory.getLogger(CassandraStorage.class);
   private static final AtomicBoolean UNINITIALISED = new AtomicBoolean(true);
   public final RepairSegmentDao repairSegmentDao;
@@ -98,8 +97,6 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   private PreparedStatement saveHeartbeatPrepStmt;
   private PreparedStatement deleteHeartbeatPrepStmt;
 
-  private PreparedStatement insertOperationsPrepStmt;
-  private PreparedStatement listOperationsForNodePrepStmt;
   private final RepairUnitDao repairUnitDao;
   private final RepairScheduleDao repairScheduleDao;
   private final ClusterDao clusterDao;
@@ -107,6 +104,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   private final MetricsDao metricsDao;
   private final Concurrency concurrency;
   private final SnapshotDao snapshotDao;
+  private final OperationsDao operationsDao;
 
   public CassandraStorage(
       UUID reaperInstanceId,
@@ -144,6 +142,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
     this.eventsDao =  new EventsDao(session);
     this.metricsDao  = new MetricsDao(session);
     this.snapshotDao = new SnapshotDao(session);
+    this.operationsDao  = new OperationsDao(session);
     this.concurrency = new Concurrency(version, reaperInstanceId, session);
     this.repairUnitDao  = new RepairUnitDao(defaultTimeout, session);
     this.repairSegmentDao = new RepairSegmentDao(concurrency, repairUnitDao, version, session);
@@ -221,20 +220,6 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
             "DELETE FROM running_reapers WHERE reaper_instance_id = ?")
         .setIdempotent(true);
 
-
-    prepareOperationsStatements();
-  }
-
-  private void prepareOperationsStatements() {
-    insertOperationsPrepStmt
-        = session.prepare(
-            "INSERT INTO node_operations(cluster, type, time_bucket, host, ts, data) "
-                + "values(?,?,?,?,?,?)");
-
-    listOperationsForNodePrepStmt
-        = session.prepare(
-            "SELECT cluster, type, time_bucket, host, ts, data FROM node_operations "
-                + "WHERE cluster = ? AND type = ? and time_bucket = ? and host = ? LIMIT 1");
   }
 
   @Override
@@ -694,40 +679,19 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
 
   @Override
   public void storeOperations(String clusterName, OpType operationType, String host, String operationsJson) {
-    session.executeAsync(
-        insertOperationsPrepStmt.bind(
-            clusterName,
-            operationType.getName(),
-            DateTime.now().toString(TIME_BUCKET_FORMATTER),
-            host,
-            DateTime.now().toDate(),
-            operationsJson));
+    operationsDao.storeOperations(clusterName, operationType, host, operationsJson);
   }
 
   @Override
   public String listOperations(String clusterName, OpType operationType, String host) {
-    List<ResultSetFuture> futures = Lists.newArrayList();
-    futures.add(session.executeAsync(
-            listOperationsForNodePrepStmt.bind(
-                clusterName, operationType.getName(), DateTime.now().toString(TIME_BUCKET_FORMATTER), host)));
-    futures.add(session.executeAsync(
-        listOperationsForNodePrepStmt.bind(
-            clusterName,
-            operationType.getName(),
-            DateTime.now().minusMinutes(1).toString(TIME_BUCKET_FORMATTER),
-            host)));
-    for (ResultSetFuture future:futures) {
-      ResultSet operations = future.getUninterruptibly();
-      for (Row row:operations) {
-        return row.getString("data");
-      }
-    }
 
-    return "";
+    return operationsDao.listOperations(clusterName, operationType, host);
   }
 
   @Override
-  public void purgeNodeOperations() {}
+  public void purgeNodeOperations() {
+    operationsDao.purgeNodeOperations();
+  }
 
   @Override
   public boolean lockRunningRepairsForNodes(
