@@ -53,8 +53,6 @@ public class OperationsDao {
             + "WHERE cluster = ? AND type = ? and time_bucket = ? and host = ? LIMIT 1");
   }
 
-
-
   public void storeOperations(String clusterName, OpType operationType, String host, String operationsJson) {
     session.executeAsync(
         insertOperationsPrepStmt.bind(
@@ -65,8 +63,6 @@ public class OperationsDao {
             DateTime.now().toDate(),
             operationsJson));
   }
-
-
   public String listOperations(String clusterName, OpType operationType, String host) {
     List<ResultSetFuture> futures = Lists.newArrayList();
     futures.add(session.executeAsync(

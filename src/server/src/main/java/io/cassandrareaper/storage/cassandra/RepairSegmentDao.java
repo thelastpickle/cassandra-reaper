@@ -61,18 +61,15 @@ public class RepairSegmentDao {
   PreparedStatement getRepairSegmentCountByRunIdAndStatePrepStmt = null;
   private final Concurrency concurrency;
   private final RepairUnitDao repairUnitDao;
-  private final VersionNumber version;
   private final Session session;
 
   //TODO: Consider removing Cassandra 2 support so we don't need to look at the version.
   public RepairSegmentDao(Concurrency concurrency,
                           RepairUnitDao repairUnitDao,
-                          VersionNumber version,
                           Session session) {
     this.session = session;
     this.concurrency = concurrency;
     this.repairUnitDao = repairUnitDao;
-    this.version = version;
     prepareStatements();
   }
 
@@ -162,7 +159,6 @@ public class RepairSegmentDao {
     getRepairSegmentCountByRunIdPrepStmt = session.prepare(
         "SELECT count(*) FROM repair_run WHERE id = ?"
     );
-    if (0 >= VersionNumber.parse("3.0").compareTo(version)) {
       try {
         getRepairSegmentsByRunIdAndStatePrepStmt = session.prepare(
             "SELECT id,repair_unit_id,segment_id,start_token,end_token,segment_state,coordinator_host,"
@@ -175,7 +171,7 @@ public class RepairSegmentDao {
             "Failure preparing `SELECT… FROM repair_run WHERE… ALLOW FILTERING` should only happen on Cassandra-2",
             ex);
       }
-    }
+
   }
 
   public int getSegmentAmountForRepairRun(UUID runId) {
