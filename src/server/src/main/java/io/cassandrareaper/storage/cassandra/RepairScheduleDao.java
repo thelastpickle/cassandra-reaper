@@ -29,6 +29,7 @@ import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
+import com.datastax.driver.core.ConsistencyLevel;
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.ResultSetFuture;
@@ -62,6 +63,31 @@ public class RepairScheduleDao {
   public RepairScheduleDao(RepairUnitDao repairUnitDao, Session session) {
     this.repairUnitDao = repairUnitDao;
     this.session = session;
+  }
+
+  private void prepareStatements() {
+    insertRepairSchedulePrepStmt = session
+        .prepare(
+            "INSERT INTO repair_schedule_v1(id, repair_unit_id, state,"
+                + "days_between, next_activation, "
+                + "repair_parallelism, intensity, "
+                + "creation_time, owner, pause_time, segment_count_per_node, "
+                + "adaptive, percent_unrepaired_threshold, last_run) "
+                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+        .setConsistencyLevel(ConsistencyLevel.QUORUM);
+    getRepairSchedulePrepStmt = session
+        .prepare("SELECT * FROM repair_schedule_v1 WHERE id = ?")
+        .setConsistencyLevel(ConsistencyLevel.QUORUM);
+    insertRepairScheduleByClusterAndKsPrepStmt = session.prepare(
+        "INSERT INTO repair_schedule_by_cluster_and_keyspace(cluster_name, keyspace_name, repair_schedule_id)"
+            + " VALUES(?, ?, ?)");
+    getRepairScheduleByClusterAndKsPrepStmt = session.prepare(
+        "SELECT repair_schedule_id FROM repair_schedule_by_cluster_and_keyspace "
+            + "WHERE cluster_name = ? and keyspace_name = ?");
+    deleteRepairSchedulePrepStmt = session.prepare("DELETE FROM repair_schedule_v1 WHERE id = ?");
+    deleteRepairScheduleByClusterAndKsByIdPrepStmt = session.prepare(
+        "DELETE FROM repair_schedule_by_cluster_and_keyspace "
+            + "WHERE cluster_name = ? and keyspace_name = ? and repair_schedule_id = ?");
   }
 
 

@@ -225,8 +225,6 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   private void prepareStatements() {
     final String timeUdf = 0 < VersionNumber.parse("2.2").compareTo(version) ? "dateOf" : "toTimestamp";
 
-
-    prepareScheduleStatements();
     prepareLeaderElectionStatements(timeUdf);
     getRunningReapersCountPrepStmt = session.prepare(SELECT_RUNNING_REAPERS);
     saveHeartbeatPrepStmt = session
@@ -263,30 +261,6 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
     prepareOperationsStatements();
   }
 
-  private void prepareScheduleStatements() {
-    repairScheduleDao.insertRepairSchedulePrepStmt = session
-        .prepare(
-            "INSERT INTO repair_schedule_v1(id, repair_unit_id, state,"
-                + "days_between, next_activation, "
-                + "repair_parallelism, intensity, "
-                + "creation_time, owner, pause_time, segment_count_per_node, "
-                + "adaptive, percent_unrepaired_threshold, last_run) "
-                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
-        .setConsistencyLevel(ConsistencyLevel.QUORUM);
-    repairScheduleDao.getRepairSchedulePrepStmt = session
-        .prepare("SELECT * FROM repair_schedule_v1 WHERE id = ?")
-        .setConsistencyLevel(ConsistencyLevel.QUORUM);
-    repairScheduleDao.insertRepairScheduleByClusterAndKsPrepStmt = session.prepare(
-        "INSERT INTO repair_schedule_by_cluster_and_keyspace(cluster_name, keyspace_name, repair_schedule_id)"
-            + " VALUES(?, ?, ?)");
-    repairScheduleDao.getRepairScheduleByClusterAndKsPrepStmt = session.prepare(
-        "SELECT repair_schedule_id FROM repair_schedule_by_cluster_and_keyspace "
-            + "WHERE cluster_name = ? and keyspace_name = ?");
-    repairScheduleDao.deleteRepairSchedulePrepStmt = session.prepare("DELETE FROM repair_schedule_v1 WHERE id = ?");
-    repairScheduleDao.deleteRepairScheduleByClusterAndKsByIdPrepStmt = session.prepare(
-        "DELETE FROM repair_schedule_by_cluster_and_keyspace "
-            + "WHERE cluster_name = ? and keyspace_name = ? and repair_schedule_id = ?");
-  }
 
   private void prepareLeaderElectionStatements(final String timeUdf) {
     takeLeadPrepStmt = session
