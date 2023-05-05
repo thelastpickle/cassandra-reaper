@@ -43,6 +43,7 @@ public class OperationsDao {
     this.session = session;
     prepareOperationsStatements();
   }
+
   private void prepareOperationsStatements() {
     insertOperationsPrepStmt = session.prepare(
         "INSERT INTO node_operations(cluster, type, time_bucket, host, ts, data) "
@@ -63,6 +64,7 @@ public class OperationsDao {
             DateTime.now().toDate(),
             operationsJson));
   }
+
   public String listOperations(String clusterName, OpType operationType, String host) {
     List<ResultSetFuture> futures = Lists.newArrayList();
     futures.add(session.executeAsync(
