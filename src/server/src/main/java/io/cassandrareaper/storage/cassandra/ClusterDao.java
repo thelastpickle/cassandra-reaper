@@ -79,7 +79,7 @@ public class ClusterDao {
     prepareStatements();
   }
 
-  private void prepareStatements(){
+  private void prepareStatements() {
     insertClusterPrepStmt = session
         .prepare(
             "INSERT INTO cluster(name, partitioner, seed_hosts, properties, state, last_contact)"

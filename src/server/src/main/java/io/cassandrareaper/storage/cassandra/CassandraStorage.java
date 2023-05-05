@@ -49,8 +49,6 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -76,7 +74,6 @@ import com.datastax.driver.core.VersionNumber;
 import com.datastax.driver.core.WriteType;
 import com.datastax.driver.core.exceptions.DriverException;
 import com.datastax.driver.core.policies.DefaultRetryPolicy;
-import com.datastax.driver.core.policies.DowngradingConsistencyRetryPolicy;
 import com.datastax.driver.core.policies.RetryPolicy;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Preconditions;
@@ -98,11 +95,11 @@ import systems.composable.dropwizard.cassandra.retry.RetryPolicyFactory;
 
 
 public final class CassandraStorage implements IStorage, IDistributedStorage {
-  private static final int METRICS_PARTITIONING_TIME_MINS = 10;
   private static final int LEAD_DURATION = 90;
   /* Simple stmts */
   private static final String SELECT_LEADERS = "SELECT * FROM leader";
   private static final String SELECT_RUNNING_REAPERS = "SELECT reaper_instance_id FROM running_reapers";
+
   private static final DateTimeFormatter TIME_BUCKET_FORMATTER = DateTimeFormat.forPattern("yyyyMMddHHmm");
   private static final Logger LOG = LoggerFactory.getLogger(CassandraStorage.class);
   private static final AtomicBoolean UNINITIALISED = new AtomicBoolean(true);
@@ -120,25 +117,19 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   private PreparedStatement getRunningReapersCountPrepStmt;
   private PreparedStatement saveHeartbeatPrepStmt;
   private PreparedStatement deleteHeartbeatPrepStmt;
-  private PreparedStatement storeNodeMetricsPrepStmt;
-  private PreparedStatement getNodeMetricsPrepStmt;
-  private PreparedStatement getNodeMetricsByNodePrepStmt;
-  private PreparedStatement delNodeMetricsByNodePrepStmt;
   private PreparedStatement getSnapshotPrepStmt;
   private PreparedStatement deleteSnapshotPrepStmt;
   private PreparedStatement saveSnapshotPrepStmt;
-  private PreparedStatement storeMetricsPrepStmt;
-  private PreparedStatement getMetricsForHostPrepStmt;
+
   private PreparedStatement insertOperationsPrepStmt;
   private PreparedStatement listOperationsForNodePrepStmt;
   private PreparedStatement setRunningRepairsPrepStmt;
   private PreparedStatement getRunningRepairsPrepStmt;
-  private PreparedStatement storePercentRepairedForSchedulePrepStmt;
-  private PreparedStatement getPercentRepairedForSchedulePrepStmt;
   private final RepairUnitDao repairUnitDao;
   private final RepairScheduleDao repairScheduleDao;
   private final ClusterDao clusterDao;
   private final EventsDao eventsDao;
+  private final MetricsDao metricsDao;
 
   public CassandraStorage(
       UUID reaperInstanceId,
@@ -168,11 +159,13 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
     codecRegistry.register(new DateTimeCodec());
     session = cassandra.connect(config.getCassandraFactory().getKeyspace());
     this.eventsDao =  new EventsDao(session);
+    this.metricsDao  = new MetricsDao(session);
     this.repairSegmentDao = new RepairSegmentDao(this, session);
     this.repairRunDao =  new RepairRunDao(this, session, this.repairSegmentDao);
     this.repairUnitDao  = new RepairUnitDao(defaultTimeout, session);
     this.repairScheduleDao = new RepairScheduleDao(this.repairUnitDao, session);
     this.clusterDao  = new ClusterDao(repairScheduleDao, repairUnitDao, eventsDao, session, objectMapper);
+
 
     version = cassandra.getMetadata().getAllHosts()
         .stream()
@@ -391,9 +384,22 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
     saveSnapshotPrepStmt = session.prepare(
             "INSERT INTO snapshot (cluster, snapshot_name, owner, cause, creation_time)"
                 + " VALUES(?,?,?,?,?)");
+    getRunningRepairsPrepStmt = session
+        .prepare(
+            "select repair_id, node, reaper_instance_host, reaper_instance_id, segment_id"
+                + " FROM running_repairs"
+                + " WHERE repair_id = ?")
+        .setConsistencyLevel(ConsistencyLevel.QUORUM);
 
+    setRunningRepairsPrepStmt = session
+        .prepare(
+            "UPDATE running_repairs USING TTL ?"
+                + " SET reaper_instance_host = ?, reaper_instance_id = ?, segment_id = ?"
+                + " WHERE repair_id = ? AND node = ? IF reaper_instance_id = ?")
+        .setSerialConsistencyLevel(ConsistencyLevel.SERIAL)
+        .setConsistencyLevel(ConsistencyLevel.QUORUM)
+        .setIdempotent(false);
 
-    prepareMetricStatements();
     prepareOperationsStatements();
   }
 
@@ -438,62 +444,8 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   }
 
   private void prepareMetricStatements() {
-    storeNodeMetricsPrepStmt = session
-        .prepare(
-            "INSERT INTO node_metrics_v1 (time_partition,run_id,node,datacenter,cluster,requested,pending_compactions,"
-                + "has_repair_running,active_anticompactions) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)")
-        .setIdempotent(false);
-    getNodeMetricsPrepStmt = session.prepare("SELECT * FROM node_metrics_v1"
-        + " WHERE time_partition = ? AND run_id = ?");
-    getNodeMetricsByNodePrepStmt = session.prepare("SELECT * FROM node_metrics_v1"
-        + " WHERE time_partition = ? AND run_id = ? AND node = ?");
-    delNodeMetricsByNodePrepStmt = session.prepare("DELETE FROM node_metrics_v1"
-        + " WHERE time_partition = ? AND run_id = ? AND node = ?");
-    storeMetricsPrepStmt
-        = session
-            .prepare(
-                "INSERT INTO node_metrics_v3 (cluster, metric_domain, metric_type, time_bucket, "
-                    + "host, metric_scope, metric_name, ts, metric_attribute, value) "
-                    + "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-    getMetricsForHostPrepStmt
-        = session
-            .prepare(
-                "SELECT cluster, metric_domain, metric_type, time_bucket, host, "
-                    + "metric_scope, metric_name, ts, metric_attribute, value "
-                    + "FROM node_metrics_v3 "
-                    + "WHERE metric_domain = ? and metric_type = ? and cluster = ? and time_bucket = ? and host = ?");
-    setRunningRepairsPrepStmt
-      = session
-        .prepare(
-            "UPDATE running_repairs USING TTL ?"
-            + " SET reaper_instance_host = ?, reaper_instance_id = ?, segment_id = ?"
-            + " WHERE repair_id = ? AND node = ? IF reaper_instance_id = ?")
-        .setSerialConsistencyLevel(ConsistencyLevel.SERIAL)
-        .setConsistencyLevel(ConsistencyLevel.QUORUM)
-        .setIdempotent(false);
 
-    getRunningRepairsPrepStmt
-      = session
-      .prepare(
-          "select repair_id, node, reaper_instance_host, reaper_instance_id, segment_id"
-          + " FROM running_repairs"
-          + " WHERE repair_id = ?")
-      .setConsistencyLevel(ConsistencyLevel.QUORUM);
-
-    storePercentRepairedForSchedulePrepStmt
-      = session
-      .prepare(
-          "INSERT INTO percent_repaired_by_schedule"
-            + " (cluster_name, repair_schedule_id, time_bucket, node, keyspace_name, table_name, percent_repaired, ts)"
-            + " values(?, ?, ?, ?, ?, ?, ?, ?)"
-      );
-
-    getPercentRepairedForSchedulePrepStmt
-      = session
-      .prepare(
-          "SELECT * FROM percent_repaired_by_schedule"
-            + " WHERE cluster_name = ? and repair_schedule_id = ? AND time_bucket = ?"
-      );
+    metricsDao.prepareMetricStatements();
   }
 
   private void prepareOperationsStatements() {
@@ -997,80 +949,17 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
       String metricDomain,
       String metricType,
       long since) {
-    List<GenericMetric> metrics = Lists.newArrayList();
-    List<ResultSetFuture> futures = Lists.newArrayList();
-    List<String> timeBuckets = Lists.newArrayList();
-    long now = DateTime.now().getMillis();
-    long startTime = since;
 
     // Compute the hourly buckets since the requested lower bound timestamp
-    while (startTime < now) {
-      timeBuckets.add(DateTime.now().withMillis(startTime).toString(TIME_BUCKET_FORMATTER).substring(0, 11) + "0");
-      startTime += 600000;
-    }
-
-    for (String timeBucket:timeBuckets) {
-      if (host.isPresent()) {
-        //metric = ? and cluster = ? and time_bucket = ? and host = ? and ts >= ? and ts <= ?
-        futures.add(session.executeAsync(
-            getMetricsForHostPrepStmt.bind(
-                metricDomain,
-                metricType,
-                clusterName,
-                timeBucket,
-                host.get())));
-      }
-    }
-
-    for (ResultSetFuture future : futures) {
-      for (Row row : future.getUninterruptibly()) {
-        metrics.add(
-            GenericMetric.builder()
-                .withClusterName(row.getString("cluster"))
-                .withHost(row.getString("host"))
-                .withMetricType(row.getString("metric_type"))
-                .withMetricScope(row.getString("metric_scope"))
-                .withMetricName(row.getString("metric_name"))
-                .withMetricAttribute(row.getString("metric_attribute"))
-                .withTs(new DateTime(row.getTimestamp("ts")))
-                .withValue(row.getDouble("value"))
-                .build());
-      }
-    }
 
 
-    return metrics;
+    return metricsDao.getMetrics(clusterName, host, metricDomain, metricType, since);
   }
 
   @Override
   public void storeMetrics(List<GenericMetric> metrics) {
-    Map<String, List<GenericMetric>> metricsPerPartition = metrics.stream()
-        .collect(Collectors.groupingBy(metric ->
-          metric.getClusterName()
-          + metric.getMetricDomain()
-          + metric.getMetricType()
-          + computeMetricsPartition(metric.getTs()).toString(TIME_BUCKET_FORMATTER)
-          + metric.getHost()
-          ));
 
-    for (Entry<String, List<GenericMetric>> metricPartition:metricsPerPartition.entrySet()) {
-      BatchStatement batch = new BatchStatement(BatchStatement.Type.UNLOGGED);
-      for (GenericMetric metric:metricPartition.getValue()) {
-        batch.add(
-            storeMetricsPrepStmt.bind(
-              metric.getClusterName(),
-              metric.getMetricDomain(),
-              metric.getMetricType(),
-              computeMetricsPartition(metric.getTs()).toString(TIME_BUCKET_FORMATTER),
-              metric.getHost(),
-              metric.getMetricScope(),
-              metric.getMetricName(),
-              computeMetricsPartition(metric.getTs()),
-              metric.getMetricAttribute(),
-              metric.getValue()));
-      }
-      session.execute(batch);
-    }
+    metricsDao.storeMetrics(metrics);
   }
 
   /**
@@ -1079,16 +968,13 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
    * @return the time truncated to the closest partition
    */
   private DateTime computeMetricsPartition(DateTime metricTime) {
-    return metricTime
-        .withMinuteOfHour(
-            (metricTime.getMinuteOfHour() / METRICS_PARTITIONING_TIME_MINS)
-                * METRICS_PARTITIONING_TIME_MINS)
-        .withSecondOfMinute(0)
-        .withMillisOfSecond(0);
+    return metricsDao.computeMetricsPartition(metricTime);
   }
 
   @Override
-  public void purgeMetrics() {}
+  public void purgeMetrics() {
+    metricsDao.purgeMetrics();
+  }
 
   @Override
   public void storeOperations(String clusterName, OpType operationType, String host, String operationsJson) {
@@ -1259,65 +1145,13 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
 
   @Override
   public List<PercentRepairedMetric> getPercentRepairedMetrics(String clusterName, UUID repairScheduleId, Long since) {
-    List<PercentRepairedMetric> metrics = Lists.newArrayList();
-    List<ResultSetFuture> futures = Lists.newArrayList();
-    List<String> timeBuckets = Lists.newArrayList();
-    long now = DateTime.now().getMillis();
-    long startTime = since;
-
     // Compute the ten minutes buckets since the requested lower bound timestamp
-    while (startTime <= now) {
-      timeBuckets.add(DateTime.now().withMillis(startTime).toString(TIME_BUCKET_FORMATTER).substring(0, 11) + "0");
-      startTime += 600000;
-    }
-
-    Collections.reverse(timeBuckets);
-
-    for (String timeBucket:timeBuckets) {
-      futures.add(session.executeAsync(
-          getPercentRepairedForSchedulePrepStmt.bind(
-              clusterName,
-              repairScheduleId,
-              timeBucket)));
-    }
-
-    long maxTimeBucket = 0;
-    for (ResultSetFuture future : futures) {
-      for (Row row : future.getUninterruptibly()) {
-        if (Long.parseLong(row.getString("time_bucket")) >= maxTimeBucket) {
-          // we only want metrics from the latest bucket
-          metrics.add(
-              PercentRepairedMetric.builder()
-                  .withCluster(clusterName)
-                  .withRepairScheduleId(row.getUUID("repair_schedule_id"))
-                  .withKeyspaceName(row.getString("keyspace_name"))
-                  .withTableName(row.getString("table_name"))
-                  .withNode(row.getString("node"))
-                  .withPercentRepaired(row.getInt("percent_repaired"))
-                  .build());
-          maxTimeBucket = Math.max(maxTimeBucket, Long.parseLong(row.getString("time_bucket")));
-        }
-      }
-      if (!metrics.isEmpty()) {
-        break;
-      }
-    }
-
-    return metrics;
+    return metricsDao.getPercentRepairedMetrics(clusterName, repairScheduleId, since);
   }
 
   @Override
   public void storePercentRepairedMetric(PercentRepairedMetric metric) {
-    session.execute(storePercentRepairedForSchedulePrepStmt.bind(
-        metric.getCluster(),
-        metric.getRepairScheduleId(),
-        DateTime.now().toString(TIME_BUCKET_FORMATTER).substring(0, 11) + "0",
-        metric.getNode(),
-        metric.getKeyspaceName(),
-        metric.getTableName(),
-        metric.getPercentRepaired(),
-        DateTime.now().toDate())
-    );
+    metricsDao.storePercentRepairedMetric(metric);
   }
 
   @Override
