@@ -22,7 +22,6 @@ import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperApplicationConfiguration;
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
-import io.cassandrareaper.core.ClusterProperties;
 import io.cassandrareaper.core.DiagEventSubscription;
 import io.cassandrareaper.core.GenericMetric;
 import io.cassandrareaper.core.PercentRepairedMetric;
@@ -47,7 +46,6 @@ import io.cassandrareaper.storage.cassandra.migrations.Migration024;
 import io.cassandrareaper.storage.cassandra.migrations.Migration025;
 
 import java.io.IOException;
-import java.time.LocalDate;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -58,10 +56,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import com.datastax.driver.core.BatchStatement;
@@ -106,7 +101,6 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   private static final int METRICS_PARTITIONING_TIME_MINS = 10;
   private static final int LEAD_DURATION = 90;
   /* Simple stmts */
-  private static final String SELECT_CLUSTER = "SELECT * FROM cluster";
   private static final String SELECT_LEADERS = "SELECT * FROM leader";
   private static final String SELECT_RUNNING_REAPERS = "SELECT reaper_instance_id FROM running_reapers";
   private static final DateTimeFormatter TIME_BUCKET_FORMATTER = DateTimeFormat.forPattern("yyyyMMddHHmm");
@@ -119,13 +113,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   private final Session session;
   private final ObjectMapper objectMapper = new ObjectMapper();
   private final UUID reaperInstanceId;
-  private final AtomicReference<Collection<Cluster>> clustersCache = new AtomicReference(Collections.EMPTY_SET);
-  private final AtomicLong clustersCacheAge = new AtomicLong(0);
   private final RepairRunDao repairRunDao;
-  /* prepared stmts */
-  private PreparedStatement insertClusterPrepStmt;
-  private PreparedStatement getClusterPrepStmt;
-  private PreparedStatement deleteClusterPrepStmt;
   private PreparedStatement takeLeadPrepStmt;
   private PreparedStatement renewLeadPrepStmt;
   private PreparedStatement releaseLeadPrepStmt;
@@ -143,16 +131,14 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   private PreparedStatement getMetricsForHostPrepStmt;
   private PreparedStatement insertOperationsPrepStmt;
   private PreparedStatement listOperationsForNodePrepStmt;
-  private PreparedStatement getDiagnosticEventsPrepStmt;
-  private PreparedStatement getDiagnosticEventPrepStmt;
-  private PreparedStatement deleteDiagnosticEventPrepStmt;
-  private PreparedStatement saveDiagnosticEventPrepStmt;
   private PreparedStatement setRunningRepairsPrepStmt;
   private PreparedStatement getRunningRepairsPrepStmt;
   private PreparedStatement storePercentRepairedForSchedulePrepStmt;
   private PreparedStatement getPercentRepairedForSchedulePrepStmt;
   private final RepairUnitDao repairUnitDao;
   private final RepairScheduleDao repairScheduleDao;
+  private final ClusterDao clusterDao;
+  private final EventsDao eventsDao;
 
   public CassandraStorage(
       UUID reaperInstanceId,
@@ -181,11 +167,12 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
     CodecRegistry codecRegistry = cassandra.getConfiguration().getCodecRegistry();
     codecRegistry.register(new DateTimeCodec());
     session = cassandra.connect(config.getCassandraFactory().getKeyspace());
-
+    this.eventsDao =  new EventsDao(session);
     this.repairSegmentDao = new RepairSegmentDao(this, session);
     this.repairRunDao =  new RepairRunDao(this, session, this.repairSegmentDao);
     this.repairUnitDao  = new RepairUnitDao(defaultTimeout, session);
     this.repairScheduleDao = new RepairScheduleDao(this.repairUnitDao, session);
+    this.clusterDao  = new ClusterDao(repairScheduleDao, repairUnitDao, repairRunDao, eventsDao, session, objectMapper);
 
     version = cassandra.getMetadata().getAllHosts()
         .stream()
@@ -382,30 +369,9 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
     return !range.isPresent() || RepairSegmentDao.segmentIsWithinRange(segment, range.get());
   }
 
-  private static DiagEventSubscription createDiagEventSubscription(Row row) {
-    return new DiagEventSubscription(
-        Optional.of(row.getUUID("id")),
-        row.getString("cluster"),
-        Optional.of(row.getString("description")),
-        row.getSet("nodes", String.class),
-        row.getSet("events", String.class),
-        row.getBool("export_sse"),
-        row.getString("export_file_logger"),
-        row.getString("export_http_endpoint"));
-  }
-
   private void prepareStatements() {
     final String timeUdf = 0 < VersionNumber.parse("2.2").compareTo(version) ? "dateOf" : "toTimestamp";
-    insertClusterPrepStmt = session
-            .prepare(
-                "INSERT INTO cluster(name, partitioner, seed_hosts, properties, state, last_contact)"
-                    + " values(?, ?, ?, ?, ?, ?)")
-            .setConsistencyLevel(ConsistencyLevel.QUORUM);
-    getClusterPrepStmt = session
-        .prepare("SELECT * FROM cluster WHERE name = ?")
-        .setConsistencyLevel(ConsistencyLevel.QUORUM)
-        .setRetryPolicy(DowngradingConsistencyRetryPolicy.INSTANCE);
-    deleteClusterPrepStmt = session.prepare("DELETE FROM cluster WHERE name = ?");
+
 
     prepareScheduleStatements();
     prepareLeaderElectionStatements(timeUdf);
@@ -425,14 +391,6 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
     saveSnapshotPrepStmt = session.prepare(
             "INSERT INTO snapshot (cluster, snapshot_name, owner, cause, creation_time)"
                 + " VALUES(?,?,?,?,?)");
-
-    getDiagnosticEventsPrepStmt = session.prepare("SELECT * FROM diagnostic_event_subscription");
-    getDiagnosticEventPrepStmt = session.prepare("SELECT * FROM diagnostic_event_subscription WHERE id = ?");
-    deleteDiagnosticEventPrepStmt = session.prepare("DELETE FROM diagnostic_event_subscription WHERE id = ?");
-
-    saveDiagnosticEventPrepStmt = session.prepare("INSERT INTO diagnostic_event_subscription "
-        + "(id,cluster,description,nodes,events,export_sse,export_file_logger,export_http_endpoint)"
-        + " VALUES(?,?,?,?,?,?,?,?)");
 
 
     prepareMetricStatements();
@@ -558,135 +516,40 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   @Override
   public Collection<Cluster> getClusters() {
     // cache the clusters list for ten seconds
-    if (System.currentTimeMillis() - clustersCacheAge.get() > TimeUnit.SECONDS.toMillis(10)) {
-      clustersCacheAge.set(System.currentTimeMillis());
-      Collection<Cluster> clusters = Lists.<Cluster>newArrayList();
-      for (Row row : session.execute(new SimpleStatement(SELECT_CLUSTER).setIdempotent(Boolean.TRUE))) {
-        try {
-          clusters.add(parseCluster(row));
-        } catch (IOException ex) {
-          LOG.error("Failed parsing cluster {}", row.getString("name"), ex);
-        }
-      }
-      clustersCache.set(Collections.unmodifiableCollection(clusters));
-    }
-    return clustersCache.get();
+    return clusterDao.getClusters();
   }
 
   @Override
   public boolean addCluster(Cluster cluster) {
-    assert addClusterAssertions(cluster);
-    try {
-      session.execute(
-          insertClusterPrepStmt.bind(
-              cluster.getName(),
-              cluster.getPartitioner().get(),
-              cluster.getSeedHosts(),
-              objectMapper.writeValueAsString(cluster.getProperties()),
-              cluster.getState().name(),
-              java.sql.Date.valueOf(cluster.getLastContact())));
-    } catch (IOException e) {
-      LOG.error("Failed serializing cluster information for database write", e);
-      throw new IllegalStateException(e);
-    }
-    return true;
+    return clusterDao.addCluster(cluster);
   }
 
   @Override
   public boolean updateCluster(Cluster newCluster) {
-    return addCluster(newCluster);
+    return clusterDao.updateCluster(newCluster);
   }
 
   private boolean addClusterAssertions(Cluster cluster) {
-    Preconditions.checkState(
-        Cluster.State.UNKNOWN != cluster.getState(),
-        "Cluster should not be persisted with UNKNOWN state");
 
-    Preconditions.checkState(cluster.getPartitioner().isPresent(), "Cannot store cluster with no partitioner.");
     // assert we're not overwriting a cluster with the same name but different node list
-    Set<String> previousNodes;
-    try {
-      previousNodes = getCluster(cluster.getName()).getSeedHosts();
-    } catch (IllegalArgumentException ignore) {
-      // there is no previous cluster with same name
-      previousNodes = cluster.getSeedHosts();
-    }
-    Set<String> addedNodes = cluster.getSeedHosts();
 
-    Preconditions.checkArgument(
-        !Collections.disjoint(previousNodes, addedNodes),
-        "Trying to add/update cluster using an existing name: %s. No nodes overlap between %s and %s",
-        cluster.getName(), StringUtils.join(previousNodes, ','), StringUtils.join(addedNodes, ','));
-
-    return true;
+    return clusterDao.addClusterAssertions(cluster);
   }
 
   @Override
   public Cluster getCluster(String clusterName) {
-    Row row = session.execute(getClusterPrepStmt.bind(clusterName)).one();
-    if (null != row) {
-      try {
-        return parseCluster(row);
-      } catch (IOException e) {
-        LOG.error("Failed parsing cluster information from the database entry", e);
-        throw new IllegalStateException(e);
-      }
-    }
-    throw new IllegalArgumentException("no such cluster: " + clusterName);
+    return clusterDao.getCluster(clusterName);
   }
 
   private Cluster parseCluster(Row row) throws IOException {
 
-    ClusterProperties properties = null != row.getString("properties")
-          ? objectMapper.readValue(row.getString("properties"), ClusterProperties.class)
-          : ClusterProperties.builder().withJmxPort(Cluster.DEFAULT_JMX_PORT).build();
-
-    LocalDate lastContact = row.getTimestamp("last_contact") == null
-        ? LocalDate.MIN
-        : new java.sql.Date(row.getTimestamp("last_contact").getTime()).toLocalDate();
-
-    Cluster.Builder builder = Cluster.builder()
-          .withName(row.getString("name"))
-          .withSeedHosts(row.getSet("seed_hosts", String.class))
-          .withJmxPort(properties.getJmxPort())
-          .withState(null != row.getString("state")
-              ? Cluster.State.valueOf(row.getString("state"))
-              : Cluster.State.UNREACHABLE)
-          .withLastContact(lastContact);
-
-    if (null != properties.getJmxCredentials()) {
-      builder = builder.withJmxCredentials(properties.getJmxCredentials());
-    }
-
-    if (null != row.getString("partitioner")) {
-      builder = builder.withPartitioner(row.getString("partitioner"));
-    }
-    return builder.build();
+    return clusterDao.parseCluster(row);
   }
 
   @Override
   public Cluster deleteCluster(String clusterName) {
-    repairScheduleDao.getRepairSchedulesForCluster(clusterName)
-        .forEach(schedule -> repairScheduleDao.deleteRepairSchedule(schedule.getId()));
-    session.executeAsync(repairRunDao.deleteRepairRunByClusterPrepStmt.bind(clusterName));
 
-    getEventSubscriptions(clusterName)
-        .stream()
-        .filter(subscription -> subscription.getId().isPresent())
-        .forEach(subscription -> deleteEventSubscription(subscription.getId().get()));
-
-    Statement stmt = new SimpleStatement(RepairUnitDao.SELECT_REPAIR_UNIT);
-    stmt.setIdempotent(true);
-    ResultSet results = session.execute(stmt);
-    for (Row row : results) {
-      if (row.getString("cluster_name").equals(clusterName)) {
-        UUID id = row.getUUID("id");
-        session.executeAsync(repairUnitDao.deleteRepairUnitPrepStmt.bind(id));
-      }
-    }
-    Cluster cluster = getCluster(clusterName);
-    session.execute(deleteClusterPrepStmt.bind(clusterName));
-    return cluster;
+    return clusterDao.deleteCluster(clusterName);
   }
 
   @Override
@@ -1068,51 +931,29 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
 
   @Override
   public Collection<DiagEventSubscription> getEventSubscriptions() {
-    return session.execute(getDiagnosticEventsPrepStmt.bind()).all().stream()
-        .map((row) -> createDiagEventSubscription(row))
-        .collect(Collectors.toList());
+    return eventsDao.getEventSubscriptions();
   }
 
   @Override
   public Collection<DiagEventSubscription> getEventSubscriptions(String clusterName) {
-    Preconditions.checkNotNull(clusterName);
 
-    return session.execute(getDiagnosticEventsPrepStmt.bind()).all().stream()
-        .map((row) -> createDiagEventSubscription(row))
-        .filter((subscription) -> clusterName.equals(subscription.getCluster()))
-        .collect(Collectors.toList());
+    return eventsDao.getEventSubscriptions(clusterName);
   }
 
   @Override
   public DiagEventSubscription getEventSubscription(UUID id) {
-    Row row  = session.execute(getDiagnosticEventPrepStmt.bind(id)).one();
-    if (null != row) {
-      return createDiagEventSubscription(row);
-    }
-    throw new IllegalArgumentException("No event subscription with id " + id);
+    return eventsDao.getEventSubscription(id);
   }
 
   @Override
   public DiagEventSubscription addEventSubscription(DiagEventSubscription subscription) {
-    Preconditions.checkArgument(subscription.getId().isPresent());
 
-    session.execute(saveDiagnosticEventPrepStmt.bind(
-        subscription.getId().get(),
-        subscription.getCluster(),
-        subscription.getDescription(),
-        subscription.getNodes(),
-        subscription.getEvents(),
-        subscription.getExportSse(),
-        subscription.getExportFileLogger(),
-        subscription.getExportHttpEndpoint()));
-
-    return subscription;
+    return eventsDao.addEventSubscription(subscription);
   }
 
   @Override
   public boolean deleteEventSubscription(UUID id) {
-    session.execute(deleteDiagnosticEventPrepStmt.bind(id));
-    return true;
+    return eventsDao.deleteEventSubscription(id);
   }
 
   @Override
