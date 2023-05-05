@@ -263,7 +263,7 @@ public class RepairSegmentDao {
   }
 
   public List<RepairSegment> getNextFreeSegments(UUID runId) {
-    List<RepairSegment> segments = Lists.<RepairSegment>newArrayList(cassandraStorage.getRepairSegmentsForRun(runId));
+    List<RepairSegment> segments = Lists.<RepairSegment>newArrayList(getRepairSegmentsForRun(runId));
     Collections.shuffle(segments);
 
     Set<String> lockedNodes = cassandraStorage.getLockedNodesForRun(runId);

@@ -160,8 +160,8 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
     session = cassandra.connect(config.getCassandraFactory().getKeyspace());
     this.eventsDao =  new EventsDao(session);
     this.metricsDao  = new MetricsDao(session);
-    this.repairSegmentDao = new RepairSegmentDao(this, session);
     this.repairUnitDao  = new RepairUnitDao(defaultTimeout, session);
+    this.repairSegmentDao = new RepairSegmentDao(this, session);
     this.repairScheduleDao = new RepairScheduleDao(repairUnitDao, session);
     this.clusterDao  = new ClusterDao(repairScheduleDao, repairUnitDao, eventsDao, session, objectMapper);
     this.repairRunDao =  new RepairRunDao(repairUnitDao, clusterDao, session, this.repairSegmentDao);
@@ -441,11 +441,6 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
         .setConsistencyLevel(ConsistencyLevel.QUORUM);
     releaseLeadPrepStmt = session.prepare("DELETE FROM leader WHERE leader_id = ? IF reaper_instance_id = ?")
         .setConsistencyLevel(ConsistencyLevel.QUORUM);
-  }
-
-  private void prepareMetricStatements() {
-
-    metricsDao.prepareMetricStatements();
   }
 
   private void prepareOperationsStatements() {

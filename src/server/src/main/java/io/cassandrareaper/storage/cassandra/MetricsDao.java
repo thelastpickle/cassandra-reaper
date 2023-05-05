@@ -55,6 +55,7 @@ public class MetricsDao {
   public MetricsDao(Session session) {
 
     this.session = session;
+    prepareMetricStatements();
 
   }
 
