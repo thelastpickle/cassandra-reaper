@@ -82,23 +82,6 @@ jobs:
         storage-type: [local]
         test-type: [ccm]
         include:
-          # don't run against the following C* versions when using cassandra storage type
-          - cassandra-version: "binary:1.2.19"
-            cucumber-options: '--tags ~@cassandra_2_1_onwards --tags ~@cassandra_4_0_onwards --tags ~@cassandra_3_11_onwards'
-            experimental: false
-            jdk-version: '8'
-          - cassandra-version: "binary:2.0.17"
-            cucumber-options: '--tags ~@cassandra_2_1_onwards --tags ~@cassandra_4_0_onwards --tags ~@cassandra_3_11_onwards'
-            experimental: false
-            jdk-version: '8'
-          - cassandra-version: 'binary:2.1.22'
-            cucumber-options: '--tags ~@cassandra_4_0_onwards --tags ~@cassandra_3_11_onwards'
-            experimental: false
-            jdk-version: '8'
-          - cassandra-version: 'binary:2.2.19'
-            cucumber-options: '--tags ~@cassandra_4_0_onwards --tags ~@cassandra_3_11_onwards'
-            experimental: false
-            jdk-version: '8'
           - cassandra-version: 'binary:3.0.25'
             cucumber-options: '--tags ~@cassandra_4_0_onwards --tags ~@cassandra_3_11_onwards'
             experimental: false
@@ -160,14 +143,6 @@ jobs:
         storage-type: [cassandra]
         test-type: [ccm]
         include:
-          - cassandra-version: 'binary:2.1.22'
-            cucumber-options: '--tags ~@cassandra_4_0_onwards --tags ~@cassandra_3_11_onwards'
-            experimental: false
-            jdk-version: '8'
-          - cassandra-version: 'binary:2.2.19'
-            cucumber-options: '--tags ~@cassandra_4_0_onwards --tags ~@cassandra_3_11_onwards'
-            experimental: false
-            jdk-version: '8'
           - cassandra-version: 'binary:3.0.25'
             cucumber-options: '--tags ~@cassandra_4_0_onwards --tags ~@cassandra_3_11_onwards'
             experimental: false
@@ -284,14 +259,6 @@ jobs:
         grim-min: [1]
         # all versions but trunk have the same cucumber options, but we can't declare that more effectively (yet)
         include:
-          - cassandra-version: 'binary:2.1.22'
-            cucumber-options: '--tags ~@cassandra_4_0_onwards --tags @sidecar --tags ~@cassandra_3_11_onwards'
-            experimental: false
-            jdk-version: '8'
-          - cassandra-version: 'binary:2.2.19'
-            cucumber-options: '--tags ~@cassandra_4_0_onwards --tags @sidecar --tags ~@cassandra_3_11_onwards'
-            experimental: false
-            jdk-version: '8'
           - cassandra-version: 'binary:3.0.25'
             cucumber-options: '--tags ~@cassandra_4_0_onwards --tags @sidecar --tags ~@cassandra_3_11_onwards'
             experimental: false
@@ -407,15 +374,6 @@ jobs:
         grim-max: [2]
         grim-min: [2]
         include:
-          # all versions but trunk need to exclude trunk tests
-          - cassandra-version: 'binary:2.1.22'
-            cucumber-options: '--tags ~@cassandra_4_0_onwards --tags ~@cassandra_3_11_onwards'
-            experimental: false
-            jdk-version: '8'
-          - cassandra-version: 'binary:2.2.19'
-            cucumber-options: '--tags ~@cassandra_4_0_onwards --tags ~@cassandra_3_11_onwards'
-            experimental: false
-            jdk-version: '8'
           - cassandra-version: 'binary:3.0.25'
             cucumber-options: '--tags ~@cassandra_4_0_onwards --tags ~@cassandra_3_11_onwards'
             experimental: false
