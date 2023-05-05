@@ -161,10 +161,10 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
     this.eventsDao =  new EventsDao(session);
     this.metricsDao  = new MetricsDao(session);
     this.repairSegmentDao = new RepairSegmentDao(this, session);
-    this.repairRunDao =  new RepairRunDao(this, session, this.repairSegmentDao);
     this.repairUnitDao  = new RepairUnitDao(defaultTimeout, session);
-    this.repairScheduleDao = new RepairScheduleDao(this.repairUnitDao, session);
+    this.repairScheduleDao = new RepairScheduleDao(repairUnitDao, session);
     this.clusterDao  = new ClusterDao(repairScheduleDao, repairUnitDao, eventsDao, session, objectMapper);
+    this.repairRunDao =  new RepairRunDao(repairUnitDao, clusterDao, session, this.repairSegmentDao);
 
 
     version = cassandra.getMetadata().getAllHosts()

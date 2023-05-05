@@ -18,6 +18,7 @@
 
 package io.cassandrareaper.storage.cassandra;
 
+import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairSegment;
 
@@ -65,15 +66,17 @@ public class RepairRunDao {
   PreparedStatement deleteRepairRunPrepStmt;
   PreparedStatement deleteRepairRunByClusterByIdPrepStmt;
   PreparedStatement deleteRepairRunByUnitPrepStmt;
-  private final CassandraStorage cassandraStorage;
+  private final RepairUnitDao repairUnitDao;
+  private final ClusterDao clusterDao;
 
   private final RepairSegmentDao repairSegmentDao;
   private final Session session;
 
-  public RepairRunDao(CassandraStorage cassandraStorage, Session session, RepairSegmentDao repairSegmentDao ) {
-    this.cassandraStorage = cassandraStorage;
+  public RepairRunDao(RepairUnitDao repairUnitDao, ClusterDao clusterDao, Session session, RepairSegmentDao repairSegmentDao ) {
     this.session = session;
     this.repairSegmentDao = repairSegmentDao;
+    this.repairUnitDao = repairUnitDao;
+    this.clusterDao = clusterDao;
     prepareStatements();
   }
 
@@ -199,7 +202,7 @@ public class RepairRunDao {
         nbRanges = 0;
       }
     }
-    assert cassandraStorage.getRepairUnit(newRepairRun.getRepairUnitId()).getIncrementalRepair() == isIncremental;
+    assert repairUnitDao.getRepairUnit(newRepairRun.getRepairUnitId()).getIncrementalRepair() == isIncremental;
 
     futures.add(this.session.executeAsync(repairRunBatch));
     futures.add(
@@ -425,7 +428,7 @@ public class RepairRunDao {
   public Collection<RepairRun> getRepairRunsWithState(RepairRun.RunState runState) {
     Set<RepairRun> repairRunsWithState = Sets.newHashSet();
 
-    List<Collection<UUID>> repairRunIds = cassandraStorage.getClusters()
+    List<Collection<UUID>> repairRunIds = clusterDao.getClusters()
         .stream()
         // Grab all ids for the given cluster name
         .map(cluster -> getRepairRunIdsForClusterWithState(cluster.getName(), runState))
