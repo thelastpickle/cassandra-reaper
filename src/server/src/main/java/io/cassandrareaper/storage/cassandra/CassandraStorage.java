@@ -97,9 +97,6 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   private final RepairRunDao repairRunDao;
   private PreparedStatement saveHeartbeatPrepStmt;
   private PreparedStatement deleteHeartbeatPrepStmt;
-  private PreparedStatement getSnapshotPrepStmt;
-  private PreparedStatement deleteSnapshotPrepStmt;
-  private PreparedStatement saveSnapshotPrepStmt;
 
   private PreparedStatement insertOperationsPrepStmt;
   private PreparedStatement listOperationsForNodePrepStmt;
@@ -109,6 +106,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   private final EventsDao eventsDao;
   private final MetricsDao metricsDao;
   private final Concurrency concurrency;
+  private final SnapshotDao snapshotDao;
 
   public CassandraStorage(
       UUID reaperInstanceId,
@@ -145,6 +143,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
 
     this.eventsDao =  new EventsDao(session);
     this.metricsDao  = new MetricsDao(session);
+    this.snapshotDao = new SnapshotDao(session);
     this.concurrency = new Concurrency(version, reaperInstanceId, session);
     this.repairUnitDao  = new RepairUnitDao(defaultTimeout, session);
     this.repairSegmentDao = new RepairSegmentDao(concurrency, repairUnitDao, version, session);
@@ -222,11 +221,6 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
             "DELETE FROM running_reapers WHERE reaper_instance_id = ?")
         .setIdempotent(true);
 
-    getSnapshotPrepStmt = session.prepare("SELECT * FROM snapshot WHERE cluster = ? and snapshot_name = ?");
-    deleteSnapshotPrepStmt = session.prepare("DELETE FROM snapshot WHERE cluster = ? and snapshot_name = ?");
-    saveSnapshotPrepStmt = session.prepare(
-            "INSERT INTO snapshot (cluster, snapshot_name, owner, cause, creation_time)"
-                + " VALUES(?,?,?,?,?)");
 
     prepareOperationsStatements();
   }
@@ -649,36 +643,19 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
 
   @Override
   public boolean saveSnapshot(Snapshot snapshot) {
-    session.execute(
-        saveSnapshotPrepStmt.bind(
-            snapshot.getClusterName(),
-            snapshot.getName(),
-            snapshot.getOwner().orElse("reaper"),
-            snapshot.getCause().orElse("taken with reaper"),
-            snapshot.getCreationDate().get()));
 
-    return true;
+    return snapshotDao.saveSnapshot(snapshot);
   }
 
   @Override
   public boolean deleteSnapshot(Snapshot snapshot) {
-    session.execute(deleteSnapshotPrepStmt.bind(snapshot.getClusterName(), snapshot.getName()));
-    return false;
+    return snapshotDao.deleteSnapshot(snapshot);
   }
 
   @Override
   public Snapshot getSnapshot(String clusterName, String snapshotName) {
-    Snapshot.Builder snapshotBuilder = Snapshot.builder().withClusterName(clusterName).withName(snapshotName);
 
-    ResultSet result = session.execute(getSnapshotPrepStmt.bind(clusterName, snapshotName));
-    for (Row row : result) {
-      snapshotBuilder
-          .withCause(row.getString("cause"))
-          .withOwner(row.getString("owner"))
-          .withCreationDate(new DateTime(row.getTimestamp("creation_time")));
-    }
-
-    return snapshotBuilder.build();
+    return snapshotDao.getSnapshot(clusterName, snapshotName);
   }
 
   @Override
