@@ -50,11 +50,11 @@ public class RepairUnitDao {
         }
       });
 
-  private final CassandraStorage cassandraStorage;
+  private final int defaultTimeout;
   private final Session session;
-
-  public RepairUnitDao(CassandraStorage cassandraStorage, Session session) {
-    this.cassandraStorage = cassandraStorage;
+  static final String SELECT_REPAIR_UNIT = "SELECT * FROM repair_unit_v1";
+  public RepairUnitDao(int defaultTimeout, Session session) {
+    this.defaultTimeout = defaultTimeout;
     this.session = session;
     prepareStatements();
   }
@@ -107,7 +107,7 @@ public class RepairUnitDao {
           .datacenters(repairUnitRow.getSet("datacenters", String.class))
           .blacklistedTables(repairUnitRow.getSet("blacklisted_tables", String.class))
           .repairThreadCount(repairUnitRow.getInt("repair_thread_count"))
-          .timeout(repairUnitRow.isNull("timeout") ? cassandraStorage.defaultTimeout : repairUnitRow.getInt("timeout"))
+          .timeout(repairUnitRow.isNull("timeout") ? defaultTimeout : repairUnitRow.getInt("timeout"))
           .build(id);
     }
     throw new IllegalArgumentException("No repair unit exists for " + id);
@@ -121,7 +121,7 @@ public class RepairUnitDao {
   public Optional<RepairUnit> getRepairUnit(RepairUnit.Builder params) {
     // brute force again
     RepairUnit repairUnit = null;
-    Statement stmt = new SimpleStatement(CassandraStorage.SELECT_REPAIR_UNIT);
+    Statement stmt = new SimpleStatement(SELECT_REPAIR_UNIT);
     stmt.setIdempotent(Boolean.TRUE);
     ResultSet results = session.execute(stmt);
     for (Row repairUnitRow : results) {
@@ -134,7 +134,7 @@ public class RepairUnitDao {
           .datacenters(repairUnitRow.getSet("datacenters", String.class))
           .blacklistedTables(repairUnitRow.getSet("blacklisted_tables", String.class))
           .repairThreadCount(repairUnitRow.getInt("repair_thread_count"))
-          .timeout(repairUnitRow.isNull("timeout") ? cassandraStorage.defaultTimeout : repairUnitRow.getInt("timeout"))
+          .timeout(repairUnitRow.isNull("timeout") ? defaultTimeout : repairUnitRow.getInt("timeout"))
           .build(repairUnitRow.getUUID("id"));
       if (existingRepairUnit.with().equals(params)) {
         repairUnit = existingRepairUnit;
