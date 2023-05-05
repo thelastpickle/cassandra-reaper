@@ -38,10 +38,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class RepairUnitDao {
+  static final String SELECT_REPAIR_UNIT = "SELECT * FROM repair_unit_v1";
   private static final Logger LOG = LoggerFactory.getLogger(RepairUnitDao.class);
   PreparedStatement insertRepairUnitPrepStmt;
   PreparedStatement getRepairUnitPrepStmt;
   PreparedStatement deleteRepairUnitPrepStmt;
+
   final LoadingCache<UUID, RepairUnit> repairUnits = CacheBuilder
       .newBuilder()
       .build(new CacheLoader<UUID, RepairUnit>() {
@@ -49,10 +51,9 @@ public class RepairUnitDao {
           return getRepairUnitImpl(repairUnitId);
         }
       });
-
   private final int defaultTimeout;
   private final Session session;
-  static final String SELECT_REPAIR_UNIT = "SELECT * FROM repair_unit_v1";
+
   public RepairUnitDao(int defaultTimeout, Session session) {
     this.defaultTimeout = defaultTimeout;
     this.session = session;

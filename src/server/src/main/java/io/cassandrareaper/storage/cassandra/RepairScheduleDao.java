@@ -1,3 +1,21 @@
+/*
+ * Copyright 2016-2017 Spotify AB
+ * Copyright 2016-2019 The Last Pickle Ltd
+ * Copyright 2020-2020 DataStax, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package io.cassandrareaper.storage.cassandra;
 
 import io.cassandrareaper.core.RepairSchedule;
@@ -28,27 +46,25 @@ import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class RepairScheduleDAO {
+public class RepairScheduleDao {
   private static final String SELECT_REPAIR_SCHEDULE = "SELECT * FROM repair_schedule_v1";
-  private final RepairUnitDao repairUnitDao;
-
-  private final Session session;
-
-  private static final Logger LOG = LoggerFactory.getLogger(RepairScheduleDAO.class);
+  private static final Logger LOG = LoggerFactory.getLogger(RepairScheduleDao.class);
   PreparedStatement insertRepairSchedulePrepStmt;
   PreparedStatement getRepairSchedulePrepStmt;
   PreparedStatement getRepairScheduleByClusterAndKsPrepStmt;
   PreparedStatement insertRepairScheduleByClusterAndKsPrepStmt;
   PreparedStatement deleteRepairSchedulePrepStmt;
   PreparedStatement deleteRepairScheduleByClusterAndKsByIdPrepStmt;
+  private final RepairUnitDao repairUnitDao;
+  private final Session session;
 
 
-  public RepairScheduleDAO(RepairUnitDao repairUnitDao, Session session) {
+  public RepairScheduleDao(RepairUnitDao repairUnitDao, Session session) {
     this.repairUnitDao = repairUnitDao;
     this.session = session;
   }
 
-  
+
   public RepairSchedule addRepairSchedule(RepairSchedule.Builder repairSchedule) {
     RepairSchedule schedule = repairSchedule.build(UUIDs.timeBased());
     updateRepairSchedule(schedule);
@@ -56,7 +72,7 @@ public class RepairScheduleDAO {
     return schedule;
   }
 
-  
+
   public Optional<RepairSchedule> getRepairSchedule(UUID repairScheduleId) {
     Row sched = session.execute(getRepairSchedulePrepStmt.bind(repairScheduleId)).one();
 
@@ -83,7 +99,7 @@ public class RepairScheduleDAO {
         .build(repairScheduleRow.getUUID("id"));
   }
 
-  
+
   public Collection<RepairSchedule> getRepairSchedulesForCluster(String clusterName) {
     Collection<RepairSchedule> schedules = Lists.<RepairSchedule>newArrayList();
     ResultSet scheduleIds = session.execute(getRepairScheduleByClusterAndKsPrepStmt.bind(clusterName, " "));
@@ -97,7 +113,7 @@ public class RepairScheduleDAO {
     return schedules;
   }
 
-  
+
   public Collection<RepairSchedule> getRepairSchedulesForCluster(String clusterName, boolean incremental) {
     return getRepairSchedulesForCluster(clusterName).stream()
         .filter(schedule -> repairUnitDao.getRepairUnit(
@@ -106,7 +122,7 @@ public class RepairScheduleDAO {
         .collect(Collectors.toList());
   }
 
-  
+
   public Collection<RepairSchedule> getRepairSchedulesForKeyspace(String keyspaceName) {
     Collection<RepairSchedule> schedules = Lists.<RepairSchedule>newArrayList();
     ResultSet scheduleIds = session.execute(getRepairScheduleByClusterAndKsPrepStmt.bind(" ", keyspaceName));
@@ -120,7 +136,7 @@ public class RepairScheduleDAO {
     return schedules;
   }
 
-  
+
   public Collection<RepairSchedule> getRepairSchedulesForClusterAndKeyspace(String clusterName, String keyspaceName) {
     Collection<RepairSchedule> schedules = Lists.<RepairSchedule>newArrayList();
     ResultSet scheduleIds = session.execute(getRepairScheduleByClusterAndKsPrepStmt.bind(clusterName, keyspaceName));
@@ -134,7 +150,7 @@ public class RepairScheduleDAO {
     return schedules;
   }
 
-  
+
   public Collection<RepairSchedule> getAllRepairSchedules() {
     Collection<RepairSchedule> schedules = Lists.<RepairSchedule>newArrayList();
     Statement stmt = new SimpleStatement(SELECT_REPAIR_SCHEDULE);
@@ -147,7 +163,7 @@ public class RepairScheduleDAO {
     return schedules;
   }
 
-  
+
   public boolean updateRepairSchedule(RepairSchedule newRepairSchedule) {
     final Set<UUID> repairHistory = Sets.newHashSet();
     repairHistory.addAll(newRepairSchedule.getRunHistory());
@@ -196,7 +212,7 @@ public class RepairScheduleDAO {
     return true;
   }
 
-  
+
   public Optional<RepairSchedule> deleteRepairSchedule(UUID id) {
     Optional<RepairSchedule> repairSchedule = getRepairSchedule(id);
     if (repairSchedule.isPresent()) {
