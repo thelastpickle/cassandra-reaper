@@ -59,65 +59,21 @@ public class RepairSegmentDao {
   PreparedStatement getRepairSegmentsByRunIdAndStatePrepStmt = null;
   @Nullable // null on Cassandra-2 as it's not supported syntax
   PreparedStatement getRepairSegmentCountByRunIdAndStatePrepStmt = null;
-  private final CassandraStorage cassandraStorage;
+  private final Concurrency concurrency;
+  private final RepairUnitDao repairUnitDao;
+  private final VersionNumber version;
   private final Session session;
 
-  public RepairSegmentDao(CassandraStorage cassandraStorage, Session session) {
-    this.cassandraStorage = cassandraStorage;
+  //TODO: Consider removing Cassandra 2 support so we don't need to look at the version.
+  public RepairSegmentDao(Concurrency concurrency,
+                          RepairUnitDao repairUnitDao,
+                          VersionNumber version,
+                          Session session) {
     this.session = session;
+    this.concurrency = concurrency;
+    this.repairUnitDao = repairUnitDao;
+    this.version = version;
     prepareStatements();
-  }
-
-  private void prepareStatements() {
-    insertRepairSegmentPrepStmt = session
-        .prepare(
-            "INSERT INTO repair_run"
-                + "(id,segment_id,repair_unit_id,start_token,end_token,"
-                + " segment_state,fail_count, token_ranges, replicas,host_id)"
-                + " VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
-        .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM);
-    insertRepairSegmentIncrementalPrepStmt = session
-        .prepare(
-            "INSERT INTO repair_run"
-                + "(id,segment_id,repair_unit_id,start_token,end_token,"
-                + "segment_state,coordinator_host,fail_count,replicas,host_id)"
-                + " VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
-        .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM);
-    updateRepairSegmentPrepStmt = session
-        .prepare(
-            "INSERT INTO repair_run"
-                + "(id,segment_id,segment_state,coordinator_host,segment_start_time,fail_count,host_id)"
-                + " VALUES(?, ?, ?, ?, ?, ?, ?)")
-        .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM);
-    insertRepairSegmentEndTimePrepStmt = session
-        .prepare("INSERT INTO repair_run(id, segment_id, segment_end_time) VALUES(?, ?, ?)")
-        .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM);
-    getRepairSegmentPrepStmt = session
-        .prepare(
-            "SELECT id,repair_unit_id,segment_id,start_token,end_token,segment_state,coordinator_host,"
-                + "segment_start_time,segment_end_time,fail_count, token_ranges, replicas, host_id"
-                + " FROM repair_run WHERE id = ? and segment_id = ?")
-        .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM);
-    getRepairSegmentsByRunIdPrepStmt = session.prepare(
-        "SELECT id,repair_unit_id,segment_id,start_token,end_token,segment_state,coordinator_host,segment_start_time,"
-            + "segment_end_time,fail_count, token_ranges, replicas, host_id FROM repair_run WHERE id = ?");
-    getRepairSegmentCountByRunIdPrepStmt = session.prepare(
-        "SELECT count(*) FROM repair_run WHERE id = ?"
-    );
-    if (0 >= VersionNumber.parse("3.0").compareTo(cassandraStorage.version)) {
-      try {
-        getRepairSegmentsByRunIdAndStatePrepStmt = session.prepare(
-            "SELECT id,repair_unit_id,segment_id,start_token,end_token,segment_state,coordinator_host,"
-                + "segment_start_time,segment_end_time,fail_count, token_ranges, replicas, host_id FROM repair_run "
-                + "WHERE id = ? AND segment_state = ? ALLOW FILTERING");
-        getRepairSegmentCountByRunIdAndStatePrepStmt = session.prepare(
-            "SELECT count(segment_id) FROM repair_run WHERE id = ? AND segment_state = ? ALLOW FILTERING");
-      } catch (InvalidQueryException ex) {
-        throw new AssertionError(
-            "Failure preparing `SELECT… FROM repair_run WHERE… ALLOW FILTERING` should only happen on Cassandra-2",
-            ex);
-      }
-    }
   }
 
   static boolean segmentIsWithinRange(RepairSegment segment, RingRange range) {
@@ -170,6 +126,58 @@ public class RepairSegmentDao {
     return builder.withId(segmentRow.getUUID("segment_id")).build();
   }
 
+  private void prepareStatements() {
+    insertRepairSegmentPrepStmt = session
+        .prepare(
+            "INSERT INTO repair_run"
+                + "(id,segment_id,repair_unit_id,start_token,end_token,"
+                + " segment_state,fail_count, token_ranges, replicas,host_id)"
+                + " VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+        .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM);
+    insertRepairSegmentIncrementalPrepStmt = session
+        .prepare(
+            "INSERT INTO repair_run"
+                + "(id,segment_id,repair_unit_id,start_token,end_token,"
+                + "segment_state,coordinator_host,fail_count,replicas,host_id)"
+                + " VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+        .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM);
+    updateRepairSegmentPrepStmt = session
+        .prepare(
+            "INSERT INTO repair_run"
+                + "(id,segment_id,segment_state,coordinator_host,segment_start_time,fail_count,host_id)"
+                + " VALUES(?, ?, ?, ?, ?, ?, ?)")
+        .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM);
+    insertRepairSegmentEndTimePrepStmt = session
+        .prepare("INSERT INTO repair_run(id, segment_id, segment_end_time) VALUES(?, ?, ?)")
+        .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM);
+    getRepairSegmentPrepStmt = session
+        .prepare(
+            "SELECT id,repair_unit_id,segment_id,start_token,end_token,segment_state,coordinator_host,"
+                + "segment_start_time,segment_end_time,fail_count, token_ranges, replicas, host_id"
+                + " FROM repair_run WHERE id = ? and segment_id = ?")
+        .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM);
+    getRepairSegmentsByRunIdPrepStmt = session.prepare(
+        "SELECT id,repair_unit_id,segment_id,start_token,end_token,segment_state,coordinator_host,segment_start_time,"
+            + "segment_end_time,fail_count, token_ranges, replicas, host_id FROM repair_run WHERE id = ?");
+    getRepairSegmentCountByRunIdPrepStmt = session.prepare(
+        "SELECT count(*) FROM repair_run WHERE id = ?"
+    );
+    if (0 >= VersionNumber.parse("3.0").compareTo(version)) {
+      try {
+        getRepairSegmentsByRunIdAndStatePrepStmt = session.prepare(
+            "SELECT id,repair_unit_id,segment_id,start_token,end_token,segment_state,coordinator_host,"
+                + "segment_start_time,segment_end_time,fail_count, token_ranges, replicas, host_id FROM repair_run "
+                + "WHERE id = ? AND segment_state = ? ALLOW FILTERING");
+        getRepairSegmentCountByRunIdAndStatePrepStmt = session.prepare(
+            "SELECT count(segment_id) FROM repair_run WHERE id = ? AND segment_state = ? ALLOW FILTERING");
+      } catch (InvalidQueryException ex) {
+        throw new AssertionError(
+            "Failure preparing `SELECT… FROM repair_run WHERE… ALLOW FILTERING` should only happen on Cassandra-2",
+            ex);
+      }
+    }
+  }
+
   public int getSegmentAmountForRepairRun(UUID runId) {
     return (int) session
         .execute(getRepairSegmentCountByRunIdAndStatePrepStmt.bind(runId))
@@ -191,9 +199,9 @@ public class RepairSegmentDao {
 
   public boolean updateRepairSegment(RepairSegment segment) {
 
-    assert cassandraStorage.hasLeadOnSegment(segment)
-        || (cassandraStorage.hasLeadOnSegment(segment.getRunId())
-        && cassandraStorage.getRepairUnit(segment.getRepairUnitId()).getIncrementalRepair())
+    assert concurrency.hasLeadOnSegment(segment)
+        || (concurrency.hasLeadOnSegment(segment.getRunId())
+        && repairUnitDao.getRepairUnit(segment.getRepairUnitId()).getIncrementalRepair())
         : "non-leader trying to update repair segment " + segment.getId() + " of run " + segment.getRunId();
 
     return updateRepairSegmentUnsafe(segment);
@@ -266,7 +274,7 @@ public class RepairSegmentDao {
     List<RepairSegment> segments = Lists.<RepairSegment>newArrayList(getRepairSegmentsForRun(runId));
     Collections.shuffle(segments);
 
-    Set<String> lockedNodes = cassandraStorage.getLockedNodesForRun(runId);
+    Set<String> lockedNodes = concurrency.getLockedNodesForRun(runId);
     List<RepairSegment> candidates = segments.stream()
         .filter(seg -> segmentIsCandidate(seg, lockedNodes))
         .collect(Collectors.toList());
@@ -280,7 +288,7 @@ public class RepairSegmentDao {
     List<RepairSegment> segments
         = Lists.<RepairSegment>newArrayList(getRepairSegmentsForRun(runId));
     Collections.shuffle(segments);
-    Set<String> lockedNodes = cassandraStorage.getLockedNodesForRun(runId);
+    Set<String> lockedNodes = concurrency.getLockedNodesForRun(runId);
     List<RepairSegment> candidates = segments.stream()
         .filter(seg -> segmentIsCandidate(seg, lockedNodes))
         .filter(seg -> segmentIsWithinRanges(seg, ranges))

@@ -147,7 +147,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
     this.metricsDao  = new MetricsDao(session);
     this.concurrency = new Concurrency(version, reaperInstanceId, session);
     this.repairUnitDao  = new RepairUnitDao(defaultTimeout, session);
-    this.repairSegmentDao = new RepairSegmentDao(this, session);
+    this.repairSegmentDao = new RepairSegmentDao(concurrency, repairUnitDao, version, session);
     this.repairScheduleDao = new RepairScheduleDao(repairUnitDao, session);
     this.clusterDao  = new ClusterDao(repairScheduleDao, repairUnitDao, eventsDao, session, objectMapper);
     this.repairRunDao =  new RepairRunDao(repairUnitDao, clusterDao, repairSegmentDao, session);
