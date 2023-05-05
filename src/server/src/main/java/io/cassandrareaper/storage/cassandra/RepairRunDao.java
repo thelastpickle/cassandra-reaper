@@ -18,7 +18,6 @@
 
 package io.cassandrareaper.storage.cassandra;
 
-import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairSegment;
 
@@ -72,7 +71,10 @@ public class RepairRunDao {
   private final RepairSegmentDao repairSegmentDao;
   private final Session session;
 
-  public RepairRunDao(RepairUnitDao repairUnitDao, ClusterDao clusterDao, Session session, RepairSegmentDao repairSegmentDao ) {
+  public RepairRunDao(RepairUnitDao repairUnitDao,
+                      ClusterDao clusterDao,
+                      RepairSegmentDao repairSegmentDao,
+                      Session session ) {
     this.session = session;
     this.repairSegmentDao = repairSegmentDao;
     this.repairUnitDao = repairUnitDao;
