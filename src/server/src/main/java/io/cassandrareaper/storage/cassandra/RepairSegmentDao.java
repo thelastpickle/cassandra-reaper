@@ -40,6 +40,8 @@ import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.Statement;
+import com.datastax.driver.core.VersionNumber;
+import com.datastax.driver.core.exceptions.InvalidQueryException;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -102,6 +104,20 @@ public class RepairSegmentDao {
     getRepairSegmentCountByRunIdPrepStmt = session.prepare(
         "SELECT count(*) FROM repair_run WHERE id = ?"
     );
+    if (0 >= VersionNumber.parse("3.0").compareTo(cassandraStorage.version)) {
+      try {
+        getRepairSegmentsByRunIdAndStatePrepStmt = session.prepare(
+            "SELECT id,repair_unit_id,segment_id,start_token,end_token,segment_state,coordinator_host,"
+                + "segment_start_time,segment_end_time,fail_count, token_ranges, replicas, host_id FROM repair_run "
+                + "WHERE id = ? AND segment_state = ? ALLOW FILTERING");
+        getRepairSegmentCountByRunIdAndStatePrepStmt = session.prepare(
+            "SELECT count(segment_id) FROM repair_run WHERE id = ? AND segment_state = ? ALLOW FILTERING");
+      } catch (InvalidQueryException ex) {
+        throw new AssertionError(
+            "Failure preparing `SELECT… FROM repair_run WHERE… ALLOW FILTERING` should only happen on Cassandra-2",
+            ex);
+      }
+    }
   } 
 
   static boolean segmentIsWithinRange(RepairSegment segment, RingRange range) {

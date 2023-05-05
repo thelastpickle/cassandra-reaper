@@ -126,7 +126,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   private final com.datastax.driver.core.Cluster cassandra;
   private final Session session;
   private final ObjectMapper objectMapper = new ObjectMapper();
-  private final VersionNumber version;
+  final VersionNumber version;
   private final UUID reaperInstanceId;
   private final AtomicReference<Collection<Cluster>> clustersCache = new AtomicReference(Collections.EMPTY_SET);
   private final AtomicLong clustersCacheAge = new AtomicLong(0);
@@ -420,17 +420,6 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
         .setRetryPolicy(DowngradingConsistencyRetryPolicy.INSTANCE);
     deleteClusterPrepStmt = session.prepare("DELETE FROM cluster WHERE name = ?");
 
-    repairUnitDao.insertRepairUnitPrepStmt = session
-        .prepare(
-            "INSERT INTO repair_unit_v1(id, cluster_name, keyspace_name, column_families, "
-                + "incremental_repair, nodes, \"datacenters\", blacklisted_tables, repair_thread_count, timeout) "
-                + "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
-        .setConsistencyLevel(ConsistencyLevel.QUORUM);
-    repairUnitDao.getRepairUnitPrepStmt = session
-        .prepare("SELECT * FROM repair_unit_v1 WHERE id = ?")
-        .setConsistencyLevel(ConsistencyLevel.QUORUM);
-    repairUnitDao.deleteRepairUnitPrepStmt = session.prepare("DELETE FROM repair_unit_v1 WHERE id = ?");
-
     prepareScheduleStatements();
     prepareLeaderElectionStatements(timeUdf);
     getRunningReapersCountPrepStmt = session.prepare(SELECT_RUNNING_REAPERS);
@@ -458,20 +447,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
         + "(id,cluster,description,nodes,events,export_sse,export_file_logger,export_http_endpoint)"
         + " VALUES(?,?,?,?,?,?,?,?)");
 
-    if (0 >= VersionNumber.parse("3.0").compareTo(version)) {
-      try {
-        repairSegmentDao.getRepairSegmentsByRunIdAndStatePrepStmt = session.prepare(
-            "SELECT id,repair_unit_id,segment_id,start_token,end_token,segment_state,coordinator_host,"
-                + "segment_start_time,segment_end_time,fail_count, token_ranges, replicas, host_id FROM repair_run "
-                + "WHERE id = ? AND segment_state = ? ALLOW FILTERING");
-        repairSegmentDao.getRepairSegmentCountByRunIdAndStatePrepStmt = session.prepare(
-            "SELECT count(segment_id) FROM repair_run WHERE id = ? AND segment_state = ? ALLOW FILTERING");
-      } catch (InvalidQueryException ex) {
-        throw new AssertionError(
-            "Failure preparing `SELECT… FROM repair_run WHERE… ALLOW FILTERING` should only happen on Cassandra-2",
-            ex);
-      }
-    }
+
     prepareMetricStatements();
     prepareOperationsStatements();
   }

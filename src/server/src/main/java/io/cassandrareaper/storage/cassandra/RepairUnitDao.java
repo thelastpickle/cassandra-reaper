@@ -5,6 +5,7 @@ import io.cassandrareaper.core.RepairUnit;
 import java.util.Optional;
 import java.util.UUID;
 
+import com.datastax.driver.core.ConsistencyLevel;
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
@@ -24,6 +25,19 @@ public class RepairUnitDao {
   private final Session session;
   PreparedStatement insertRepairUnitPrepStmt;
   PreparedStatement getRepairUnitPrepStmt;
+
+  private void prepareStatements() {
+    insertRepairUnitPrepStmt = session
+        .prepare(
+            "INSERT INTO repair_unit_v1(id, cluster_name, keyspace_name, column_families, "
+                + "incremental_repair, nodes, \"datacenters\", blacklisted_tables, repair_thread_count, timeout) "
+                + "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+        .setConsistencyLevel(ConsistencyLevel.QUORUM);
+    getRepairUnitPrepStmt = session
+        .prepare("SELECT * FROM repair_unit_v1 WHERE id = ?")
+        .setConsistencyLevel(ConsistencyLevel.QUORUM);
+    deleteRepairUnitPrepStmt = session.prepare("DELETE FROM repair_unit_v1 WHERE id = ?");
+  }
   final LoadingCache<UUID, RepairUnit> repairUnits = CacheBuilder.newBuilder()
       .build(new CacheLoader<UUID, RepairUnit>() {
         
@@ -36,6 +50,7 @@ public class RepairUnitDao {
   public RepairUnitDao(CassandraStorage cassandraStorage, Session session) {
     this.cassandraStorage = cassandraStorage;
     this.session = session;
+    prepareStatements();
   }
 
   
