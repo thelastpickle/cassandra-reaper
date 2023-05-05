@@ -54,20 +54,19 @@ public class ClusterDao {
   PreparedStatement insertClusterPrepStmt;
   PreparedStatement getClusterPrepStmt;
   PreparedStatement deleteClusterPrepStmt;
+
+  PreparedStatement deleteRepairRunByClusterPrepStmt;
   private final ObjectMapper objectMapper;
   private final AtomicReference<Collection<Cluster>> clustersCache = new AtomicReference(Collections.EMPTY_SET);
   private final AtomicLong clustersCacheAge = new AtomicLong(0);
   private final RepairScheduleDao repairScheduleDao;
   private final RepairUnitDao repairUnitDao;
-  private final RepairRunDao repairRunDao;
-
   private final EventsDao eventsDao;
 
   private final Session session;
 
   public ClusterDao(RepairScheduleDao repairScheduleDao,
                     RepairUnitDao repairUnitDao,
-                    RepairRunDao repairRunDao,
                     EventsDao eventsDao,
                     Session session,
                     ObjectMapper objectMapper) {
@@ -76,7 +75,6 @@ public class ClusterDao {
     this.objectMapper = objectMapper;
     this.repairScheduleDao = repairScheduleDao;
     this.repairUnitDao = repairUnitDao;
-    this.repairRunDao = repairRunDao;
     this.eventsDao = eventsDao;
     prepareStatements();
   }
@@ -92,6 +90,8 @@ public class ClusterDao {
         .setConsistencyLevel(ConsistencyLevel.QUORUM)
         .setRetryPolicy(DowngradingConsistencyRetryPolicy.INSTANCE);
     deleteClusterPrepStmt = session.prepare("DELETE FROM cluster WHERE name = ?");
+    deleteRepairRunByClusterPrepStmt = session.prepare(
+        "DELETE FROM repair_run_by_cluster_v2 WHERE cluster_name = ?");
   }
 
   public Collection<Cluster> getClusters() {
@@ -206,7 +206,7 @@ public class ClusterDao {
   public Cluster deleteCluster(String clusterName) {
     repairScheduleDao.getRepairSchedulesForCluster(clusterName)
         .forEach(schedule -> repairScheduleDao.deleteRepairSchedule(schedule.getId()));
-    session.executeAsync(repairRunDao.deleteRepairRunByClusterPrepStmt.bind(clusterName));
+    session.executeAsync(deleteRepairRunByClusterPrepStmt.bind(clusterName));
 
     eventsDao.getEventSubscriptions(clusterName)
         .stream()

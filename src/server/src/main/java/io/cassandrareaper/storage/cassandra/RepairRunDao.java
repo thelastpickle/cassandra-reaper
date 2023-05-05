@@ -61,7 +61,7 @@ public class RepairRunDao {
   PreparedStatement getRepairRunForClusterPrepStmt;
   PreparedStatement getRepairRunForClusterWhereStatusPrepStmt;
   PreparedStatement getRepairRunForUnitPrepStmt;
-  PreparedStatement deleteRepairRunByClusterPrepStmt;
+
   PreparedStatement deleteRepairRunPrepStmt;
   PreparedStatement deleteRepairRunByClusterByIdPrepStmt;
   PreparedStatement deleteRepairRunByUnitPrepStmt;
@@ -108,8 +108,7 @@ public class RepairRunDao {
         "SELECT id FROM repair_run_by_cluster_v2 WHERE cluster_name = ? AND repair_run_state = ? limit ?");
     getRepairRunForUnitPrepStmt = session.prepare("SELECT * FROM repair_run_by_unit WHERE repair_unit_id = ?");
 
-    deleteRepairRunByClusterPrepStmt = session.prepare(
-        "DELETE FROM repair_run_by_cluster_v2 WHERE cluster_name = ?");
+
     deleteRepairRunByClusterByIdPrepStmt = session.prepare(
         "DELETE FROM repair_run_by_cluster_v2 WHERE id = ? and cluster_name = ?");
     deleteRepairRunByUnitPrepStmt = session.prepare("DELETE FROM repair_run_by_unit "
