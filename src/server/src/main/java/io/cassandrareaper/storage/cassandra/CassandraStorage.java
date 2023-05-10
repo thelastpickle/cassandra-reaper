@@ -137,6 +137,16 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
         .min(VersionNumber::compareTo)
         .get();
 
+    boolean skipMigration = System.getenv().containsKey("REAPER_SKIP_SCHEMA_MIGRATION")
+        ? Boolean.parseBoolean(System.getenv("REAPER_SKIP_SCHEMA_MIGRATION"))
+        : Boolean.FALSE;
+
+    if (skipMigration) {
+      LOG.info("Skipping schema migration as requested.");
+    } else {
+      MigrationManager.initializeAndUpgradeSchema(cassandra, session, config, version, mode);
+    }
+
     this.eventsDao =  new EventsDao(session);
     this.metricsDao  = new MetricsDao(session);
     this.snapshotDao = new SnapshotDao(session);
@@ -147,16 +157,6 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
     this.repairScheduleDao = new RepairScheduleDao(repairUnitDao, session);
     this.clusterDao  = new ClusterDao(repairScheduleDao, repairUnitDao, eventsDao, session, objectMapper);
     this.repairRunDao =  new RepairRunDao(repairUnitDao, clusterDao, repairSegmentDao, session);
-
-    boolean skipMigration = System.getenv().containsKey("REAPER_SKIP_SCHEMA_MIGRATION")
-        ? Boolean.parseBoolean(System.getenv("REAPER_SKIP_SCHEMA_MIGRATION"))
-        : Boolean.FALSE;
-
-    if (skipMigration) {
-      LOG.info("Skipping schema migration as requested.");
-    } else {
-      MigrationManager.initializeAndUpgradeSchema(cassandra, session, config, version, mode);
-    }
     prepareStatements();
   }
 
