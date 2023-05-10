@@ -63,6 +63,7 @@ public class RepairScheduleDao {
   public RepairScheduleDao(RepairUnitDao repairUnitDao, Session session) {
     this.repairUnitDao = repairUnitDao;
     this.session = session;
+    prepareStatements();
   }
 
   private void prepareStatements() {
