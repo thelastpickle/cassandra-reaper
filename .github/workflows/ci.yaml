@@ -78,7 +78,7 @@ jobs:
     continue-on-error: ${{ matrix.experimental }}
     strategy:
       matrix:
-        cassandra-version: ['binary:3.0.25', 'binary:3.11.11', 'binary:4.0.1', 'github:apache/trunk']
+        cassandra-version: [ "binary:1.2.19", "binary:2.0.17", 'binary:2.1.22', 'binary:2.2.19', 'binary:3.0.25', 'binary:3.11.11', 'binary:4.0.1', 'github:apache/trunk' ]
         storage-type: [local]
         test-type: [ccm]
         include:
