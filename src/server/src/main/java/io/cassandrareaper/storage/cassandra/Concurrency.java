@@ -62,16 +62,15 @@ public class Concurrency {
   }
 
   private void prepareStatements() {
-    final String timeUdf = 0 < VersionNumber.parse("2.2").compareTo(version) ? "dateOf" : "toTimestamp";
     takeLeadPrepStmt = session
         .prepare(
             "INSERT INTO leader(leader_id, reaper_instance_id, reaper_instance_host, last_heartbeat)"
-                + "VALUES(?, ?, ?, " + timeUdf + "(now())) IF NOT EXISTS USING TTL ?")
+                + "VALUES(?, ?, ?, toTimestamp(now())) IF NOT EXISTS USING TTL ?")
         .setConsistencyLevel(ConsistencyLevel.QUORUM);
     renewLeadPrepStmt = session
         .prepare(
             "UPDATE leader USING TTL ? SET reaper_instance_id = ?, reaper_instance_host = ?,"
-                + " last_heartbeat = " + timeUdf + "(now()) WHERE leader_id = ? IF reaper_instance_id = ?")
+                + " last_heartbeat = toTimestamp(now()) WHERE leader_id = ? IF reaper_instance_id = ?")
         .setConsistencyLevel(ConsistencyLevel.QUORUM);
     releaseLeadPrepStmt = session.prepare("DELETE FROM leader WHERE leader_id = ? IF reaper_instance_id = ?")
         .setConsistencyLevel(ConsistencyLevel.QUORUM);

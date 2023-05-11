@@ -207,11 +207,10 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   }
 
   private void prepareStatements() {
-    final String timeUdf = 0 < VersionNumber.parse("2.2").compareTo(version) ? "dateOf" : "toTimestamp";
     saveHeartbeatPrepStmt = session
         .prepare(
             "INSERT INTO running_reapers(reaper_instance_id, reaper_instance_host, last_heartbeat)"
-                + " VALUES(?,?," + timeUdf + "(now()))")
+                + " VALUES(?,?,toTimestamp(now()))")
         .setIdempotent(false);
     deleteHeartbeatPrepStmt = session
         .prepare(
