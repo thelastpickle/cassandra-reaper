@@ -242,8 +242,6 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
 
   private boolean addClusterAssertions(Cluster cluster) {
 
-    // assert we're not overwriting a cluster with the same name but different node list
-
     return clusterDao.addClusterAssertions(cluster);
   }
 
@@ -288,23 +286,11 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   @Override
   public Collection<RepairRun> getRepairRunsForCluster(String clusterName, Optional<Integer> limit) {
 
-    // Grab all ids for the given cluster name
-    // Grab repair runs asynchronously for all the ids returned by the index table
-
     return repairRunDao.getRepairRunsForCluster(clusterName, limit);
   }
 
   @Override
   public List<RepairRun> getRepairRunsForClusterPrioritiseRunning(String clusterName, Optional<Integer> limit) {
-    // We've set up the RunState enum so that values are declared in order of "interestingness",
-    // we iterate over the table via the secondary index according to that ordering.
-
-    // Flatten the UUIDs from each status down into a single array.
-    // Merge the two lists and trim.
-
-    // Run an async query on each UUID in the flattened list, against the main repair_run table with
-    // all columns required as an input to `buildRepairRunFromRow`.
-    // Defuture the repair_run rows and build the strongly typed RepairRun objects from the contents.
     return repairRunDao.getRepairRunsForClusterPrioritiseRunning(clusterName, limit);
   }
 
@@ -320,10 +306,6 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
 
   @Override
   public Collection<RepairRun> getRepairRunsForUnit(UUID repairUnitId) {
-
-    // Grab all ids for the given cluster name
-
-    // Grab repair runs asynchronously for all the ids returned by the index table
 
     return repairRunDao.getRepairRunsForUnit(repairUnitId);
   }
@@ -647,10 +629,6 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
       String metricDomain,
       String metricType,
       long since) {
-
-    // Compute the hourly buckets since the requested lower bound timestamp
-
-
     return metricsDao.getMetrics(clusterName, host, metricDomain, metricType, since);
   }
 
@@ -738,7 +716,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
 
   @Override
   public List<PercentRepairedMetric> getPercentRepairedMetrics(String clusterName, UUID repairScheduleId, Long since) {
-    // Compute the ten minutes buckets since the requested lower bound timestamp
+
     return metricsDao.getPercentRepairedMetrics(clusterName, repairScheduleId, since);
   }
 

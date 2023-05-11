@@ -475,7 +475,7 @@ public class RepairRunDao {
     return repairRun;
   }
 
-
+  // Grab all ids for the given cluster name
   public SortedSet<UUID> getRepairRunIdsForCluster(String clusterName, Optional<Integer> limit) {
     SortedSet<UUID> repairRunIds = Sets.newTreeSet((u0, u1) -> (int) (u0.timestamp() - u1.timestamp()));
     ResultSet results = this.session.execute(getRepairRunForClusterPrepStmt.bind(clusterName, limit.orElse(
@@ -487,6 +487,7 @@ public class RepairRunDao {
     LOG.trace("repairRunIds : {}", repairRunIds);
     return repairRunIds;
   }
+
 
   SortedSet<UUID> getRepairRunIdsForClusterWithState(String clusterName, RepairRun.RunState runState) {
     SortedSet<UUID> repairRunIds = Sets.newTreeSet((u0, u1) -> (int) (u0.timestamp() - u1.timestamp()));
