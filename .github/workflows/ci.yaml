@@ -78,7 +78,7 @@ jobs:
     continue-on-error: ${{ matrix.experimental }}
     strategy:
       matrix:
-        cassandra-version: [ "binary:1.2.19", "binary:2.0.17", 'binary:2.1.22', 'binary:2.2.19', 'binary:3.0.25', 'binary:3.11.11', 'binary:4.0.1', 'github:apache/trunk' ]
+        cassandra-version: [ "binary:1.2.19", "binary:2.0.17", 'binary:2.1.22', 'binary:2.2.19', 'binary:3.0.25', 'binary:3.11.11', 'binary:4.0.1' ]
         storage-type: [local]
         test-type: [ccm]
         include:
@@ -139,7 +139,7 @@ jobs:
     continue-on-error: ${{ matrix.experimental }}
     strategy:
       matrix:
-        cassandra-version: [ 'binary:3.0.25', 'binary:3.11.11', 'binary:4.0.1', 'github:apache/trunk']
+        cassandra-version: [ 'binary:3.0.25', 'binary:3.11.11', 'binary:4.0.1']
         storage-type: [cassandra]
         test-type: [ccm]
         include:
@@ -252,7 +252,7 @@ jobs:
     continue-on-error: ${{ matrix.experimental }}
     strategy:
       matrix:
-        cassandra-version: ['binary:3.0.25', 'binary:3.11.11', 'binary:4.0.1', 'github:apache/trunk']
+        cassandra-version: ['binary:3.0.25', 'binary:3.11.11', 'binary:4.0.1']
         storage-type: [cassandra]
         test-type: [sidecar]
         grim-max: [1]
@@ -315,7 +315,7 @@ jobs:
     continue-on-error: ${{ matrix.experimental }}
     strategy:
       matrix:
-        cassandra-version: ['binary:4.0.1', 'github:apache/trunk']
+        cassandra-version: ['binary:4.0.1']
         storage-type: [cassandra]
         test-type: [each]
         grim-max: [1]
@@ -368,7 +368,7 @@ jobs:
     continue-on-error: ${{ matrix.experimental }}
     strategy:
       matrix:
-        cassandra-version: ['binary:3.0.25', 'binary:3.11.11', 'binary:4.0.1', 'github:apache/trunk']
+        cassandra-version: ['binary:3.0.25', 'binary:3.11.11', 'binary:4.0.1']
         storage-type: [cassandra]
         test-type: [ccm]
         grim-max: [2]
@@ -429,7 +429,7 @@ jobs:
     continue-on-error: ${{ matrix.experimental }}
     strategy:
       matrix:
-        cassandra-version: ['binary:4.0.1', 'github:apache/trunk']
+        cassandra-version: ['binary:4.0.1']
         storage-type: [cassandra]
         test-type: [ccm]
         grim-max: [4]
