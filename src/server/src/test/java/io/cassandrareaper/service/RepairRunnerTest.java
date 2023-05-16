@@ -35,10 +35,10 @@ import io.cassandrareaper.jmx.JmxConnectionFactory;
 import io.cassandrareaper.jmx.JmxProxy;
 import io.cassandrareaper.jmx.JmxProxyTest;
 import io.cassandrareaper.jmx.RepairStatusHandler;
-import io.cassandrareaper.storage.CassandraStorage;
 import io.cassandrareaper.storage.IDistributedStorage;
 import io.cassandrareaper.storage.IStorage;
 import io.cassandrareaper.storage.MemoryStorage;
+import io.cassandrareaper.storage.cassandra.CassandraStorage;
 
 import java.io.IOException;
 import java.math.BigInteger;
@@ -56,7 +56,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import javax.management.JMException;
 import javax.management.MalformedObjectNameException;
 import javax.management.ReflectionException;

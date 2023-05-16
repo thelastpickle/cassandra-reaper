@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package io.cassandrareaper.storage.cassandra;
+package io.cassandrareaper.storage.cassandra.codecs;
 
 import java.nio.ByteBuffer;
 
