@@ -18,6 +18,7 @@ package io.cassandrareaper.storage;
 
 import io.cassandrareaper.ReaperApplicationConfiguration;
 import io.cassandrareaper.ReaperException;
+import io.cassandrareaper.storage.cassandra.CassandraStorage;
 
 import java.util.UUID;
 

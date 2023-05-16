@@ -11,6 +11,7 @@ dependency-reduced-pom.xml
 *.log
 *.log.gz
 nb-configuration.xml
+.metals/
 
 # Mac OS X Finder
 .DS_Store

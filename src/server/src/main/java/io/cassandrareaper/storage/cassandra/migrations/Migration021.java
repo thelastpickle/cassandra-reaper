@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2020 The Last Pickle Ltd
+ * Copyright 2019-2019 The Last Pickle Ltd
  *
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,19 +15,20 @@
  * limitations under the License.
  */
 
-package io.cassandrareaper.storage.cassandra;
+package io.cassandrareaper.storage.cassandra.migrations;
 
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.VersionNumber;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public final class Migration024 {
+public final class Migration021 {
 
-  private static final Logger LOG = LoggerFactory.getLogger(Migration024.class);
-  private static final String METRICS_V3_TABLE = "node_metrics_v3";
+  private static final Logger LOG = LoggerFactory.getLogger(Migration021.class);
+  private static final String METRICS_V1_TABLE = "node_metrics_v1";
+  private static final String OPERATIONS_TABLE = "node_operations";
 
-  private Migration024() {
+  private Migration021() {
   }
 
   /**
@@ -46,15 +47,21 @@ public final class Migration024 {
         || VersionNumber.parse("3.8").compareTo(lowestNodeVersion) <= 0) {
       try {
         if (!isUsingTwcs(session, keyspace)) {
-          LOG.info("Altering {} to use TWCS...", METRICS_V3_TABLE);
+          LOG.info("Altering {} to use TWCS...", METRICS_V1_TABLE);
           session.execute(
-                  "ALTER TABLE " + METRICS_V3_TABLE + " WITH compaction = {'class': 'TimeWindowCompactionStrategy', "
+                  "ALTER TABLE " + METRICS_V1_TABLE + " WITH compaction = {'class': 'TimeWindowCompactionStrategy', "
                       + "'unchecked_tombstone_compaction': 'true', "
-                      + "'compaction_window_size': '10', "
+                      + "'compaction_window_size': '2', "
                       + "'compaction_window_unit': 'MINUTES'}");
 
-          LOG.info("{} was successfully altered to use TWCS.", METRICS_V3_TABLE);
+          LOG.info("Altering {} to use TWCS...", OPERATIONS_TABLE);
+          session.execute(
+                  "ALTER TABLE " + OPERATIONS_TABLE + " WITH compaction = {'class': 'TimeWindowCompactionStrategy', "
+                      + "'unchecked_tombstone_compaction': 'true', "
+                      + "'compaction_window_size': '30', "
+                      + "'compaction_window_unit': 'MINUTES'}");
 
+          LOG.info("{} was successfully altered to use TWCS.", OPERATIONS_TABLE);
         }
       } catch (RuntimeException e) {
         LOG.error("Failed altering metrics tables to TWCS", e);
@@ -68,7 +75,7 @@ public final class Migration024 {
         .getCluster()
         .getMetadata()
         .getKeyspace(keyspace)
-        .getTable(METRICS_V3_TABLE)
+        .getTable(METRICS_V1_TABLE)
         .getOptions()
         .getCompaction()
         .get("class")

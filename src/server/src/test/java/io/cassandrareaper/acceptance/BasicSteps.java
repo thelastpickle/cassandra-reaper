@@ -28,8 +28,8 @@ import io.cassandrareaper.core.ThreadPoolStat;
 import io.cassandrareaper.resources.view.RepairRunStatus;
 import io.cassandrareaper.resources.view.RepairScheduleStatus;
 import io.cassandrareaper.service.RepairRunService;
-import io.cassandrareaper.storage.CassandraStorage;
 import io.cassandrareaper.storage.DiagEventSubscriptionMapper;
+import io.cassandrareaper.storage.cassandra.CassandraStorage;
 
 import java.util.Arrays;
 import java.util.Collections;

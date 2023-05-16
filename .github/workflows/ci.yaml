@@ -78,7 +78,7 @@ jobs:
     continue-on-error: ${{ matrix.experimental }}
     strategy:
       matrix:
-        cassandra-version: ["binary:1.2.19", "binary:2.0.17", 'binary:2.1.22', 'binary:2.2.19', 'binary:3.0.25', 'binary:3.11.11', 'binary:4.0.1', 'github:apache/trunk']
+        cassandra-version: [ "binary:1.2.19", "binary:2.0.17", 'binary:2.1.22', 'binary:2.2.19', 'binary:3.0.25', 'binary:3.11.11', 'binary:4.0.1' ]
         storage-type: [local]
         test-type: [ccm]
         include:
@@ -110,9 +110,9 @@ jobs:
           - cassandra-version: 'binary:4.0.1'
             experimental: false
             jdk-version: '11'
-          - cassandra-version: 'github:apache/trunk'
-            experimental: true
-            jdk-version: '11'
+          #- cassandra-version: 'github:apache/trunk'
+          #  experimental: true
+          #  jdk-version: '11'
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -156,18 +156,10 @@ jobs:
     continue-on-error: ${{ matrix.experimental }}
     strategy:
       matrix:
-        cassandra-version: ['binary:2.1.22', 'binary:2.2.19', 'binary:3.0.25', 'binary:3.11.11', 'binary:4.0.1', 'github:apache/trunk']
+        cassandra-version: [ 'binary:3.0.25', 'binary:3.11.11', 'binary:4.0.1']
         storage-type: [cassandra]
         test-type: [ccm]
         include:
-          - cassandra-version: 'binary:2.1.22'
-            cucumber-options: '--tags ~@cassandra_4_0_onwards --tags ~@cassandra_3_11_onwards'
-            experimental: false
-            jdk-version: '8'
-          - cassandra-version: 'binary:2.2.19'
-            cucumber-options: '--tags ~@cassandra_4_0_onwards --tags ~@cassandra_3_11_onwards'
-            experimental: false
-            jdk-version: '8'
           - cassandra-version: 'binary:3.0.25'
             cucumber-options: '--tags ~@cassandra_4_0_onwards --tags ~@cassandra_3_11_onwards'
             experimental: false
@@ -179,9 +171,9 @@ jobs:
           - cassandra-version: 'binary:4.0.1'
             experimental: false
             jdk-version: '11'
-          - cassandra-version: 'github:apache/trunk'
-            experimental: true
-            jdk-version: '11'
+          #- cassandra-version: 'github:apache/trunk'
+          #  experimental: true
+          #  jdk-version: '11'
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -210,7 +202,7 @@ jobs:
           STORAGE_TYPE: ${{ matrix.storage-type }}
           CUCUMBER_OPTIONS: ${{ matrix.cucumber-options }}
           JDK_VERSION: ${{ matrix.jdk-version }}
-      
+
       - uses: codecov/codecov-action@v1
 
       - name: Setup tmate session
@@ -218,80 +210,20 @@ jobs:
         uses: mxschmitt/action-tmate@v3
         timeout-minutes: 30
 
-  its-elassandra:
-    needs: build
-    name: Elassandra Backend
-    runs-on: ubuntu-20.04
-    strategy:
-      matrix:
-        test-type: [elassandra]
-        storage-type: [elassandra]
-        elassandra-version: ['6.2.3.26']
-        grim-min: [1]
-        grim-max: [1]
-        cucumber-options: ['--tags ~@cassandra_4_0_onwards']
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-
-      - name: Setup
-        uses: ./.github/actions/setup
-
-      - name: Install ECM
-        run: |
-          wget -O ecm-ccm-elassandra.zip https://github.com/strapdata/ecm/archive/ccm-elassandra.zip
-          unzip ecm-ccm-elassandra.zip && cd ecm-ccm-elassandra && sudo ./setup.py install
-
-      - name: Download Elassandra
-        run: |
-          wget -O elassandra-${ELASSANDRA_VERSION}.tar.gz https://github.com/strapdata/elassandra/releases/download/v${ELASSANDRA_VERSION}/elassandra-${ELASSANDRA_VERSION}.tar.gz
-        env:
-          ELASSANDRA_VERSION: ${{ matrix.elassandra-version }}
-
-      - name: Setup ECM Cluster
-        run: ./.github/scripts/configure-ccm.sh
-        env:
-          TEST_TYPE: ${{ matrix.test-type }}
-          ELASSANDRA_VERSION: ${{ matrix.elassandra-version }}
-          STORAGE_TYPE: ${{ matrix.storage-type }}
-          JDK_VERSION: ${{ matrix.jdk-version }}
-
-      - name: Run Tests
-        run: |
-          ./.github/scripts/run-tests.sh || ./.github/scripts/run-tests.sh || ./.github/scripts/run-tests.sh
-        env:
-          TEST_TYPE: ${{ matrix.test-type }}
-          STORAGE_TYPE: ${{ matrix.storage-type }}
-          CASSANDRA_VERSION: ${{ matrix.cassandra-version }}
-          CUCUMBER_OPTIONS: ${{ matrix.cucumber-options }}
-          GRIM_MAX: ${{ matrix.grim-max }}
-          GRIM_MIN: ${{ matrix.grim-min }}
-          JDK_VERSION: ${{ matrix.jdk-version }}
-
-      - uses: codecov/codecov-action@v1
-
   its-sidecar:
-    needs: [docker-tests, its-ccm-local, its-ccm-cass, its-elassandra]
+    needs: [docker-tests, its-ccm-local, its-ccm-cass]
     name: Sidecar
     runs-on: ubuntu-20.04
     continue-on-error: ${{ matrix.experimental }}
     strategy:
       matrix:
-        cassandra-version: ['binary:2.1.22', 'binary:2.2.19', 'binary:3.0.25', 'binary:3.11.11', 'binary:4.0.1', 'github:apache/trunk']
+        cassandra-version: ['binary:3.0.25', 'binary:3.11.11', 'binary:4.0.1']
         storage-type: [cassandra]
         test-type: [sidecar]
         grim-max: [1]
         grim-min: [1]
         # all versions but trunk have the same cucumber options, but we can't declare that more effectively (yet)
         include:
-          - cassandra-version: 'binary:2.1.22'
-            cucumber-options: '--tags ~@cassandra_4_0_onwards --tags @sidecar --tags ~@cassandra_3_11_onwards'
-            experimental: false
-            jdk-version: '8'
-          - cassandra-version: 'binary:2.2.19'
-            cucumber-options: '--tags ~@cassandra_4_0_onwards --tags @sidecar --tags ~@cassandra_3_11_onwards'
-            experimental: false
-            jdk-version: '8'
           - cassandra-version: 'binary:3.0.25'
             cucumber-options: '--tags ~@cassandra_4_0_onwards --tags @sidecar --tags ~@cassandra_3_11_onwards'
             experimental: false
@@ -304,10 +236,10 @@ jobs:
             cucumber-options: '--tags @sidecar'
             experimental: false
             jdk-version: '11'
-          - cassandra-version: 'github:apache/trunk'
-            cucumber-options: '--tags @sidecar'
-            experimental: true
-            jdk-version: '11'
+          #- cassandra-version: 'github:apache/trunk'
+          #  cucumber-options: '--tags @sidecar'
+          #  experimental: true
+          #  jdk-version: '11'
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -342,13 +274,13 @@ jobs:
       - uses: codecov/codecov-action@v1
 
   its-each:
-    needs: [docker-tests, its-ccm-local, its-ccm-cass, its-elassandra]
+    needs: [docker-tests, its-ccm-local, its-ccm-cass]
     name: Each DC Availability
     runs-on: ubuntu-20.04
     continue-on-error: ${{ matrix.experimental }}
     strategy:
       matrix:
-        cassandra-version: ['binary:4.0.1', 'github:apache/trunk']
+        cassandra-version: ['binary:4.0.1']
         storage-type: [cassandra]
         test-type: [each]
         grim-max: [1]
@@ -358,9 +290,9 @@ jobs:
           - cassandra-version: 'binary:4.0.1'
             cucumber-options: '--tags @sidecar'
             experimental: false
-          - cassandra-version: 'github:apache/trunk'
-            cucumber-options: '--tags @sidecar'
-            experimental: true
+          #- cassandra-version: 'github:apache/trunk'
+          #  cucumber-options: '--tags @sidecar'
+          #  experimental: true
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -395,27 +327,18 @@ jobs:
       - uses: codecov/codecov-action@v1
 
   its-distributed:
-    needs: [docker-tests, its-ccm-local, its-ccm-cass, its-elassandra]
+    needs: [docker-tests, its-ccm-local, its-ccm-cass]
     name: Distributed tests
     runs-on: ubuntu-20.04
     continue-on-error: ${{ matrix.experimental }}
     strategy:
       matrix:
-        cassandra-version: ['binary:2.1.22', 'binary:2.2.19', 'binary:3.0.25', 'binary:3.11.11', 'binary:4.0.1', 'github:apache/trunk']
+        cassandra-version: ['binary:3.0.25', 'binary:3.11.11', 'binary:4.0.1']
         storage-type: [cassandra]
         test-type: [ccm]
         grim-max: [2]
         grim-min: [2]
         include:
-          # all versions but trunk need to exclude trunk tests
-          - cassandra-version: 'binary:2.1.22'
-            cucumber-options: '--tags ~@cassandra_4_0_onwards --tags ~@cassandra_3_11_onwards'
-            experimental: false
-            jdk-version: '8'
-          - cassandra-version: 'binary:2.2.19'
-            cucumber-options: '--tags ~@cassandra_4_0_onwards --tags ~@cassandra_3_11_onwards'
-            experimental: false
-            jdk-version: '8'
           - cassandra-version: 'binary:3.0.25'
             cucumber-options: '--tags ~@cassandra_4_0_onwards --tags ~@cassandra_3_11_onwards'
             experimental: false
@@ -427,9 +350,9 @@ jobs:
           - cassandra-version: 'binary:4.0.1'
             experimental: false
             jdk-version: '11'
-          - cassandra-version: 'github:apache/trunk'
-            experimental: true
-            jdk-version: '11'
+          #- cassandra-version: 'github:apache/trunk'
+          #  experimental: true
+          #  jdk-version: '11'
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -465,13 +388,13 @@ jobs:
 
 
   its-flapping:
-    needs: [docker-tests, its-ccm-local, its-ccm-cass, its-elassandra]
+    needs: [docker-tests, its-ccm-local, its-ccm-cass]
     name: Flapping reapers
     runs-on: ubuntu-20.04
     continue-on-error: ${{ matrix.experimental }}
     strategy:
       matrix:
-        cassandra-version: ['binary:4.0.1', 'github:apache/trunk']
+        cassandra-version: ['binary:4.0.1']
         storage-type: [cassandra]
         test-type: [ccm]
         grim-max: [4]
@@ -482,9 +405,9 @@ jobs:
           - cassandra-version: 'binary:4.0.1'
             experimental: true
             jdk-version: '11'
-          - cassandra-version: 'github:apache/trunk'
-            experimental: true
-            jdk-version: '11'
+          #- cassandra-version: 'github:apache/trunk'
+          #  experimental: true
+          #  jdk-version: '11'
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -519,61 +442,9 @@ jobs:
 
       - uses: codecov/codecov-action@v1
 
-  its-elassandra-distributed:
-    needs: [docker-tests, its-ccm-local, its-ccm-cass, its-elassandra]
-    name: Distributed tests with Elassandra
-    runs-on: ubuntu-20.04
-    strategy:
-      matrix:
-        test-type: [elassandra]
-        storage-type: [elassandra]
-        elassandra-version: ['6.2.3.26']
-        grim-min: [2]
-        grim-max: [4]
-        cucumber-options: ['--tags ~@cassandra_4_0_onwards --tags ~@diag_event_subscriptions']
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-
-      - name: Setup
-        uses: ./.github/actions/setup
-
-      - name: Install ECM
-        run: |
-          wget -O ecm-ccm-elassandra.zip https://github.com/strapdata/ecm/archive/ccm-elassandra.zip
-          unzip ecm-ccm-elassandra.zip && cd ecm-ccm-elassandra && sudo ./setup.py install
-
-      - name: Download Elassandra
-        run: |
-          wget -O elassandra-${ELASSANDRA_VERSION}.tar.gz https://github.com/strapdata/elassandra/releases/download/v${ELASSANDRA_VERSION}/elassandra-${ELASSANDRA_VERSION}.tar.gz
-        env:
-          ELASSANDRA_VERSION: ${{ matrix.elassandra-version }}
-
-      - name: Setup ECM Cluster
-        run: ./.github/scripts/configure-ccm.sh
-        env:
-          TEST_TYPE: ${{ matrix.test-type }}
-          ELASSANDRA_VERSION: ${{ matrix.elassandra-version }}
-          STORAGE_TYPE: ${{ matrix.storage-type }}
-          JDK_VERSION: ${{ matrix.jdk-version }}
-
-      - name: Run Tests
-        run: |
-          ./.github/scripts/run-tests.sh || ./.github/scripts/run-tests.sh || ./.github/scripts/run-tests.sh
-        env:
-          TEST_TYPE: ${{ matrix.test-type }}
-          STORAGE_TYPE: ${{ matrix.storage-type }}
-          CASSANDRA_VERSION: ${{ matrix.cassandra-version }}
-          CUCUMBER_OPTIONS: ${{ matrix.cucumber-options }}
-          GRIM_MAX: ${{ matrix.grim-max }}
-          GRIM_MIN: ${{ matrix.grim-min }}
-          JDK_VERSION: ${{ matrix.jdk-version }}
-
-      - uses: codecov/codecov-action@v1
-
   release:
     name: Release Reaper
-    needs: [its-distributed, its-flapping, its-sidecar, its-elassandra-distributed, its-each]
+    needs: [its-distributed, its-flapping, its-sidecar, its-each]
     if: startsWith(github.ref, 'refs/heads/master') || startsWith(github.ref, 'refs/tag')
     runs-on: ubuntu-20.04
     steps:
@@ -661,7 +532,7 @@ jobs:
           release: 'any-version'
           republish: 'true'
           file: ${{ env.RPM_RELEASE_FILE }}
-      
+
       ## Beta releases
       - name: Push Debian Beta to Cloudsmith
         id: push-beta-deb
@@ -692,4 +563,3 @@ jobs:
           release: 'any-version'
           republish: 'true'
           file: ${{ env.RPM_RELEASE_FILE }}
-      

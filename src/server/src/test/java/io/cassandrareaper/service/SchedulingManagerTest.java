@@ -25,7 +25,7 @@ import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairRun.RunState;
 import io.cassandrareaper.core.RepairSchedule;
 import io.cassandrareaper.core.RepairUnit;
-import io.cassandrareaper.storage.CassandraStorage;
+import io.cassandrareaper.storage.cassandra.CassandraStorage;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -40,7 +40,6 @@ import com.codahale.metrics.MetricRegistry;
 import com.datastax.driver.core.utils.UUIDs;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-
 import org.apache.cassandra.repair.RepairParallelism;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
