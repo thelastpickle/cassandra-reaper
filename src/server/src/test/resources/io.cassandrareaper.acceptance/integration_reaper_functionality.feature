@@ -76,7 +76,7 @@ Feature: Using Reaper
     When the last added cluster is deleted
     Then reaper has no longer the last added cluster in storage
   ${cucumber.upgrade-versions}
- 
+
   @sidecar
   Scenario Outline: Registering a cluster with JMX auth but no encryption
     Given that reaper <version> is running
@@ -84,7 +84,7 @@ Feature: Using Reaper
     When an add-cluster request is made to reaper with authentication and no encryption
     Then reaper has no cluster in storage
   ${cucumber.upgrade-versions}
-  
+
   @sidecar
   Scenario Outline: Registering a cluster without JMX auth
     Given that reaper <version> is running

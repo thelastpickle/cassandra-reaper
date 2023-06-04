@@ -660,7 +660,8 @@ public final class RepairRunResource {
         return Response.status(Response.Status.BAD_REQUEST).build();
       }
 
-      Collection<Cluster> clusters = cluster.isPresent()
+      Collection<Cluster> clusters = cluster.isPresent() // If not present gets all then gets all for each cluster.
+
             ? Collections.singleton(context.storage.getCluster(cluster.get()))
             : context.storage.getClusters();
 

@@ -32,6 +32,7 @@ import io.cassandrareaper.storage.DiagEventSubscriptionMapper;
 import io.cassandrareaper.storage.cassandra.CassandraStorage;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -63,6 +64,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import cucumber.api.DataTable;
 import cucumber.api.java.en.And;
 import cucumber.api.java.en.Given;
 import cucumber.api.java.en.Then;
@@ -2958,7 +2960,7 @@ public final class BasicSteps {
     }
   }
 
-  @Then("^when I list the last (\\d+) repairs, I can see (\\d+) repairs at (\\d+) state$")
+  @Then("^when I list the last (\\d+) repairs, I can see (\\d+) repairs at \"([^\"]*)\" state$")
   public void listRepairs(Integer limit, Integer expectedRepairsCount, String expectedState) {
     synchronized (BasicSteps.class) {
       RUNNERS.parallelStream().forEach(runner -> {
@@ -3034,5 +3036,32 @@ public final class BasicSteps {
     }
   }
 
-}
+  private final class FakeCluster {
+    String name;
+  }
 
+  @When("^we add fake clusters$")
+  public void addFakeClusters(DataTable table) {
+    synchronized (BasicSteps.class) {
+      RUNNERS.parallelStream().forEach(runner -> table.asList(FakeCluster.class).forEach(cluster -> {
+        io.cassandrareaper.core.Cluster clusterToAdd = io.cassandrareaper.core.Cluster.builder()
+                        .withName(cluster.name)
+                        .build();
+        runner.getContext().storage.addCluster(clusterToAdd);
+      })
+      );
+    }
+  }
+
+  @Then ("^reaper has (\\d+) clusters in storage$")
+  public void countClusters(Integer expectedNumClusters) {
+    synchronized (BasicSteps.class) {
+      RUNNERS.parallelStream().forEach(runner -> {
+        Collection<io.cassandrareaper.core.Cluster> clusters = runner.getContext().storage.getClusters();
+        Assertions.assertThat(clusters.size())
+                .isEqualTo(expectedNumClusters);
+      }
+      );
+    }
+  }
+}
