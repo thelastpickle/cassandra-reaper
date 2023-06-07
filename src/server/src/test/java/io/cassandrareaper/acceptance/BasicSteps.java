@@ -64,11 +64,12 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import cucumber.api.DataTable;
-import cucumber.api.java.en.And;
-import cucumber.api.java.en.Given;
-import cucumber.api.java.en.Then;
-import cucumber.api.java.en.When;
+
+import io.cucumber.datatable.DataTable;
+import io.cucumber.java.en.And;
+import io.cucumber.java.en.Given;
+import io.cucumber.java.en.Then;
+import io.cucumber.java.en.When;
 import org.apache.commons.lang3.StringUtils;
 import org.assertj.core.api.Assertions;
 import org.awaitility.Duration;
@@ -3036,19 +3037,18 @@ public final class BasicSteps {
     }
   }
 
-  private final class FakeCluster {
-    String name;
-  }
-
   @When("^we add fake clusters$")
   public void addFakeClusters(DataTable table) {
     synchronized (BasicSteps.class) {
-      RUNNERS.parallelStream().forEach(runner -> table.asList(FakeCluster.class).forEach(cluster -> {
-        io.cassandrareaper.core.Cluster clusterToAdd = io.cassandrareaper.core.Cluster.builder()
-                        .withName(cluster.name)
-                        .build();
-        runner.getContext().storage.addCluster(clusterToAdd);
-      })
+      RUNNERS.parallelStream().forEach(
+          runner ->
+                  table.asLists(String.class).forEach(
+                      cluster -> {
+                        io.cassandrareaper.core.Cluster clusterToAdd = io.cassandrareaper.core.Cluster.builder()
+                                .withName(cluster.get(0).toString())
+                                .build();
+                        runner.getContext().storage.addCluster(clusterToAdd);
+                      })
       );
     }
   }
