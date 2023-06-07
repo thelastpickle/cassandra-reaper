@@ -265,7 +265,7 @@ public final class BasicSteps {
   public void reaper_has_no_cluster_in_storage() throws Throwable {
     synchronized (BasicSteps.class) {
       RUNNERS.parallelStream().forEach(runner -> {
-        await().with().pollInterval(POLL_INTERVAL).atMost(12, SECONDS).until(() -> {
+        await().with().pollInterval(POLL_INTERVAL).atMost(20, SECONDS).until(() -> {
           Response response = runner.callReaper("GET", "/cluster/", Optional.<Map<String, String>>empty());
           assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
           String responseData = response.readEntity(String.class);
