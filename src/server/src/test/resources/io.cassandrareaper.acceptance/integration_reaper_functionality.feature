@@ -415,16 +415,16 @@ Feature: Using Reaper
     Then reaper has no longer the last added cluster in storage
   ${cucumber.upgrade-versions}
 
-@sidecar
+  @sidecar
+  @current_test
   Scenario Outline: Verify that ongoing repairs are prioritized over finished ones when listing the runs
     Given that reaper <version> is running
     And reaper has no cluster in storage
     When an add-cluster request is made to reaper with authentication
     Then reaper has the last added cluster in storage
-    And a new repair is added for "test" and keyspace "test_keyspace"
     And I add 11 and abort the most recent 10 repairs for cluster "test" and keyspace "test_keyspace2"
-    Then when I list the last 10 repairs, I can see 1 repairs at "NOT_STARTED" state
+    Then when I list the last 10 repairs, I can see 1 repairs at "PAUSED" state
     And when I list the last 10 repairs, I can see 9 repairs at "ABORTED" state
-    When the last added cluster is deleted
+    When the last added cluster is force deleted
     Then reaper has no longer the last added cluster in storage
   ${cucumber.upgrade-versions}

@@ -175,7 +175,7 @@ public class RepairSegmentDao {
 
   public int getSegmentAmountForRepairRun(UUID runId) {
     return (int) session
-        .execute(getRepairSegmentCountByRunIdAndStatePrepStmt.bind(runId))
+        .execute(getRepairSegmentCountByRunIdPrepStmt.bind(runId))
         .one()
         .getLong(0);
   }

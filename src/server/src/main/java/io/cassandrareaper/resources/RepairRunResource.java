@@ -655,7 +655,7 @@ public final class RepairRunResource {
       @QueryParam("limit") Optional<Integer> limit) {
 
     try {
-      final Set desiredStates = splitStateParam(state);
+      final Set<String> desiredStates = splitStateParam(state);
       if (desiredStates == null) {
         return Response.status(Response.Status.BAD_REQUEST).build();
       }
@@ -664,14 +664,14 @@ public final class RepairRunResource {
             ? Collections.singleton(context.storage.getCluster(cluster.get()))
             : context.storage.getClusters();
 
-      List<RepairRunStatus> runStatuses = Lists.newArrayList();
       List<RepairRun> repairRuns = Lists.newArrayList();
       clusters.forEach(clstr -> repairRuns.addAll(
           context.storage.getRepairRunsForClusterPrioritiseRunning(clstr.getName(), limit))
       );
+      List<RepairRunStatus> runStatuses = Lists.newArrayList();
       RepairRunService.sortByRunState(repairRuns);
       runStatuses.addAll(
-          (List<RepairRunStatus>) getRunStatuses(
+          getRunStatuses(
               repairRuns.subList(0, min(repairRuns.size(), limit.orElse(1000))), desiredStates)
               .stream()
               .filter((run) -> !keyspace.isPresent()
@@ -700,7 +700,7 @@ public final class RepairRunResource {
     return runStatuses;
   }
 
-  static Set splitStateParam(Optional<String> state) {
+  static Set<String> splitStateParam(Optional<String> state) {
     if (state.isPresent()) {
       final Iterable<String> chunks = RepairRunService.COMMA_SEPARATED_LIST_SPLITTER.split(state.get());
       for (final String chunk : chunks) {
