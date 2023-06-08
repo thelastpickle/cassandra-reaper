@@ -26,7 +26,7 @@ import io.cassandrareaper.core.RepairUnit;
 import io.cassandrareaper.core.Table;
 import io.cassandrareaper.jmx.JmxConnectionFactory;
 import io.cassandrareaper.jmx.JmxProxy;
-import io.cassandrareaper.storage.MemoryStorage;
+import io.cassandrareaper.storage.MemoryStorageFacade;
 
 import java.time.Duration;
 import java.util.Arrays;
@@ -68,7 +68,7 @@ public final class ClusterRepairSchedulerTest {
         .build();
 
     context = new AppContext();
-    context.storage = new MemoryStorage();
+    context.storage = new MemoryStorageFacade();
 
     context.config = TestRepairConfiguration.defaultConfigBuilder()
         .withAutoScheduling(TestRepairConfiguration.defaultAutoSchedulingConfigBuilder()

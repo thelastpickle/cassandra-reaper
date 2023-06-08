@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package io.cassandrareaper.storage.cassandra;
+package io.cassandrareaper.storage.repairunit;
 
 import io.cassandrareaper.core.RepairUnit;
 
@@ -37,12 +37,12 @@ import com.google.common.cache.LoadingCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class RepairUnitDao {
+public class CassRepairUnitDao implements IRepairUnit{
   static final String SELECT_REPAIR_UNIT = "SELECT * FROM repair_unit_v1";
-  private static final Logger LOG = LoggerFactory.getLogger(RepairUnitDao.class);
+  private static final Logger LOG = LoggerFactory.getLogger(CassRepairUnitDao.class);
   PreparedStatement insertRepairUnitPrepStmt;
   PreparedStatement getRepairUnitPrepStmt;
-  PreparedStatement deleteRepairUnitPrepStmt;
+  public PreparedStatement deleteRepairUnitPrepStmt;
 
   final LoadingCache<UUID, RepairUnit> repairUnits = CacheBuilder
       .newBuilder()
@@ -54,7 +54,7 @@ public class RepairUnitDao {
   private final int defaultTimeout;
   private final Session session;
 
-  public RepairUnitDao(int defaultTimeout, Session session) {
+  public CassRepairUnitDao(int defaultTimeout, Session session) {
     this.defaultTimeout = defaultTimeout;
     this.session = session;
     prepareStatements();
@@ -96,7 +96,7 @@ public class RepairUnitDao {
             updatedRepairUnit.getTimeout()));
   }
 
-  RepairUnit getRepairUnitImpl(UUID id) {
+  public RepairUnit getRepairUnitImpl(UUID id) {
     Row repairUnitRow = session.execute(getRepairUnitPrepStmt.bind(id)).one();
     if (repairUnitRow != null) {
       return RepairUnit.builder()

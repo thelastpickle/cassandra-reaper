@@ -29,7 +29,7 @@ import io.cassandrareaper.resources.view.RepairRunStatus;
 import io.cassandrareaper.resources.view.RepairScheduleStatus;
 import io.cassandrareaper.service.RepairRunService;
 import io.cassandrareaper.storage.DiagEventSubscriptionMapper;
-import io.cassandrareaper.storage.cassandra.CassandraStorage;
+import io.cassandrareaper.storage.cassandra.CassandraStorageFacade;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -2440,7 +2440,7 @@ public final class BasicSteps {
   }
 
   private static boolean isInstanceOfDistributedStorage(String storageClassname) {
-    String csCls = CassandraStorage.class.getName();
+    String csCls = CassandraStorageFacade.class.getName();
     return csCls.equals(storageClassname);
   }
 

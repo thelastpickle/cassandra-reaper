@@ -16,12 +16,14 @@
  * limitations under the License.
  */
 
-package io.cassandrareaper.storage.cassandra;
+package io.cassandrareaper.storage.repairsegment;
 
 import io.cassandrareaper.core.RepairSegment;
 import io.cassandrareaper.core.Segment;
 import io.cassandrareaper.service.RingRange;
 import io.cassandrareaper.storage.JsonParseUtils;
+import io.cassandrareaper.storage.cassandra.Concurrency;
+import io.cassandrareaper.storage.repairunit.CassRepairUnitDao;
 
 import java.math.BigInteger;
 import java.util.Collection;
@@ -46,7 +48,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.joda.time.DateTime;
 
-public class RepairSegmentDao {
+public class CassRepairSegmentDao implements IRepairSegment {
   public PreparedStatement insertRepairSegmentPrepStmt;
   public PreparedStatement insertRepairSegmentIncrementalPrepStmt;
   PreparedStatement updateRepairSegmentPrepStmt;
@@ -59,20 +61,20 @@ public class RepairSegmentDao {
   @Nullable // null on Cassandra-2 as it's not supported syntax
   PreparedStatement getRepairSegmentCountByRunIdAndStatePrepStmt = null;
   private final Concurrency concurrency;
-  private final RepairUnitDao repairUnitDao;
+  private final CassRepairUnitDao cassRepairUnitDao;
   private final Session session;
 
   //TODO: Consider removing Cassandra 2 support so we don't need to look at the version.
-  public RepairSegmentDao(Concurrency concurrency,
-                          RepairUnitDao repairUnitDao,
-                          Session session) {
+  public CassRepairSegmentDao(Concurrency concurrency,
+                              CassRepairUnitDao cassRepairUnitDao,
+                              Session session) {
     this.session = session;
     this.concurrency = concurrency;
-    this.repairUnitDao = repairUnitDao;
+    this.cassRepairUnitDao = cassRepairUnitDao;
     prepareStatements();
   }
 
-  static boolean segmentIsWithinRange(RepairSegment segment, RingRange range) {
+  public static boolean segmentIsWithinRange(RepairSegment segment, RingRange range) {
     return range.encloses(new RingRange(segment.getStartToken(), segment.getEndToken()));
   }
 
@@ -196,7 +198,7 @@ public class RepairSegmentDao {
 
     assert concurrency.hasLeadOnSegment(segment)
         || (concurrency.hasLeadOnSegment(segment.getRunId())
-        && repairUnitDao.getRepairUnit(segment.getRepairUnitId()).getIncrementalRepair())
+        && cassRepairUnitDao.getRepairUnit(segment.getRepairUnitId()).getIncrementalRepair())
         : "non-leader trying to update repair segment " + segment.getId() + " of run " + segment.getRunId();
 
     return updateRepairSegmentUnsafe(segment);
@@ -292,7 +294,7 @@ public class RepairSegmentDao {
     return candidates;
   }
 
-  boolean segmentIsWithinRanges(RepairSegment seg, List<RingRange> ranges) {
+  public boolean segmentIsWithinRanges(RepairSegment seg, List<RingRange> ranges) {
     for (RingRange range : ranges) {
       if (segmentIsWithinRange(seg, range)) {
         return true;
@@ -302,7 +304,7 @@ public class RepairSegmentDao {
     return false;
   }
 
-  boolean segmentIsCandidate(RepairSegment seg, Set<String> lockedNodes) {
+  public boolean segmentIsCandidate(RepairSegment seg, Set<String> lockedNodes) {
     return seg.getState().equals(RepairSegment.State.NOT_STARTED)
         && Sets.intersection(lockedNodes, seg.getReplicas().keySet()).isEmpty();
   }

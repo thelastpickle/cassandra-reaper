@@ -20,6 +20,8 @@ package io.cassandrareaper.storage.cassandra;
 
 import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.ClusterProperties;
+import io.cassandrareaper.storage.repairschedule.CassRepairScheduleDao;
+import io.cassandrareaper.storage.repairunit.CassRepairUnitDao;
 
 import java.io.IOException;
 import java.sql.Date;
@@ -59,22 +61,22 @@ public class ClusterDao {
   private final ObjectMapper objectMapper;
   private final AtomicReference<Collection<Cluster>> clustersCache = new AtomicReference(Collections.EMPTY_SET);
   private final AtomicLong clustersCacheAge = new AtomicLong(0);
-  private final RepairScheduleDao repairScheduleDao;
-  private final RepairUnitDao repairUnitDao;
+  private final CassRepairScheduleDao cassRepairScheduleDao;
+  private final CassRepairUnitDao cassRepairUnitDao;
   private final EventsDao eventsDao;
 
   private final Session session;
 
-  public ClusterDao(RepairScheduleDao repairScheduleDao,
-                    RepairUnitDao repairUnitDao,
+  public ClusterDao(CassRepairScheduleDao cassRepairScheduleDao,
+                    CassRepairUnitDao cassRepairUnitDao,
                     EventsDao eventsDao,
                     Session session,
                     ObjectMapper objectMapper) {
 
     this.session = session;
     this.objectMapper = objectMapper;
-    this.repairScheduleDao = repairScheduleDao;
-    this.repairUnitDao = repairUnitDao;
+    this.cassRepairScheduleDao = cassRepairScheduleDao;
+    this.cassRepairUnitDao = cassRepairUnitDao;
     this.eventsDao = eventsDao;
     prepareStatements();
   }
@@ -204,8 +206,8 @@ public class ClusterDao {
 
 
   public Cluster deleteCluster(String clusterName) {
-    repairScheduleDao.getRepairSchedulesForCluster(clusterName)
-        .forEach(schedule -> repairScheduleDao.deleteRepairSchedule(schedule.getId()));
+    cassRepairScheduleDao.getRepairSchedulesForCluster(clusterName)
+        .forEach(schedule -> cassRepairScheduleDao.deleteRepairSchedule(schedule.getId()));
     session.executeAsync(deleteRepairRunByClusterPrepStmt.bind(clusterName));
 
     eventsDao.getEventSubscriptions(clusterName)
@@ -213,13 +215,13 @@ public class ClusterDao {
         .filter(subscription -> subscription.getId().isPresent())
         .forEach(subscription -> eventsDao.deleteEventSubscription(subscription.getId().get()));
 
-    Statement stmt = new SimpleStatement(RepairUnitDao.SELECT_REPAIR_UNIT);
+    Statement stmt = new SimpleStatement(CassRepairUnitDao.SELECT_REPAIR_UNIT);
     stmt.setIdempotent(true);
     ResultSet results = session.execute(stmt);
     for (Row row : results) {
       if (row.getString("cluster_name").equals(clusterName)) {
         UUID id = row.getUUID("id");
-        session.executeAsync(repairUnitDao.deleteRepairUnitPrepStmt.bind(id));
+        session.executeAsync(cassRepairUnitDao.deleteRepairUnitPrepStmt.bind(id));
       }
     }
     Cluster cluster = getCluster(clusterName);

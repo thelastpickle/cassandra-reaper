@@ -32,7 +32,8 @@ import io.cassandrareaper.jmx.JmxConnectionFactory;
 import io.cassandrareaper.jmx.JmxProxy;
 import io.cassandrareaper.jmx.JmxProxyTest;
 import io.cassandrareaper.storage.IStorage;
-import io.cassandrareaper.storage.MemoryStorage;
+import io.cassandrareaper.storage.MemoryStorageFacade;
+import io.cassandrareaper.storage.repairsegment.IRepairSegment;
 
 import java.math.BigInteger;
 import java.net.UnknownHostException;
@@ -245,7 +246,7 @@ public final class RepairRunServiceTest {
         BigInteger.valueOf(0L),
         BigInteger.valueOf(100L),
         BigInteger.valueOf(200L));
-    final IStorage storage = new MemoryStorage();
+    final IStorage storage = new MemoryStorageFacade();
 
     storage.addCluster(cluster);
 
@@ -332,7 +333,7 @@ public final class RepairRunServiceTest {
         BigInteger.valueOf(0L),
         BigInteger.valueOf(100L),
         BigInteger.valueOf(200L));
-    final IStorage storage = new MemoryStorage();
+    final IStorage storage = new MemoryStorageFacade();
 
     storage.addCluster(cluster);
 
@@ -788,7 +789,7 @@ public final class RepairRunServiceTest {
 
   @Test
   public void getDatacentersToRepairBasedOnParamTest() throws ReaperException {
-    final IStorage storage = mock(IStorage.class);
+    final IRepairSegment storage = mock(IStorage.class);
     Set<String> datacenters = RepairRunService.getDatacentersToRepairBasedOnParam(Optional.of("dc1,dc2"));
     assertEquals("Datacenters were not parsed correctly", 2, datacenters.size());
   }
@@ -815,7 +816,7 @@ public final class RepairRunServiceTest {
             BigInteger.valueOf(0L),
             BigInteger.valueOf(100L),
             BigInteger.valueOf(200L));
-    final IStorage storage = new MemoryStorage();
+    final IStorage storage = new MemoryStorageFacade();
 
     storage.addCluster(cluster);
 

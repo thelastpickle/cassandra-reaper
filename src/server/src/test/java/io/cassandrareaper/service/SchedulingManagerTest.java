@@ -25,7 +25,7 @@ import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairRun.RunState;
 import io.cassandrareaper.core.RepairSchedule;
 import io.cassandrareaper.core.RepairUnit;
-import io.cassandrareaper.storage.cassandra.CassandraStorage;
+import io.cassandrareaper.storage.cassandra.CassandraStorageFacade;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -71,8 +71,8 @@ public final class SchedulingManagerTest {
     IntStream.range(0,5).forEach(i -> reaperInstances.add(UUIDs.timeBased()));
     // Add the current reaper instance id to the list
     reaperInstances.add(context.reaperInstanceId);
-    context.storage = mock(CassandraStorage.class);
-    when(((CassandraStorage)context.storage).getRunningReapers()).thenReturn(reaperInstances);
+    context.storage = mock(CassandraStorageFacade.class);
+    when(((CassandraStorageFacade)context.storage).getRunningReapers()).thenReturn(reaperInstances);
     SchedulingManager schedulingManager = SchedulingManager.create(context);
     assertTrue("The eldest Reaper instance should be the scheduling leader",
         schedulingManager.currentReaperIsSchedulingLeader());
@@ -87,8 +87,8 @@ public final class SchedulingManagerTest {
     context.isDistributed.set(true);
     // Add the current reaper instance id to the list
     reaperInstances.add(context.reaperInstanceId);
-    context.storage = mock(CassandraStorage.class);
-    when(((CassandraStorage)context.storage).getRunningReapers()).thenReturn(reaperInstances);
+    context.storage = mock(CassandraStorageFacade.class);
+    when(((CassandraStorageFacade)context.storage).getRunningReapers()).thenReturn(reaperInstances);
     SchedulingManager schedulingManager = SchedulingManager.create(context);
     assertFalse("The eldest Reaper instance should be the scheduling leader",
         schedulingManager.currentReaperIsSchedulingLeader());
@@ -103,8 +103,8 @@ public final class SchedulingManagerTest {
     IntStream.range(0,5).forEach(i -> reaperInstances.add(UUIDs.timeBased()));
     // Add the current reaper instance id to the list
     reaperInstances.add(context.reaperInstanceId);
-    context.storage = mock(CassandraStorage.class);
-    when(((CassandraStorage)context.storage).getRunningReapers()).thenReturn(Collections.emptyList());
+    context.storage = mock(CassandraStorageFacade.class);
+    when(((CassandraStorageFacade)context.storage).getRunningReapers()).thenReturn(Collections.emptyList());
     SchedulingManager schedulingManager = SchedulingManager.create(context);
     assertFalse("If we cannot get the list of running reapers, none should be scheduling leader",
         schedulingManager.currentReaperIsSchedulingLeader());
@@ -123,8 +123,8 @@ public final class SchedulingManagerTest {
         .build(UUIDs.timeBased());
 
     AppContext context = new AppContext();
-    context.storage = mock(CassandraStorage.class);
-    when(((CassandraStorage)context.storage).getRepairRun(any())).thenReturn(Optional.of(repairRun));
+    context.storage = mock(CassandraStorageFacade.class);
+    when(((CassandraStorageFacade)context.storage).getRepairRun(any())).thenReturn(Optional.of(repairRun));
 
     context.config = new ReaperApplicationConfiguration();
     context.config.setPercentRepairedCheckIntervalMinutes(1);
@@ -155,10 +155,10 @@ public final class SchedulingManagerTest {
         .build(UUIDs.timeBased());
 
     AppContext context = new AppContext();
-    context.storage = mock(CassandraStorage.class);
+    context.storage = mock(CassandraStorageFacade.class);
     RepairManager repairManager = mock(RepairManager.class);
     context.repairManager = repairManager;
-    when(((CassandraStorage)context.storage).getRepairRun(any())).thenReturn(Optional.of(repairRun));
+    when(((CassandraStorageFacade)context.storage).getRepairRun(any())).thenReturn(Optional.of(repairRun));
 
     context.config = new ReaperApplicationConfiguration();
     context.config.setPercentRepairedCheckIntervalMinutes(10);
@@ -179,7 +179,7 @@ public final class SchedulingManagerTest {
   @Test
   public void manageIncRepairAbovePercentThresholdSchedule() throws ReaperException {
     AppContext context = new AppContext();
-    context.storage = mock(CassandraStorage.class);
+    context.storage = mock(CassandraStorageFacade.class);
     RepairManager repairManager = mock(RepairManager.class);
     context.repairManager = repairManager;
 
@@ -252,7 +252,7 @@ public final class SchedulingManagerTest {
   @Test
   public void manageIncRepairBelowPercentThresholdSchedule() throws ReaperException {
     AppContext context = new AppContext();
-    context.storage = mock(CassandraStorage.class);
+    context.storage = mock(CassandraStorageFacade.class);
     RepairManager repairManager = mock(RepairManager.class);
     context.repairManager = repairManager;
 
@@ -273,7 +273,7 @@ public final class SchedulingManagerTest {
         .startTime(DateTime.now().minusMinutes(10))
         .endTime(DateTime.now().minusMinutes(5))
         .build(UUIDs.timeBased());
-    when(((CassandraStorage)context.storage).getRepairRun(any())).thenReturn(Optional.of(repairRun));
+    when(((CassandraStorageFacade)context.storage).getRepairRun(any())).thenReturn(Optional.of(repairRun));
 
     RepairSchedule repairSchedule = RepairSchedule.builder(repairUnit.getId())
         .daysBetween(1)
@@ -323,7 +323,7 @@ public final class SchedulingManagerTest {
   @Test
   public void managePausedRepairSchedule() throws ReaperException {
     AppContext context = new AppContext();
-    context.storage = mock(CassandraStorage.class);
+    context.storage = mock(CassandraStorageFacade.class);
     RepairManager repairManager = mock(RepairManager.class);
     context.repairManager = repairManager;
 
@@ -344,7 +344,7 @@ public final class SchedulingManagerTest {
         .startTime(DateTime.now().minusMinutes(10))
         .endTime(DateTime.now().minusMinutes(5))
         .build(UUIDs.timeBased());
-    when(((CassandraStorage)context.storage).getRepairRun(any())).thenReturn(Optional.of(repairRun));
+    when(((CassandraStorageFacade)context.storage).getRepairRun(any())).thenReturn(Optional.of(repairRun));
 
     RepairSchedule repairSchedule = RepairSchedule.builder(repairUnit.getId())
         .daysBetween(1)
@@ -370,7 +370,7 @@ public final class SchedulingManagerTest {
   @Test
   public void cleanupMetricsRegistryTest() {
     AppContext context = new AppContext();
-    context.storage = mock(CassandraStorage.class);
+    context.storage = mock(CassandraStorageFacade.class);
     context.config = new ReaperApplicationConfiguration();
     context.config.setPercentRepairedCheckIntervalMinutes(10);
     context.metricRegistry = mock(MetricRegistry.class);

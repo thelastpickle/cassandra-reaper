@@ -23,7 +23,7 @@ import org.junit.Test;
 
 
 
-public final class CassandraStorageTest {
+public final class CassandraStorageFacadeTest {
 
   @Test
   public void testMigrationRepository() {

@@ -27,31 +27,28 @@ import io.cassandrareaper.core.RepairUnit;
 import io.cassandrareaper.core.Snapshot;
 import io.cassandrareaper.resources.view.RepairRunStatus;
 import io.cassandrareaper.resources.view.RepairScheduleStatus;
-import io.cassandrareaper.service.RepairRunService;
+import io.cassandrareaper.storage.repairrun.MemRepairRunDao;
+import io.cassandrareaper.storage.repairschedule.MemRepairScheduleDao;
+import io.cassandrareaper.storage.repairsegment.MemRepairSegment;
+import io.cassandrareaper.storage.repairunit.MemRepairUnitDao;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
 import java.util.SortedSet;
-import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
 
-import com.datastax.driver.core.utils.UUIDs;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 import org.apache.commons.lang3.StringUtils;
-import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,20 +57,18 @@ import static java.lang.Math.min;
 /**
  * Implements the StorageAPI using transient Java classes.
  */
-public final class MemoryStorage implements IStorage {
+public final class MemoryStorageFacade implements IStorage {
 
-  private static final Logger LOG = LoggerFactory.getLogger(MemoryStorage.class);
+  private static final Logger LOG = LoggerFactory.getLogger(MemoryStorageFacade.class);
   private final ConcurrentMap<String, Cluster> clusters = Maps.newConcurrentMap();
-  private final ConcurrentMap<UUID, RepairRun> repairRuns = Maps.newConcurrentMap();
-  private final ConcurrentMap<UUID, RepairUnit> repairUnits = Maps.newConcurrentMap();
-  private final ConcurrentMap<RepairUnit.Builder, RepairUnit> repairUnitsByKey = Maps.newConcurrentMap();
-  private final ConcurrentMap<UUID, RepairSegment> repairSegments = Maps.newConcurrentMap();
-  private final ConcurrentMap<UUID, LinkedHashMap<UUID, RepairSegment>> repairSegmentsByRunId = Maps.newConcurrentMap();
-  private final ConcurrentMap<UUID, RepairSchedule> repairSchedules = Maps.newConcurrentMap();
   private final ConcurrentMap<String, Snapshot> snapshots = Maps.newConcurrentMap();
   private final ConcurrentMap<UUID, DiagEventSubscription> subscriptionsById = Maps.newConcurrentMap();
   private final ConcurrentMap<String, Map<String, PercentRepairedMetric>> percentRepairedMetrics
       = Maps.newConcurrentMap();
+  private final MemRepairSegment memRepairSegment = new MemRepairSegment(this);
+  private final MemRepairUnitDao memRepairUnitDao = new MemRepairUnitDao(memRepairRunDao);
+  private final MemRepairRunDao memRepairRunDao = new MemRepairRunDao(memRepairSegment, memRepairUnitDao);
+  private final MemRepairScheduleDao memRepairScheduleDao = new MemRepairScheduleDao(this);
 
   @Override
   public boolean isStorageConnected() {
@@ -134,20 +129,20 @@ public final class MemoryStorage implements IStorage {
 
   @Override
   public Cluster deleteCluster(String clusterName) {
-    getRepairSchedulesForCluster(clusterName).forEach(schedule -> deleteRepairSchedule(schedule.getId()));
-    getRepairRunIdsForCluster(clusterName, Optional.empty()).forEach(runId -> deleteRepairRun(runId));
+    memRepairScheduleDao.getRepairSchedulesForCluster(clusterName).forEach(schedule -> memRepairScheduleDao.deleteRepairSchedule(schedule.getId()));
+    memRepairRunDao.getRepairRunIdsForCluster(clusterName, Optional.empty()).forEach(runId -> memRepairRunDao.deleteRepairRun(runId));
 
     getEventSubscriptions(clusterName)
         .stream()
         .filter(subscription -> subscription.getId().isPresent())
         .forEach(subscription -> deleteEventSubscription(subscription.getId().get()));
 
-    repairUnits.values().stream()
+    memRepairUnitDao.repairUnits.values().stream()
         .filter((unit) -> unit.getClusterName().equals(clusterName))
         .forEach((unit) -> {
-          assert getRepairRunsForUnit(unit.getId()).isEmpty() : StringUtils.join(getRepairRunsForUnit(unit.getId()));
-          repairUnits.remove(unit.getId());
-          repairUnitsByKey.remove(unit.with());
+          assert memRepairRunDao.getRepairRunsForUnit(unit.getId()).isEmpty() : StringUtils.join(memRepairRunDao.getRepairRunsForUnit(unit.getId()));
+          memRepairUnitDao.repairUnits.remove(unit.getId());
+          memRepairUnitDao.repairUnitsByKey.remove(unit.with());
         });
 
     return clusters.remove(clusterName);
@@ -155,80 +150,42 @@ public final class MemoryStorage implements IStorage {
 
   @Override
   public RepairRun addRepairRun(RepairRun.Builder repairRun, Collection<RepairSegment.Builder> newSegments) {
-    RepairRun newRepairRun = repairRun.build(UUIDs.timeBased());
-    repairRuns.put(newRepairRun.getId(), newRepairRun);
-    addRepairSegments(newSegments, newRepairRun.getId());
-    return newRepairRun;
+    return memRepairRunDao.addRepairRun(repairRun, newSegments);
   }
 
   @Override
   public boolean updateRepairRun(RepairRun repairRun) {
-    return updateRepairRun(repairRun, Optional.of(true));
+    return memRepairRunDao.updateRepairRun(repairRun);
   }
 
   @Override
   public boolean updateRepairRun(RepairRun repairRun, Optional<Boolean> updateRepairState) {
-    if (!getRepairRun(repairRun.getId()).isPresent()) {
-      return false;
-    } else {
-      repairRuns.put(repairRun.getId(), repairRun);
-      return true;
-    }
+    return memRepairRunDao.updateRepairRun(repairRun, updateRepairState);
   }
 
   @Override
   public Optional<RepairRun> getRepairRun(UUID id) {
-    return Optional.ofNullable(repairRuns.get(id));
+    return memRepairRunDao.getRepairRun(id);
   }
 
   @Override
   public List<RepairRun> getRepairRunsForCluster(String clusterName, Optional<Integer> limit) {
-    List<RepairRun> foundRepairRuns = new ArrayList<>();
-    TreeMap<UUID,RepairRun> reverseOrder = new TreeMap<>(Collections.reverseOrder());
-    reverseOrder.putAll(repairRuns);
-    for (RepairRun repairRun : reverseOrder.values()) {
-      if (repairRun.getClusterName().equalsIgnoreCase(clusterName)) {
-        foundRepairRuns.add(repairRun);
-        if (foundRepairRuns.size() == limit.orElse(1000)) {
-          break;
-        }
-      }
-    }
-    return foundRepairRuns;
+    return memRepairRunDao.getRepairRunsForCluster(clusterName, limit);
   }
 
   @Override
   public List<RepairRun> getRepairRunsForClusterPrioritiseRunning(String clusterName, Optional<Integer> limit) {
-    List<RepairRun> foundRepairRuns = repairRuns
-        .values()
-        .stream()
-        .filter(
-            row -> row.getClusterName().equals(clusterName.toLowerCase(Locale.ROOT))).collect(Collectors.toList()
-        );
-    RepairRunService.sortByRunState(foundRepairRuns);
-    return foundRepairRuns.subList(0, min(foundRepairRuns.size(), limit.orElse(1000)));
+    return memRepairRunDao.getRepairRunsForClusterPrioritiseRunning(clusterName, limit);
   }
 
   @Override
   public Collection<RepairRun> getRepairRunsForUnit(UUID repairUnitId) {
-    List<RepairRun> foundRepairRuns = new ArrayList<>();
-    for (RepairRun repairRun : repairRuns.values()) {
-      if (repairRun.getRepairUnitId().equals(repairUnitId)) {
-        foundRepairRuns.add(repairRun);
-      }
-    }
-    return foundRepairRuns;
+    return memRepairRunDao.getRepairRunsForUnit(repairUnitId);
   }
 
   @Override
   public Collection<RepairRun> getRepairRunsWithState(RepairRun.RunState runState) {
-    List<RepairRun> foundRepairRuns = new ArrayList<>();
-    for (RepairRun repairRun : repairRuns.values()) {
-      if (repairRun.getRunState() == runState) {
-        foundRepairRuns.add(repairRun);
-      }
-    }
-    return foundRepairRuns;
+    return memRepairRunDao.getRepairRunsWithState(runState);
   }
 
   /**
@@ -238,254 +195,126 @@ public final class MemoryStorage implements IStorage {
    * @return The deleted RepairUnit instance, if delete succeeded.
    */
   private Optional<RepairUnit> deleteRepairUnit(UUID repairUnitId) {
-    RepairUnit deletedUnit = null;
-    boolean canDelete = true;
-    for (RepairRun repairRun : repairRuns.values()) {
-      if (repairRun.getRepairUnitId().equals(repairUnitId)) {
-        canDelete = false;
-        break;
-      }
-    }
-    if (canDelete) {
-      for (RepairSchedule schedule : repairSchedules.values()) {
-        if (schedule.getRepairUnitId().equals(repairUnitId)) {
-          canDelete = false;
-          break;
-        }
-      }
-    }
-    if (canDelete) {
-      deletedUnit = repairUnits.remove(repairUnitId);
-      repairUnitsByKey.remove(deletedUnit.with());
-    }
-    return Optional.ofNullable(deletedUnit);
-  }
-
-  private int deleteRepairSegmentsForRun(UUID runId) {
-    Map<UUID, RepairSegment> segmentsMap = repairSegmentsByRunId.remove(runId);
-    if (null != segmentsMap) {
-      for (RepairSegment segment : segmentsMap.values()) {
-        repairSegments.remove(segment.getId());
-      }
-    }
-    return segmentsMap != null ? segmentsMap.size() : 0;
+    return memRepairUnitDao.deleteRepairUnit(repairUnitId);
   }
 
   @Override
   public Optional<RepairRun> deleteRepairRun(UUID id) {
-    RepairRun deletedRun = repairRuns.remove(id);
-    if (deletedRun != null) {
-      if (getSegmentAmountForRepairRunWithState(id, RepairSegment.State.RUNNING) == 0) {
-        deleteRepairUnit(deletedRun.getRepairUnitId());
-        deleteRepairSegmentsForRun(id);
-
-        deletedRun = deletedRun.with()
-            .runState(RepairRun.RunState.DELETED)
-            .endTime(DateTime.now())
-            .build(id);
-      }
-    }
-    return Optional.ofNullable(deletedRun);
+    return memRepairRunDao.deleteRepairRun(id);
   }
 
   @Override
   public RepairUnit addRepairUnit(RepairUnit.Builder repairUnit) {
-    Optional<RepairUnit> existing = getRepairUnit(repairUnit);
-    if (existing.isPresent() && repairUnit.incrementalRepair == existing.get().getIncrementalRepair()) {
-      return existing.get();
-    } else {
-      RepairUnit newRepairUnit = repairUnit.build(UUIDs.timeBased());
-      repairUnits.put(newRepairUnit.getId(), newRepairUnit);
-      repairUnitsByKey.put(repairUnit, newRepairUnit);
-      return newRepairUnit;
-    }
+    return memRepairUnitDao.addRepairUnit(repairUnit);
   }
 
   @Override
   public void updateRepairUnit(RepairUnit updatedRepairUnit) {
-    repairUnits.put(updatedRepairUnit.getId(), updatedRepairUnit);
-    repairUnitsByKey.put(updatedRepairUnit.with(), updatedRepairUnit);
+    memRepairUnitDao.updateRepairUnit(updatedRepairUnit);
   }
 
   @Override
   public RepairUnit getRepairUnit(UUID id) {
-    RepairUnit unit = repairUnits.get(id);
-    Preconditions.checkArgument(null != unit);
-    return unit;
+    return memRepairUnitDao.getRepairUnit(id);
   }
 
   @Override
   public Optional<RepairUnit> getRepairUnit(RepairUnit.Builder params) {
-    return Optional.ofNullable(repairUnitsByKey.get(params));
-  }
-
-  private void addRepairSegments(Collection<RepairSegment.Builder> segments, UUID runId) {
-    LinkedHashMap<UUID, RepairSegment> newSegments = Maps.newLinkedHashMap();
-    for (RepairSegment.Builder segment : segments) {
-      RepairSegment newRepairSegment = segment.withRunId(runId).withId(UUIDs.timeBased()).build();
-      repairSegments.put(newRepairSegment.getId(), newRepairSegment);
-      newSegments.put(newRepairSegment.getId(), newRepairSegment);
-    }
-    repairSegmentsByRunId.put(runId, newSegments);
+    return memRepairUnitDao.getRepairUnit(params);
   }
 
   @Override
   public boolean updateRepairSegment(RepairSegment newRepairSegment) {
-    if (getRepairSegment(newRepairSegment.getRunId(), newRepairSegment.getId()) == null) {
-      return false;
-    } else {
-      repairSegments.put(newRepairSegment.getId(), newRepairSegment);
-      LinkedHashMap<UUID, RepairSegment> updatedSegment = repairSegmentsByRunId.get(newRepairSegment.getRunId());
-      updatedSegment.put(newRepairSegment.getId(), newRepairSegment);
-      return true;
-    }
+    return memRepairSegment.updateRepairSegment(newRepairSegment);
   }
 
   @Override
   public Optional<RepairSegment> getRepairSegment(UUID runId, UUID segmentId) {
-    return Optional.ofNullable(repairSegments.get(segmentId));
+    return memRepairSegment.getRepairSegment(runId, segmentId);
   }
 
   @Override
   public Collection<RepairSegment> getRepairSegmentsForRun(UUID runId) {
-    return repairSegmentsByRunId.get(runId).values();
+    return memRepairSegment.getRepairSegmentsForRun(runId);
   }
 
   @Override
   public List<RepairSegment> getNextFreeSegments(UUID runId) {
-    return repairSegmentsByRunId.get(runId).values().stream()
-                                                    .filter(seg -> seg.getState() == RepairSegment.State.NOT_STARTED)
-                                                    .collect(Collectors.toList());
+    return memRepairSegment.getNextFreeSegments(runId);
   }
 
   @Override
   public Collection<RepairSegment> getSegmentsWithState(UUID runId, RepairSegment.State segmentState) {
-    List<RepairSegment> segments = Lists.newArrayList();
-    for (RepairSegment segment : repairSegmentsByRunId.get(runId).values()) {
-      if (segment.getState() == segmentState) {
-        segments.add(segment);
-      }
-    }
-    return segments;
+    return memRepairSegment.getSegmentsWithState(runId, segmentState);
   }
 
   @Override
   public SortedSet<UUID> getRepairRunIdsForCluster(String clusterName, Optional<Integer> limit) {
-    SortedSet<UUID> repairRunIds = Sets.newTreeSet((u0, u1) -> (int)(u0.timestamp() - u1.timestamp()));
-    for (RepairRun repairRun : repairRuns.values()) {
-      if (repairRun.getClusterName().equalsIgnoreCase(clusterName)) {
-        repairRunIds.add(repairRun.getId());
-      }
-    }
-    return repairRunIds;
+    return memRepairRunDao.getRepairRunIdsForCluster(clusterName, limit);
   }
 
   @Override
   public int getSegmentAmountForRepairRun(UUID runId) {
-    Map<UUID, RepairSegment> segmentsMap = repairSegmentsByRunId.get(runId);
-    return segmentsMap == null ? 0 : segmentsMap.size();
+    return memRepairSegment.getSegmentAmountForRepairRun(runId);
   }
 
   @Override
   public int getSegmentAmountForRepairRunWithState(UUID runId, RepairSegment.State state) {
-    Map<UUID, RepairSegment> segmentsMap = repairSegmentsByRunId.get(runId);
-    int amount = 0;
-    if (null != segmentsMap) {
-      for (RepairSegment segment : segmentsMap.values()) {
-        if (segment.getState() == state) {
-          amount += 1;
-        }
-      }
-    }
-    return amount;
+    return memRepairSegment.getSegmentAmountForRepairRunWithState(runId, state);
   }
 
   @Override
   public RepairSchedule addRepairSchedule(RepairSchedule.Builder repairSchedule) {
-    RepairSchedule newRepairSchedule = repairSchedule.build(UUIDs.timeBased());
-    repairSchedules.put(newRepairSchedule.getId(), newRepairSchedule);
-    return newRepairSchedule;
+    return memRepairScheduleDao.addRepairSchedule(repairSchedule);
   }
 
   @Override
   public Optional<RepairSchedule> getRepairSchedule(UUID id) {
-    return Optional.ofNullable(repairSchedules.get(id));
+    return memRepairScheduleDao.getRepairSchedule(id);
   }
 
   @Override
   public Collection<RepairSchedule> getRepairSchedulesForCluster(String clusterName) {
-    Collection<RepairSchedule> foundRepairSchedules = new ArrayList<>();
-    for (RepairSchedule repairSchedule : repairSchedules.values()) {
-      RepairUnit repairUnit = getRepairUnit(repairSchedule.getRepairUnitId());
-      if (repairUnit.getClusterName().equals(clusterName)) {
-        foundRepairSchedules.add(repairSchedule);
-      }
-    }
-    return foundRepairSchedules;
+    return memRepairScheduleDao.getRepairSchedulesForCluster(clusterName);
   }
 
   @Override
   public Collection<RepairSchedule> getRepairSchedulesForCluster(String clusterName, boolean incremental) {
-    return getRepairSchedulesForCluster(clusterName).stream()
-        .filter(schedule -> getRepairUnit(schedule.getRepairUnitId()).getIncrementalRepair() == incremental)
-        .collect(Collectors.toList());
+    return memRepairScheduleDao.getRepairSchedulesForCluster(clusterName, incremental);
   }
 
   @Override
   public Collection<RepairSchedule> getRepairSchedulesForKeyspace(String keyspaceName) {
-    Collection<RepairSchedule> foundRepairSchedules = new ArrayList<>();
-    for (RepairSchedule repairSchedule : repairSchedules.values()) {
-      RepairUnit repairUnit = getRepairUnit(repairSchedule.getRepairUnitId());
-      if (repairUnit.getKeyspaceName().equals(keyspaceName)) {
-        foundRepairSchedules.add(repairSchedule);
-      }
-    }
-    return foundRepairSchedules;
+    return memRepairScheduleDao.getRepairSchedulesForKeyspace(keyspaceName);
   }
 
   @Override
   public Collection<RepairSchedule> getRepairSchedulesForClusterAndKeyspace(String clusterName, String keyspaceName) {
-    Collection<RepairSchedule> foundRepairSchedules = new ArrayList<>();
-    for (RepairSchedule repairSchedule : repairSchedules.values()) {
-      RepairUnit repairUnit = getRepairUnit(repairSchedule.getRepairUnitId());
-      if (repairUnit.getClusterName().equals(clusterName) && repairUnit.getKeyspaceName().equals(keyspaceName)) {
-        foundRepairSchedules.add(repairSchedule);
-      }
-    }
-    return foundRepairSchedules;
+    return memRepairScheduleDao.getRepairSchedulesForClusterAndKeyspace(clusterName, keyspaceName);
   }
 
   @Override
   public Collection<RepairSchedule> getAllRepairSchedules() {
-    return repairSchedules.values();
+    return memRepairScheduleDao.getAllRepairSchedules();
   }
 
   @Override
   public boolean updateRepairSchedule(RepairSchedule newRepairSchedule) {
-    if (repairSchedules.get(newRepairSchedule.getId()) == null) {
-      return false;
-    } else {
-      repairSchedules.put(newRepairSchedule.getId(), newRepairSchedule);
-      return true;
-    }
+    return memRepairScheduleDao.updateRepairSchedule(newRepairSchedule);
   }
 
   @Override
   public Optional<RepairSchedule> deleteRepairSchedule(UUID id) {
-    RepairSchedule deletedSchedule = repairSchedules.remove(id);
-    if (deletedSchedule != null) {
-      deletedSchedule = deletedSchedule.with().state(RepairSchedule.State.DELETED).build(id);
-    }
-    return Optional.ofNullable(deletedSchedule);
+    return memRepairScheduleDao.deleteRepairSchedule(id);
   }
 
   @Override
   public Collection<RepairRunStatus> getClusterRunStatuses(String clusterName, int limit) {
     List<RepairRunStatus> runStatuses = Lists.newArrayList();
-    for (RepairRun run : getRepairRunsForCluster(clusterName, Optional.of(limit))) {
-      RepairUnit unit = getRepairUnit(run.getRepairUnitId());
-      int segmentsRepaired = getSegmentAmountForRepairRunWithState(run.getId(), RepairSegment.State.DONE);
-      int totalSegments = getSegmentAmountForRepairRun(run.getId());
+    for (RepairRun run : memRepairRunDao.getRepairRunsForCluster(clusterName, Optional.of(limit))) {
+      RepairUnit unit = memRepairUnitDao.getRepairUnit(run.getRepairUnitId());
+      int segmentsRepaired = memRepairSegment.getSegmentAmountForRepairRunWithState(run.getId(), RepairSegment.State.DONE);
+      int totalSegments = memRepairSegment.getSegmentAmountForRepairRun(run.getId());
       runStatuses.add(
           new RepairRunStatus(
               run.getId(),
@@ -519,9 +348,9 @@ public final class MemoryStorage implements IStorage {
   @Override
   public Collection<RepairScheduleStatus> getClusterScheduleStatuses(String clusterName) {
     List<RepairScheduleStatus> scheduleStatuses = Lists.newArrayList();
-    Collection<RepairSchedule> schedules = getRepairSchedulesForCluster(clusterName);
+    Collection<RepairSchedule> schedules = memRepairScheduleDao.getRepairSchedulesForCluster(clusterName);
     for (RepairSchedule schedule : schedules) {
-      RepairUnit unit = getRepairUnit(schedule.getRepairUnitId());
+      RepairUnit unit = memRepairUnitDao.getRepairUnit(schedule.getRepairUnitId());
       scheduleStatuses.add(new RepairScheduleStatus(schedule, unit));
     }
     return scheduleStatuses;

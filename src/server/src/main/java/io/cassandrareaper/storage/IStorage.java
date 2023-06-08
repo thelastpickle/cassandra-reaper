@@ -20,18 +20,18 @@ package io.cassandrareaper.storage;
 import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.DiagEventSubscription;
 import io.cassandrareaper.core.PercentRepairedMetric;
-import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairSchedule;
-import io.cassandrareaper.core.RepairSegment;
 import io.cassandrareaper.core.RepairUnit;
 import io.cassandrareaper.core.Snapshot;
 import io.cassandrareaper.resources.view.RepairRunStatus;
 import io.cassandrareaper.resources.view.RepairScheduleStatus;
+import io.cassandrareaper.storage.repairrun.IRepairRun;
+import io.cassandrareaper.storage.repairsegment.IRepairSegment;
+import io.cassandrareaper.storage.repairunit.IRepairUnit;
 
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
-import java.util.SortedSet;
 import java.util.UUID;
 
 import io.dropwizard.lifecycle.Managed;
@@ -39,7 +39,7 @@ import io.dropwizard.lifecycle.Managed;
 /**
  * API definition for cassandra-reaper.
  */
-public interface IStorage extends Managed {
+public interface IStorage extends Managed, IRepairRun, IRepairSegment, IRepairUnit, io.cassandrareaper.storage.repairschedule.IRepairSchedule {
 
   boolean isStorageConnected();
 
@@ -59,84 +59,6 @@ public interface IStorage extends Managed {
    * @return The deleted Cluster instance if delete succeeds, with state set to DELETED.
    */
   Cluster deleteCluster(String clusterName);
-
-  RepairRun addRepairRun(RepairRun.Builder repairRun, Collection<RepairSegment.Builder> newSegments);
-
-  boolean updateRepairRun(RepairRun repairRun, Optional<Boolean> updateRepairState);
-
-  boolean updateRepairRun(RepairRun repairRun);
-
-  Optional<RepairRun> getRepairRun(UUID id);
-
-  /** return all the repair runs in a cluster, in reverse chronological order, with default limit is 1000 */
-  Collection<RepairRun> getRepairRunsForCluster(String clusterName, Optional<Integer> limit);
-
-  Collection<RepairRun> getRepairRunsForClusterPrioritiseRunning(String clusterName, Optional<Integer> limit);
-
-  Collection<RepairRun> getRepairRunsForUnit(UUID repairUnitId);
-
-  Collection<RepairRun> getRepairRunsWithState(RepairRun.RunState runState);
-
-  /**
-   * Delete the RepairRun instance identified by the given id, and delete also all the related repair segments.
-   *
-   * @param id The id of the RepairRun instance to delete, and all segments for it.
-   * @return The deleted RepairRun instance, if delete succeeds, with state set to DELETED.
-   */
-  Optional<RepairRun> deleteRepairRun(UUID id);
-
-  RepairUnit addRepairUnit(RepairUnit.Builder newRepairUnit);
-
-  RepairUnit getRepairUnit(UUID id);
-
-  Optional<RepairUnit> getRepairUnit(RepairUnit.Builder repairUnit);
-
-  void updateRepairUnit(RepairUnit updatedRepairUnit);
-
-  boolean updateRepairSegment(RepairSegment newRepairSegment);
-
-  Optional<RepairSegment> getRepairSegment(UUID runId, UUID segmentId);
-
-  Collection<RepairSegment> getRepairSegmentsForRun(UUID runId);
-
-  /**
-   * @param runId the run id that the segment belongs to.
-   * @return a segment enclosed by the range with state NOT_STARTED, or nothing.
-   */
-  List<RepairSegment> getNextFreeSegments(UUID runId);
-
-  Collection<RepairSegment> getSegmentsWithState(UUID runId, RepairSegment.State segmentState);
-
-  SortedSet<UUID> getRepairRunIdsForCluster(String clusterName, Optional<Integer> limit);
-
-  int getSegmentAmountForRepairRun(UUID runId);
-
-  int getSegmentAmountForRepairRunWithState(UUID runId, RepairSegment.State state);
-
-  RepairSchedule addRepairSchedule(RepairSchedule.Builder repairSchedule);
-
-  Optional<RepairSchedule> getRepairSchedule(UUID repairScheduleId);
-
-  Collection<RepairSchedule> getRepairSchedulesForCluster(String clusterName);
-
-  Collection<RepairSchedule> getRepairSchedulesForCluster(String clusterName, boolean incremental);
-
-  Collection<RepairSchedule> getRepairSchedulesForKeyspace(String keyspaceName);
-
-  Collection<RepairSchedule> getRepairSchedulesForClusterAndKeyspace(String clusterName, String keyspaceName);
-
-  Collection<RepairSchedule> getAllRepairSchedules();
-
-  boolean updateRepairSchedule(RepairSchedule newRepairSchedule);
-
-  /**
-   * Delete the RepairSchedule instance identified by the given id. Related repair runs or other resources tied to the
-   * schedule will not be deleted.
-   *
-   * @param id The id of the RepairSchedule instance to delete.
-   * @return The deleted RepairSchedule instance, if delete succeeds, with state set to DELETED.
-   */
-  Optional<RepairSchedule> deleteRepairSchedule(UUID id);
 
   Collection<RepairRunStatus> getClusterRunStatuses(String clusterName, int limit);
 

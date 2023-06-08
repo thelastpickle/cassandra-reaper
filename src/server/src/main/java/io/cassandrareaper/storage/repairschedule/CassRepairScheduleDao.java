@@ -16,10 +16,11 @@
  * limitations under the License.
  */
 
-package io.cassandrareaper.storage.cassandra;
+package io.cassandrareaper.storage.repairschedule;
 
 import io.cassandrareaper.core.RepairSchedule;
 import io.cassandrareaper.core.RepairUnit;
+import io.cassandrareaper.storage.repairunit.CassRepairUnitDao;
 
 import java.util.Collection;
 import java.util.List;
@@ -47,21 +48,21 @@ import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class RepairScheduleDao {
+public class CassRepairScheduleDao implements IRepairSchedule {
   private static final String SELECT_REPAIR_SCHEDULE = "SELECT * FROM repair_schedule_v1";
-  private static final Logger LOG = LoggerFactory.getLogger(RepairScheduleDao.class);
+  private static final Logger LOG = LoggerFactory.getLogger(CassRepairScheduleDao.class);
   PreparedStatement insertRepairSchedulePrepStmt;
   PreparedStatement getRepairSchedulePrepStmt;
   PreparedStatement getRepairScheduleByClusterAndKsPrepStmt;
   PreparedStatement insertRepairScheduleByClusterAndKsPrepStmt;
   PreparedStatement deleteRepairSchedulePrepStmt;
   PreparedStatement deleteRepairScheduleByClusterAndKsByIdPrepStmt;
-  private final RepairUnitDao repairUnitDao;
+  private final CassRepairUnitDao cassRepairUnitDao;
   private final Session session;
 
 
-  public RepairScheduleDao(RepairUnitDao repairUnitDao, Session session) {
-    this.repairUnitDao = repairUnitDao;
+  public CassRepairScheduleDao(CassRepairUnitDao cassRepairUnitDao, Session session) {
+    this.cassRepairUnitDao = cassRepairUnitDao;
     this.session = session;
     prepareStatements();
   }
@@ -106,7 +107,7 @@ public class RepairScheduleDao {
     return sched != null ? Optional.ofNullable(createRepairScheduleFromRow(sched)) : Optional.empty();
   }
 
-  RepairSchedule createRepairScheduleFromRow(Row repairScheduleRow) {
+  public RepairSchedule createRepairScheduleFromRow(Row repairScheduleRow) {
     return RepairSchedule.builder(repairScheduleRow.getUUID("repair_unit_id"))
         .state(RepairSchedule.State.valueOf(repairScheduleRow.getString("state")))
         .daysBetween(repairScheduleRow.getInt("days_between"))
@@ -143,7 +144,7 @@ public class RepairScheduleDao {
 
   public Collection<RepairSchedule> getRepairSchedulesForCluster(String clusterName, boolean incremental) {
     return getRepairSchedulesForCluster(clusterName).stream()
-        .filter(schedule -> repairUnitDao.getRepairUnit(
+        .filter(schedule -> cassRepairUnitDao.getRepairUnit(
             schedule.getRepairUnitId()).getIncrementalRepair() == incremental
         )
         .collect(Collectors.toList());
@@ -194,7 +195,7 @@ public class RepairScheduleDao {
   public boolean updateRepairSchedule(RepairSchedule newRepairSchedule) {
     final Set<UUID> repairHistory = Sets.newHashSet();
     repairHistory.addAll(newRepairSchedule.getRunHistory());
-    RepairUnit repairUnit = repairUnitDao.getRepairUnit(newRepairSchedule.getRepairUnitId());
+    RepairUnit repairUnit = cassRepairUnitDao.getRepairUnit(newRepairSchedule.getRepairUnitId());
     List<ResultSetFuture> futures = Lists.newArrayList();
 
     futures.add(
@@ -243,7 +244,7 @@ public class RepairScheduleDao {
   public Optional<RepairSchedule> deleteRepairSchedule(UUID id) {
     Optional<RepairSchedule> repairSchedule = getRepairSchedule(id);
     if (repairSchedule.isPresent()) {
-      RepairUnit repairUnit = repairUnitDao.getRepairUnit(repairSchedule.get().getRepairUnitId());
+      RepairUnit repairUnit = cassRepairUnitDao.getRepairUnit(repairSchedule.get().getRepairUnitId());
 
       session.execute(
           deleteRepairScheduleByClusterAndKsByIdPrepStmt.bind(

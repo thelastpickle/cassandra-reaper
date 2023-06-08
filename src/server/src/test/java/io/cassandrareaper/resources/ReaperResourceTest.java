@@ -20,7 +20,7 @@ package io.cassandrareaper.resources;
 import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperApplicationConfiguration.DatacenterAvailability;
 import io.cassandrareaper.service.TestRepairConfiguration;
-import io.cassandrareaper.storage.MemoryStorage;
+import io.cassandrareaper.storage.MemoryStorageFacade;
 
 import javax.ws.rs.core.Response;
 
@@ -46,7 +46,7 @@ public class ReaperResourceTest extends TestCase {
 
   private MockObjects initMocks() {
     AppContext context = new AppContext();
-    context.storage = new MemoryStorage();
+    context.storage = new MemoryStorageFacade();
     context.config = TestRepairConfiguration.defaultConfig();
     context.config.setDatacenterAvailability(DatacenterAvailability.EACH);
 

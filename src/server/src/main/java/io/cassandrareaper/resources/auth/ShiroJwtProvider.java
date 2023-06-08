@@ -19,7 +19,7 @@ package io.cassandrareaper.resources.auth;
 
 import io.cassandrareaper.AppContext;
 import io.cassandrareaper.resources.RequestUtils;
-import io.cassandrareaper.storage.cassandra.CassandraStorage;
+import io.cassandrareaper.storage.cassandra.CassandraStorageFacade;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -68,7 +68,7 @@ public final class ShiroJwtProvider {
     byte[] key;
     String txt = System.getenv("JWT_SECRET");
     if (null == txt) {
-      if (cxt.storage instanceof CassandraStorage) {
+      if (cxt.storage instanceof CassandraStorageFacade) {
         txt = cxt.config.getCassandraFactory().getClusterName();
       } else {
         txt = AppContext.REAPER_INSTANCE_ADDRESS;

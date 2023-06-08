@@ -53,11 +53,11 @@ final class MigrationManager {
       Session session,
       ReaperApplicationConfiguration config,
       VersionNumber version,
-      CassandraStorage.CassandraMode mode) {
+      CassandraStorageFacade.CassandraMode mode) {
 
-    if (mode.equals(CassandraStorage.CassandraMode.CASSANDRA)) {
+    if (mode.equals(CassandraStorageFacade.CassandraMode.CASSANDRA)) {
       initializeCassandraSchema(cassandra, session, config, version);
-    } else if (mode.equals(CassandraStorage.CassandraMode.ASTRA)) {
+    } else if (mode.equals(CassandraStorageFacade.CassandraMode.ASTRA)) {
       initializeAstraSchema(cassandra, session, config, version);
     }
   }
@@ -98,7 +98,7 @@ final class MigrationManager {
 
         // We now only support migrations starting at version 15 (Reaper 1.2.2)
         int startVersion = database.getVersion() == 0 ? 15 : database.getVersion();
-        migrate(startVersion, migrationRepo, session, CassandraStorage.CassandraMode.CASSANDRA);
+        migrate(startVersion, migrationRepo, session, CassandraStorageFacade.CassandraMode.CASSANDRA);
         // some migration steps depend on the Cassandra version, so must be rerun every startup
         Migration016.migrate(session, config.getCassandraFactory().getKeyspace());
         // Switch metrics table to TWCS if possible, this is intentionally executed every startup
@@ -134,7 +134,7 @@ final class MigrationManager {
         LOG.warn("Starting db migration from {} to {}…", currentVersion, migrationRepo.getLatestVersion());
 
         int startVersion = database.getVersion();
-        migrate(startVersion, migrationRepo, session, CassandraStorage.CassandraMode.ASTRA);
+        migrate(startVersion, migrationRepo, session, CassandraStorageFacade.CassandraMode.ASTRA);
       } else {
         LOG.info(
             String.format("Keyspace %s already at schema version %d", session.getLoggedKeyspace(), currentVersion));
@@ -146,12 +146,12 @@ final class MigrationManager {
       int dbVersion,
       MigrationRepository repository,
       Session session,
-      CassandraStorage.CassandraMode mode) {
+      CassandraStorageFacade.CassandraMode mode) {
     Preconditions.checkState(dbVersion < repository.getLatestVersion());
 
     for (int i = dbVersion + 1; i <= repository.getLatestVersion(); ++i) {
       final int nextVersion = i;
-      String migrationRepoPath = mode.equals(CassandraStorage.CassandraMode.CASSANDRA) ? "db/cassandra" : "db/astra";
+      String migrationRepoPath = mode.equals(CassandraStorageFacade.CassandraMode.CASSANDRA) ? "db/cassandra" : "db/astra";
       // perform the migrations one at a time, so the MigrationXXX classes can be executed alongside the scripts
       MigrationRepository migrationRepo = new MigrationRepository(migrationRepoPath) {
         @Override

@@ -27,7 +27,7 @@ import io.cassandrareaper.jmx.ClusterFacade;
 import io.cassandrareaper.jmx.JmxConnectionFactory;
 import io.cassandrareaper.jmx.JmxProxy;
 import io.cassandrareaper.service.TestRepairConfiguration;
-import io.cassandrareaper.storage.MemoryStorage;
+import io.cassandrareaper.storage.MemoryStorageFacade;
 
 import java.net.URI;
 import java.time.Duration;
@@ -607,7 +607,7 @@ public final class ClusterResourceTest {
 
   private MockObjects initMocks() throws ReaperException {
     AppContext context = new AppContext();
-    context.storage = new MemoryStorage();
+    context.storage = new MemoryStorageFacade();
     context.config = TestRepairConfiguration.defaultConfig();
 
     UriInfo uriInfo = mock(UriInfo.class);
