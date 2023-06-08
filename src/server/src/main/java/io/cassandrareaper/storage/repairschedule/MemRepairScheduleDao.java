@@ -20,6 +20,7 @@ package io.cassandrareaper.storage.repairschedule;
 
 import io.cassandrareaper.core.RepairSchedule;
 import io.cassandrareaper.core.RepairUnit;
+import io.cassandrareaper.storage.repairunit.MemRepairUnitDao;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -34,7 +35,10 @@ import com.google.common.collect.Maps;
 public class MemRepairScheduleDao implements IRepairSchedule {
   public final ConcurrentMap<UUID, RepairSchedule> repairSchedules = Maps.newConcurrentMap();
 
-  public MemRepairScheduleDao() {
+  private final MemRepairUnitDao memRepairUnitDao;
+
+  public MemRepairScheduleDao(MemRepairUnitDao memRepairUnitDao) {
+    this.memRepairUnitDao = memRepairUnitDao;
   }
 
   @Override
@@ -53,7 +57,7 @@ public class MemRepairScheduleDao implements IRepairSchedule {
   public Collection<RepairSchedule> getRepairSchedulesForCluster(String clusterName) {
     Collection<RepairSchedule> foundRepairSchedules = new ArrayList<RepairSchedule>();
     for (RepairSchedule repairSchedule : repairSchedules.values()) {
-      RepairUnit repairUnit = memoryStorageFacade.getMemRepairUnit().getRepairUnit(repairSchedule.getRepairUnitId());
+      RepairUnit repairUnit = memRepairUnitDao.getRepairUnit(repairSchedule.getRepairUnitId());
       if (repairUnit.getClusterName().equals(clusterName)) {
         foundRepairSchedules.add(repairSchedule);
       }
@@ -63,9 +67,8 @@ public class MemRepairScheduleDao implements IRepairSchedule {
 
   @Override
   public Collection<RepairSchedule> getRepairSchedulesForCluster(String clusterName, boolean incremental) {
-    return memoryStorageFacade.getRepairSchedulesForCluster(clusterName).stream()
-        .filter(schedule -> memoryStorageFacade
-              .getMemRepairUnit()
+    return getRepairSchedulesForCluster(clusterName).stream()
+        .filter(schedule -> memRepairUnitDao
               .getRepairUnit(schedule.getRepairUnitId())
               .getIncrementalRepair() == incremental)
         .collect(Collectors.toList());
@@ -75,7 +78,7 @@ public class MemRepairScheduleDao implements IRepairSchedule {
   public Collection<RepairSchedule> getRepairSchedulesForKeyspace(String keyspaceName) {
     Collection<RepairSchedule> foundRepairSchedules = new ArrayList<RepairSchedule>();
     for (RepairSchedule repairSchedule : repairSchedules.values()) {
-      RepairUnit repairUnit = memoryStorageFacade.getMemRepairUnit().getRepairUnit(repairSchedule.getRepairUnitId());
+      RepairUnit repairUnit = memRepairUnitDao.getRepairUnit(repairSchedule.getRepairUnitId());
       if (repairUnit.getKeyspaceName().equals(keyspaceName)) {
         foundRepairSchedules.add(repairSchedule);
       }
@@ -87,7 +90,7 @@ public class MemRepairScheduleDao implements IRepairSchedule {
   public Collection<RepairSchedule> getRepairSchedulesForClusterAndKeyspace(String clusterName, String keyspaceName) {
     Collection<RepairSchedule> foundRepairSchedules = new ArrayList<RepairSchedule>();
     for (RepairSchedule repairSchedule : repairSchedules.values()) {
-      RepairUnit repairUnit = memoryStorageFacade.getMemRepairUnit().getRepairUnit(repairSchedule.getRepairUnitId());
+      RepairUnit repairUnit = memRepairUnitDao.getRepairUnit(repairSchedule.getRepairUnitId());
       if (repairUnit.getClusterName().equals(clusterName) && repairUnit.getKeyspaceName().equals(keyspaceName)) {
         foundRepairSchedules.add(repairSchedule);
       }
