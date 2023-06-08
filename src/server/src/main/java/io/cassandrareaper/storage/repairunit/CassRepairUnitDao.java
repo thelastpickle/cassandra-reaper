@@ -37,20 +37,20 @@ import com.google.common.cache.LoadingCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class CassRepairUnitDao implements IRepairUnit{
+public class CassRepairUnitDao implements IRepairUnit {
   static final String SELECT_REPAIR_UNIT = "SELECT * FROM repair_unit_v1";
   private static final Logger LOG = LoggerFactory.getLogger(CassRepairUnitDao.class);
+  public PreparedStatement deleteRepairUnitPrepStmt;
   PreparedStatement insertRepairUnitPrepStmt;
   PreparedStatement getRepairUnitPrepStmt;
-  public PreparedStatement deleteRepairUnitPrepStmt;
 
   final LoadingCache<UUID, RepairUnit> repairUnits = CacheBuilder
-      .newBuilder()
-      .build(new CacheLoader<UUID, RepairUnit>() {
-        public RepairUnit load(UUID repairUnitId) throws Exception {
-          return getRepairUnitImpl(repairUnitId);
-        }
-      });
+        .newBuilder()
+        .build(new CacheLoader<UUID, RepairUnit>() {
+          public RepairUnit load(UUID repairUnitId) throws Exception {
+            return getRepairUnitImpl(repairUnitId);
+          }
+        });
   private final int defaultTimeout;
   private final Session session;
 

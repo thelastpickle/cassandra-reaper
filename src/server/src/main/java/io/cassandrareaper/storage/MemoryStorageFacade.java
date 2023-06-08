@@ -52,7 +52,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static java.lang.Math.min;
 
 /**
  * Implements the StorageAPI using transient Java classes.
@@ -66,7 +65,7 @@ public final class MemoryStorageFacade implements IStorage {
   private final ConcurrentMap<String, Map<String, PercentRepairedMetric>> percentRepairedMetrics
       = Maps.newConcurrentMap();
   private final MemRepairSegment memRepairSegment = new MemRepairSegment(this);
-  private final MemRepairUnitDao memRepairUnitDao = new MemRepairUnitDao(memRepairRunDao);
+  private final MemRepairUnitDao memRepairUnitDao = new MemRepairUnitDao();
   private final MemRepairRunDao memRepairRunDao = new MemRepairRunDao(memRepairSegment, memRepairUnitDao);
   private final MemRepairScheduleDao memRepairScheduleDao = new MemRepairScheduleDao(this);
 
@@ -129,8 +128,11 @@ public final class MemoryStorageFacade implements IStorage {
 
   @Override
   public Cluster deleteCluster(String clusterName) {
-    memRepairScheduleDao.getRepairSchedulesForCluster(clusterName).forEach(schedule -> memRepairScheduleDao.deleteRepairSchedule(schedule.getId()));
-    memRepairRunDao.getRepairRunIdsForCluster(clusterName, Optional.empty()).forEach(runId -> memRepairRunDao.deleteRepairRun(runId));
+    memRepairScheduleDao.getRepairSchedulesForCluster(clusterName).forEach(
+        schedule -> memRepairScheduleDao.deleteRepairSchedule(schedule.getId())
+    );
+    memRepairRunDao.getRepairRunIdsForCluster(clusterName, Optional.empty())
+        .forEach(runId -> memRepairRunDao.deleteRepairRun(runId));
 
     getEventSubscriptions(clusterName)
         .stream()
@@ -140,7 +142,9 @@ public final class MemoryStorageFacade implements IStorage {
     memRepairUnitDao.repairUnits.values().stream()
         .filter((unit) -> unit.getClusterName().equals(clusterName))
         .forEach((unit) -> {
-          assert memRepairRunDao.getRepairRunsForUnit(unit.getId()).isEmpty() : StringUtils.join(memRepairRunDao.getRepairRunsForUnit(unit.getId()));
+          assert memRepairRunDao.getRepairRunsForUnit(
+              unit.getId()).isEmpty() : StringUtils.join(memRepairRunDao.getRepairRunsForUnit(unit.getId())
+          );
           memRepairUnitDao.repairUnits.remove(unit.getId());
           memRepairUnitDao.repairUnitsByKey.remove(unit.with());
         });
@@ -186,16 +190,6 @@ public final class MemoryStorageFacade implements IStorage {
   @Override
   public Collection<RepairRun> getRepairRunsWithState(RepairRun.RunState runState) {
     return memRepairRunDao.getRepairRunsWithState(runState);
-  }
-
-  /**
-   * Delete a RepairUnit instance from Storage, but only if no run or schedule is referencing it.
-   *
-   * @param repairUnitId The RepairUnit instance id to delete.
-   * @return The deleted RepairUnit instance, if delete succeeded.
-   */
-  private Optional<RepairUnit> deleteRepairUnit(UUID repairUnitId) {
-    return memRepairUnitDao.deleteRepairUnit(repairUnitId);
   }
 
   @Override
@@ -313,7 +307,8 @@ public final class MemoryStorageFacade implements IStorage {
     List<RepairRunStatus> runStatuses = Lists.newArrayList();
     for (RepairRun run : memRepairRunDao.getRepairRunsForCluster(clusterName, Optional.of(limit))) {
       RepairUnit unit = memRepairUnitDao.getRepairUnit(run.getRepairUnitId());
-      int segmentsRepaired = memRepairSegment.getSegmentAmountForRepairRunWithState(run.getId(), RepairSegment.State.DONE);
+      int segmentsRepaired = memRepairSegment
+          .getSegmentAmountForRepairRunWithState(run.getId(), RepairSegment.State.DONE);
       int totalSegments = memRepairSegment.getSegmentAmountForRepairRun(run.getId());
       runStatuses.add(
           new RepairRunStatus(
@@ -414,11 +409,11 @@ public final class MemoryStorageFacade implements IStorage {
   @Override
   public List<PercentRepairedMetric> getPercentRepairedMetrics(String clusterName, UUID repairScheduleId, Long since) {
     return percentRepairedMetrics.entrySet().stream()
-      .filter(entry -> entry.getKey().equals(clusterName + "-" + repairScheduleId))
-      .map(entry -> entry.getValue().entrySet())
-      .flatMap(Collection::stream)
-      .map(Entry::getValue)
-      .collect(Collectors.toList());
+        .filter(entry -> entry.getKey().equals(clusterName + "-" + repairScheduleId))
+        .map(entry -> entry.getValue().entrySet())
+        .flatMap(Collection::stream)
+        .map(Entry::getValue)
+        .collect(Collectors.toList());
   }
 
   @Override

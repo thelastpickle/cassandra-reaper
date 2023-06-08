@@ -38,10 +38,11 @@ public final class JsonParseUtils {
 
   private static final Logger LOG = LoggerFactory.getLogger(JsonParseUtils.class);
 
-  private static final ObjectReader LIST_READER
-      = new ObjectMapper().readerFor(new TypeReference<List<RingRange>>() {});
-  private static final ObjectReader MAP_READER
-      = new ObjectMapper().readerFor(new TypeReference<Map<String, String>>() {});
+  private static final ObjectReader LIST_READER  = new ObjectMapper()
+        .readerFor(new TypeReference<List<RingRange>>() {});
+  private static final ObjectReader MAP_READER = new ObjectMapper()
+        .readerFor(new TypeReference<Map<String, String>>() {
+        });
   private static final ObjectWriter WRITER = new ObjectMapper().writer();
 
   private JsonParseUtils() {

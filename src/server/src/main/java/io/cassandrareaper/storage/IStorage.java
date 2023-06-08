@@ -20,18 +20,16 @@ package io.cassandrareaper.storage;
 import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.DiagEventSubscription;
 import io.cassandrareaper.core.PercentRepairedMetric;
-import io.cassandrareaper.core.RepairSchedule;
-import io.cassandrareaper.core.RepairUnit;
 import io.cassandrareaper.core.Snapshot;
 import io.cassandrareaper.resources.view.RepairRunStatus;
 import io.cassandrareaper.resources.view.RepairScheduleStatus;
 import io.cassandrareaper.storage.repairrun.IRepairRun;
+import io.cassandrareaper.storage.repairschedule.IRepairSchedule;
 import io.cassandrareaper.storage.repairsegment.IRepairSegment;
 import io.cassandrareaper.storage.repairunit.IRepairUnit;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 import io.dropwizard.lifecycle.Managed;
@@ -39,7 +37,11 @@ import io.dropwizard.lifecycle.Managed;
 /**
  * API definition for cassandra-reaper.
  */
-public interface IStorage extends Managed, IRepairRun, IRepairSegment, IRepairUnit, io.cassandrareaper.storage.repairschedule.IRepairSchedule {
+public interface IStorage extends Managed,
+      IRepairRun,
+      IRepairSegment,
+      IRepairUnit,
+      IRepairSchedule {
 
   boolean isStorageConnected();
 

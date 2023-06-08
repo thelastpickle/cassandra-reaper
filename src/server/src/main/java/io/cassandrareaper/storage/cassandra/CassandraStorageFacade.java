@@ -40,8 +40,8 @@ import io.cassandrareaper.storage.IDistributedStorage;
 import io.cassandrareaper.storage.IStorage;
 import io.cassandrareaper.storage.OpType;
 import io.cassandrareaper.storage.cassandra.codecs.DateTimeCodec;
-import io.cassandrareaper.storage.repairrun.IRepairRun;
 import io.cassandrareaper.storage.repairrun.CassRepairRunDao;
+import io.cassandrareaper.storage.repairrun.IRepairRun;
 import io.cassandrareaper.storage.repairschedule.CassRepairScheduleDao;
 import io.cassandrareaper.storage.repairsegment.CassRepairSegmentDao;
 import io.cassandrareaper.storage.repairunit.CassRepairUnitDao;
@@ -152,16 +152,21 @@ public final class CassandraStorageFacade implements IStorage, IDistributedStora
       MigrationManager.initializeAndUpgradeSchema(cassandra, session, config, version, mode);
     }
 
-    this.eventsDao =  new EventsDao(session);
-    this.metricsDao  = new MetricsDao(session);
+    this.eventsDao = new EventsDao(session);
+    this.metricsDao = new MetricsDao(session);
     this.snapshotDao = new SnapshotDao(session);
-    this.operationsDao  = new OperationsDao(session);
+    this.operationsDao = new OperationsDao(session);
     this.concurrency = new Concurrency(version, reaperInstanceId, session);
     this.cassRepairUnitDao = new CassRepairUnitDao(defaultTimeout, session);
     this.cassRepairSegmentDao = new CassRepairSegmentDao(concurrency, cassRepairUnitDao, session);
     this.cassRepairScheduleDao = new CassRepairScheduleDao(cassRepairUnitDao, session);
-    this.clusterDao  = new ClusterDao(cassRepairScheduleDao, cassRepairUnitDao, eventsDao, session, objectMapper);
-    this.cassRepairRunDao =  new CassRepairRunDao(cassRepairUnitDao, clusterDao, cassRepairSegmentDao, session, objectMapper);
+    this.clusterDao = new ClusterDao(cassRepairScheduleDao, cassRepairUnitDao, eventsDao, session, objectMapper);
+    this.cassRepairRunDao = new CassRepairRunDao(
+          cassRepairUnitDao,
+          clusterDao,
+          cassRepairSegmentDao,
+          session,
+          objectMapper);
     prepareStatements();
   }
 
@@ -176,8 +181,8 @@ public final class CassandraStorageFacade implements IStorage, IDistributedStora
     }
     cassandraFactory.setQueryOptions(java.util.Optional.of(
         new QueryOptions()
-          .setConsistencyLevel(requiredCl)
-          .setDefaultIdempotence(true)));
+            .setConsistencyLevel(requiredCl)
+            .setDefaultIdempotence(true)));
   }
 
   private static void overrideRetryPolicy(CassandraFactory cassandraFactory) {
@@ -645,6 +650,7 @@ public final class CassandraStorageFacade implements IStorage, IDistributedStora
 
   /**
    * Truncates a metric date time to the closest partition based on the definesd partition sizes
+   *
    * @param metricTime the time of the metric
    * @return the time truncated to the closest partition
    */
@@ -774,7 +780,8 @@ public final class CassandraStorageFacade implements IStorage, IDistributedStora
       if (retry > 1) {
         try {
           Thread.sleep(100);
-        } catch (InterruptedException expected) { }
+        } catch (InterruptedException expected) {
+        }
       }
       return null != stmt && !Objects.equals(Boolean.FALSE, stmt.isIdempotent())
           ? retry < 10 ? RetryDecision.retry(cl) : RetryDecision.rethrow()
@@ -790,7 +797,7 @@ public final class CassandraStorageFacade implements IStorage, IDistributedStora
         int received,
         int retry) {
 
-      Preconditions.checkState(WriteType.CAS != type ||  ConsistencyLevel.SERIAL == cl);
+      Preconditions.checkState(WriteType.CAS != type || ConsistencyLevel.SERIAL == cl);
 
       return null != stmt && !Objects.equals(Boolean.FALSE, stmt.isIdempotent())
           ? RetryDecision.retry(cl)

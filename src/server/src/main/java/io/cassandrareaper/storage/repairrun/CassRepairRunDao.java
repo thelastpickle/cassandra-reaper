@@ -80,7 +80,7 @@ public class CassRepairRunDao implements IRepairRun {
                           ClusterDao clusterDao,
                           CassRepairSegmentDao cassRepairSegmentDao,
                           Session session,
-                          ObjectMapper objectMapper ) {
+                          ObjectMapper objectMapper) {
     this.session = session;
     this.cassRepairSegmentDao = cassRepairSegmentDao;
     this.cassRepairUnitDao = cassRepairUnitDao;
@@ -365,8 +365,7 @@ public class CassRepairRunDao implements IRepairRun {
       idResSetFuture
           .getUninterruptibly()
           .forEach(
-              row -> flattenedUuids.add(row.getUUID("id"))
-        );
+              row -> flattenedUuids.add(row.getUUID("id")));
     }
     // Merge the two lists and trim.
     repairUuidFuturesNoState.getUninterruptibly().forEach(row -> {

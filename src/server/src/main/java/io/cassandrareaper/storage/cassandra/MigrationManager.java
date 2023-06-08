@@ -151,7 +151,8 @@ final class MigrationManager {
 
     for (int i = dbVersion + 1; i <= repository.getLatestVersion(); ++i) {
       final int nextVersion = i;
-      String migrationRepoPath = mode.equals(CassandraStorageFacade.CassandraMode.CASSANDRA) ? "db/cassandra" : "db/astra";
+      String migrationRepoPath = mode
+            .equals(CassandraStorageFacade.CassandraMode.CASSANDRA) ? "db/cassandra" : "db/astra";
       // perform the migrations one at a time, so the MigrationXXX classes can be executed alongside the scripts
       MigrationRepository migrationRepo = new MigrationRepository(migrationRepoPath) {
         @Override

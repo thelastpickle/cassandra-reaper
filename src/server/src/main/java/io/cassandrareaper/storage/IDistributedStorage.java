@@ -70,7 +70,7 @@ public interface IDistributedStorage {
   /**
    * Gets the next free segment from the backend that is both within the parallel range and the local node ranges.
    *
-   * @param runId id of the repair run
+   * @param runId  id of the repair run
    * @param ranges list of ranges we're looking a segment for
    * @return an optional repair segment to process
    */
