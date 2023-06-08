@@ -604,9 +604,9 @@ public final class RepairRunResource {
    * @return all know repair runs for a cluster.
    */
   @GET
-  @Path("/cluster/{cluster_name}")
+  @Path("/cluster/{clusterName}")
   public Response getRepairRunsForCluster(
-      @PathParam("cluster_name") String clusterName,
+      @PathParam("clusterName") String clusterName,
       @QueryParam("limit") Optional<Integer> limit) {
 
     LOG.debug("get repair run for cluster called with: cluster_name = {}", clusterName);
@@ -650,7 +650,7 @@ public final class RepairRunResource {
   @GET
   public Response listRepairRuns(
       @QueryParam("state") Optional<String> state,
-      @QueryParam("cluster_name") Optional<String> cluster,
+      @QueryParam("clusterName") Optional<String> cluster,
       @QueryParam("keyspace_name") Optional<String> keyspace,
       @QueryParam("limit") Optional<Integer> limit) {
 
@@ -660,7 +660,7 @@ public final class RepairRunResource {
         return Response.status(Response.Status.BAD_REQUEST).build();
       }
 
-      Collection<Cluster> clusters = cluster.isPresent()
+      Collection<Cluster> clusters = cluster.isPresent() && !cluster.get().equals("all")
             ? Collections.singleton(context.storage.getCluster(cluster.get()))
             : context.storage.getClusters();
 

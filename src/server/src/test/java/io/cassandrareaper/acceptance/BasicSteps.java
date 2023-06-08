@@ -60,6 +60,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -2958,49 +2959,9 @@ public final class BasicSteps {
     }
   }
 
-  @Then("^when I list the last (\\d+) repairs, I can see (\\d+) repairs at \"([^\"]*)\" state$")
+  @When("^I list the last (\\d+) repairs, I can see (\\d+) repairs at \"([^\"]*)\" state$")
   public void listRepairs(Integer limit, Integer expectedRepairsCount, String expectedState) {
     synchronized (BasicSteps.class) {
-      RUNNERS.parallelStream().forEach(runner -> {
-        HashMap<String, String> params = Maps.newHashMap();
-        params.put("limit", limit.toString());
-        // Run query against /repair_run/cluster/
-        Response resp = runner.callReaper(
-            "GET",
-            "/repair_run/cluster/" + TestContext.TEST_CLUSTER,
-            Optional.of(params)
-        );
-        String responseData = resp.readEntity(String.class);
-        Assertions
-            .assertThat(resp.getStatus())
-            .isEqualTo(Response.Status.OK.getStatusCode())
-            .withFailMessage(responseData);
-        Assertions
-            .assertThat(responseData).isNotBlank();
-
-        List<RepairRunStatus> runs = SimpleReaperClient.parseRepairRunStatusListJSON(responseData);
-        LOG.info("Found {} repairs", runs);
-        LOG.info("Found {} repairs in state {}",
-            runs.stream()
-            .filter(run -> run.getState().toString().equals(expectedState))
-            .collect(Collectors.toList()).size(), expectedState);
-        LOG.info("Found states {}",
-            runs.stream()
-            .map(run -> run.getState().toString())
-            .collect(Collectors.toList()));
-        Integer countInState = runs.stream()
-            .filter(run -> run.getState().toString().equals(expectedState))
-            .collect(Collectors.toList())
-            .size();
-        Assertions
-            .assertThat(countInState)
-            .isEqualTo(expectedRepairsCount)
-            .withFailMessage(
-                "actual number %d of repairs in state %s did not match expected number %d",
-                countInState,
-                expectedState,
-                expectedRepairsCount);
-      });
       RUNNERS.parallelStream().forEach(runner -> {
         // the getCluster() DAO call uses a 10 seconds cache, so we need to repeat the test until the cache is updated
         await().with().pollInterval(POLL_INTERVAL).atMost(2, MINUTES).until(() -> {
@@ -3041,6 +3002,96 @@ public final class BasicSteps {
           }
         });
       });
+    }
+  }
+
+  @When("^I list the last (\\d+) repairs for cluster \"([^\"]*)\", I can see (\\d+) repairs at \"([^\"]*)\" state$")
+  public void listRepairs(Integer limit, String clusterName, Integer expectedRepairsCount, String expectedState) {
+    synchronized (BasicSteps.class) {
+      // Test with GET /repair_run?cluster_name=... first
+      RUNNERS.parallelStream().forEach(runner -> {
+        HashMap<String, String> params = Maps.newHashMap();
+        params.put("limit", limit.toString());
+        params.put("clusterName", clusterName);
+        // Run query against /repair_run/cluster/
+        Response resp = runner.callReaper(
+            "GET",
+            "/repair_run",
+            Optional.of(params)
+        );
+        String responseData = resp.readEntity(String.class);
+        Assertions
+            .assertThat(resp.getStatus())
+            .isEqualTo(Response.Status.OK.getStatusCode())
+            .withFailMessage(responseData);
+        Assertions
+            .assertThat(responseData).isNotBlank();
+
+        List<RepairRunStatus> runs = SimpleReaperClient.parseRepairRunStatusListJSON(responseData);
+        Integer countInState = runs.stream()
+            .filter(run -> run.getState().toString().equals(expectedState))
+            .filter(run -> run.getClusterName().equals(clusterName))
+            .collect(Collectors.toList())
+            .size();
+        Assertions
+            .assertThat(countInState)
+            .isEqualTo(expectedRepairsCount)
+            .withFailMessage(
+                "actual number %d of repairs in state %s did not match expected number %d",
+                countInState,
+                expectedState,
+                expectedRepairsCount);
+      });
+      // Test with GET /repair_run/cluster/... next
+      RUNNERS.parallelStream().forEach(runner -> {
+        HashMap<String, String> params = Maps.newHashMap();
+        params.put("limit", limit.toString());
+        // Run query against /repair_run/cluster/
+        Response resp = runner.callReaper(
+            "GET",
+            "/repair_run/cluster/" + clusterName,
+            Optional.of(params)
+        );
+        String responseData = resp.readEntity(String.class);
+        Assertions
+            .assertThat(resp.getStatus())
+            .isEqualTo(Response.Status.OK.getStatusCode())
+            .withFailMessage(responseData);
+        Assertions
+            .assertThat(responseData).isNotBlank();
+
+        List<RepairRunStatus> runs = SimpleReaperClient.parseRepairRunStatusListJSON(responseData);
+        Integer countInState = runs.stream()
+            .filter(run -> run.getState().toString().equals(expectedState))
+            .filter(run -> run.getClusterName().equals(clusterName))
+            .collect(Collectors.toList())
+            .size();
+        Assertions
+            .assertThat(countInState)
+            .isEqualTo(expectedRepairsCount)
+            .withFailMessage(
+                "actual number %d of repairs in state %s did not match expected number %d",
+                countInState,
+                expectedState,
+                expectedRepairsCount);
+      });
+    }
+  }
+
+  @When("^we add a fake cluster named \"([^\"]*)\"$")
+  public void addFakeClusters(String clusterName) {
+    synchronized (BasicSteps.class) {
+      RUNNERS.parallelStream().forEach(
+          runner -> {
+            io.cassandrareaper.core.Cluster clusterToAdd = io.cassandrareaper.core.Cluster.builder()
+                .withName(clusterName)
+                .withSeedHosts(ImmutableSet.of("127.0.0.1"))
+                .withState(io.cassandrareaper.core.Cluster.State.ACTIVE)
+                .withPartitioner("Murmur3Partitioner")
+                .build();
+            runner.getContext().storage.addCluster(clusterToAdd);
+          }
+      );
     }
   }
 }

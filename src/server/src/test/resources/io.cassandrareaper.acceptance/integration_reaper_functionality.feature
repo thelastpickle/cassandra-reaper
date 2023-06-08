@@ -422,9 +422,19 @@ Feature: Using Reaper
     And reaper has no cluster in storage
     When an add-cluster request is made to reaper with authentication
     Then reaper has the last added cluster in storage
-    And I add 11 and abort the most recent 10 repairs for cluster "test" and keyspace "test_keyspace2"
-    Then when I list the last 10 repairs, I can see 1 repairs at "PAUSED" state
-    And when I list the last 10 repairs, I can see 9 repairs at "ABORTED" state
+    When we add a fake cluster named "fake1"
+    And we add a fake cluster named "fake2"
+    And I add 5 and abort the most recent 3 repairs for cluster "fake1" and keyspace "test_keyspace2"
+    And I add 25 and abort the most recent 24 repairs for cluster "fake2" and keyspace "test_keyspace2"
+    And I add 25 and abort the most recent 24 repairs for cluster "test" and keyspace "test_keyspace2"
+    When I list the last 10 repairs for cluster "test", I can see 1 repairs at "PAUSED" state
+    When I list the last 10 repairs for cluster "test", I can see 9 repairs at "ABORTED" state
+    When I list the last 10 repairs for cluster "fake1", I can see 2 repairs at "PAUSED" state
+    When I list the last 10 repairs for cluster "fake1", I can see 3 repairs at "ABORTED" state
+    When I list the last 10 repairs for cluster "fake2", I can see 1 repairs at "PAUSED" state
+    When I list the last 10 repairs for cluster "fake2", I can see 9 repairs at "ABORTED" state
+    When I list the last 10 repairs, I can see 4 repairs at "PAUSED" state
+    When I list the last 10 repairs, I can see 6 repairs at "ABORTED" state
     When the last added cluster is force deleted
     Then reaper has no longer the last added cluster in storage
   ${cucumber.upgrade-versions}
