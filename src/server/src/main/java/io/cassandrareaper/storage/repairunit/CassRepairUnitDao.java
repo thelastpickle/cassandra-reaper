@@ -38,7 +38,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class CassRepairUnitDao implements IRepairUnit {
-  static final String SELECT_REPAIR_UNIT = "SELECT * FROM repair_unit_v1";
+  public static final String SELECT_REPAIR_UNIT = "SELECT * FROM repair_unit_v1";
   private static final Logger LOG = LoggerFactory.getLogger(CassRepairUnitDao.class);
   public PreparedStatement deleteRepairUnitPrepStmt;
   PreparedStatement insertRepairUnitPrepStmt;

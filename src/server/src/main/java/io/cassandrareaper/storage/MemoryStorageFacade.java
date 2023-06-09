@@ -67,7 +67,7 @@ public final class MemoryStorageFacade implements IStorage {
   private final MemRepairSegment memRepairSegment = new MemRepairSegment(this);
   private final MemRepairUnitDao memRepairUnitDao = new MemRepairUnitDao();
   private final MemRepairRunDao memRepairRunDao = new MemRepairRunDao(memRepairSegment, memRepairUnitDao);
-  private final MemRepairScheduleDao memRepairScheduleDao = new MemRepairScheduleDao(this);
+  private final MemRepairScheduleDao memRepairScheduleDao = new MemRepairScheduleDao(memRepairUnitDao);
 
   @Override
   public boolean isStorageConnected() {
