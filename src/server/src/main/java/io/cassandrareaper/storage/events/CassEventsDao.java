@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package io.cassandrareaper.storage.cassandra;
+package io.cassandrareaper.storage.events;
 
 import io.cassandrareaper.core.DiagEventSubscription;
 
@@ -30,14 +30,14 @@ import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.google.common.base.Preconditions;
 
-public class EventsDao {
+public class CassEventsDao implements IEvents {
   PreparedStatement getDiagnosticEventsPrepStmt;
   PreparedStatement getDiagnosticEventPrepStmt;
   PreparedStatement deleteDiagnosticEventPrepStmt;
   PreparedStatement saveDiagnosticEventPrepStmt;
   private final Session session;
 
-  public EventsDao(Session session) {
+  public CassEventsDao(Session session) {
     this.session = session;
     prepareStatements();
   }

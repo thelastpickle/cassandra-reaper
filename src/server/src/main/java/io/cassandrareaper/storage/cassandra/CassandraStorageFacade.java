@@ -40,6 +40,8 @@ import io.cassandrareaper.storage.IDistributedStorage;
 import io.cassandrareaper.storage.IStorage;
 import io.cassandrareaper.storage.OpType;
 import io.cassandrareaper.storage.cassandra.codecs.DateTimeCodec;
+import io.cassandrareaper.storage.cluster.CassClusterDao;
+import io.cassandrareaper.storage.events.CassEventsDao;
 import io.cassandrareaper.storage.repairrun.CassRepairRunDao;
 import io.cassandrareaper.storage.repairrun.IRepairRun;
 import io.cassandrareaper.storage.repairschedule.CassRepairScheduleDao;
@@ -102,8 +104,8 @@ public final class CassandraStorageFacade implements IStorage, IDistributedStora
 
   private final CassRepairUnitDao cassRepairUnitDao;
   private final CassRepairScheduleDao cassRepairScheduleDao;
-  private final ClusterDao clusterDao;
-  private final EventsDao eventsDao;
+  private final CassClusterDao cassClusterDao;
+  private final CassEventsDao cassEventsDao;
   private final MetricsDao metricsDao;
   private final Concurrency concurrency;
   private final SnapshotDao snapshotDao;
@@ -152,7 +154,7 @@ public final class CassandraStorageFacade implements IStorage, IDistributedStora
       MigrationManager.initializeAndUpgradeSchema(cassandra, session, config, version, mode);
     }
 
-    this.eventsDao = new EventsDao(session);
+    this.cassEventsDao = new CassEventsDao(session);
     this.metricsDao = new MetricsDao(session);
     this.snapshotDao = new SnapshotDao(session);
     this.operationsDao = new OperationsDao(session);
@@ -160,10 +162,14 @@ public final class CassandraStorageFacade implements IStorage, IDistributedStora
     this.cassRepairUnitDao = new CassRepairUnitDao(defaultTimeout, session);
     this.cassRepairSegmentDao = new CassRepairSegmentDao(concurrency, cassRepairUnitDao, session);
     this.cassRepairScheduleDao = new CassRepairScheduleDao(cassRepairUnitDao, session);
-    this.clusterDao = new ClusterDao(cassRepairScheduleDao, cassRepairUnitDao, eventsDao, session, objectMapper);
+    this.cassClusterDao = new CassClusterDao(cassRepairScheduleDao,
+          cassRepairUnitDao,
+          cassEventsDao,
+          session,
+          objectMapper);
     this.cassRepairRunDao = new CassRepairRunDao(
           cassRepairUnitDao,
-          clusterDao,
+          cassClusterDao,
           cassRepairSegmentDao,
           session,
           objectMapper);
@@ -237,38 +243,38 @@ public final class CassandraStorageFacade implements IStorage, IDistributedStora
   @Override
   public Collection<Cluster> getClusters() {
     // cache the clusters list for ten seconds
-    return clusterDao.getClusters();
+    return cassClusterDao.getClusters();
   }
 
   @Override
   public boolean addCluster(Cluster cluster) {
-    return clusterDao.addCluster(cluster);
+    return cassClusterDao.addCluster(cluster);
   }
 
   @Override
   public boolean updateCluster(Cluster newCluster) {
-    return clusterDao.updateCluster(newCluster);
+    return cassClusterDao.updateCluster(newCluster);
   }
 
   private boolean addClusterAssertions(Cluster cluster) {
 
-    return clusterDao.addClusterAssertions(cluster);
+    return cassClusterDao.addClusterAssertions(cluster);
   }
 
   @Override
   public Cluster getCluster(String clusterName) {
-    return clusterDao.getCluster(clusterName);
+    return cassClusterDao.getCluster(clusterName);
   }
 
   private Cluster parseCluster(Row row) throws IOException {
 
-    return clusterDao.parseCluster(row);
+    return cassClusterDao.parseCluster(row);
   }
 
   @Override
   public Cluster deleteCluster(String clusterName) {
 
-    return clusterDao.deleteCluster(clusterName);
+    return cassClusterDao.deleteCluster(clusterName);
   }
 
   @Override
@@ -590,29 +596,29 @@ public final class CassandraStorageFacade implements IStorage, IDistributedStora
 
   @Override
   public Collection<DiagEventSubscription> getEventSubscriptions() {
-    return eventsDao.getEventSubscriptions();
+    return cassEventsDao.getEventSubscriptions();
   }
 
   @Override
   public Collection<DiagEventSubscription> getEventSubscriptions(String clusterName) {
 
-    return eventsDao.getEventSubscriptions(clusterName);
+    return cassEventsDao.getEventSubscriptions(clusterName);
   }
 
   @Override
   public DiagEventSubscription getEventSubscription(UUID id) {
-    return eventsDao.getEventSubscription(id);
+    return cassEventsDao.getEventSubscription(id);
   }
 
   @Override
   public DiagEventSubscription addEventSubscription(DiagEventSubscription subscription) {
 
-    return eventsDao.addEventSubscription(subscription);
+    return cassEventsDao.addEventSubscription(subscription);
   }
 
   @Override
   public boolean deleteEventSubscription(UUID id) {
-    return eventsDao.deleteEventSubscription(id);
+    return cassEventsDao.deleteEventSubscription(id);
   }
 
   @Override

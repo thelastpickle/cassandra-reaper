@@ -20,7 +20,7 @@ package io.cassandrareaper.storage.repairrun;
 
 import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairSegment;
-import io.cassandrareaper.storage.cassandra.ClusterDao;
+import io.cassandrareaper.storage.cluster.CassClusterDao;
 import io.cassandrareaper.storage.repairsegment.CassRepairSegmentDao;
 import io.cassandrareaper.storage.repairunit.CassRepairUnitDao;
 
@@ -71,20 +71,20 @@ public class CassRepairRunDao implements IRepairRun {
   PreparedStatement deleteRepairRunByClusterByIdPrepStmt;
   PreparedStatement deleteRepairRunByUnitPrepStmt;
   private final CassRepairUnitDao cassRepairUnitDao;
-  private final ClusterDao clusterDao;
+  private final CassClusterDao cassClusterDao;
 
   private final CassRepairSegmentDao cassRepairSegmentDao;
   private final Session session;
 
   public CassRepairRunDao(CassRepairUnitDao cassRepairUnitDao,
-                          ClusterDao clusterDao,
+                          CassClusterDao cassClusterDao,
                           CassRepairSegmentDao cassRepairSegmentDao,
                           Session session,
                           ObjectMapper objectMapper) {
     this.session = session;
     this.cassRepairSegmentDao = cassRepairSegmentDao;
     this.cassRepairUnitDao = cassRepairUnitDao;
-    this.clusterDao = clusterDao;
+    this.cassClusterDao = cassClusterDao;
     this.objectMapper = objectMapper;
     prepareStatements();
   }
@@ -434,7 +434,7 @@ public class CassRepairRunDao implements IRepairRun {
   public Collection<RepairRun> getRepairRunsWithState(RepairRun.RunState runState) {
     Set<RepairRun> repairRunsWithState = Sets.newHashSet();
 
-    List<Collection<UUID>> repairRunIds = clusterDao.getClusters()
+    List<Collection<UUID>> repairRunIds = cassClusterDao.getClusters()
         .stream()
         // Grab all ids for the given cluster name
         .map(cluster -> getRepairRunIdsForClusterWithState(cluster.getName(), runState))

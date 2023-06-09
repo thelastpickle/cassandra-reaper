@@ -16,10 +16,11 @@
  * limitations under the License.
  */
 
-package io.cassandrareaper.storage.cassandra;
+package io.cassandrareaper.storage.cluster;
 
 import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.ClusterProperties;
+import io.cassandrareaper.storage.events.CassEventsDao;
 import io.cassandrareaper.storage.repairschedule.CassRepairScheduleDao;
 import io.cassandrareaper.storage.repairunit.CassRepairUnitDao;
 
@@ -49,9 +50,9 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ClusterDao {
+public class CassClusterDao implements ICluster {
   private static final String SELECT_CLUSTER = "SELECT * FROM cluster";
-  private static final Logger LOG = LoggerFactory.getLogger(ClusterDao.class);
+  private static final Logger LOG = LoggerFactory.getLogger(CassClusterDao.class);
   /* prepared stmts */
   PreparedStatement insertClusterPrepStmt;
   PreparedStatement getClusterPrepStmt;
@@ -63,21 +64,21 @@ public class ClusterDao {
   private final AtomicLong clustersCacheAge = new AtomicLong(0);
   private final CassRepairScheduleDao cassRepairScheduleDao;
   private final CassRepairUnitDao cassRepairUnitDao;
-  private final EventsDao eventsDao;
+  private final CassEventsDao cassEventsDao;
 
   private final Session session;
 
-  public ClusterDao(CassRepairScheduleDao cassRepairScheduleDao,
-                    CassRepairUnitDao cassRepairUnitDao,
-                    EventsDao eventsDao,
-                    Session session,
-                    ObjectMapper objectMapper) {
+  public CassClusterDao(CassRepairScheduleDao cassRepairScheduleDao,
+                        CassRepairUnitDao cassRepairUnitDao,
+                        CassEventsDao cassEventsDao,
+                        Session session,
+                        ObjectMapper objectMapper) {
 
     this.session = session;
     this.objectMapper = objectMapper;
     this.cassRepairScheduleDao = cassRepairScheduleDao;
     this.cassRepairUnitDao = cassRepairUnitDao;
-    this.eventsDao = eventsDao;
+    this.cassEventsDao = cassEventsDao;
     prepareStatements();
   }
 
@@ -137,7 +138,7 @@ public class ClusterDao {
     return addCluster(newCluster);
   }
 
-  boolean addClusterAssertions(Cluster cluster) {
+  public boolean addClusterAssertions(Cluster cluster) {
     Preconditions.checkState(
         Cluster.State.UNKNOWN != cluster.getState(),
         "Cluster should not be persisted with UNKNOWN state");
@@ -175,7 +176,7 @@ public class ClusterDao {
     throw new IllegalArgumentException("no such cluster: " + clusterName);
   }
 
-  Cluster parseCluster(Row row) throws IOException {
+  public Cluster parseCluster(Row row) throws IOException {
 
     ClusterProperties properties = null != row.getString("properties")
         ? objectMapper.readValue(row.getString("properties"), ClusterProperties.class)
@@ -210,10 +211,10 @@ public class ClusterDao {
         .forEach(schedule -> cassRepairScheduleDao.deleteRepairSchedule(schedule.getId()));
     session.executeAsync(deleteRepairRunByClusterPrepStmt.bind(clusterName));
 
-    eventsDao.getEventSubscriptions(clusterName)
+    cassEventsDao.getEventSubscriptions(clusterName)
         .stream()
         .filter(subscription -> subscription.getId().isPresent())
-        .forEach(subscription -> eventsDao.deleteEventSubscription(subscription.getId().get()));
+        .forEach(subscription -> cassEventsDao.deleteEventSubscription(subscription.getId().get()));
 
     Statement stmt = new SimpleStatement(CassRepairUnitDao.SELECT_REPAIR_UNIT);
     stmt.setIdempotent(true);

@@ -17,12 +17,12 @@
 
 package io.cassandrareaper.storage;
 
-import io.cassandrareaper.core.Cluster;
-import io.cassandrareaper.core.DiagEventSubscription;
 import io.cassandrareaper.core.PercentRepairedMetric;
 import io.cassandrareaper.core.Snapshot;
 import io.cassandrareaper.resources.view.RepairRunStatus;
 import io.cassandrareaper.resources.view.RepairScheduleStatus;
+import io.cassandrareaper.storage.cluster.ICluster;
+import io.cassandrareaper.storage.events.IEvents;
 import io.cassandrareaper.storage.repairrun.IRepairRun;
 import io.cassandrareaper.storage.repairschedule.IRepairSchedule;
 import io.cassandrareaper.storage.repairsegment.IRepairSegment;
@@ -41,30 +41,10 @@ public interface IStorage extends Managed,
       IRepairRun,
       IRepairSegment,
       IRepairUnit,
-      IRepairSchedule {
+      IRepairSchedule,
+      ICluster, IEvents {
 
   boolean isStorageConnected();
-
-  Collection<Cluster> getClusters();
-
-  boolean addCluster(Cluster cluster);
-
-  boolean updateCluster(Cluster newCluster);
-
-  Cluster getCluster(String clusterName);
-
-  /**
-   * Delete the Cluster instance identified by the given cluster name. Delete succeeds only if there are no repair runs
-   * for the targeted cluster.
-   *
-   * @param clusterName The name of the Cluster instance to delete.
-   * @return The deleted Cluster instance if delete succeeds, with state set to DELETED.
-   */
-  Cluster deleteCluster(String clusterName);
-
-  Collection<RepairRunStatus> getClusterRunStatuses(String clusterName, int limit);
-
-  Collection<RepairScheduleStatus> getClusterScheduleStatuses(String clusterName);
 
   boolean saveSnapshot(Snapshot snapshot);
 
@@ -72,20 +52,15 @@ public interface IStorage extends Managed,
 
   Snapshot getSnapshot(String clusterName, String snapshotName);
 
-  Collection<DiagEventSubscription> getEventSubscriptions();
+  Collection<RepairRunStatus> getClusterRunStatuses(String clusterName, int limit);
 
-  Collection<DiagEventSubscription> getEventSubscriptions(String clusterName);
-
-  DiagEventSubscription getEventSubscription(UUID id);
-
-  DiagEventSubscription addEventSubscription(DiagEventSubscription subscription);
-
-  boolean deleteEventSubscription(UUID id);
+  Collection<RepairScheduleStatus> getClusterScheduleStatuses(String clusterName);
 
   List<PercentRepairedMetric> getPercentRepairedMetrics(
-      String clusterName,
-      UUID repairScheduleId,
-      Long since);
+        String clusterName,
+        UUID repairScheduleId,
+        Long since);
 
   void storePercentRepairedMetric(PercentRepairedMetric metric);
+
 }
