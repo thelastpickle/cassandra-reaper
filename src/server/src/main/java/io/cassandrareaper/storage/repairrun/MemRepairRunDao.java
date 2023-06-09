@@ -135,7 +135,6 @@ public class MemRepairRunDao implements IRepairRun {
     RepairRun deletedRun = repairRuns.remove(id);
     if (deletedRun != null) {
       if (memRepairSegment.getSegmentAmountForRepairRunWithState(id, RepairSegment.State.RUNNING) == 0) {
-        memRepairUnitDao.deleteRepairUnit(deletedRun.getRepairUnitId());
         memRepairSegment.deleteRepairSegmentsForRun(id);
 
         deletedRun = deletedRun.with()
