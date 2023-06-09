@@ -20,6 +20,7 @@ package io.cassandrareaper.storage;
 import io.cassandrareaper.core.GenericMetric;
 import io.cassandrareaper.core.RepairSegment;
 import io.cassandrareaper.service.RingRange;
+import io.cassandrareaper.storage.metrics.IDistributedMetrics;
 
 import java.util.List;
 import java.util.Optional;
@@ -30,7 +31,7 @@ import java.util.UUID;
 /**
  * Definition for a storage that can run in distributed (peer-to-peer) mode. For example Cassandra.
  */
-public interface IDistributedStorage {
+public interface IDistributedStorage extends IDistributedMetrics {
 
   boolean takeLead(UUID leaderId);
 
@@ -76,15 +77,6 @@ public interface IDistributedStorage {
    */
   List<RepairSegment> getNextFreeSegmentsForRanges(
       UUID runId, List<RingRange> ranges);
-
-  List<GenericMetric> getMetrics(
-      String clusterName,
-      Optional<String> host,
-      String metricDomain,
-      String metricType,
-      long since);
-
-  void storeMetrics(List<GenericMetric> metric);
 
   void storeOperations(String clusterName, OpType operationType, String host, String operationsJson);
 

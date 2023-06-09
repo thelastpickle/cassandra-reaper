@@ -38,7 +38,7 @@ import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 
-public class CassMetricsDao implements IMetrics {
+public class CassMetricsDao implements IMetrics, IDistributedMetrics {
 
   static final int METRICS_PARTITIONING_TIME_MINS = 10;
   private static final DateTimeFormatter TIME_BUCKET_FORMATTER = DateTimeFormat.forPattern("yyyyMMddHHmm");
@@ -101,6 +101,7 @@ public class CassMetricsDao implements IMetrics {
   }
 
 
+  @Override
   public List<GenericMetric> getMetrics(
       String clusterName,
       Optional<String> host,
@@ -153,6 +154,7 @@ public class CassMetricsDao implements IMetrics {
   }
 
 
+  @Override
   public void storeMetrics(List<GenericMetric> metrics) {
     Map<String, List<GenericMetric>> metricsPerPartition = metrics.stream()
         .collect(Collectors.groupingBy(metric ->
@@ -203,6 +205,7 @@ public class CassMetricsDao implements IMetrics {
   }
 
 
+  @Override
   public List<PercentRepairedMetric> getPercentRepairedMetrics(String clusterName, UUID repairScheduleId, Long since) {
     List<PercentRepairedMetric> metrics = Lists.newArrayList();
     List<ResultSetFuture> futures = Lists.newArrayList();
@@ -251,7 +254,7 @@ public class CassMetricsDao implements IMetrics {
     return metrics;
   }
 
-
+  @Override
   public void storePercentRepairedMetric(PercentRepairedMetric metric) {
     session.execute(storePercentRepairedForSchedulePrepStmt.bind(
         metric.getCluster(),
