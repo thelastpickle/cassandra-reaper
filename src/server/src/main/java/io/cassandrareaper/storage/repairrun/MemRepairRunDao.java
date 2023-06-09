@@ -20,6 +20,8 @@ package io.cassandrareaper.storage.repairrun;
 
 import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairSegment;
+import io.cassandrareaper.core.RepairUnit;
+import io.cassandrareaper.resources.view.RepairRunStatus;
 import io.cassandrareaper.service.RepairRunService;
 import io.cassandrareaper.storage.repairsegment.MemRepairSegment;
 import io.cassandrareaper.storage.repairunit.MemRepairUnitDao;
@@ -37,6 +39,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
 
 import com.datastax.driver.core.utils.UUIDs;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.joda.time.DateTime;
@@ -52,7 +55,43 @@ public class MemRepairRunDao implements IRepairRun {
     this.memRepairUnitDao = memRepairUnitDao;
   }
 
-
+  @Override
+  public Collection<RepairRunStatus> getClusterRunStatuses(String clusterName, int limit) {
+    List<RepairRunStatus> runStatuses = Lists.newArrayList();
+    for (RepairRun run : getRepairRunsForCluster(clusterName, Optional.of(limit))) {
+      RepairUnit unit = memRepairUnitDao.getRepairUnit(run.getRepairUnitId());
+      int segmentsRepaired = memRepairSegment
+            .getSegmentAmountForRepairRunWithState(run.getId(), RepairSegment.State.DONE);
+      int totalSegments = memRepairSegment.getSegmentAmountForRepairRun(run.getId());
+      runStatuses.add(
+            new RepairRunStatus(
+                  run.getId(),
+                  clusterName,
+                  unit.getKeyspaceName(),
+                  run.getTables(),
+                  segmentsRepaired,
+                  totalSegments,
+                  run.getRunState(),
+                  run.getStartTime(),
+                  run.getEndTime(),
+                  run.getCause(),
+                  run.getOwner(),
+                  run.getLastEvent(),
+                  run.getCreationTime(),
+                  run.getPauseTime(),
+                  run.getIntensity(),
+                  unit.getIncrementalRepair(),
+                  run.getRepairParallelism(),
+                  unit.getNodes(),
+                  unit.getDatacenters(),
+                  unit.getBlacklistedTables(),
+                  unit.getRepairThreadCount(),
+                  unit.getId(),
+                  unit.getTimeout(),
+                  run.getAdaptiveSchedule()));
+    }
+    return runStatuses;
+  }
 
   @Override
   public RepairRun addRepairRun(RepairRun.Builder repairRun, Collection<RepairSegment.Builder> newSegments) {

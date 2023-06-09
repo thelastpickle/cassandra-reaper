@@ -42,25 +42,8 @@ public interface IStorage extends Managed,
       IRepairSegment,
       IRepairUnit,
       IRepairSchedule,
-      ICluster, IEvents {
+      ICluster, IEvents, io.cassandrareaper.storage.snapshot.ISnapshot, io.cassandrareaper.storage.metrics.IMetrics {
 
   boolean isStorageConnected();
-
-  boolean saveSnapshot(Snapshot snapshot);
-
-  boolean deleteSnapshot(Snapshot snapshot);
-
-  Snapshot getSnapshot(String clusterName, String snapshotName);
-
-  Collection<RepairRunStatus> getClusterRunStatuses(String clusterName, int limit);
-
-  Collection<RepairScheduleStatus> getClusterScheduleStatuses(String clusterName);
-
-  List<PercentRepairedMetric> getPercentRepairedMetrics(
-        String clusterName,
-        UUID repairScheduleId,
-        Long since);
-
-  void storePercentRepairedMetric(PercentRepairedMetric metric);
 
 }

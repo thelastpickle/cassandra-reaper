@@ -20,6 +20,7 @@ package io.cassandrareaper.storage.repairschedule;
 
 import io.cassandrareaper.core.RepairSchedule;
 import io.cassandrareaper.core.RepairUnit;
+import io.cassandrareaper.resources.view.RepairScheduleStatus;
 import io.cassandrareaper.storage.repairunit.CassRepairUnitDao;
 
 import java.util.Collection;
@@ -268,5 +269,17 @@ public class CassRepairScheduleDao implements IRepairSchedule {
     }
 
     return repairSchedule;
+  }
+
+  @Override
+  public Collection<RepairScheduleStatus> getClusterScheduleStatuses(String clusterName) {
+    Collection<RepairSchedule> repairSchedules = getRepairSchedulesForCluster(clusterName);
+
+    Collection<RepairScheduleStatus> repairScheduleStatuses = repairSchedules
+          .stream()
+          .map(sched -> new RepairScheduleStatus(sched, cassRepairUnitDao.getRepairUnit(sched.getRepairUnitId())))
+          .collect(Collectors.toList());
+
+    return repairScheduleStatuses;
   }
 }

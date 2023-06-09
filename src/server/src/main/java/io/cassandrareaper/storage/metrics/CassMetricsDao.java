@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package io.cassandrareaper.storage.cassandra;
+package io.cassandrareaper.storage.metrics;
 
 import io.cassandrareaper.core.GenericMetric;
 import io.cassandrareaper.core.PercentRepairedMetric;
@@ -38,7 +38,7 @@ import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 
-public class MetricsDao {
+public class CassMetricsDao implements IMetrics {
 
   static final int METRICS_PARTITIONING_TIME_MINS = 10;
   private static final DateTimeFormatter TIME_BUCKET_FORMATTER = DateTimeFormat.forPattern("yyyyMMddHHmm");
@@ -52,7 +52,7 @@ public class MetricsDao {
   private PreparedStatement storePercentRepairedForSchedulePrepStmt;
   private PreparedStatement getPercentRepairedForSchedulePrepStmt;
 
-  public MetricsDao(Session session) {
+  public CassMetricsDao(Session session) {
 
     this.session = session;
     prepareMetricStatements();
@@ -189,7 +189,7 @@ public class MetricsDao {
    * @param metricTime the time of the metric
    * @return the time truncated to the closest partition
    */
-  DateTime computeMetricsPartition(DateTime metricTime) {
+  public DateTime computeMetricsPartition(DateTime metricTime) {
     return metricTime
         .withMinuteOfHour(
             (metricTime.getMinuteOfHour() / METRICS_PARTITIONING_TIME_MINS)
@@ -264,4 +264,5 @@ public class MetricsDao {
         DateTime.now().toDate())
     );
   }
+
 }

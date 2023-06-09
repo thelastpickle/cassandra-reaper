@@ -29,23 +29,20 @@ import io.cassandrareaper.resources.view.RepairRunStatus;
 import io.cassandrareaper.resources.view.RepairScheduleStatus;
 import io.cassandrareaper.storage.cluster.MemClusterDao;
 import io.cassandrareaper.storage.events.MemEventsDao;
+import io.cassandrareaper.storage.metrics.MemMetricsDao;
 import io.cassandrareaper.storage.repairrun.MemRepairRunDao;
 import io.cassandrareaper.storage.repairschedule.MemRepairScheduleDao;
 import io.cassandrareaper.storage.repairsegment.MemRepairSegment;
 import io.cassandrareaper.storage.repairunit.MemRepairUnitDao;
+import io.cassandrareaper.storage.snapshot.MemSnapshotDao;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.SortedSet;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentMap;
-import java.util.stream.Collectors;
 
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,9 +53,6 @@ import org.slf4j.LoggerFactory;
 public final class MemoryStorageFacade implements IStorage {
 
   private static final Logger LOG = LoggerFactory.getLogger(MemoryStorageFacade.class);
-  private final ConcurrentMap<String, Snapshot> snapshots = Maps.newConcurrentMap();
-  private final ConcurrentMap<String, Map<String, PercentRepairedMetric>> percentRepairedMetrics
-      = Maps.newConcurrentMap();
   private final MemRepairSegment memRepairSegment = new MemRepairSegment(this);
   private final MemRepairUnitDao memRepairUnitDao = new MemRepairUnitDao();
   private final MemRepairRunDao memRepairRunDao = new MemRepairRunDao(memRepairSegment, memRepairUnitDao);
@@ -70,6 +64,8 @@ public final class MemoryStorageFacade implements IStorage {
         memRepairScheduleDao,
         memEventsDao
   );
+  private final MemSnapshotDao memSnapshotDao = new MemSnapshotDao();
+  private final MemMetricsDao memMetricsDao = new MemMetricsDao();
 
   @Override
   public boolean isStorageConnected() {
@@ -266,40 +262,7 @@ public final class MemoryStorageFacade implements IStorage {
 
   @Override
   public Collection<RepairRunStatus> getClusterRunStatuses(String clusterName, int limit) {
-    List<RepairRunStatus> runStatuses = Lists.newArrayList();
-    for (RepairRun run : memRepairRunDao.getRepairRunsForCluster(clusterName, Optional.of(limit))) {
-      RepairUnit unit = memRepairUnitDao.getRepairUnit(run.getRepairUnitId());
-      int segmentsRepaired = memRepairSegment
-          .getSegmentAmountForRepairRunWithState(run.getId(), RepairSegment.State.DONE);
-      int totalSegments = memRepairSegment.getSegmentAmountForRepairRun(run.getId());
-      runStatuses.add(
-          new RepairRunStatus(
-              run.getId(),
-              clusterName,
-              unit.getKeyspaceName(),
-              run.getTables(),
-              segmentsRepaired,
-              totalSegments,
-              run.getRunState(),
-              run.getStartTime(),
-              run.getEndTime(),
-              run.getCause(),
-              run.getOwner(),
-              run.getLastEvent(),
-              run.getCreationTime(),
-              run.getPauseTime(),
-              run.getIntensity(),
-              unit.getIncrementalRepair(),
-              run.getRepairParallelism(),
-              unit.getNodes(),
-              unit.getDatacenters(),
-              unit.getBlacklistedTables(),
-              unit.getRepairThreadCount(),
-              unit.getId(),
-              unit.getTimeout(),
-              run.getAdaptiveSchedule()));
-    }
-    return runStatuses;
+    return memRepairRunDao.getClusterRunStatuses(clusterName, limit);
   }
 
   @Override
@@ -315,20 +278,17 @@ public final class MemoryStorageFacade implements IStorage {
 
   @Override
   public boolean saveSnapshot(Snapshot snapshot) {
-    snapshots.put(snapshot.getClusterName() + "-" + snapshot.getName(), snapshot);
-    return true;
+    return memSnapshotDao.saveSnapshot(snapshot);
   }
 
   @Override
   public boolean deleteSnapshot(Snapshot snapshot) {
-    snapshots.remove(snapshot.getClusterName() + "-" + snapshot.getName());
-    return true;
+    return memSnapshotDao.deleteSnapshot(snapshot);
   }
 
   @Override
   public Snapshot getSnapshot(String clusterName, String snapshotName) {
-    Snapshot snapshot = snapshots.get(clusterName + "-" + snapshotName);
-    return snapshot;
+    return memSnapshotDao.getSnapshot(clusterName, snapshotName);
   }
 
   @Override
@@ -358,25 +318,12 @@ public final class MemoryStorageFacade implements IStorage {
 
   @Override
   public List<PercentRepairedMetric> getPercentRepairedMetrics(String clusterName, UUID repairScheduleId, Long since) {
-    return percentRepairedMetrics.entrySet().stream()
-        .filter(entry -> entry.getKey().equals(clusterName + "-" + repairScheduleId))
-        .map(entry -> entry.getValue().entrySet())
-        .flatMap(Collection::stream)
-        .map(Entry::getValue)
-        .collect(Collectors.toList());
+    return memMetricsDao.getPercentRepairedMetrics(clusterName, repairScheduleId, since);
   }
 
   @Override
   public void storePercentRepairedMetric(PercentRepairedMetric metric) {
-    synchronized (this) {
-      String metricKey = metric.getCluster() + "-" + metric.getRepairScheduleId();
-      Map<String, PercentRepairedMetric> newValue = Maps.newHashMap();
-      if (percentRepairedMetrics.containsKey(metricKey)) {
-        newValue.putAll(percentRepairedMetrics.get(metricKey));
-      }
-      newValue.put(metric.getNode(), metric);
-      percentRepairedMetrics.put(metricKey, newValue);
-    }
+    memMetricsDao.storePercentRepairedMetric(metric);
   }
 
   @Override

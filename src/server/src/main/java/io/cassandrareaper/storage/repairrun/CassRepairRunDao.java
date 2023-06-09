@@ -20,6 +20,8 @@ package io.cassandrareaper.storage.repairrun;
 
 import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairSegment;
+import io.cassandrareaper.core.RepairUnit;
+import io.cassandrareaper.resources.view.RepairRunStatus;
 import io.cassandrareaper.storage.cluster.CassClusterDao;
 import io.cassandrareaper.storage.repairsegment.CassRepairSegmentDao;
 import io.cassandrareaper.storage.repairunit.CassRepairUnitDao;
@@ -518,4 +520,20 @@ public class CassRepairRunDao implements IRepairRun {
     return repairRunIds;
   }
 
+  @Override
+  public Collection<RepairRunStatus> getClusterRunStatuses(String clusterName, int limit) {
+    Collection<RepairRunStatus> repairRunStatuses = Lists.<RepairRunStatus>newArrayList();
+    Collection<RepairRun> repairRuns = getRepairRunsForCluster(clusterName, Optional.of(limit));
+    for (RepairRun repairRun : repairRuns) {
+      Collection<RepairSegment> segments = cassRepairSegmentDao.getRepairSegmentsForRun(repairRun.getId());
+      RepairUnit repairUnit = cassRepairUnitDao.getRepairUnit(repairRun.getRepairUnitId());
+
+      int segmentsRepaired
+            = (int) segments.stream().filter(seg -> seg.getState().equals(RepairSegment.State.DONE)).count();
+
+      repairRunStatuses.add(new RepairRunStatus(repairRun, repairUnit, segmentsRepaired));
+    }
+
+    return repairRunStatuses;
+  }
 }

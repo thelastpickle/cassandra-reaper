@@ -42,11 +42,13 @@ import io.cassandrareaper.storage.OpType;
 import io.cassandrareaper.storage.cassandra.codecs.DateTimeCodec;
 import io.cassandrareaper.storage.cluster.CassClusterDao;
 import io.cassandrareaper.storage.events.CassEventsDao;
+import io.cassandrareaper.storage.metrics.CassMetricsDao;
 import io.cassandrareaper.storage.repairrun.CassRepairRunDao;
 import io.cassandrareaper.storage.repairrun.IRepairRun;
 import io.cassandrareaper.storage.repairschedule.CassRepairScheduleDao;
 import io.cassandrareaper.storage.repairsegment.CassRepairSegmentDao;
 import io.cassandrareaper.storage.repairunit.CassRepairUnitDao;
+import io.cassandrareaper.storage.snapshot.CassSnapshotDao;
 
 import java.io.IOException;
 import java.util.Collection;
@@ -105,9 +107,9 @@ public final class CassandraStorageFacade implements IStorage, IDistributedStora
   private final CassRepairScheduleDao cassRepairScheduleDao;
   private final CassClusterDao cassClusterDao;
   private final CassEventsDao cassEventsDao;
-  private final MetricsDao metricsDao;
+  private final CassMetricsDao cassMetricsDao;
   private final Concurrency concurrency;
-  private final SnapshotDao snapshotDao;
+  private final CassSnapshotDao cassSnapshotDao;
   private final OperationsDao operationsDao;
 
   public CassandraStorageFacade(
@@ -154,8 +156,8 @@ public final class CassandraStorageFacade implements IStorage, IDistributedStora
     }
 
     this.cassEventsDao = new CassEventsDao(session);
-    this.metricsDao = new MetricsDao(session);
-    this.snapshotDao = new SnapshotDao(session);
+    this.cassMetricsDao = new CassMetricsDao(session);
+    this.cassSnapshotDao = new CassSnapshotDao(session);
     this.operationsDao = new OperationsDao(session);
     this.concurrency = new Concurrency(version, reaperInstanceId, session);
     this.cassRepairUnitDao = new CassRepairUnitDao(defaultTimeout, session);
@@ -478,31 +480,12 @@ public final class CassandraStorageFacade implements IStorage, IDistributedStora
 
   @Override
   public Collection<RepairRunStatus> getClusterRunStatuses(String clusterName, int limit) {
-    Collection<RepairRunStatus> repairRunStatuses = Lists.<RepairRunStatus>newArrayList();
-    Collection<RepairRun> repairRuns = cassRepairRunDao.getRepairRunsForCluster(clusterName, Optional.of(limit));
-    for (RepairRun repairRun : repairRuns) {
-      Collection<RepairSegment> segments = cassRepairSegmentDao.getRepairSegmentsForRun(repairRun.getId());
-      RepairUnit repairUnit = cassRepairUnitDao.getRepairUnit(repairRun.getRepairUnitId());
-
-      int segmentsRepaired
-          = (int) segments.stream().filter(seg -> seg.getState().equals(RepairSegment.State.DONE)).count();
-
-      repairRunStatuses.add(new RepairRunStatus(repairRun, repairUnit, segmentsRepaired));
-    }
-
-    return repairRunStatuses;
+    return cassRepairRunDao.getClusterRunStatuses(clusterName, limit);
   }
 
   @Override
   public Collection<RepairScheduleStatus> getClusterScheduleStatuses(String clusterName) {
-    Collection<RepairSchedule> repairSchedules = cassRepairScheduleDao.getRepairSchedulesForCluster(clusterName);
-
-    Collection<RepairScheduleStatus> repairScheduleStatuses = repairSchedules
-        .stream()
-        .map(sched -> new RepairScheduleStatus(sched, cassRepairUnitDao.getRepairUnit(sched.getRepairUnitId())))
-        .collect(Collectors.toList());
-
-    return repairScheduleStatuses;
+    return cassRepairScheduleDao.getClusterScheduleStatuses(clusterName);
   }
 
   private RepairRun buildRepairRunFromRow(Row repairRunResult, UUID id) {
@@ -597,18 +580,18 @@ public final class CassandraStorageFacade implements IStorage, IDistributedStora
   @Override
   public boolean saveSnapshot(Snapshot snapshot) {
 
-    return snapshotDao.saveSnapshot(snapshot);
+    return cassSnapshotDao.saveSnapshot(snapshot);
   }
 
   @Override
   public boolean deleteSnapshot(Snapshot snapshot) {
-    return snapshotDao.deleteSnapshot(snapshot);
+    return cassSnapshotDao.deleteSnapshot(snapshot);
   }
 
   @Override
   public Snapshot getSnapshot(String clusterName, String snapshotName) {
 
-    return snapshotDao.getSnapshot(clusterName, snapshotName);
+    return cassSnapshotDao.getSnapshot(clusterName, snapshotName);
   }
 
   @Override
@@ -618,13 +601,13 @@ public final class CassandraStorageFacade implements IStorage, IDistributedStora
       String metricDomain,
       String metricType,
       long since) {
-    return metricsDao.getMetrics(clusterName, host, metricDomain, metricType, since);
+    return cassMetricsDao.getMetrics(clusterName, host, metricDomain, metricType, since);
   }
 
   @Override
   public void storeMetrics(List<GenericMetric> metrics) {
 
-    metricsDao.storeMetrics(metrics);
+    cassMetricsDao.storeMetrics(metrics);
   }
 
   /**
@@ -634,12 +617,12 @@ public final class CassandraStorageFacade implements IStorage, IDistributedStora
    * @return the time truncated to the closest partition
    */
   private DateTime computeMetricsPartition(DateTime metricTime) {
-    return metricsDao.computeMetricsPartition(metricTime);
+    return cassMetricsDao.computeMetricsPartition(metricTime);
   }
 
   @Override
   public void purgeMetrics() {
-    metricsDao.purgeMetrics();
+    cassMetricsDao.purgeMetrics();
   }
 
   @Override
@@ -707,12 +690,12 @@ public final class CassandraStorageFacade implements IStorage, IDistributedStora
   @Override
   public List<PercentRepairedMetric> getPercentRepairedMetrics(String clusterName, UUID repairScheduleId, Long since) {
 
-    return metricsDao.getPercentRepairedMetrics(clusterName, repairScheduleId, since);
+    return cassMetricsDao.getPercentRepairedMetrics(clusterName, repairScheduleId, since);
   }
 
   @Override
   public void storePercentRepairedMetric(PercentRepairedMetric metric) {
-    metricsDao.storePercentRepairedMetric(metric);
+    cassMetricsDao.storePercentRepairedMetric(metric);
   }
 
   @Override

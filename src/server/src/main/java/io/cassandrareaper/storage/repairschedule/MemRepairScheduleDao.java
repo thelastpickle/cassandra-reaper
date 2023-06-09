@@ -20,16 +20,19 @@ package io.cassandrareaper.storage.repairschedule;
 
 import io.cassandrareaper.core.RepairSchedule;
 import io.cassandrareaper.core.RepairUnit;
+import io.cassandrareaper.resources.view.RepairScheduleStatus;
 import io.cassandrareaper.storage.repairunit.MemRepairUnitDao;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
 
 import com.datastax.driver.core.utils.UUIDs;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
 public class MemRepairScheduleDao implements IRepairSchedule {
@@ -111,6 +114,17 @@ public class MemRepairScheduleDao implements IRepairSchedule {
       repairSchedules.put(newRepairSchedule.getId(), newRepairSchedule);
       return true;
     }
+  }
+
+  @Override
+  public Collection<RepairScheduleStatus> getClusterScheduleStatuses(String clusterName) {
+    List<RepairScheduleStatus> scheduleStatuses = Lists.newArrayList();
+    Collection<RepairSchedule> schedules = getRepairSchedulesForCluster(clusterName);
+    for (RepairSchedule schedule : schedules) {
+      RepairUnit unit = memRepairUnitDao.getRepairUnit(schedule.getRepairUnitId());
+      scheduleStatuses.add(new RepairScheduleStatus(schedule, unit));
+    }
+    return scheduleStatuses;
   }
 
   @Override

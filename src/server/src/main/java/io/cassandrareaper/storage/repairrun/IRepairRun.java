@@ -20,6 +20,7 @@ package io.cassandrareaper.storage.repairrun;
 
 import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairSegment;
+import io.cassandrareaper.resources.view.RepairRunStatus;
 
 import java.util.Collection;
 import java.util.Optional;
@@ -55,4 +56,6 @@ public interface IRepairRun {
    * @return The deleted RepairRun instance, if delete succeeds, with state set to DELETED.
    */
   Optional<RepairRun> deleteRepairRun(UUID id);
+
+  Collection<RepairRunStatus> getClusterRunStatuses(String clusterName, int limit);
 }
