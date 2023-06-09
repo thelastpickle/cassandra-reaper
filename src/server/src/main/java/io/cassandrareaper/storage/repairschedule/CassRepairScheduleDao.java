@@ -92,7 +92,7 @@ public class CassRepairScheduleDao implements IRepairSchedule {
             + "WHERE cluster_name = ? and keyspace_name = ? and repair_schedule_id = ?");
   }
 
-
+  @Override
   public RepairSchedule addRepairSchedule(RepairSchedule.Builder repairSchedule) {
     RepairSchedule schedule = repairSchedule.build(UUIDs.timeBased());
     updateRepairSchedule(schedule);
@@ -100,14 +100,14 @@ public class CassRepairScheduleDao implements IRepairSchedule {
     return schedule;
   }
 
-
+  @Override
   public Optional<RepairSchedule> getRepairSchedule(UUID repairScheduleId) {
     Row sched = session.execute(getRepairSchedulePrepStmt.bind(repairScheduleId)).one();
 
     return sched != null ? Optional.ofNullable(createRepairScheduleFromRow(sched)) : Optional.empty();
   }
 
-  public RepairSchedule createRepairScheduleFromRow(Row repairScheduleRow) {
+  private RepairSchedule createRepairScheduleFromRow(Row repairScheduleRow) {
     return RepairSchedule.builder(repairScheduleRow.getUUID("repair_unit_id"))
         .state(RepairSchedule.State.valueOf(repairScheduleRow.getString("state")))
         .daysBetween(repairScheduleRow.getInt("days_between"))
@@ -128,6 +128,7 @@ public class CassRepairScheduleDao implements IRepairSchedule {
   }
 
 
+  @Override
   public Collection<RepairSchedule> getRepairSchedulesForCluster(String clusterName) {
     Collection<RepairSchedule> schedules = Lists.<RepairSchedule>newArrayList();
     ResultSet scheduleIds = session.execute(getRepairScheduleByClusterAndKsPrepStmt.bind(clusterName, " "));
@@ -142,6 +143,7 @@ public class CassRepairScheduleDao implements IRepairSchedule {
   }
 
 
+  @Override
   public Collection<RepairSchedule> getRepairSchedulesForCluster(String clusterName, boolean incremental) {
     return getRepairSchedulesForCluster(clusterName).stream()
         .filter(schedule -> cassRepairUnitDao.getRepairUnit(
@@ -151,6 +153,7 @@ public class CassRepairScheduleDao implements IRepairSchedule {
   }
 
 
+  @Override
   public Collection<RepairSchedule> getRepairSchedulesForKeyspace(String keyspaceName) {
     Collection<RepairSchedule> schedules = Lists.<RepairSchedule>newArrayList();
     ResultSet scheduleIds = session.execute(getRepairScheduleByClusterAndKsPrepStmt.bind(" ", keyspaceName));
@@ -165,6 +168,7 @@ public class CassRepairScheduleDao implements IRepairSchedule {
   }
 
 
+  @Override
   public Collection<RepairSchedule> getRepairSchedulesForClusterAndKeyspace(String clusterName, String keyspaceName) {
     Collection<RepairSchedule> schedules = Lists.<RepairSchedule>newArrayList();
     ResultSet scheduleIds = session.execute(getRepairScheduleByClusterAndKsPrepStmt.bind(clusterName, keyspaceName));
@@ -179,6 +183,7 @@ public class CassRepairScheduleDao implements IRepairSchedule {
   }
 
 
+  @Override
   public Collection<RepairSchedule> getAllRepairSchedules() {
     Collection<RepairSchedule> schedules = Lists.<RepairSchedule>newArrayList();
     Statement stmt = new SimpleStatement(SELECT_REPAIR_SCHEDULE);
@@ -191,7 +196,7 @@ public class CassRepairScheduleDao implements IRepairSchedule {
     return schedules;
   }
 
-
+  @Override
   public boolean updateRepairSchedule(RepairSchedule newRepairSchedule) {
     final Set<UUID> repairHistory = Sets.newHashSet();
     repairHistory.addAll(newRepairSchedule.getRunHistory());
@@ -241,6 +246,7 @@ public class CassRepairScheduleDao implements IRepairSchedule {
   }
 
 
+  @Override
   public Optional<RepairSchedule> deleteRepairSchedule(UUID id) {
     Optional<RepairSchedule> repairSchedule = getRepairSchedule(id);
     if (repairSchedule.isPresent()) {

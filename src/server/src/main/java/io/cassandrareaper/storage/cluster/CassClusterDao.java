@@ -97,6 +97,7 @@ public class CassClusterDao implements ICluster {
         "DELETE FROM repair_run_by_cluster_v2 WHERE cluster_name = ?");
   }
 
+  @Override
   public Collection<Cluster> getClusters() {
     // cache the clusters list for ten seconds
     if (System.currentTimeMillis() - clustersCacheAge.get() > TimeUnit.SECONDS.toMillis(10)) {
@@ -114,7 +115,7 @@ public class CassClusterDao implements ICluster {
     return clustersCache.get();
   }
 
-
+  @Override
   public boolean addCluster(Cluster cluster) {
     assert addClusterAssertions(cluster);
     try {
@@ -133,7 +134,7 @@ public class CassClusterDao implements ICluster {
     return true;
   }
 
-
+  @Override
   public boolean updateCluster(Cluster newCluster) {
     return addCluster(newCluster);
   }
@@ -162,7 +163,7 @@ public class CassClusterDao implements ICluster {
     return true;
   }
 
-
+  @Override
   public Cluster getCluster(String clusterName) {
     Row row = session.execute(getClusterPrepStmt.bind(clusterName)).one();
     if (null != row) {
@@ -205,7 +206,7 @@ public class CassClusterDao implements ICluster {
     return builder.build();
   }
 
-
+  @Override
   public Cluster deleteCluster(String clusterName) {
     cassRepairScheduleDao.getRepairSchedulesForCluster(clusterName)
         .forEach(schedule -> cassRepairScheduleDao.deleteRepairSchedule(schedule.getId()));

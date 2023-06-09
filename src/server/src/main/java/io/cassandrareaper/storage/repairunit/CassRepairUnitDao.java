@@ -73,6 +73,7 @@ public class CassRepairUnitDao implements IRepairUnit {
     deleteRepairUnitPrepStmt = session.prepare("DELETE FROM repair_unit_v1 WHERE id = ?");
   }
 
+  @Override
   public RepairUnit addRepairUnit(RepairUnit.Builder newRepairUnit) {
     RepairUnit repairUnit = newRepairUnit.build(UUIDs.timeBased());
     updateRepairUnit(repairUnit);
@@ -81,6 +82,7 @@ public class CassRepairUnitDao implements IRepairUnit {
     return repairUnit;
   }
 
+  @Override
   public void updateRepairUnit(RepairUnit updatedRepairUnit) {
     session.execute(
         insertRepairUnitPrepStmt.bind(
@@ -96,7 +98,7 @@ public class CassRepairUnitDao implements IRepairUnit {
             updatedRepairUnit.getTimeout()));
   }
 
-  public RepairUnit getRepairUnitImpl(UUID id) {
+  private RepairUnit getRepairUnitImpl(UUID id) {
     Row repairUnitRow = session.execute(getRepairUnitPrepStmt.bind(id)).one();
     if (repairUnitRow != null) {
       return RepairUnit.builder()
@@ -114,11 +116,12 @@ public class CassRepairUnitDao implements IRepairUnit {
     throw new IllegalArgumentException("No repair unit exists for " + id);
   }
 
-
+  @Override
   public RepairUnit getRepairUnit(UUID id) {
     return repairUnits.getUnchecked(id);
   }
 
+  @Override
   public Optional<RepairUnit> getRepairUnit(RepairUnit.Builder params) {
     // brute force again
     RepairUnit repairUnit = null;

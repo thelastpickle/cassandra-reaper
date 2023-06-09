@@ -66,7 +66,6 @@ import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.QueryLogger;
 import com.datastax.driver.core.QueryOptions;
 import com.datastax.driver.core.ResultSet;
-import com.datastax.driver.core.ResultSetFuture;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.Statement;
@@ -330,22 +329,10 @@ public final class CassandraStorageFacade implements IStorage, IDistributedStora
    * Create a collection of RepairRun objects out of a list of ResultSetFuture. Used to handle async queries on the
    * repair_run table with a list of ids.
    */
-  private Collection<RepairRun> getRepairRunsAsync(List<ResultSetFuture> repairRunFutures) {
-
-    return cassRepairRunDao.getRepairRunsAsync(repairRunFutures);
-  }
-
   @Override
   public Collection<RepairRun> getRepairRunsWithState(RunState runState) {
 
     return cassRepairRunDao.getRepairRunsWithState(runState);
-  }
-
-  private Collection<? extends RepairRun> getRepairRunsWithStateForCluster(
-      Collection<UUID> clusterRepairRunsId,
-      RunState runState) {
-
-    return cassRepairRunDao.getRepairRunsWithStateForCluster(clusterRepairRunsId, runState);
   }
 
   @Override
@@ -362,10 +349,6 @@ public final class CassandraStorageFacade implements IStorage, IDistributedStora
   @Override
   public void updateRepairUnit(RepairUnit updatedRepairUnit) {
     cassRepairUnitDao.updateRepairUnit(updatedRepairUnit);
-  }
-
-  private RepairUnit getRepairUnitImpl(UUID id) {
-    return cassRepairUnitDao.getRepairUnitImpl(id);
   }
 
   @Override
@@ -440,12 +423,6 @@ public final class CassandraStorageFacade implements IStorage, IDistributedStora
     return cassRepairRunDao.getRepairRunIdsForCluster(clusterName, limit);
   }
 
-  private SortedSet<UUID> getRepairRunIdsForClusterWithState(String clusterName, RunState runState) {
-
-
-    return cassRepairRunDao.getRepairRunIdsForClusterWithState(clusterName, runState);
-  }
-
   @Override
   public RepairSchedule addRepairSchedule(io.cassandrareaper.core.RepairSchedule.Builder repairSchedule) {
 
@@ -456,10 +433,6 @@ public final class CassandraStorageFacade implements IStorage, IDistributedStora
   public Optional<RepairSchedule> getRepairSchedule(UUID repairScheduleId) {
 
     return cassRepairScheduleDao.getRepairSchedule(repairScheduleId);
-  }
-
-  private RepairSchedule createRepairScheduleFromRow(Row repairScheduleRow) {
-    return cassRepairScheduleDao.createRepairScheduleFromRow(repairScheduleRow);
   }
 
   @Override

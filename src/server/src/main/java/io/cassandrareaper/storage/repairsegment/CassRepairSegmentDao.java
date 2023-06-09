@@ -175,6 +175,7 @@ public class CassRepairSegmentDao implements IRepairSegment {
 
   }
 
+  @Override
   public int getSegmentAmountForRepairRun(UUID runId) {
     return (int) session
         .execute(getRepairSegmentCountByRunIdPrepStmt.bind(runId))
@@ -182,6 +183,7 @@ public class CassRepairSegmentDao implements IRepairSegment {
         .getLong(0);
   }
 
+  @Override
   public int getSegmentAmountForRepairRunWithState(UUID runId, RepairSegment.State state) {
     if (null != getRepairSegmentCountByRunIdAndStatePrepStmt) {
       return (int) session
@@ -194,6 +196,7 @@ public class CassRepairSegmentDao implements IRepairSegment {
     }
   }
 
+  @Override
   public boolean updateRepairSegment(RepairSegment segment) {
 
     assert concurrency.hasLeadOnSegment(segment)
@@ -246,6 +249,7 @@ public class CassRepairSegmentDao implements IRepairSegment {
     return true;
   }
 
+  @Override
   public Optional<RepairSegment> getRepairSegment(UUID runId, UUID segmentId) {
     RepairSegment segment = null;
     Row segmentRow = session.execute(getRepairSegmentPrepStmt.bind(runId, segmentId)).one();
@@ -256,6 +260,7 @@ public class CassRepairSegmentDao implements IRepairSegment {
     return Optional.ofNullable(segment);
   }
 
+  @Override
   public Collection<RepairSegment> getRepairSegmentsForRun(UUID runId) {
     Collection<RepairSegment> segments = Lists.newArrayList();
     // First gather segments ids
@@ -267,6 +272,7 @@ public class CassRepairSegmentDao implements IRepairSegment {
     return segments;
   }
 
+  @Override
   public List<RepairSegment> getNextFreeSegments(UUID runId) {
     List<RepairSegment> segments = Lists.<RepairSegment>newArrayList(getRepairSegmentsForRun(runId));
     Collections.shuffle(segments);
@@ -278,7 +284,7 @@ public class CassRepairSegmentDao implements IRepairSegment {
     return candidates;
   }
 
-
+  // TODO: this comes from IDistributed storage and probably shouldn't be here, despite being segment related.
   public List<RepairSegment> getNextFreeSegmentsForRanges(
       UUID runId,
       List<RingRange> ranges) {
@@ -293,6 +299,7 @@ public class CassRepairSegmentDao implements IRepairSegment {
 
     return candidates;
   }
+
 
   public boolean segmentIsWithinRanges(RepairSegment seg, List<RingRange> ranges) {
     for (RingRange range : ranges) {
@@ -309,7 +316,7 @@ public class CassRepairSegmentDao implements IRepairSegment {
         && Sets.intersection(lockedNodes, seg.getReplicas().keySet()).isEmpty();
   }
 
-
+  @Override
   public Collection<RepairSegment> getSegmentsWithState(UUID runId, RepairSegment.State segmentState) {
     Collection<RepairSegment> segments = Lists.newArrayList();
 

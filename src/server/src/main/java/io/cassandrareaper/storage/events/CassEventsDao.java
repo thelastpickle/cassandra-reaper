@@ -65,13 +65,14 @@ public class CassEventsDao implements IEvents {
   }
 
 
+  @Override
   public Collection<DiagEventSubscription> getEventSubscriptions() {
     return session.execute(getDiagnosticEventsPrepStmt.bind()).all().stream()
         .map((row) -> createDiagEventSubscription(row))
         .collect(Collectors.toList());
   }
 
-
+  @Override
   public Collection<DiagEventSubscription> getEventSubscriptions(String clusterName) {
     Preconditions.checkNotNull(clusterName);
 
@@ -81,7 +82,7 @@ public class CassEventsDao implements IEvents {
         .collect(Collectors.toList());
   }
 
-
+  @Override
   public DiagEventSubscription getEventSubscription(UUID id) {
     Row row = session.execute(getDiagnosticEventPrepStmt.bind(id)).one();
     if (null != row) {
@@ -90,7 +91,7 @@ public class CassEventsDao implements IEvents {
     throw new IllegalArgumentException("No event subscription with id " + id);
   }
 
-
+  @Override
   public DiagEventSubscription addEventSubscription(DiagEventSubscription subscription) {
     Preconditions.checkArgument(subscription.getId().isPresent());
 
@@ -107,7 +108,7 @@ public class CassEventsDao implements IEvents {
     return subscription;
   }
 
-
+  @Override
   public boolean deleteEventSubscription(UUID id) {
     session.execute(deleteDiagnosticEventPrepStmt.bind(id));
     return true;
