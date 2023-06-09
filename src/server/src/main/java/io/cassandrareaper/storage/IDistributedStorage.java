@@ -17,13 +17,11 @@
 
 package io.cassandrareaper.storage;
 
-import io.cassandrareaper.core.GenericMetric;
 import io.cassandrareaper.core.RepairSegment;
 import io.cassandrareaper.service.RingRange;
 import io.cassandrareaper.storage.metrics.IDistributedMetrics;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
