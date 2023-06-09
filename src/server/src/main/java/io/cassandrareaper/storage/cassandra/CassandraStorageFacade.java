@@ -59,7 +59,6 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Collectors;
 
 import com.datastax.driver.core.CodecRegistry;
 import com.datastax.driver.core.ConsistencyLevel;
@@ -78,7 +77,6 @@ import com.datastax.driver.core.policies.DefaultRetryPolicy;
 import com.datastax.driver.core.policies.RetryPolicy;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Lists;
 import io.dropwizard.setup.Environment;
 import io.dropwizard.util.Duration;
 import org.joda.time.DateTime;

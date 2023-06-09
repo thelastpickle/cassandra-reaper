@@ -41,14 +41,15 @@ public interface IRepairSchedule {
   Collection<RepairSchedule> getAllRepairSchedules();
 
   boolean updateRepairSchedule(RepairSchedule newRepairSchedule);
+
   Collection<RepairScheduleStatus> getClusterScheduleStatuses(String clusterName);
 
-    /**
-     * Delete the RepairSchedule instance identified by the given id. Related repair runs or other resources tied to the
-     * schedule will not be deleted.
-     *
-     * @param id The id of the RepairSchedule instance to delete.
-     * @return The deleted RepairSchedule instance, if delete succeeds, with state set to DELETED.
-     */
+  /**
+   * Delete the RepairSchedule instance identified by the given id. Related repair runs or other resources tied to the
+   * schedule will not be deleted.
+   *
+   * @param id The id of the RepairSchedule instance to delete.
+   * @return The deleted RepairSchedule instance, if delete succeeds, with state set to DELETED.
+   */
   Optional<RepairSchedule> deleteRepairSchedule(UUID id);
 }

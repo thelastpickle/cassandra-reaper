@@ -17,20 +17,12 @@
 
 package io.cassandrareaper.storage;
 
-import io.cassandrareaper.core.PercentRepairedMetric;
-import io.cassandrareaper.core.Snapshot;
-import io.cassandrareaper.resources.view.RepairRunStatus;
-import io.cassandrareaper.resources.view.RepairScheduleStatus;
 import io.cassandrareaper.storage.cluster.ICluster;
 import io.cassandrareaper.storage.events.IEvents;
 import io.cassandrareaper.storage.repairrun.IRepairRun;
 import io.cassandrareaper.storage.repairschedule.IRepairSchedule;
 import io.cassandrareaper.storage.repairsegment.IRepairSegment;
 import io.cassandrareaper.storage.repairunit.IRepairUnit;
-
-import java.util.Collection;
-import java.util.List;
-import java.util.UUID;
 
 import io.dropwizard.lifecycle.Managed;
 
