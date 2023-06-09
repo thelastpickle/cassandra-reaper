@@ -3012,7 +3012,7 @@ public final class BasicSteps {
       RUNNERS.parallelStream().forEach(runner -> {
         HashMap<String, String> params = Maps.newHashMap();
         params.put("limit", limit.toString());
-        params.put("clusterName", clusterName);
+        params.put("cluster_name", clusterName);
         // Run query against /repair_run/cluster/
         Response resp = runner.callReaper(
             "GET",

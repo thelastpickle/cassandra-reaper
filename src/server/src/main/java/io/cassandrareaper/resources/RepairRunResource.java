@@ -650,7 +650,7 @@ public final class RepairRunResource {
   @GET
   public Response listRepairRuns(
       @QueryParam("state") Optional<String> state,
-      @QueryParam("clusterName") Optional<String> cluster,
+      @QueryParam("cluster_name") Optional<String> cluster,
       @QueryParam("keyspace_name") Optional<String> keyspace,
       @QueryParam("limit") Optional<Integer> limit) {
 
