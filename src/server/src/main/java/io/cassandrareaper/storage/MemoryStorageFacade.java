@@ -267,13 +267,7 @@ public final class MemoryStorageFacade implements IStorage {
 
   @Override
   public Collection<RepairScheduleStatus> getClusterScheduleStatuses(String clusterName) {
-    List<RepairScheduleStatus> scheduleStatuses = Lists.newArrayList();
-    Collection<RepairSchedule> schedules = memRepairScheduleDao.getRepairSchedulesForCluster(clusterName);
-    for (RepairSchedule schedule : schedules) {
-      RepairUnit unit = memRepairUnitDao.getRepairUnit(schedule.getRepairUnitId());
-      scheduleStatuses.add(new RepairScheduleStatus(schedule, unit));
-    }
-    return scheduleStatuses;
+    return memRepairScheduleDao.getClusterScheduleStatuses(clusterName);
   }
 
   @Override
