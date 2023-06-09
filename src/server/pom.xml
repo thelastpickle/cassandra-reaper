@@ -53,6 +53,7 @@
     |           |
         </cucumber.no-versions-to-test>
         <cucumber.upgrade-versions>${cucumber.no-versions-to-test}</cucumber.upgrade-versions>
+        <build.output>target</build.output>
     </properties>
 
     <dependencies>
@@ -351,6 +352,7 @@
     </dependencies>
 
     <build>
+      <directory>${build.output}</directory>
       <testResources>
         <testResource>
           <directory>src/test/resources</directory>
@@ -714,6 +716,14 @@
         </plugins>
     </build>
     <profiles>
+      <profile>
+        <activation>
+          <property><name>m2e.version</name></property>
+        </activation>
+        <properties>
+          <build.output>target-ide</build.output>
+        </properties>
+      </profile>
       <profile>
         <id>integration-upgrade-tests</id>
         <properties>
