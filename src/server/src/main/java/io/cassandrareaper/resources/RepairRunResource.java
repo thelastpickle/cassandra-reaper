@@ -604,9 +604,9 @@ public final class RepairRunResource {
    * @return all know repair runs for a cluster.
    */
   @GET
-  @Path("/cluster/{cluster_name}")
+  @Path("/cluster/{clusterName}")
   public Response getRepairRunsForCluster(
-      @PathParam("cluster_name") String clusterName,
+      @PathParam("clusterName") String clusterName,
       @QueryParam("limit") Optional<Integer> limit) {
 
     LOG.debug("get repair run for cluster called with: cluster_name = {}", clusterName);
@@ -655,23 +655,23 @@ public final class RepairRunResource {
       @QueryParam("limit") Optional<Integer> limit) {
 
     try {
-      final Set desiredStates = splitStateParam(state);
+      final Set<String> desiredStates = splitStateParam(state);
       if (desiredStates == null) {
         return Response.status(Response.Status.BAD_REQUEST).build();
       }
 
-      Collection<Cluster> clusters = cluster.isPresent()
+      Collection<Cluster> clusters = cluster.isPresent() && !cluster.get().equals("all")
             ? Collections.singleton(context.storage.getCluster(cluster.get()))
             : context.storage.getClusters();
 
-      List<RepairRunStatus> runStatuses = Lists.newArrayList();
       List<RepairRun> repairRuns = Lists.newArrayList();
       clusters.forEach(clstr -> repairRuns.addAll(
           context.storage.getRepairRunsForClusterPrioritiseRunning(clstr.getName(), limit))
       );
+      List<RepairRunStatus> runStatuses = Lists.newArrayList();
       RepairRunService.sortByRunState(repairRuns);
       runStatuses.addAll(
-          (List<RepairRunStatus>) getRunStatuses(
+          getRunStatuses(
               repairRuns.subList(0, min(repairRuns.size(), limit.orElse(1000))), desiredStates)
               .stream()
               .filter((run) -> !keyspace.isPresent()
@@ -700,7 +700,7 @@ public final class RepairRunResource {
     return runStatuses;
   }
 
-  static Set splitStateParam(Optional<String> state) {
+  static Set<String> splitStateParam(Optional<String> state) {
     if (state.isPresent()) {
       final Iterable<String> chunks = RepairRunService.COMMA_SEPARATED_LIST_SPLITTER.split(state.get());
       for (final String chunk : chunks) {

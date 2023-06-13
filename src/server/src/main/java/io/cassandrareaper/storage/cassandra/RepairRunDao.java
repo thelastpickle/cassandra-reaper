@@ -342,7 +342,7 @@ public class RepairRunDao {
           // UUIDs for one status.
           this.session
               .executeAsync(getRepairRunForClusterWhereStatusPrepStmt
-                  .bind(clusterName, state.toString(), limit.orElse(MAX_RETURNED_REPAIR_RUNS)
+                  .bind(clusterName, state, limit.orElse(MAX_RETURNED_REPAIR_RUNS)
                   )
               )
       );
@@ -365,12 +365,11 @@ public class RepairRunDao {
     // Merge the two lists and trim.
     repairUuidFuturesNoState.getUninterruptibly().forEach(row -> {
           UUID uuid = row.getUUID("id");
-          if (!flattenedUuids.contains(uuid)) {
+          if (!flattenedUuids.contains(uuid) && flattenedUuids.size() < limit.orElse(MAX_RETURNED_REPAIR_RUNS)) {
             flattenedUuids.add(uuid);
           }
         }
     );
-    flattenedUuids.subList(0, Math.min(flattenedUuids.size(), limit.orElse(MAX_RETURNED_REPAIR_RUNS)));
 
     // Run an async query on each UUID in the flattened list, against the main repair_run table with
     // all columns required as an input to `buildRepairRunFromRow`.

@@ -2,6 +2,7 @@
 .m2-repository/
 pom.xml.versionsBackup
 target/
+target-ide/
 dependency-reduced-pom.xml
 
 # Stuff from various IDE's and editors
