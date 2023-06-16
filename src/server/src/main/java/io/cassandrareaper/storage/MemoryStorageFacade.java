@@ -89,12 +89,6 @@ public final class MemoryStorageFacade implements IStorage {
 
 
   private boolean addClusterAssertions(Cluster cluster) {
-
-    // TODO – unit tests need to also always set the paritioner
-    //Preconditions.checkState(cluster.getPartitioner().isPresent(), "Cannot store cluster with no partitioner.");
-
-    // assert we're not overwriting a cluster with the same name but different node list
-
     return memClusterDao.addClusterAssertions(cluster);
   }
 
