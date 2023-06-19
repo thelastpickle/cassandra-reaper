@@ -1,6 +1,6 @@
 /*
  * Copyright 2014-2017 Spotify AB
- * Copyright 2016-2018 The Last Pickle Ltd
+ * Copyright 2016-2019 The Last Pickle Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,20 +15,20 @@
  * limitations under the License.
  */
 
-package io.cassandrareaper.storage;
+package io.cassandrareaper.storage.metrics;
 
-import org.assertj.core.api.Assertions;
-import org.cognitor.cassandra.migration.MigrationRepository;
-import org.junit.Test;
+import io.cassandrareaper.core.GenericMetric;
 
+import java.util.List;
+import java.util.Optional;
 
+public interface IDistributedMetrics {
+  List<GenericMetric> getMetrics(
+        String clusterName,
+        Optional<String> host,
+        String metricDomain,
+        String metricType,
+        long since);
 
-public final class CassandraStorageTest {
-
-  @Test
-  public void testMigrationRepository() {
-    MigrationRepository migration = new MigrationRepository("db/cassandra");
-    Assertions.assertThat(migration.getLatestVersion()).isGreaterThan(0);
-  }
-
+  void storeMetrics(List<GenericMetric> metric);
 }

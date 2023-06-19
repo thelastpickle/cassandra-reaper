@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package io.cassandrareaper.storage.cassandra;
+package io.cassandrareaper.storage.repairunit;
 
 import io.cassandrareaper.core.RepairUnit;
 
@@ -37,24 +37,24 @@ import com.google.common.cache.LoadingCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class RepairUnitDao {
-  static final String SELECT_REPAIR_UNIT = "SELECT * FROM repair_unit_v1";
-  private static final Logger LOG = LoggerFactory.getLogger(RepairUnitDao.class);
+public class CassRepairUnitDao implements IRepairUnit {
+  public static final String SELECT_REPAIR_UNIT = "SELECT * FROM repair_unit_v1";
+  private static final Logger LOG = LoggerFactory.getLogger(CassRepairUnitDao.class);
+  public PreparedStatement deleteRepairUnitPrepStmt;
   PreparedStatement insertRepairUnitPrepStmt;
   PreparedStatement getRepairUnitPrepStmt;
-  PreparedStatement deleteRepairUnitPrepStmt;
 
   final LoadingCache<UUID, RepairUnit> repairUnits = CacheBuilder
-      .newBuilder()
-      .build(new CacheLoader<UUID, RepairUnit>() {
-        public RepairUnit load(UUID repairUnitId) throws Exception {
-          return getRepairUnitImpl(repairUnitId);
-        }
-      });
+        .newBuilder()
+        .build(new CacheLoader<UUID, RepairUnit>() {
+          public RepairUnit load(UUID repairUnitId) throws Exception {
+            return getRepairUnitImpl(repairUnitId);
+          }
+        });
   private final int defaultTimeout;
   private final Session session;
 
-  public RepairUnitDao(int defaultTimeout, Session session) {
+  public CassRepairUnitDao(int defaultTimeout, Session session) {
     this.defaultTimeout = defaultTimeout;
     this.session = session;
     prepareStatements();
@@ -73,6 +73,7 @@ public class RepairUnitDao {
     deleteRepairUnitPrepStmt = session.prepare("DELETE FROM repair_unit_v1 WHERE id = ?");
   }
 
+  @Override
   public RepairUnit addRepairUnit(RepairUnit.Builder newRepairUnit) {
     RepairUnit repairUnit = newRepairUnit.build(UUIDs.timeBased());
     updateRepairUnit(repairUnit);
@@ -81,6 +82,7 @@ public class RepairUnitDao {
     return repairUnit;
   }
 
+  @Override
   public void updateRepairUnit(RepairUnit updatedRepairUnit) {
     session.execute(
         insertRepairUnitPrepStmt.bind(
@@ -96,7 +98,7 @@ public class RepairUnitDao {
             updatedRepairUnit.getTimeout()));
   }
 
-  RepairUnit getRepairUnitImpl(UUID id) {
+  private RepairUnit getRepairUnitImpl(UUID id) {
     Row repairUnitRow = session.execute(getRepairUnitPrepStmt.bind(id)).one();
     if (repairUnitRow != null) {
       return RepairUnit.builder()
@@ -114,11 +116,12 @@ public class RepairUnitDao {
     throw new IllegalArgumentException("No repair unit exists for " + id);
   }
 
-
+  @Override
   public RepairUnit getRepairUnit(UUID id) {
     return repairUnits.getUnchecked(id);
   }
 
+  @Override
   public Optional<RepairUnit> getRepairUnit(RepairUnit.Builder params) {
     // brute force again
     RepairUnit repairUnit = null;

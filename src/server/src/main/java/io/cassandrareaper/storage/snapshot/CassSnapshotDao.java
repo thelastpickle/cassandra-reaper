@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package io.cassandrareaper.storage.cassandra;
+package io.cassandrareaper.storage.snapshot;
 
 import io.cassandrareaper.core.Snapshot;
 
@@ -26,14 +26,14 @@ import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import org.joda.time.DateTime;
 
-public class SnapshotDao {
+public class CassSnapshotDao implements ISnapshot {
 
   PreparedStatement getSnapshotPrepStmt;
   PreparedStatement deleteSnapshotPrepStmt;
   PreparedStatement saveSnapshotPrepStmt;
   private final Session session;
 
-  public SnapshotDao(Session session) {
+  public CassSnapshotDao(Session session) {
     this.session = session;
     prepareStatements();
   }
@@ -47,7 +47,7 @@ public class SnapshotDao {
 
   }
 
-
+  @Override
   public boolean saveSnapshot(Snapshot snapshot) {
     session.execute(
         saveSnapshotPrepStmt.bind(
@@ -60,13 +60,13 @@ public class SnapshotDao {
     return true;
   }
 
-
+  @Override
   public boolean deleteSnapshot(Snapshot snapshot) {
     session.execute(deleteSnapshotPrepStmt.bind(snapshot.getClusterName(), snapshot.getName()));
     return false;
   }
 
-
+  @Override
   public Snapshot getSnapshot(String clusterName, String snapshotName) {
     Snapshot.Builder snapshotBuilder = Snapshot.builder().withClusterName(clusterName).withName(snapshotName);
 

@@ -24,7 +24,7 @@ import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.Node;
 import io.cassandrareaper.crypto.Cryptograph;
-import io.cassandrareaper.storage.cassandra.CassandraStorage;
+import io.cassandrareaper.storage.cassandra.CassandraStorageFacade;
 
 import java.net.UnknownHostException;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -62,7 +62,7 @@ public class JmxConnectionsInitializerTest {
 
     context.config = new ReaperApplicationConfiguration();
     context.config.setDatacenterAvailability(DatacenterAvailability.EACH);
-    context.storage = mock(CassandraStorage.class);
+    context.storage = mock(CassandraStorageFacade.class);
 
     Cluster cluster = Cluster.builder()
             .withName("test")
@@ -100,7 +100,7 @@ public class JmxConnectionsInitializerTest {
 
     context.config = new ReaperApplicationConfiguration();
     context.config.setDatacenterAvailability(DatacenterAvailability.LOCAL);
-    context.storage = mock(CassandraStorage.class);
+    context.storage = mock(CassandraStorageFacade.class);
 
     Cluster cluster = Cluster.builder()
             .withName("test")
@@ -138,7 +138,7 @@ public class JmxConnectionsInitializerTest {
 
     context.config = new ReaperApplicationConfiguration();
     context.config.setDatacenterAvailability(DatacenterAvailability.ALL);
-    context.storage = mock(CassandraStorage.class);
+    context.storage = mock(CassandraStorageFacade.class);
 
     Cluster cluster = Cluster.builder()
             .withName("test")

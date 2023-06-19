@@ -23,7 +23,7 @@ import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.Node;
 import io.cassandrareaper.crypto.Cryptograph;
-import io.cassandrareaper.storage.cassandra.CassandraStorage;
+import io.cassandrareaper.storage.cassandra.CassandraStorageFacade;
 
 import java.net.UnknownHostException;
 import java.util.Collections;
@@ -69,7 +69,7 @@ public final class JmxCustomPortTest {
         };
 
     context.config = new ReaperApplicationConfiguration();
-    context.storage = mock(CassandraStorage.class);
+    context.storage = mock(CassandraStorageFacade.class);
 
     Cluster cluster = Cluster.builder()
             .withName("test")

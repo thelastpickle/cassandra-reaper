@@ -31,7 +31,7 @@ import io.cassandrareaper.jmx.JmxProxyTest;
 import io.cassandrareaper.resources.view.RepairRunStatus;
 import io.cassandrareaper.service.RepairManager;
 import io.cassandrareaper.service.RepairRunnerTest;
-import io.cassandrareaper.storage.MemoryStorage;
+import io.cassandrareaper.storage.MemoryStorageFacade;
 
 import java.math.BigInteger;
 import java.net.URI;
@@ -124,7 +124,7 @@ public final class RepairRunResourceTest {
         TimeUnit.SECONDS,
         1);
 
-    context.storage = new MemoryStorage();
+    context.storage = new MemoryStorageFacade();
 
     Cluster cluster = Cluster.builder()
         .withName(clustername)
@@ -441,7 +441,7 @@ public final class RepairRunResourceTest {
 
   @Test
   public void testAddRunClusterNotInStorage() {
-    context.storage = new MemoryStorage();
+    context.storage = new MemoryStorageFacade();
     RepairRunResource resource = new RepairRunResource(context);
     Response response = addDefaultRepairRun(resource);
     assertEquals(404, response.getStatus());

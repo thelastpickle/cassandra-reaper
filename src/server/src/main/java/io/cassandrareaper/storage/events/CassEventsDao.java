@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package io.cassandrareaper.storage.cassandra;
+package io.cassandrareaper.storage.events;
 
 import io.cassandrareaper.core.DiagEventSubscription;
 
@@ -30,14 +30,14 @@ import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.google.common.base.Preconditions;
 
-public class EventsDao {
+public class CassEventsDao implements IEvents {
   PreparedStatement getDiagnosticEventsPrepStmt;
   PreparedStatement getDiagnosticEventPrepStmt;
   PreparedStatement deleteDiagnosticEventPrepStmt;
   PreparedStatement saveDiagnosticEventPrepStmt;
   private final Session session;
 
-  public EventsDao(Session session) {
+  public CassEventsDao(Session session) {
     this.session = session;
     prepareStatements();
   }
@@ -65,13 +65,14 @@ public class EventsDao {
   }
 
 
+  @Override
   public Collection<DiagEventSubscription> getEventSubscriptions() {
     return session.execute(getDiagnosticEventsPrepStmt.bind()).all().stream()
         .map((row) -> createDiagEventSubscription(row))
         .collect(Collectors.toList());
   }
 
-
+  @Override
   public Collection<DiagEventSubscription> getEventSubscriptions(String clusterName) {
     Preconditions.checkNotNull(clusterName);
 
@@ -81,7 +82,7 @@ public class EventsDao {
         .collect(Collectors.toList());
   }
 
-
+  @Override
   public DiagEventSubscription getEventSubscription(UUID id) {
     Row row = session.execute(getDiagnosticEventPrepStmt.bind(id)).one();
     if (null != row) {
@@ -90,7 +91,7 @@ public class EventsDao {
     throw new IllegalArgumentException("No event subscription with id " + id);
   }
 
-
+  @Override
   public DiagEventSubscription addEventSubscription(DiagEventSubscription subscription) {
     Preconditions.checkArgument(subscription.getId().isPresent());
 
@@ -107,7 +108,7 @@ public class EventsDao {
     return subscription;
   }
 
-
+  @Override
   public boolean deleteEventSubscription(UUID id) {
     session.execute(deleteDiagnosticEventPrepStmt.bind(id));
     return true;

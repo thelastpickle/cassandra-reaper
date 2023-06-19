@@ -23,7 +23,7 @@ import io.cassandrareaper.core.RepairUnit;
 import io.cassandrareaper.resources.view.RepairScheduleStatus;
 import io.cassandrareaper.service.TestRepairConfiguration;
 import io.cassandrareaper.storage.IStorage;
-import io.cassandrareaper.storage.MemoryStorage;
+import io.cassandrareaper.storage.MemoryStorageFacade;
 
 import java.net.URI;
 import java.util.Optional;
@@ -292,7 +292,7 @@ public class RepairScheduleResourceTest {
     MockObjects mockObjects = new MockObjects();
 
     AppContext context = new AppContext();
-    context.storage = new MemoryStorage();
+    context.storage = new MemoryStorageFacade();
     context.config = TestRepairConfiguration.defaultConfig();
     mockObjects.setContext(context);
 

@@ -46,7 +46,7 @@ public final class FixRepairSegmentTimestamps {
 
     Statement getRepairSegmentsPrepStmt
         = new SimpleStatement("SELECT id,segment_id,segment_state,segment_start_time,segment_end_time FROM repair_run")
-            .setConsistencyLevel(ConsistencyLevel.QUORUM);
+        .setConsistencyLevel(ConsistencyLevel.QUORUM);
 
     PreparedStatement updateRepairSegmentPrepStmt = session
         .prepare("INSERT INTO repair_run (id,segment_id,segment_start_time,segment_end_time)  VALUES(?, ?, ?, ?)")

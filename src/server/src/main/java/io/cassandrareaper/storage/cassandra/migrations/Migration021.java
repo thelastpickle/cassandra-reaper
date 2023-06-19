@@ -49,17 +49,17 @@ public final class Migration021 {
         if (!isUsingTwcs(session, keyspace)) {
           LOG.info("Altering {} to use TWCS...", METRICS_V1_TABLE);
           session.execute(
-                  "ALTER TABLE " + METRICS_V1_TABLE + " WITH compaction = {'class': 'TimeWindowCompactionStrategy', "
-                      + "'unchecked_tombstone_compaction': 'true', "
-                      + "'compaction_window_size': '2', "
-                      + "'compaction_window_unit': 'MINUTES'}");
+              "ALTER TABLE " + METRICS_V1_TABLE + " WITH compaction = {'class': 'TimeWindowCompactionStrategy', "
+                  + "'unchecked_tombstone_compaction': 'true', "
+                  + "'compaction_window_size': '2', "
+                  + "'compaction_window_unit': 'MINUTES'}");
 
           LOG.info("Altering {} to use TWCS...", OPERATIONS_TABLE);
           session.execute(
-                  "ALTER TABLE " + OPERATIONS_TABLE + " WITH compaction = {'class': 'TimeWindowCompactionStrategy', "
-                      + "'unchecked_tombstone_compaction': 'true', "
-                      + "'compaction_window_size': '30', "
-                      + "'compaction_window_unit': 'MINUTES'}");
+              "ALTER TABLE " + OPERATIONS_TABLE + " WITH compaction = {'class': 'TimeWindowCompactionStrategy', "
+                  + "'unchecked_tombstone_compaction': 'true', "
+                  + "'compaction_window_size': '30', "
+                  + "'compaction_window_unit': 'MINUTES'}");
 
           LOG.info("{} was successfully altered to use TWCS.", OPERATIONS_TABLE);
         }

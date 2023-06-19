@@ -40,6 +40,15 @@ import io.cassandrareaper.storage.IDistributedStorage;
 import io.cassandrareaper.storage.IStorage;
 import io.cassandrareaper.storage.OpType;
 import io.cassandrareaper.storage.cassandra.codecs.DateTimeCodec;
+import io.cassandrareaper.storage.cluster.CassClusterDao;
+import io.cassandrareaper.storage.events.CassEventsDao;
+import io.cassandrareaper.storage.metrics.CassMetricsDao;
+import io.cassandrareaper.storage.repairrun.CassRepairRunDao;
+import io.cassandrareaper.storage.repairrun.IRepairRun;
+import io.cassandrareaper.storage.repairschedule.CassRepairScheduleDao;
+import io.cassandrareaper.storage.repairsegment.CassRepairSegmentDao;
+import io.cassandrareaper.storage.repairunit.CassRepairUnitDao;
+import io.cassandrareaper.storage.snapshot.CassSnapshotDao;
 
 import java.io.IOException;
 import java.util.Collection;
@@ -50,7 +59,6 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Collectors;
 
 import com.datastax.driver.core.CodecRegistry;
 import com.datastax.driver.core.ConsistencyLevel;
@@ -59,7 +67,6 @@ import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.QueryLogger;
 import com.datastax.driver.core.QueryOptions;
 import com.datastax.driver.core.ResultSet;
-import com.datastax.driver.core.ResultSetFuture;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.Statement;
@@ -70,7 +77,6 @@ import com.datastax.driver.core.policies.DefaultRetryPolicy;
 import com.datastax.driver.core.policies.RetryPolicy;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Lists;
 import io.dropwizard.setup.Environment;
 import io.dropwizard.util.Duration;
 import org.joda.time.DateTime;
@@ -81,30 +87,30 @@ import systems.composable.dropwizard.cassandra.pooling.PoolingOptionsFactory;
 import systems.composable.dropwizard.cassandra.retry.RetryPolicyFactory;
 
 
-public final class CassandraStorage implements IStorage, IDistributedStorage {
-  private static final Logger LOG = LoggerFactory.getLogger(CassandraStorage.class);
+public final class CassandraStorageFacade implements IStorage, IDistributedStorage, IRepairRun {
+  private static final Logger LOG = LoggerFactory.getLogger(CassandraStorageFacade.class);
   private static final AtomicBoolean UNINITIALISED = new AtomicBoolean(true);
-  public final RepairSegmentDao repairSegmentDao;
+  public final CassRepairSegmentDao cassRepairSegmentDao;
   public final int defaultTimeout;
   final VersionNumber version;
   final UUID reaperInstanceId;
   private final com.datastax.driver.core.Cluster cassandra;
   private final Session session;
   private final ObjectMapper objectMapper = new ObjectMapper();
-  private final RepairRunDao repairRunDao;
+  private final CassRepairRunDao cassRepairRunDao;
   private PreparedStatement saveHeartbeatPrepStmt;
   private PreparedStatement deleteHeartbeatPrepStmt;
 
-  private final RepairUnitDao repairUnitDao;
-  private final RepairScheduleDao repairScheduleDao;
-  private final ClusterDao clusterDao;
-  private final EventsDao eventsDao;
-  private final MetricsDao metricsDao;
+  private final CassRepairUnitDao cassRepairUnitDao;
+  private final CassRepairScheduleDao cassRepairScheduleDao;
+  private final CassClusterDao cassClusterDao;
+  private final CassEventsDao cassEventsDao;
+  private final CassMetricsDao cassMetricsDao;
   private final Concurrency concurrency;
-  private final SnapshotDao snapshotDao;
+  private final CassSnapshotDao cassSnapshotDao;
   private final OperationsDao operationsDao;
 
-  public CassandraStorage(
+  public CassandraStorageFacade(
       UUID reaperInstanceId,
       ReaperApplicationConfiguration config,
       Environment environment,
@@ -119,7 +125,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
 
     // https://docs.datastax.com/en/developer/java-driver/3.5/manual/metrics/#metrics-4-compatibility
     cassandraFactory.setJmxEnabled(false);
-    if (!CassandraStorage.UNINITIALISED.compareAndSet(true, false)) {
+    if (!CassandraStorageFacade.UNINITIALISED.compareAndSet(true, false)) {
       // If there's been a past connection attempt, metrics are already registered
       cassandraFactory.setMetricsEnabled(false);
     }
@@ -147,16 +153,25 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
       MigrationManager.initializeAndUpgradeSchema(cassandra, session, config, version, mode);
     }
 
-    this.eventsDao =  new EventsDao(session);
-    this.metricsDao  = new MetricsDao(session);
-    this.snapshotDao = new SnapshotDao(session);
-    this.operationsDao  = new OperationsDao(session);
+    this.cassEventsDao = new CassEventsDao(session);
+    this.cassMetricsDao = new CassMetricsDao(session);
+    this.cassSnapshotDao = new CassSnapshotDao(session);
+    this.operationsDao = new OperationsDao(session);
     this.concurrency = new Concurrency(version, reaperInstanceId, session);
-    this.repairUnitDao  = new RepairUnitDao(defaultTimeout, session);
-    this.repairSegmentDao = new RepairSegmentDao(concurrency, repairUnitDao, session);
-    this.repairScheduleDao = new RepairScheduleDao(repairUnitDao, session);
-    this.clusterDao  = new ClusterDao(repairScheduleDao, repairUnitDao, eventsDao, session, objectMapper);
-    this.repairRunDao =  new RepairRunDao(repairUnitDao, clusterDao, repairSegmentDao, session);
+    this.cassRepairUnitDao = new CassRepairUnitDao(defaultTimeout, session);
+    this.cassRepairSegmentDao = new CassRepairSegmentDao(concurrency, cassRepairUnitDao, session);
+    this.cassRepairScheduleDao = new CassRepairScheduleDao(cassRepairUnitDao, session);
+    this.cassClusterDao = new CassClusterDao(cassRepairScheduleDao,
+          cassRepairUnitDao,
+          cassEventsDao,
+          session,
+          objectMapper);
+    this.cassRepairRunDao = new CassRepairRunDao(
+          cassRepairUnitDao,
+          cassClusterDao,
+          cassRepairSegmentDao,
+          session,
+          objectMapper);
     prepareStatements();
   }
 
@@ -171,8 +186,8 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
     }
     cassandraFactory.setQueryOptions(java.util.Optional.of(
         new QueryOptions()
-          .setConsistencyLevel(requiredCl)
-          .setDefaultIdempotence(true)));
+            .setConsistencyLevel(requiredCl)
+            .setDefaultIdempotence(true)));
   }
 
   private static void overrideRetryPolicy(CassandraFactory cassandraFactory) {
@@ -203,7 +218,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   }
 
   private static boolean withinRange(RepairSegment segment, Optional<RingRange> range) {
-    return !range.isPresent() || RepairSegmentDao.segmentIsWithinRange(segment, range.get());
+    return !range.isPresent() || CassRepairSegmentDao.segmentIsWithinRange(segment, range.get());
   }
 
   private void prepareStatements() {
@@ -227,172 +242,156 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   @Override
   public Collection<Cluster> getClusters() {
     // cache the clusters list for ten seconds
-    return clusterDao.getClusters();
+    return cassClusterDao.getClusters();
   }
 
   @Override
   public boolean addCluster(Cluster cluster) {
-    return clusterDao.addCluster(cluster);
+    return cassClusterDao.addCluster(cluster);
   }
 
   @Override
   public boolean updateCluster(Cluster newCluster) {
-    return clusterDao.updateCluster(newCluster);
+    return cassClusterDao.updateCluster(newCluster);
   }
 
   private boolean addClusterAssertions(Cluster cluster) {
 
-    return clusterDao.addClusterAssertions(cluster);
+    return cassClusterDao.addClusterAssertions(cluster);
   }
 
   @Override
   public Cluster getCluster(String clusterName) {
-    return clusterDao.getCluster(clusterName);
+    return cassClusterDao.getCluster(clusterName);
   }
 
   private Cluster parseCluster(Row row) throws IOException {
 
-    return clusterDao.parseCluster(row);
+    return cassClusterDao.parseCluster(row);
   }
 
   @Override
   public Cluster deleteCluster(String clusterName) {
 
-    return clusterDao.deleteCluster(clusterName);
+    return cassClusterDao.deleteCluster(clusterName);
   }
 
   @Override
   public RepairRun addRepairRun(Builder repairRun, Collection<RepairSegment.Builder> newSegments) {
 
-    return repairRunDao.addRepairRun(repairRun, newSegments, objectMapper);
+    return cassRepairRunDao.addRepairRun(repairRun, newSegments);
   }
 
   @Override
   public boolean updateRepairRun(RepairRun repairRun) {
-    return repairRunDao.updateRepairRun(repairRun);
+    return cassRepairRunDao.updateRepairRun(repairRun);
   }
 
   @Override
   public boolean updateRepairRun(RepairRun repairRun, Optional<Boolean> updateRepairState) {
 
-    return repairRunDao.updateRepairRun(repairRun, updateRepairState);
+    return cassRepairRunDao.updateRepairRun(repairRun, updateRepairState);
   }
 
   @Override
   public Optional<RepairRun> getRepairRun(UUID id) {
-    return repairRunDao.getRepairRun(id);
+    return cassRepairRunDao.getRepairRun(id);
   }
 
   @Override
   public Collection<RepairRun> getRepairRunsForCluster(String clusterName, Optional<Integer> limit) {
 
-    return repairRunDao.getRepairRunsForCluster(clusterName, limit);
+    return cassRepairRunDao.getRepairRunsForCluster(clusterName, limit);
   }
 
   @Override
   public List<RepairRun> getRepairRunsForClusterPrioritiseRunning(String clusterName, Optional<Integer> limit) {
-    return repairRunDao.getRepairRunsForClusterPrioritiseRunning(clusterName, limit);
+    return cassRepairRunDao.getRepairRunsForClusterPrioritiseRunning(clusterName, limit);
   }
 
   @Override
   public int getSegmentAmountForRepairRun(UUID runId) {
-    return repairSegmentDao.getSegmentAmountForRepairRun(runId);
+    return cassRepairSegmentDao.getSegmentAmountForRepairRun(runId);
   }
 
   @Override
   public int getSegmentAmountForRepairRunWithState(UUID runId, RepairSegment.State state) {
-    return repairSegmentDao.getSegmentAmountForRepairRunWithState(runId, state);
+    return cassRepairSegmentDao.getSegmentAmountForRepairRunWithState(runId, state);
   }
 
   @Override
   public Collection<RepairRun> getRepairRunsForUnit(UUID repairUnitId) {
 
-    return repairRunDao.getRepairRunsForUnit(repairUnitId);
+    return cassRepairRunDao.getRepairRunsForUnit(repairUnitId);
   }
 
   /**
    * Create a collection of RepairRun objects out of a list of ResultSetFuture. Used to handle async queries on the
    * repair_run table with a list of ids.
    */
-  private Collection<RepairRun> getRepairRunsAsync(List<ResultSetFuture> repairRunFutures) {
-
-    return repairRunDao.getRepairRunsAsync(repairRunFutures);
-  }
-
   @Override
   public Collection<RepairRun> getRepairRunsWithState(RunState runState) {
 
-    return repairRunDao.getRepairRunsWithState(runState);
-  }
-
-  private Collection<? extends RepairRun> getRepairRunsWithStateForCluster(
-      Collection<UUID> clusterRepairRunsId,
-      RunState runState) {
-
-    return repairRunDao.getRepairRunsWithStateForCluster(clusterRepairRunsId, runState);
+    return cassRepairRunDao.getRepairRunsWithState(runState);
   }
 
   @Override
   public Optional<RepairRun> deleteRepairRun(UUID id) {
-    return repairRunDao.deleteRepairRun(id);
+    return cassRepairRunDao.deleteRepairRun(id);
   }
 
   @Override
   public RepairUnit addRepairUnit(RepairUnit.Builder newRepairUnit) {
 
-    return repairUnitDao.addRepairUnit(newRepairUnit);
+    return cassRepairUnitDao.addRepairUnit(newRepairUnit);
   }
 
   @Override
   public void updateRepairUnit(RepairUnit updatedRepairUnit) {
-    repairUnitDao.updateRepairUnit(updatedRepairUnit);
-  }
-
-  private RepairUnit getRepairUnitImpl(UUID id) {
-    return repairUnitDao.getRepairUnitImpl(id);
+    cassRepairUnitDao.updateRepairUnit(updatedRepairUnit);
   }
 
   @Override
   public RepairUnit getRepairUnit(UUID id) {
-    return repairUnitDao.getRepairUnit(id);
+    return cassRepairUnitDao.getRepairUnit(id);
   }
 
   @Override
   public Optional<RepairUnit> getRepairUnit(RepairUnit.Builder params) {
     // brute force again
 
-    return repairUnitDao.getRepairUnit(params);
+    return cassRepairUnitDao.getRepairUnit(params);
   }
 
   @Override
   public boolean updateRepairSegment(RepairSegment segment) {
 
-    return repairSegmentDao.updateRepairSegment(segment);
+    return cassRepairSegmentDao.updateRepairSegment(segment);
   }
 
   @Override
   public boolean updateRepairSegmentUnsafe(RepairSegment segment) {
 
-    return repairSegmentDao.updateRepairSegmentUnsafe(segment);
+    return cassRepairSegmentDao.updateRepairSegmentUnsafe(segment);
   }
 
   @Override
   public Optional<RepairSegment> getRepairSegment(UUID runId, UUID segmentId) {
 
-    return repairSegmentDao.getRepairSegment(runId, segmentId);
+    return cassRepairSegmentDao.getRepairSegment(runId, segmentId);
   }
 
   @Override
   public Collection<RepairSegment> getRepairSegmentsForRun(UUID runId) {
     // First gather segments ids
 
-    return repairSegmentDao.getRepairSegmentsForRun(runId);
+    return cassRepairSegmentDao.getRepairSegmentsForRun(runId);
   }
 
   @Override
   public List<RepairSegment> getNextFreeSegments(UUID runId) {
 
-    return repairSegmentDao.getNextFreeSegments(runId);
+    return cassRepairSegmentDao.getNextFreeSegments(runId);
   }
 
   @Override
@@ -400,124 +399,95 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
       UUID runId,
       List<RingRange> ranges) {
 
-    return repairSegmentDao.getNextFreeSegmentsForRanges(runId, ranges);
+    return cassRepairSegmentDao.getNextFreeSegmentsForRanges(runId, ranges);
   }
 
   private boolean segmentIsWithinRanges(RepairSegment seg, List<RingRange> ranges) {
 
-    return repairSegmentDao.segmentIsWithinRanges(seg, ranges);
+    return cassRepairSegmentDao.segmentIsWithinRanges(seg, ranges);
   }
 
   private boolean segmentIsCandidate(RepairSegment seg, Set<String> lockedNodes) {
-    return repairSegmentDao.segmentIsCandidate(seg, lockedNodes);
+    return cassRepairSegmentDao.segmentIsCandidate(seg, lockedNodes);
   }
 
   @Override
   public Collection<RepairSegment> getSegmentsWithState(UUID runId, State segmentState) {
 
-    return repairSegmentDao.getSegmentsWithState(runId, segmentState);
+    return cassRepairSegmentDao.getSegmentsWithState(runId, segmentState);
   }
 
   @Override
   public SortedSet<UUID> getRepairRunIdsForCluster(String clusterName, Optional<Integer> limit) {
 
-    return repairRunDao.getRepairRunIdsForCluster(clusterName, limit);
-  }
-
-  private SortedSet<UUID> getRepairRunIdsForClusterWithState(String clusterName, RunState runState) {
-
-
-    return repairRunDao.getRepairRunIdsForClusterWithState(clusterName, runState);
+    return cassRepairRunDao.getRepairRunIdsForCluster(clusterName, limit);
   }
 
   @Override
   public RepairSchedule addRepairSchedule(io.cassandrareaper.core.RepairSchedule.Builder repairSchedule) {
 
-    return repairScheduleDao.addRepairSchedule(repairSchedule);
+    return cassRepairScheduleDao.addRepairSchedule(repairSchedule);
   }
 
   @Override
   public Optional<RepairSchedule> getRepairSchedule(UUID repairScheduleId) {
 
-    return repairScheduleDao.getRepairSchedule(repairScheduleId);
-  }
-
-  private RepairSchedule createRepairScheduleFromRow(Row repairScheduleRow) {
-    return repairScheduleDao.createRepairScheduleFromRow(repairScheduleRow);
+    return cassRepairScheduleDao.getRepairSchedule(repairScheduleId);
   }
 
   @Override
   public Collection<RepairSchedule> getRepairSchedulesForCluster(String clusterName) {
 
-    return repairScheduleDao.getRepairSchedulesForCluster(clusterName);
+    return cassRepairScheduleDao.getRepairSchedulesForCluster(clusterName);
   }
 
   @Override
   public Collection<RepairSchedule> getRepairSchedulesForCluster(String clusterName, boolean incremental) {
-    return repairScheduleDao.getRepairSchedulesForCluster(clusterName, incremental);
+    return cassRepairScheduleDao.getRepairSchedulesForCluster(clusterName, incremental);
   }
 
   @Override
   public Collection<RepairSchedule> getRepairSchedulesForKeyspace(String keyspaceName) {
 
-    return repairScheduleDao.getRepairSchedulesForKeyspace(keyspaceName);
+    return cassRepairScheduleDao.getRepairSchedulesForKeyspace(keyspaceName);
   }
 
   @Override
   public Collection<RepairSchedule> getRepairSchedulesForClusterAndKeyspace(String clusterName, String keyspaceName) {
 
-    return repairScheduleDao.getRepairSchedulesForClusterAndKeyspace(clusterName, keyspaceName);
+    return cassRepairScheduleDao.getRepairSchedulesForClusterAndKeyspace(clusterName, keyspaceName);
   }
 
   @Override
   public Collection<RepairSchedule> getAllRepairSchedules() {
 
-    return repairScheduleDao.getAllRepairSchedules();
+    return cassRepairScheduleDao.getAllRepairSchedules();
   }
 
   @Override
   public boolean updateRepairSchedule(RepairSchedule newRepairSchedule) {
 
-    return repairScheduleDao.updateRepairSchedule(newRepairSchedule);
+    return cassRepairScheduleDao.updateRepairSchedule(newRepairSchedule);
   }
 
   @Override
   public Optional<RepairSchedule> deleteRepairSchedule(UUID id) {
 
-    return repairScheduleDao.deleteRepairSchedule(id);
+    return cassRepairScheduleDao.deleteRepairSchedule(id);
   }
 
   @Override
   public Collection<RepairRunStatus> getClusterRunStatuses(String clusterName, int limit) {
-    Collection<RepairRunStatus> repairRunStatuses = Lists.<RepairRunStatus>newArrayList();
-    Collection<RepairRun> repairRuns = repairRunDao.getRepairRunsForCluster(clusterName, Optional.of(limit));
-    for (RepairRun repairRun : repairRuns) {
-      Collection<RepairSegment> segments = repairSegmentDao.getRepairSegmentsForRun(repairRun.getId());
-      RepairUnit repairUnit = repairUnitDao.getRepairUnit(repairRun.getRepairUnitId());
-
-      int segmentsRepaired
-          = (int) segments.stream().filter(seg -> seg.getState().equals(RepairSegment.State.DONE)).count();
-
-      repairRunStatuses.add(new RepairRunStatus(repairRun, repairUnit, segmentsRepaired));
-    }
-
-    return repairRunStatuses;
+    return cassRepairRunDao.getClusterRunStatuses(clusterName, limit);
   }
 
   @Override
   public Collection<RepairScheduleStatus> getClusterScheduleStatuses(String clusterName) {
-    Collection<RepairSchedule> repairSchedules = repairScheduleDao.getRepairSchedulesForCluster(clusterName);
-
-    Collection<RepairScheduleStatus> repairScheduleStatuses = repairSchedules
-        .stream()
-        .map(sched -> new RepairScheduleStatus(sched, repairUnitDao.getRepairUnit(sched.getRepairUnitId())))
-        .collect(Collectors.toList());
-
-    return repairScheduleStatuses;
+    return cassRepairScheduleDao.getClusterScheduleStatuses(clusterName);
   }
 
   private RepairRun buildRepairRunFromRow(Row repairRunResult, UUID id) {
-    return repairRunDao.buildRepairRunFromRow(repairRunResult, id);
+    return cassRepairRunDao.buildRepairRunFromRow(repairRunResult, id);
   }
 
   @Override
@@ -580,46 +550,46 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
 
   @Override
   public Collection<DiagEventSubscription> getEventSubscriptions() {
-    return eventsDao.getEventSubscriptions();
+    return cassEventsDao.getEventSubscriptions();
   }
 
   @Override
   public Collection<DiagEventSubscription> getEventSubscriptions(String clusterName) {
 
-    return eventsDao.getEventSubscriptions(clusterName);
+    return cassEventsDao.getEventSubscriptions(clusterName);
   }
 
   @Override
   public DiagEventSubscription getEventSubscription(UUID id) {
-    return eventsDao.getEventSubscription(id);
+    return cassEventsDao.getEventSubscription(id);
   }
 
   @Override
   public DiagEventSubscription addEventSubscription(DiagEventSubscription subscription) {
 
-    return eventsDao.addEventSubscription(subscription);
+    return cassEventsDao.addEventSubscription(subscription);
   }
 
   @Override
   public boolean deleteEventSubscription(UUID id) {
-    return eventsDao.deleteEventSubscription(id);
+    return cassEventsDao.deleteEventSubscription(id);
   }
 
   @Override
   public boolean saveSnapshot(Snapshot snapshot) {
 
-    return snapshotDao.saveSnapshot(snapshot);
+    return cassSnapshotDao.saveSnapshot(snapshot);
   }
 
   @Override
   public boolean deleteSnapshot(Snapshot snapshot) {
-    return snapshotDao.deleteSnapshot(snapshot);
+    return cassSnapshotDao.deleteSnapshot(snapshot);
   }
 
   @Override
   public Snapshot getSnapshot(String clusterName, String snapshotName) {
 
-    return snapshotDao.getSnapshot(clusterName, snapshotName);
+    return cassSnapshotDao.getSnapshot(clusterName, snapshotName);
   }
 
   @Override
@@ -629,27 +599,28 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
       String metricDomain,
       String metricType,
       long since) {
-    return metricsDao.getMetrics(clusterName, host, metricDomain, metricType, since);
+    return cassMetricsDao.getMetrics(clusterName, host, metricDomain, metricType, since);
   }
 
   @Override
   public void storeMetrics(List<GenericMetric> metrics) {
 
-    metricsDao.storeMetrics(metrics);
+    cassMetricsDao.storeMetrics(metrics);
   }
 
   /**
    * Truncates a metric date time to the closest partition based on the definesd partition sizes
+   *
    * @param metricTime the time of the metric
    * @return the time truncated to the closest partition
    */
   private DateTime computeMetricsPartition(DateTime metricTime) {
-    return metricsDao.computeMetricsPartition(metricTime);
+    return cassMetricsDao.computeMetricsPartition(metricTime);
   }
 
   @Override
   public void purgeMetrics() {
-    metricsDao.purgeMetrics();
+    cassMetricsDao.purgeMetrics();
   }
 
   @Override
@@ -717,12 +688,12 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   @Override
   public List<PercentRepairedMetric> getPercentRepairedMetrics(String clusterName, UUID repairScheduleId, Long since) {
 
-    return metricsDao.getPercentRepairedMetrics(clusterName, repairScheduleId, since);
+    return cassMetricsDao.getPercentRepairedMetrics(clusterName, repairScheduleId, since);
   }
 
   @Override
   public void storePercentRepairedMetric(PercentRepairedMetric metric) {
-    metricsDao.storePercentRepairedMetric(metric);
+    cassMetricsDao.storePercentRepairedMetric(metric);
   }
 
   @Override
@@ -769,7 +740,8 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
       if (retry > 1) {
         try {
           Thread.sleep(100);
-        } catch (InterruptedException expected) { }
+        } catch (InterruptedException expected) {
+        }
       }
       return null != stmt && !Objects.equals(Boolean.FALSE, stmt.isIdempotent())
           ? retry < 10 ? RetryDecision.retry(cl) : RetryDecision.rethrow()
@@ -785,7 +757,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
         int received,
         int retry) {
 
-      Preconditions.checkState(WriteType.CAS != type ||  ConsistencyLevel.SERIAL == cl);
+      Preconditions.checkState(WriteType.CAS != type || ConsistencyLevel.SERIAL == cl);
 
       return null != stmt && !Objects.equals(Boolean.FALSE, stmt.isIdempotent())
           ? RetryDecision.retry(cl)
