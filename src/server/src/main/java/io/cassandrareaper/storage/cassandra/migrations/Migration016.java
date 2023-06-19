@@ -31,7 +31,7 @@ public final class Migration016 {
 
   /**
    * if Cassandra is running version less than 4.0
-   *  alter every table to set `dclocal_read_repair_chance` to zero
+   * alter every table to set `dclocal_read_repair_chance` to zero
    */
   public static void migrate(Session session, String keyspace) {
 

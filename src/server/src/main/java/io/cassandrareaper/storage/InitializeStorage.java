@@ -18,7 +18,7 @@ package io.cassandrareaper.storage;
 
 import io.cassandrareaper.ReaperApplicationConfiguration;
 import io.cassandrareaper.ReaperException;
-import io.cassandrareaper.storage.cassandra.CassandraStorage;
+import io.cassandrareaper.storage.cassandra.CassandraStorageFacade;
 
 import java.util.UUID;
 
@@ -58,12 +58,12 @@ public final class InitializeStorage {
     LOG.info("Initializing the database and performing schema migrations");
 
     if ("memory".equalsIgnoreCase(config.getStorageType())) {
-      storage = new MemoryStorage();
+      storage = new MemoryStorageFacade();
     } else if (Lists.newArrayList("cassandra", "astra").contains(config.getStorageType())) {
-      CassandraStorage.CassandraMode mode = config.getStorageType().equals("cassandra")
-          ? CassandraStorage.CassandraMode.CASSANDRA
-          : CassandraStorage.CassandraMode.ASTRA;
-      storage = new CassandraStorage(reaperInstanceId, config, environment, mode);
+      CassandraStorageFacade.CassandraMode mode = config.getStorageType().equals("cassandra")
+          ? CassandraStorageFacade.CassandraMode.CASSANDRA
+          : CassandraStorageFacade.CassandraMode.ASTRA;
+      storage = new CassandraStorageFacade(reaperInstanceId, config, environment, mode);
     } else {
       LOG.error("invalid storageType: {}", config.getStorageType());
       throw new ReaperException("invalid storage type: " + config.getStorageType());

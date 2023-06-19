@@ -37,8 +37,8 @@ import io.cassandrareaper.jmx.JmxProxyTest;
 import io.cassandrareaper.jmx.RepairStatusHandler;
 import io.cassandrareaper.storage.IDistributedStorage;
 import io.cassandrareaper.storage.IStorage;
-import io.cassandrareaper.storage.MemoryStorage;
-import io.cassandrareaper.storage.cassandra.CassandraStorage;
+import io.cassandrareaper.storage.MemoryStorageFacade;
+import io.cassandrareaper.storage.cassandra.CassandraStorageFacade;
 
 import java.io.IOException;
 import java.math.BigInteger;
@@ -140,7 +140,7 @@ public final class RepairRunnerTest {
     final double intensity = 0.5f;
     final int repairThreadCount = 1;
     final int segmentTimeout = 1;
-    final IStorage storage = new MemoryStorage();
+    final IStorage storage = new MemoryStorageFacade();
     storage.addCluster(cluster);
     RepairUnit cf = storage.addRepairUnit(
             RepairUnit.builder()
@@ -294,7 +294,7 @@ public final class RepairRunnerTest {
     final double intensity = 0.5f;
     final int repairThreadCount = 1;
     final int segmentTimeout = 1;
-    final IStorage storage = new MemoryStorage();
+    final IStorage storage = new MemoryStorageFacade();
     storage.addCluster(cluster);
     DateTimeUtils.setCurrentMillisFixed(timeRun);
     RepairUnit cf = storage.addRepairUnit(
@@ -449,7 +449,7 @@ public final class RepairRunnerTest {
     final int repairThreadCount = 1;
     final int segmentTimeout = 30;
     final List<BigInteger> tokens = THREE_TOKENS;
-    final IStorage storage = new MemoryStorage();
+    final IStorage storage = new MemoryStorageFacade();
     AppContext context = new AppContext();
     context.storage = storage;
     context.config = new ReaperApplicationConfiguration();
@@ -578,7 +578,7 @@ public final class RepairRunnerTest {
     final int repairThreadCount = 1;
     final int segmentTimeout = 30;
     final List<BigInteger> tokens = THREE_TOKENS;
-    final IStorage storage = new MemoryStorage();
+    final IStorage storage = new MemoryStorageFacade();
     AppContext context = new AppContext();
     context.storage = storage;
     context.config = new ReaperApplicationConfiguration();
@@ -837,7 +837,7 @@ public final class RepairRunnerTest {
     final int repairThreadCount = 1;
     final int segmentTimeout = 30;
     final List<BigInteger> tokens = THREE_TOKENS;
-    final IStorage storage = new MemoryStorage();
+    final IStorage storage = new MemoryStorageFacade();
     AppContext context = new AppContext();
     context.storage = storage;
     context.config = new ReaperApplicationConfiguration();
@@ -1035,7 +1035,7 @@ public final class RepairRunnerTest {
     final int repairThreadCount = 1;
     final int segmentTimeout = 30;
     final List<BigInteger> tokens = THREE_TOKENS;
-    final IStorage storage = new MemoryStorage();
+    final IStorage storage = new MemoryStorageFacade();
     AppContext context = new AppContext();
     context.storage = storage;
     context.config = new ReaperApplicationConfiguration();
@@ -1178,7 +1178,7 @@ public final class RepairRunnerTest {
     final int segmentTimeout = 30;
     final List<BigInteger> tokens = THREE_TOKENS;
     final AppContext context = new AppContext();
-    context.storage = Mockito.mock(CassandraStorage.class);
+    context.storage = Mockito.mock(CassandraStorageFacade.class);
     RepairUnit repairUnit = RepairUnit.builder()
           .clusterName(cluster.getName())
           .keyspaceName(ksName)
@@ -1198,8 +1198,8 @@ public final class RepairRunnerTest {
           .tables(TABLES).build(UUID.randomUUID());
 
     Mockito.when(((IDistributedStorage) context.storage).countRunningReapers()).thenReturn(1);
-    Mockito.when(((CassandraStorage) context.storage).getRepairRun(any())).thenReturn(Optional.of(run));
-    Mockito.when(((CassandraStorage) context.storage).getRepairUnit(any(UUID.class))).thenReturn(repairUnit);
+    Mockito.when(((CassandraStorageFacade) context.storage).getRepairRun(any())).thenReturn(Optional.of(run));
+    Mockito.when(((CassandraStorageFacade) context.storage).getRepairUnit(any(UUID.class))).thenReturn(repairUnit);
 
     Mockito.when(context.storage.getCluster(any())).thenReturn(cluster);
     JmxConnectionFactory jmxConnectionFactory = mock(JmxConnectionFactory.class);
@@ -1248,7 +1248,7 @@ public final class RepairRunnerTest {
     final int repairThreadCount = 1;
     final int segmentTimeout = 30;
     final List<BigInteger> tokens = THREE_TOKENS;
-    final IStorage storage = new MemoryStorage();
+    final IStorage storage = new MemoryStorageFacade();
     AppContext context = new AppContext();
     context.storage = storage;
     context.config = new ReaperApplicationConfiguration();
@@ -1332,7 +1332,7 @@ public final class RepairRunnerTest {
     final int segmentTimeout = 30;
     final List<BigInteger> tokens = THREE_TOKENS;
     final AppContext context = new AppContext();
-    context.storage = Mockito.mock(CassandraStorage.class);
+    context.storage = Mockito.mock(CassandraStorageFacade.class);
     RepairUnit repairUnit = RepairUnit.builder()
           .clusterName(cluster.getName())
           .keyspaceName(ksName)
@@ -1366,10 +1366,10 @@ public final class RepairRunnerTest {
 
     List<RepairSegment> segments = generateRepairSegments(10, 0, 1, repairUnit.getId());
     Mockito.when(((IDistributedStorage) context.storage).countRunningReapers()).thenReturn(1);
-    Mockito.when(((CassandraStorage) context.storage).getRepairRun(any())).thenReturn(Optional.of(run));
-    Mockito.when(((CassandraStorage) context.storage).getRepairUnit(any(UUID.class))).thenReturn(repairUnit);
-    Mockito.when(((CassandraStorage) context.storage).getSegmentsWithState(any(), any())).thenReturn(segments);
-    Mockito.when((((CassandraStorage) context.storage).getRepairSchedulesForClusterAndKeyspace(any(), any())))
+    Mockito.when(((CassandraStorageFacade) context.storage).getRepairRun(any())).thenReturn(Optional.of(run));
+    Mockito.when(((CassandraStorageFacade) context.storage).getRepairUnit(any(UUID.class))).thenReturn(repairUnit);
+    Mockito.when(((CassandraStorageFacade) context.storage).getSegmentsWithState(any(), any())).thenReturn(segments);
+    Mockito.when((((CassandraStorageFacade) context.storage).getRepairSchedulesForClusterAndKeyspace(any(), any())))
         .thenReturn(schedules);
 
     Mockito.when(context.storage.getCluster(any())).thenReturn(cluster);
@@ -1417,7 +1417,7 @@ public final class RepairRunnerTest {
     final int segmentTimeout = 30;
     final List<BigInteger> tokens = THREE_TOKENS;
     final AppContext context = new AppContext();
-    context.storage = Mockito.mock(CassandraStorage.class);
+    context.storage = Mockito.mock(CassandraStorageFacade.class);
     RepairUnit repairUnit = RepairUnit.builder()
           .clusterName(cluster.getName())
           .keyspaceName(ksName)
@@ -1451,10 +1451,10 @@ public final class RepairRunnerTest {
 
     List<RepairSegment> segments = generateRepairSegments(100, 35, 10, repairUnit.getId());
     Mockito.when(((IDistributedStorage) context.storage).countRunningReapers()).thenReturn(1);
-    Mockito.when(((CassandraStorage) context.storage).getRepairRun(any())).thenReturn(Optional.of(run));
-    Mockito.when(((CassandraStorage) context.storage).getRepairUnit(any(UUID.class))).thenReturn(repairUnit);
-    Mockito.when(((CassandraStorage) context.storage).getSegmentsWithState(any(), any())).thenReturn(segments);
-    Mockito.when((((CassandraStorage) context.storage).getRepairSchedulesForClusterAndKeyspace(any(), any())))
+    Mockito.when(((CassandraStorageFacade) context.storage).getRepairRun(any())).thenReturn(Optional.of(run));
+    Mockito.when(((CassandraStorageFacade) context.storage).getRepairUnit(any(UUID.class))).thenReturn(repairUnit);
+    Mockito.when(((CassandraStorageFacade) context.storage).getSegmentsWithState(any(), any())).thenReturn(segments);
+    Mockito.when((((CassandraStorageFacade) context.storage).getRepairSchedulesForClusterAndKeyspace(any(), any())))
         .thenReturn(schedules);
 
     Mockito.when(context.storage.getCluster(any())).thenReturn(cluster);
@@ -1503,7 +1503,7 @@ public final class RepairRunnerTest {
     final int maxDuration = 10;
     final List<BigInteger> tokens = THREE_TOKENS;
     final AppContext context = new AppContext();
-    context.storage = Mockito.mock(CassandraStorage.class);
+    context.storage = Mockito.mock(CassandraStorageFacade.class);
     RepairUnit repairUnit = RepairUnit.builder()
           .clusterName(cluster.getName())
           .keyspaceName(ksName)
@@ -1537,10 +1537,10 @@ public final class RepairRunnerTest {
 
     List<RepairSegment> segments = generateRepairSegments(100, 10, maxDuration, repairUnit.getId());
     Mockito.when(((IDistributedStorage) context.storage).countRunningReapers()).thenReturn(1);
-    Mockito.when(((CassandraStorage) context.storage).getRepairRun(any())).thenReturn(Optional.of(run));
-    Mockito.when(((CassandraStorage) context.storage).getRepairUnit(any(UUID.class))).thenReturn(repairUnit);
-    Mockito.when(((CassandraStorage) context.storage).getSegmentsWithState(any(), any())).thenReturn(segments);
-    Mockito.when((((CassandraStorage) context.storage).getRepairSchedulesForClusterAndKeyspace(any(), any())))
+    Mockito.when(((CassandraStorageFacade) context.storage).getRepairRun(any())).thenReturn(Optional.of(run));
+    Mockito.when(((CassandraStorageFacade) context.storage).getRepairUnit(any(UUID.class))).thenReturn(repairUnit);
+    Mockito.when(((CassandraStorageFacade) context.storage).getSegmentsWithState(any(), any())).thenReturn(segments);
+    Mockito.when((((CassandraStorageFacade) context.storage).getRepairSchedulesForClusterAndKeyspace(any(), any())))
         .thenReturn(schedules);
 
     Mockito.when(context.storage.getCluster(any())).thenReturn(cluster);
@@ -1589,7 +1589,7 @@ public final class RepairRunnerTest {
     final int maxDuration = 10;
     final List<BigInteger> tokens = THREE_TOKENS;
     final AppContext context = new AppContext();
-    context.storage = Mockito.mock(CassandraStorage.class);
+    context.storage = Mockito.mock(CassandraStorageFacade.class);
     RepairUnit repairUnit = RepairUnit.builder()
           .clusterName(cluster.getName())
           .keyspaceName(ksName)
@@ -1611,9 +1611,9 @@ public final class RepairRunnerTest {
 
     List<RepairSegment> segments = generateRepairSegments(100, 30, maxDuration, repairUnit.getId());
     Mockito.when(((IDistributedStorage) context.storage).countRunningReapers()).thenReturn(1);
-    Mockito.when(((CassandraStorage) context.storage).getRepairRun(any())).thenReturn(Optional.of(run));
-    Mockito.when(((CassandraStorage) context.storage).getRepairUnit(any(UUID.class))).thenReturn(repairUnit);
-    Mockito.when(((CassandraStorage) context.storage).getSegmentsWithState(any(), any())).thenReturn(segments);
+    Mockito.when(((CassandraStorageFacade) context.storage).getRepairRun(any())).thenReturn(Optional.of(run));
+    Mockito.when(((CassandraStorageFacade) context.storage).getRepairUnit(any(UUID.class))).thenReturn(repairUnit);
+    Mockito.when(((CassandraStorageFacade) context.storage).getSegmentsWithState(any(), any())).thenReturn(segments);
 
     Mockito.when(context.storage.getCluster(any())).thenReturn(cluster);
     JmxConnectionFactory jmxConnectionFactory = mock(JmxConnectionFactory.class);
@@ -1681,7 +1681,7 @@ public final class RepairRunnerTest {
     final int segmentTimeout = 30;
     final int maxDuration = 10;
     final AppContext context = new AppContext();
-    context.storage = Mockito.mock(CassandraStorage.class);
+    context.storage = Mockito.mock(CassandraStorageFacade.class);
     context.config = new ReaperApplicationConfiguration();
     context.config.setMaxParallelRepairs(3);
     Mockito.when(context.storage.getCluster(any())).thenReturn(cluster);
@@ -1709,9 +1709,9 @@ public final class RepairRunnerTest {
 
     List<RepairSegment> segments = generateRepairSegments(100, 30, maxDuration, repairUnit.getId());
     Mockito.when(((IDistributedStorage) context.storage).countRunningReapers()).thenReturn(1);
-    Mockito.when(((CassandraStorage) context.storage).getRepairRun(any())).thenReturn(Optional.of(run));
-    Mockito.when(((CassandraStorage) context.storage).getRepairUnit(any(UUID.class))).thenReturn(repairUnit);
-    Mockito.when(((CassandraStorage) context.storage).getSegmentsWithState(any(), any())).thenReturn(segments);
+    Mockito.when(((CassandraStorageFacade) context.storage).getRepairRun(any())).thenReturn(Optional.of(run));
+    Mockito.when(((CassandraStorageFacade) context.storage).getRepairUnit(any(UUID.class))).thenReturn(repairUnit);
+    Mockito.when(((CassandraStorageFacade) context.storage).getSegmentsWithState(any(), any())).thenReturn(segments);
 
     List<UUID> runningRepairs = Lists.newArrayList();
     for (int i = 0; i < 3; i++) {
@@ -1744,7 +1744,7 @@ public final class RepairRunnerTest {
     final int segmentTimeout = 30;
     final int maxDuration = 10;
     final AppContext context = new AppContext();
-    context.storage = Mockito.mock(CassandraStorage.class);
+    context.storage = Mockito.mock(CassandraStorageFacade.class);
     context.config = new ReaperApplicationConfiguration();
     context.config.setMaxParallelRepairs(3);
     Mockito.when(context.storage.getCluster(any())).thenReturn(cluster);
@@ -1763,8 +1763,8 @@ public final class RepairRunnerTest {
 
     List<RepairSegment> segments = generateRepairSegments(100, 30, maxDuration, repairUnit.getId());
     Mockito.when(((IDistributedStorage) context.storage).countRunningReapers()).thenReturn(1);
-    Mockito.when(((CassandraStorage) context.storage).getRepairUnit(any(UUID.class))).thenReturn(repairUnit);
-    Mockito.when(((CassandraStorage) context.storage).getSegmentsWithState(any(), any())).thenReturn(segments);
+    Mockito.when(((CassandraStorageFacade) context.storage).getRepairUnit(any(UUID.class))).thenReturn(repairUnit);
+    Mockito.when(((CassandraStorageFacade) context.storage).getSegmentsWithState(any(), any())).thenReturn(segments);
 
     List<UUID> runningRepairs = Lists.newArrayList();
     for (int i = 0; i < 3; i++) {
@@ -1778,7 +1778,7 @@ public final class RepairRunnerTest {
           .repairParallelism(RepairParallelism.PARALLEL)
           .adaptiveSchedule(false)
           .tables(TABLES).build(unallowedRun);
-    Mockito.when(((CassandraStorage) context.storage).getRepairRun(any())).thenReturn(Optional.of(run));
+    Mockito.when(((CassandraStorageFacade) context.storage).getRepairRun(any())).thenReturn(Optional.of(run));
     runningRepairs.add(unallowedRun);
 
     ClusterFacade clusterFacade = mock(ClusterFacade.class);

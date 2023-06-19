@@ -161,11 +161,11 @@ public class Concurrency {
     }
   }
 
-  boolean hasLeadOnSegment(RepairSegment segment) {
+  public boolean hasLeadOnSegment(RepairSegment segment) {
     return renewRunningRepairsForNodes(segment.getRunId(), segment.getId(), segment.getReplicas().keySet());
   }
 
-  boolean hasLeadOnSegment(UUID leaderId) {
+  public boolean hasLeadOnSegment(UUID leaderId) {
     ResultSet lwtResult = session.execute(
         renewLeadPrepStmt.bind(
             LEAD_DURATION,

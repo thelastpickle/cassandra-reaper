@@ -16,10 +16,15 @@
  * limitations under the License.
  */
 
-package io.cassandrareaper.storage.cassandra;
+package io.cassandrareaper.storage.repairrun;
 
 import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairSegment;
+import io.cassandrareaper.core.RepairUnit;
+import io.cassandrareaper.resources.view.RepairRunStatus;
+import io.cassandrareaper.storage.cluster.CassClusterDao;
+import io.cassandrareaper.storage.repairsegment.CassRepairSegmentDao;
+import io.cassandrareaper.storage.repairunit.CassRepairUnitDao;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -50,9 +55,11 @@ import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class RepairRunDao {
-  private static final Logger LOG = LoggerFactory.getLogger(RepairRunDao.class);
+public class CassRepairRunDao implements IRepairRun {
+  private static final Logger LOG = LoggerFactory.getLogger(CassRepairRunDao.class);
   private static final int MAX_RETURNED_REPAIR_RUNS = 1000;
+
+  ObjectMapper objectMapper;
   PreparedStatement insertRepairRunPrepStmt;
   PreparedStatement insertRepairRunNoStatePrepStmt;
   PreparedStatement insertRepairRunClusterIndexPrepStmt;
@@ -65,20 +72,23 @@ public class RepairRunDao {
   PreparedStatement deleteRepairRunPrepStmt;
   PreparedStatement deleteRepairRunByClusterByIdPrepStmt;
   PreparedStatement deleteRepairRunByUnitPrepStmt;
-  private final RepairUnitDao repairUnitDao;
-  private final ClusterDao clusterDao;
+  private final CassRepairUnitDao cassRepairUnitDao;
+  private final CassClusterDao cassClusterDao;
 
-  private final RepairSegmentDao repairSegmentDao;
+  private final CassRepairSegmentDao cassRepairSegmentDao;
   private final Session session;
 
-  public RepairRunDao(RepairUnitDao repairUnitDao,
-                      ClusterDao clusterDao,
-                      RepairSegmentDao repairSegmentDao,
-                      Session session ) {
+
+  public CassRepairRunDao(CassRepairUnitDao cassRepairUnitDao,
+                          CassClusterDao cassClusterDao,
+                          CassRepairSegmentDao cassRepairSegmentDao,
+                          Session session,
+                          ObjectMapper objectMapper) {
     this.session = session;
-    this.repairSegmentDao = repairSegmentDao;
-    this.repairUnitDao = repairUnitDao;
-    this.clusterDao = clusterDao;
+    this.cassRepairSegmentDao = cassRepairSegmentDao;
+    this.cassRepairUnitDao = cassRepairUnitDao;
+    this.cassClusterDao = cassClusterDao;
+    this.objectMapper = objectMapper;
     prepareStatements();
   }
 
@@ -120,10 +130,10 @@ public class RepairRunDao {
         + "WHERE id = ? and repair_unit_id= ?");
   }
 
+  @Override
   public RepairRun addRepairRun(
       RepairRun.Builder repairRun,
-      Collection<RepairSegment.Builder> newSegments,
-      ObjectMapper objectMapper) {
+      Collection<RepairSegment.Builder> newSegments) {
     RepairRun newRepairRun = repairRun.build(UUIDs.timeBased());
     BatchStatement repairRunBatch = new BatchStatement(BatchStatement.Type.UNLOGGED);
     List<ResultSetFuture> futures = Lists.newArrayList();
@@ -161,7 +171,7 @@ public class RepairRunDao {
 
       if (isIncremental) {
         repairRunBatch.add(
-            repairSegmentDao.insertRepairSegmentIncrementalPrepStmt.bind(
+            cassRepairSegmentDao.insertRepairSegmentIncrementalPrepStmt.bind(
                 segment.getRunId(),
                 segment.getId(),
                 segment.getRepairUnitId(),
@@ -177,7 +187,7 @@ public class RepairRunDao {
       } else {
         try {
           repairRunBatch.add(
-              repairSegmentDao.insertRepairSegmentPrepStmt.bind(
+              cassRepairSegmentDao.insertRepairSegmentPrepStmt.bind(
                   segment.getRunId(),
                   segment.getId(),
                   segment.getRepairUnitId(),
@@ -204,7 +214,7 @@ public class RepairRunDao {
         nbRanges = 0;
       }
     }
-    assert repairUnitDao.getRepairUnit(newRepairRun.getRepairUnitId()).getIncrementalRepair() == isIncremental;
+    assert cassRepairUnitDao.getRepairUnit(newRepairRun.getRepairUnitId()).getIncrementalRepair() == isIncremental;
 
     futures.add(this.session.executeAsync(repairRunBatch));
     futures.add(
@@ -225,10 +235,12 @@ public class RepairRunDao {
     return newRepairRun;
   }
 
+  @Override
   public boolean updateRepairRun(RepairRun repairRun) {
     return updateRepairRun(repairRun, Optional.of(true));
   }
 
+  @Override
   public boolean updateRepairRun(RepairRun repairRun, Optional<Boolean> updateRepairState) {
     if (updateRepairState.orElse(true)) {
       BatchStatement updateRepairRunBatch = new BatchStatement(BatchStatement.Type.LOGGED);
@@ -277,6 +289,7 @@ public class RepairRunDao {
     return true;
   }
 
+  @Override
   public Optional<RepairRun> getRepairRun(UUID id) {
     RepairRun repairRun = null;
     Row repairRunResult = this.session.execute(getRepairRunPrepStmt.bind(id)).one();
@@ -316,6 +329,7 @@ public class RepairRunDao {
         .build(id);
   }
 
+  @Override
   public Collection<RepairRun> getRepairRunsForCluster(String clusterName, Optional<Integer> limit) {
     List<ResultSetFuture> repairRunFutures = Lists.<ResultSetFuture>newArrayList();
 
@@ -332,6 +346,7 @@ public class RepairRunDao {
     return getRepairRunsAsync(repairRunFutures);
   }
 
+  @Override
   public List<RepairRun> getRepairRunsForClusterPrioritiseRunning(String clusterName, Optional<Integer> limit) {
     List<ResultSetFuture> repairUuidFuturesByState = Lists.<ResultSetFuture>newArrayList();
     // We've set up the RunState enum so that values are declared in order of "interestingness",
@@ -359,8 +374,7 @@ public class RepairRunDao {
       idResSetFuture
           .getUninterruptibly()
           .forEach(
-              row -> flattenedUuids.add(row.getUUID("id"))
-        );
+              row -> flattenedUuids.add(row.getUUID("id")));
     }
     // Merge the two lists and trim.
     repairUuidFuturesNoState.getUninterruptibly().forEach(row -> {
@@ -392,7 +406,7 @@ public class RepairRunDao {
         ).collect(Collectors.toList());
   }
 
-
+  @Override
   public Collection<RepairRun> getRepairRunsForUnit(UUID repairUnitId) {
     List<ResultSetFuture> repairRunFutures = Lists.<ResultSetFuture>newArrayList();
 
@@ -411,7 +425,7 @@ public class RepairRunDao {
    * Create a collection of RepairRun objects out of a list of ResultSetFuture. Used to handle async queries on the
    * repair_run table with a list of ids.
    */
-  Collection<RepairRun> getRepairRunsAsync(List<ResultSetFuture> repairRunFutures) {
+  private Collection<RepairRun> getRepairRunsAsync(List<ResultSetFuture> repairRunFutures) {
     Collection<RepairRun> repairRuns = Lists.<RepairRun>newArrayList();
 
     for (ResultSetFuture repairRunFuture : repairRunFutures) {
@@ -426,10 +440,11 @@ public class RepairRunDao {
   }
 
 
+  @Override
   public Collection<RepairRun> getRepairRunsWithState(RepairRun.RunState runState) {
     Set<RepairRun> repairRunsWithState = Sets.newHashSet();
 
-    List<Collection<UUID>> repairRunIds = clusterDao.getClusters()
+    List<Collection<UUID>> repairRunIds = cassClusterDao.getClusters()
         .stream()
         // Grab all ids for the given cluster name
         .map(cluster -> getRepairRunIdsForClusterWithState(cluster.getName(), runState))
@@ -442,7 +457,7 @@ public class RepairRunDao {
     return repairRunsWithState;
   }
 
-  Collection<? extends RepairRun> getRepairRunsWithStateForCluster(
+  private Collection<? extends RepairRun> getRepairRunsWithStateForCluster(
       Collection<UUID> clusterRepairRunsId,
       RepairRun.RunState runState) {
 
@@ -464,6 +479,7 @@ public class RepairRunDao {
   }
 
 
+  @Override
   public Optional<RepairRun> deleteRepairRun(UUID id) {
     Optional<RepairRun> repairRun = getRepairRun(id);
     if (repairRun.isPresent()) {
@@ -475,6 +491,7 @@ public class RepairRunDao {
   }
 
   // Grab all ids for the given cluster name
+  @Override
   public SortedSet<UUID> getRepairRunIdsForCluster(String clusterName, Optional<Integer> limit) {
     SortedSet<UUID> repairRunIds = Sets.newTreeSet((u0, u1) -> (int) (u0.timestamp() - u1.timestamp()));
     ResultSet results = this.session.execute(getRepairRunForClusterPrepStmt.bind(clusterName, limit.orElse(
@@ -487,8 +504,7 @@ public class RepairRunDao {
     return repairRunIds;
   }
 
-
-  SortedSet<UUID> getRepairRunIdsForClusterWithState(String clusterName, RepairRun.RunState runState) {
+  private SortedSet<UUID> getRepairRunIdsForClusterWithState(String clusterName, RepairRun.RunState runState) {
     SortedSet<UUID> repairRunIds = Sets.newTreeSet((u0, u1) -> (int) (u0.timestamp() - u1.timestamp()));
     ResultSet results = this.session.execute(
         getRepairRunForClusterPrepStmt.bind(clusterName, MAX_RETURNED_REPAIR_RUNS)
@@ -504,4 +520,20 @@ public class RepairRunDao {
     return repairRunIds;
   }
 
+  @Override
+  public Collection<RepairRunStatus> getClusterRunStatuses(String clusterName, int limit) {
+    Collection<RepairRunStatus> repairRunStatuses = Lists.<RepairRunStatus>newArrayList();
+    Collection<RepairRun> repairRuns = getRepairRunsForCluster(clusterName, Optional.of(limit));
+    for (RepairRun repairRun : repairRuns) {
+      Collection<RepairSegment> segments = cassRepairSegmentDao.getRepairSegmentsForRun(repairRun.getId());
+      RepairUnit repairUnit = cassRepairUnitDao.getRepairUnit(repairRun.getRepairUnitId());
+
+      int segmentsRepaired
+            = (int) segments.stream().filter(seg -> seg.getState().equals(RepairSegment.State.DONE)).count();
+
+      repairRunStatuses.add(new RepairRunStatus(repairRun, repairUnit, segmentsRepaired));
+    }
+
+    return repairRunStatuses;
+  }
 }

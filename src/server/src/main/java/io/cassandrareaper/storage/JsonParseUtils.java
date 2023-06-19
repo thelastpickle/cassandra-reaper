@@ -42,6 +42,7 @@ public final class JsonParseUtils {
       = new ObjectMapper().readerFor(new TypeReference<List<RingRange>>() {});
   private static final ObjectReader MAP_READER
       = new ObjectMapper().readerFor(new TypeReference<Map<String, String>>() {});
+
   private static final ObjectWriter WRITER = new ObjectMapper().writer();
 
   private JsonParseUtils() {

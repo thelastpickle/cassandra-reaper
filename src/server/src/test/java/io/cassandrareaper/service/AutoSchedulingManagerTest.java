@@ -20,9 +20,7 @@ package io.cassandrareaper.service;
 import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
-import io.cassandrareaper.service.AutoSchedulingManager;
-import io.cassandrareaper.service.ClusterRepairScheduler;
-import io.cassandrareaper.storage.MemoryStorage;
+import io.cassandrareaper.storage.MemoryStorageFacade;
 
 import com.google.common.collect.ImmutableSet;
 import org.junit.Before;
@@ -53,7 +51,7 @@ public final class AutoSchedulingManagerTest {
   @Before
   public void setup() throws ReaperException {
     context = new AppContext();
-    context.storage = new MemoryStorage();
+    context.storage = new MemoryStorageFacade();
     context.config = TestRepairConfiguration.defaultConfig();
     clusterRepairScheduler = mock(ClusterRepairScheduler.class);
     repairAutoSchedulingManager = new AutoSchedulingManager(context, clusterRepairScheduler);

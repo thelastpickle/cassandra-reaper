@@ -28,7 +28,7 @@ import io.cassandrareaper.core.Segment;
 import io.cassandrareaper.jmx.ClusterFacade;
 import io.cassandrareaper.storage.IDistributedStorage;
 import io.cassandrareaper.storage.IStorage;
-import io.cassandrareaper.storage.cassandra.CassandraStorage;
+import io.cassandrareaper.storage.cassandra.CassandraStorageFacade;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -85,7 +85,7 @@ public final class RepairManagerTest {
     final int segmentTimeout = 30;
 
     // use CassandraStorage so we get both IStorage and IDistributedStorage
-    final IStorage storage = mock(CassandraStorage.class);
+    final IStorage storage = mock(CassandraStorageFacade.class);
 
     storage.addCluster(Cluster.builder().withName(clusterName).withSeedHosts(ImmutableSet.of("127.0.0.1")).build());
 
@@ -162,7 +162,7 @@ public final class RepairManagerTest {
     final int segmentTimeout = 30;
 
     // use CassandraStorage so we get both IStorage and IDistributedStorage
-    final IStorage storage = mock(CassandraStorage.class);
+    final IStorage storage = mock(CassandraStorageFacade.class);
 
     storage.addCluster(Cluster.builder().withName(clusterName).withSeedHosts(ImmutableSet.of("127.0.0.1")).build());
 
@@ -380,7 +380,7 @@ public final class RepairManagerTest {
 
     AppContext context = new AppContext();
     context.config = new ReaperApplicationConfiguration();
-    context.storage = mock(CassandraStorage.class);
+    context.storage = mock(CassandraStorageFacade.class);
 
     context.storage
         .addCluster(Cluster.builder().withName(clusterName).withSeedHosts(ImmutableSet.of("127.0.0.1")).build());
@@ -434,7 +434,7 @@ public final class RepairManagerTest {
   public void countRepairRunnersPerClusterTest() throws ReaperException, InterruptedException {
     AppContext context = new AppContext();
     context.config = new ReaperApplicationConfiguration();
-    context.storage = mock(CassandraStorage.class);
+    context.storage = mock(CassandraStorageFacade.class);
     doReturn(true).when(context.storage).updateRepairRun(any());
     ClusterFacade clusterFacade = mock(ClusterFacade.class);
     String cluster1 = "cluster1";

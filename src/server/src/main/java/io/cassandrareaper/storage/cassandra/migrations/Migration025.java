@@ -45,10 +45,10 @@ public final class Migration025 {
             "INSERT INTO " + V2_TABLE + "(cluster_name, id, repair_run_state) values (?, ?, ?)");
         LOG.info("Converting {} table...", V1_TABLE);
         ResultSet results = session.execute("SELECT * FROM " + V1_TABLE);
-        for (Row row:results) {
+        for (Row row : results) {
           ResultSet runResults = session.execute(
               "SELECT distinct state from repair_run where id = " + row.getUUID("id"));
-          for (Row runRow:runResults) {
+          for (Row runRow : runResults) {
             String state = runRow.getString("state");
             session.execute(v2_insert.bind(row.getString("cluster_name"), row.getUUID("id"), state));
           }

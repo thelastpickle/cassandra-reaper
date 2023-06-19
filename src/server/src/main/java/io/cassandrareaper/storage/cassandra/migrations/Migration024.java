@@ -48,10 +48,10 @@ public final class Migration024 {
         if (!isUsingTwcs(session, keyspace)) {
           LOG.info("Altering {} to use TWCS...", METRICS_V3_TABLE);
           session.execute(
-                  "ALTER TABLE " + METRICS_V3_TABLE + " WITH compaction = {'class': 'TimeWindowCompactionStrategy', "
-                      + "'unchecked_tombstone_compaction': 'true', "
-                      + "'compaction_window_size': '10', "
-                      + "'compaction_window_unit': 'MINUTES'}");
+              "ALTER TABLE " + METRICS_V3_TABLE + " WITH compaction = {'class': 'TimeWindowCompactionStrategy', "
+                  + "'unchecked_tombstone_compaction': 'true', "
+                  + "'compaction_window_size': '10', "
+                  + "'compaction_window_unit': 'MINUTES'}");
 
           LOG.info("{} was successfully altered to use TWCS.", METRICS_V3_TABLE);
 
