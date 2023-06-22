@@ -1,5 +1,11 @@
 ## Change Log
 
+### 3.3.2 (2023/06/22 06:31 +00:00)
+- [#1310](https://github.com/thelastpickle/cassandra-reaper/pull/1310) Add missing Astra migrations (#1310) (@adejanovski)
+- [#1306](https://github.com/thelastpickle/cassandra-reaper/pull/1306) Further storage refactoring (#1306) (@Miles-Garnsey)
+- [#1307](https://github.com/thelastpickle/cassandra-reaper/pull/1307) Fix issues when listing repair runs using state priorities (#1307) (@adejanovski)
+- [#1294](https://github.com/thelastpickle/cassandra-reaper/pull/1294) Refactor CassandraStorage (#1294) (@Miles-Garnsey)
+
 ### 3.3.1 (2023/04/05 08:43 +00:00)
 - [2b22d4b](https://github.com/thelastpickle/cassandra-reaper/commit/2b22d4b2811a000048a445719c31f68290ef68ff) Revert change in shiro.ini that would break UI auth (@adejanovski)
 
