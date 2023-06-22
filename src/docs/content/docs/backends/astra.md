@@ -18,11 +18,13 @@ cassandra:
   port: <cql port found in the secure bundle cqlshrc file>
   authProvider:
     type: plainText
-    username: reaper
-    password: ReaperOnAstraRocks
+    username: <client id>
+    password: <client secret>
   ssl:
     type: jdk
 ```
+
+Generate a token in the Astra UI and use the token client id as the username and the token client secret as the password (you will not need the token itself).
 
 The CQL port to connect to can be found in the `cqlshrc` file of Astra's secure connect bundle. The port found in `config.json` is the metadata port which cannot be used for CQL connections. 
 
