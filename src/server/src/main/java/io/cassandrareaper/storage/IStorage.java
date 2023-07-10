@@ -30,12 +30,14 @@ import io.dropwizard.lifecycle.Managed;
  * API definition for cassandra-reaper.
  */
 public interface IStorage extends Managed,
-      IRepairRun,
-      IRepairSegment,
-      IRepairUnit,
-      IRepairSchedule,
-      ICluster, IEvents, io.cassandrareaper.storage.snapshot.ISnapshot, io.cassandrareaper.storage.metrics.IMetrics {
+    IRepairRun,
+    IRepairSegment,
+    IRepairUnit,
+    IRepairSchedule,
+    ICluster, io.cassandrareaper.storage.snapshot.ISnapshot, io.cassandrareaper.storage.metrics.IMetrics {
 
   boolean isStorageConnected();
+
+  IEvents getEventsDao();
 
 }

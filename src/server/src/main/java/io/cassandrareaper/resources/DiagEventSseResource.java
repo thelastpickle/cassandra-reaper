@@ -20,10 +20,10 @@ package io.cassandrareaper.resources;
 import io.cassandrareaper.AppContext;
 import io.cassandrareaper.core.DiagEventSubscription;
 import io.cassandrareaper.service.DiagEventSubscriptionService;
+import io.cassandrareaper.storage.events.IEvents;
 
 import java.util.UUID;
 import java.util.concurrent.ScheduledExecutorService;
-
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
@@ -47,8 +47,11 @@ public final class DiagEventSseResource {
 
   private final DiagEventSubscriptionService diagEventService;
 
-  public DiagEventSseResource(AppContext context, HttpClient httpClient, ScheduledExecutorService executor) {
-    this.diagEventService = DiagEventSubscriptionService.create(context, httpClient, executor);
+  public DiagEventSseResource(AppContext context,
+                              HttpClient httpClient,
+                              ScheduledExecutorService executor,
+                              IEvents eventsDao) {
+    this.diagEventService = DiagEventSubscriptionService.create(context, httpClient, executor, eventsDao);
   }
 
   @GET

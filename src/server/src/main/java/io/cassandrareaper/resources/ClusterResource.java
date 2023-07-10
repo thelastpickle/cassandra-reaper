@@ -28,6 +28,7 @@ import io.cassandrareaper.jmx.ClusterFacade;
 import io.cassandrareaper.resources.view.ClusterStatus;
 import io.cassandrareaper.service.ClusterRepairScheduler;
 import io.cassandrareaper.service.RepairScheduleService;
+import io.cassandrareaper.storage.events.IEvents;
 
 import java.net.URI;
 import java.time.LocalDate;
@@ -39,7 +40,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-
 import javax.ws.rs.DELETE;
 import javax.ws.rs.FormParam;
 import javax.ws.rs.GET;
@@ -70,26 +70,70 @@ public final class ClusterResource {
   private static final Logger LOG = LoggerFactory.getLogger(ClusterResource.class);
 
   private final AppContext context;
+
+  private final IEvents eventsDao;
   private final ClusterRepairScheduler clusterRepairScheduler;
   private final ClusterFacade clusterFacade;
   private final Cryptograph cryptograph;
   private final RepairScheduleService repairScheduleService;
 
-  private ClusterResource(AppContext context, Cryptograph cryptograph, Supplier<ClusterFacade> clusterFacadeSupplier) {
+  private ClusterResource(AppContext context,
+                          Cryptograph cryptograph,
+                          Supplier<ClusterFacade> clusterFacadeSupplier,
+                          IEvents eventsDao) {
     this.context = context;
     this.clusterRepairScheduler = new ClusterRepairScheduler(context);
     this.clusterFacade = clusterFacadeSupplier.get();
     this.cryptograph = cryptograph;
     this.repairScheduleService = RepairScheduleService.create(context);
+    this.eventsDao = eventsDao;
   }
 
   @VisibleForTesting
-  static ClusterResource create(AppContext context, Cryptograph cryptograph, Supplier<ClusterFacade> supplier) {
-    return new ClusterResource(context, cryptograph, supplier);
+  static ClusterResource create(AppContext context,
+                                Cryptograph cryptograph,
+                                Supplier<ClusterFacade> supplier,
+                                IEvents eventsDao) {
+    return new ClusterResource(context, cryptograph, supplier, eventsDao);
   }
 
-  public static ClusterResource create(AppContext context, Cryptograph cryptograph) {
-    return new ClusterResource(context, cryptograph, () -> ClusterFacade.create(context));
+  public static ClusterResource create(AppContext context, Cryptograph cryptograph, IEvents eventsDao) {
+    return new ClusterResource(context, cryptograph, () -> ClusterFacade.create(context), eventsDao);
+  }
+
+  /*
+   * Creates a Set of seed hosts based on the comma delimited string passed
+   * as argument when adding a cluster.
+   */
+  static Set<String> parseSeedHosts(String seedHost) {
+    return Arrays.stream(seedHost.split(","))
+        .map(String::trim)
+        .map(host -> parseSeedHost(host))
+        .collect(Collectors.toSet());
+  }
+
+  /*
+   * Due to constraints with JMX credentials, we can get seed hosts
+   * with the cluster name attached, after a @ character.
+   */
+  static String parseSeedHost(String seedHost) {
+    return Iterables.get(Splitter.on('@').split(seedHost), 0);
+  }
+
+  /*
+   * To support different credentials for different clusters,
+   * we must allow to indicate the name of the cluster in the seed host address
+   * so that we can get credentials from the config yaml for that cluster.
+   * Seed host can take the following form : 127.0.0.1@my-cluster
+   */
+  static Optional<String> parseClusterNameFromSeedHost(String seedHost) {
+    if (seedHost.contains("@")) {
+      List<String> hosts = Arrays.stream(seedHost.split(",")).map(String::trim).collect(Collectors.toList());
+      if (!hosts.isEmpty()) {
+        return Optional.of(Iterables.get(Splitter.on('@').split(hosts.get(0)), 1));
+      }
+    }
+    return Optional.empty();
   }
 
   @GET
@@ -120,19 +164,19 @@ public final class ClusterResource {
       boolean jmxPasswordIsSet = false;
 
       Optional<JmxCredentials> jmxCredentials = context.jmxConnectionFactory
-              .getJmxCredentialsForCluster(Optional.ofNullable(cluster));
+          .getJmxCredentialsForCluster(Optional.ofNullable(cluster));
       if (jmxCredentials.isPresent()) {
         jmxUsername = StringUtils.trimToEmpty(jmxCredentials.get().getUsername());
         jmxPasswordIsSet = !StringUtils.isEmpty(jmxCredentials.get().getPassword());
       }
 
       ClusterStatus clusterStatus = new ClusterStatus(
-            cluster,
-            jmxUsername,
-            jmxPasswordIsSet,
-            context.storage.getClusterRunStatuses(cluster.getName(), limit.orElse(Integer.MAX_VALUE)),
-            context.storage.getClusterScheduleStatuses(cluster.getName()),
-            clusterFacade.getNodesStatus(cluster));
+          cluster,
+          jmxUsername,
+          jmxPasswordIsSet,
+          context.storage.getClusterRunStatuses(cluster.getName(), limit.orElse(Integer.MAX_VALUE)),
+          context.storage.getClusterScheduleStatuses(cluster.getName()),
+          clusterFacade.getNodesStatus(cluster));
 
       return Response.ok().entity(clusterStatus).build();
     } catch (IllegalArgumentException ignore) {
@@ -226,22 +270,22 @@ public final class ClusterResource {
 
     JmxCredentials jmxCredentials = null;
     if (jmxUsername.isPresent() && jmxPassword.isPresent()
-            && StringUtils.isNotBlank(jmxUsername.get()) && StringUtils.isNotBlank(jmxPassword.get())) {
+        && StringUtils.isNotBlank(jmxUsername.get()) && StringUtils.isNotBlank(jmxPassword.get())) {
       jmxCredentials = JmxCredentials.builder()
-              .withUsername(jmxUsername.get())
-              .withPassword(cryptograph.encrypt(jmxPassword.get()))
-              .build();
+          .withUsername(jmxUsername.get())
+          .withPassword(cryptograph.encrypt(jmxPassword.get()))
+          .build();
 
       if (jmxPassword.get().equals(jmxCredentials.getPassword())) {
         return Response
-                .status(Response.Status.BAD_REQUEST)
-                .entity("Unable to store JMX Credentials without first enabling encryption in the reaper configuration")
-                .build();
+            .status(Response.Status.BAD_REQUEST)
+            .entity("Unable to store JMX Credentials without first enabling encryption in the reaper configuration")
+            .build();
       }
     }
 
     final Optional<Cluster> cluster = findClusterWithSeedHost(seedHost.get(), jmxPort,
-            Optional.ofNullable(jmxCredentials));
+        Optional.ofNullable(jmxCredentials));
     if (!cluster.isPresent()) {
       return Response
           .status(Response.Status.BAD_REQUEST)
@@ -310,9 +354,9 @@ public final class ClusterResource {
     Set<String> seedHosts = parseSeedHosts(seedHost);
     try {
       Cluster.Builder clusterBuilder = Cluster.builder()
-              .withName(parseClusterNameFromSeedHost(seedHost).orElse(""))
-              .withSeedHosts(ImmutableSet.of(seedHost))
-              .withJmxPort(jmxPort.orElse(Cluster.DEFAULT_JMX_PORT));
+          .withName(parseClusterNameFromSeedHost(seedHost).orElse(""))
+          .withSeedHosts(ImmutableSet.of(seedHost))
+          .withJmxPort(jmxPort.orElse(Cluster.DEFAULT_JMX_PORT));
       jmxCredentials.ifPresent(clusterBuilder::withJmxCredentials);
       Cluster cluster = clusterBuilder.build();
 
@@ -326,12 +370,12 @@ public final class ClusterResource {
       LOG.debug("Cluster {}", seedHosts);
 
       clusterBuilder = Cluster.builder()
-              .withName(clusterName)
-              .withPartitioner(partitioner)
-              .withSeedHosts(seedHosts)
-              .withJmxPort(jmxPort.orElse(Cluster.DEFAULT_JMX_PORT))
-              .withState(Cluster.State.ACTIVE)
-              .withLastContact(LocalDate.now());
+          .withName(clusterName)
+          .withPartitioner(partitioner)
+          .withSeedHosts(seedHosts)
+          .withJmxPort(jmxPort.orElse(Cluster.DEFAULT_JMX_PORT))
+          .withState(Cluster.State.ACTIVE)
+          .withLastContact(LocalDate.now());
       jmxCredentials.ifPresent(clusterBuilder::withJmxCredentials);
       return Optional.of(clusterBuilder.build());
     } catch (ReaperException e) {
@@ -343,7 +387,7 @@ public final class ClusterResource {
   /**
    * Updates the list of nodes of a cluster based on the current topology.
    *
-   * @param cluster the Cluster object we intend to update
+   * @param cluster   the Cluster object we intend to update
    * @param seedHosts a list of hosts to connect to in the cluster
    * @return the updated cluster object with a refreshed seed list
    * @throws ReaperException failure to jmx connect/call to cluster
@@ -361,10 +405,10 @@ public final class ClusterResource {
 
       if (!cluster.getSeedHosts().equals(liveNodes)) {
         cluster = cluster.with()
-              .withSeedHosts(liveNodes)
-              .withState(Cluster.State.ACTIVE)
-              .withLastContact(LocalDate.now())
-              .build();
+            .withSeedHosts(liveNodes)
+            .withState(Cluster.State.ACTIVE)
+            .withLastContact(LocalDate.now())
+            .build();
 
         context.storage.updateCluster(cluster);
       }
@@ -400,7 +444,7 @@ public final class ClusterResource {
               .entity("cluster \"" + clusterName + "\" cannot be deleted, as it has repair runs")
               .build();
         }
-        if (!context.storage.getEventSubscriptions(clusterName).isEmpty()) {
+        if (!eventsDao.getEventSubscriptions(clusterName).isEmpty()) {
           return Response.status(Response.Status.CONFLICT)
               .entity("cluster \"" + clusterName + "\" cannot be deleted, as it has diagnostic events subscriptions")
               .build();
@@ -425,40 +469,5 @@ public final class ClusterResource {
           .entity("cluster \"" + clusterName + "\" not found")
           .build();
     }
-  }
-
-  /*
-   * Creates a Set of seed hosts based on the comma delimited string passed
-   * as argument when adding a cluster.
-   */
-  static Set<String> parseSeedHosts(String seedHost) {
-    return Arrays.stream(seedHost.split(","))
-        .map(String::trim)
-        .map(host -> parseSeedHost(host))
-        .collect(Collectors.toSet());
-  }
-
-  /*
-   * Due to constraints with JMX credentials, we can get seed hosts
-   * with the cluster name attached, after a @ character.
-   */
-  static String parseSeedHost(String seedHost) {
-    return Iterables.get(Splitter.on('@').split(seedHost), 0);
-  }
-
-  /*
-   * To support different credentials for different clusters,
-   * we must allow to indicate the name of the cluster in the seed host address
-   * so that we can get credentials from the config yaml for that cluster.
-   * Seed host can take the following form : 127.0.0.1@my-cluster
-   */
-  static Optional<String> parseClusterNameFromSeedHost(String seedHost) {
-    if (seedHost.contains("@")) {
-      List<String> hosts = Arrays.stream(seedHost.split(",")).map(String::trim).collect(Collectors.toList());
-      if (!hosts.isEmpty()) {
-        return Optional.of(Iterables.get(Splitter.on('@').split(hosts.get(0)), 1));
-      }
-    }
-    return Optional.empty();
   }
 }

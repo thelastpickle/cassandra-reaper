@@ -18,7 +18,6 @@
 package io.cassandrareaper.storage;
 
 import io.cassandrareaper.core.Cluster;
-import io.cassandrareaper.core.DiagEventSubscription;
 import io.cassandrareaper.core.PercentRepairedMetric;
 import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairSchedule;
@@ -28,6 +27,7 @@ import io.cassandrareaper.core.Snapshot;
 import io.cassandrareaper.resources.view.RepairRunStatus;
 import io.cassandrareaper.resources.view.RepairScheduleStatus;
 import io.cassandrareaper.storage.cluster.MemClusterDao;
+import io.cassandrareaper.storage.events.IEvents;
 import io.cassandrareaper.storage.events.MemEventsDao;
 import io.cassandrareaper.storage.metrics.MemMetricsDao;
 import io.cassandrareaper.storage.repairrun.MemRepairRunDao;
@@ -58,10 +58,10 @@ public final class MemoryStorageFacade implements IStorage {
   private final MemRepairScheduleDao memRepairScheduleDao = new MemRepairScheduleDao(memRepairUnitDao);
   private final MemEventsDao memEventsDao = new MemEventsDao();
   private final MemClusterDao memClusterDao = new MemClusterDao(
-        memRepairUnitDao,
-        memRepairRunDao,
-        memRepairScheduleDao,
-        memEventsDao
+      memRepairUnitDao,
+      memRepairRunDao,
+      memRepairScheduleDao,
+      memEventsDao
   );
   private final MemSnapshotDao memSnapshotDao = new MemSnapshotDao();
   private final MemMetricsDao memMetricsDao = new MemMetricsDao();
@@ -279,31 +279,6 @@ public final class MemoryStorageFacade implements IStorage {
   }
 
   @Override
-  public Collection<DiagEventSubscription> getEventSubscriptions() {
-    return memEventsDao.getEventSubscriptions();
-  }
-
-  @Override
-  public Collection<DiagEventSubscription> getEventSubscriptions(String clusterName) {
-    return memEventsDao.getEventSubscriptions(clusterName);
-  }
-
-  @Override
-  public DiagEventSubscription getEventSubscription(UUID id) {
-    return memEventsDao.getEventSubscription(id);
-  }
-
-  @Override
-  public DiagEventSubscription addEventSubscription(DiagEventSubscription subscription) {
-    return memEventsDao.addEventSubscription(subscription);
-  }
-
-  @Override
-  public boolean deleteEventSubscription(UUID id) {
-    return memEventsDao.deleteEventSubscription(id);
-  }
-
-  @Override
   public List<PercentRepairedMetric> getPercentRepairedMetrics(String clusterName, UUID repairScheduleId, Long since) {
     return memMetricsDao.getPercentRepairedMetrics(clusterName, repairScheduleId, since);
   }
@@ -321,5 +296,10 @@ public final class MemoryStorageFacade implements IStorage {
   @Override
   public void stop() {
     // no-op
+  }
+
+  @Override
+  public IEvents getEventsDao() {
+    return this.memEventsDao;
   }
 }

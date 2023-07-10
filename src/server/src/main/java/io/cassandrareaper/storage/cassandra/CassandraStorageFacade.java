@@ -22,7 +22,6 @@ import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperApplicationConfiguration;
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
-import io.cassandrareaper.core.DiagEventSubscription;
 import io.cassandrareaper.core.GenericMetric;
 import io.cassandrareaper.core.PercentRepairedMetric;
 import io.cassandrareaper.core.RepairRun;
@@ -42,6 +41,7 @@ import io.cassandrareaper.storage.OpType;
 import io.cassandrareaper.storage.cassandra.codecs.DateTimeCodec;
 import io.cassandrareaper.storage.cluster.CassClusterDao;
 import io.cassandrareaper.storage.events.CassEventsDao;
+import io.cassandrareaper.storage.events.IEvents;
 import io.cassandrareaper.storage.metrics.CassMetricsDao;
 import io.cassandrareaper.storage.repairrun.CassRepairRunDao;
 import io.cassandrareaper.storage.repairrun.IRepairRun;
@@ -98,9 +98,6 @@ public final class CassandraStorageFacade implements IStorage, IDistributedStora
   private final Session session;
   private final ObjectMapper objectMapper = new ObjectMapper();
   private final CassRepairRunDao cassRepairRunDao;
-  private PreparedStatement saveHeartbeatPrepStmt;
-  private PreparedStatement deleteHeartbeatPrepStmt;
-
   private final CassRepairUnitDao cassRepairUnitDao;
   private final CassRepairScheduleDao cassRepairScheduleDao;
   private final CassClusterDao cassClusterDao;
@@ -109,6 +106,8 @@ public final class CassandraStorageFacade implements IStorage, IDistributedStora
   private final Concurrency concurrency;
   private final CassSnapshotDao cassSnapshotDao;
   private final OperationsDao operationsDao;
+  private PreparedStatement saveHeartbeatPrepStmt;
+  private PreparedStatement deleteHeartbeatPrepStmt;
 
   public CassandraStorageFacade(
       UUID reaperInstanceId,
@@ -162,16 +161,16 @@ public final class CassandraStorageFacade implements IStorage, IDistributedStora
     this.cassRepairSegmentDao = new CassRepairSegmentDao(concurrency, cassRepairUnitDao, session);
     this.cassRepairScheduleDao = new CassRepairScheduleDao(cassRepairUnitDao, session);
     this.cassClusterDao = new CassClusterDao(cassRepairScheduleDao,
-          cassRepairUnitDao,
-          cassEventsDao,
-          session,
-          objectMapper);
+        cassRepairUnitDao,
+        cassEventsDao,
+        session,
+        objectMapper);
     this.cassRepairRunDao = new CassRepairRunDao(
-          cassRepairUnitDao,
-          cassClusterDao,
-          cassRepairSegmentDao,
-          session,
-          objectMapper);
+        cassRepairUnitDao,
+        cassClusterDao,
+        cassRepairSegmentDao,
+        session,
+        objectMapper);
     prepareStatements();
   }
 
@@ -549,33 +548,6 @@ public final class CassandraStorageFacade implements IStorage, IDistributedStora
   }
 
   @Override
-  public Collection<DiagEventSubscription> getEventSubscriptions() {
-    return cassEventsDao.getEventSubscriptions();
-  }
-
-  @Override
-  public Collection<DiagEventSubscription> getEventSubscriptions(String clusterName) {
-
-    return cassEventsDao.getEventSubscriptions(clusterName);
-  }
-
-  @Override
-  public DiagEventSubscription getEventSubscription(UUID id) {
-    return cassEventsDao.getEventSubscription(id);
-  }
-
-  @Override
-  public DiagEventSubscription addEventSubscription(DiagEventSubscription subscription) {
-
-    return cassEventsDao.addEventSubscription(subscription);
-  }
-
-  @Override
-  public boolean deleteEventSubscription(UUID id) {
-    return cassEventsDao.deleteEventSubscription(id);
-  }
-
-  @Override
   public boolean saveSnapshot(Snapshot snapshot) {
 
     return cassSnapshotDao.saveSnapshot(snapshot);
@@ -706,6 +678,11 @@ public final class CassandraStorageFacade implements IStorage, IDistributedStora
     // Statements executed when the server shuts down.
     LOG.info("Reaper is stopping, removing this instance from running reapers...");
     session.execute(deleteHeartbeatPrepStmt.bind(reaperInstanceId));
+  }
+
+  @Override
+  public IEvents getEventsDao() {
+    return this.cassEventsDao;
   }
 
   public enum CassandraMode {
