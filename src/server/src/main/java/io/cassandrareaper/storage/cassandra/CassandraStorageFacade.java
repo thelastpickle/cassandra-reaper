@@ -31,7 +31,6 @@ import io.cassandrareaper.core.RepairSchedule;
 import io.cassandrareaper.core.RepairSegment;
 import io.cassandrareaper.core.RepairSegment.State;
 import io.cassandrareaper.core.RepairUnit;
-import io.cassandrareaper.core.Snapshot;
 import io.cassandrareaper.resources.view.RepairRunStatus;
 import io.cassandrareaper.resources.view.RepairScheduleStatus;
 import io.cassandrareaper.service.RingRange;
@@ -49,6 +48,7 @@ import io.cassandrareaper.storage.repairschedule.CassRepairScheduleDao;
 import io.cassandrareaper.storage.repairsegment.CassRepairSegmentDao;
 import io.cassandrareaper.storage.repairunit.CassRepairUnitDao;
 import io.cassandrareaper.storage.snapshot.CassSnapshotDao;
+import io.cassandrareaper.storage.snapshot.ISnapshot;
 
 import java.io.IOException;
 import java.util.Collection;
@@ -548,23 +548,6 @@ public final class CassandraStorageFacade implements IStorage, IDistributedStora
   }
 
   @Override
-  public boolean saveSnapshot(Snapshot snapshot) {
-
-    return cassSnapshotDao.saveSnapshot(snapshot);
-  }
-
-  @Override
-  public boolean deleteSnapshot(Snapshot snapshot) {
-    return cassSnapshotDao.deleteSnapshot(snapshot);
-  }
-
-  @Override
-  public Snapshot getSnapshot(String clusterName, String snapshotName) {
-
-    return cassSnapshotDao.getSnapshot(clusterName, snapshotName);
-  }
-
-  @Override
   public List<GenericMetric> getMetrics(
       String clusterName,
       Optional<String> host,
@@ -683,6 +666,11 @@ public final class CassandraStorageFacade implements IStorage, IDistributedStora
   @Override
   public IEvents getEventsDao() {
     return this.cassEventsDao;
+  }
+
+  @Override
+  public ISnapshot getSnapshotDao() {
+    return this.cassSnapshotDao;
   }
 
   public enum CassandraMode {

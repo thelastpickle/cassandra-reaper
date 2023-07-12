@@ -221,7 +221,8 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
     environment.jersey().register(addRepairRunResource);
     final RepairScheduleResource addRepairScheduleResource = new RepairScheduleResource(context);
     environment.jersey().register(addRepairScheduleResource);
-    final SnapshotResource snapshotResource = new SnapshotResource(context, environment);
+    final SnapshotResource snapshotResource = new SnapshotResource(context, environment,
+        context.storage.getSnapshotDao());
     environment.jersey().register(snapshotResource);
     final ReaperResource reaperResource = new ReaperResource(context);
     environment.jersey().register(reaperResource);

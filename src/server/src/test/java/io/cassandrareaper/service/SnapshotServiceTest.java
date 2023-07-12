@@ -28,6 +28,7 @@ import io.cassandrareaper.jmx.JmxConnectionFactory;
 import io.cassandrareaper.jmx.JmxProxy;
 import io.cassandrareaper.jmx.JmxProxyTest;
 import io.cassandrareaper.storage.IStorage;
+import io.cassandrareaper.storage.snapshot.ISnapshot;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -67,8 +68,10 @@ public final class SnapshotServiceTest {
     cxt.jmxConnectionFactory = mock(JmxConnectionFactory.class);
     when(cxt.jmxConnectionFactory.connectAny(any(Collection.class))).thenReturn(proxy);
 
+    ISnapshot mockSnapshotDao = mock(ISnapshot.class);
+
     Pair<Node,String> result = SnapshotService
-        .create(cxt, SNAPSHOT_MANAGER_EXECUTOR)
+        .create(cxt, SNAPSHOT_MANAGER_EXECUTOR, mockSnapshotDao)
         .takeSnapshot("Test", Node.builder().withHostname("127.0.0.1").build());
 
     Assertions.assertThat(result.getLeft().getHostname()).isEqualTo("127.0.0.1");
@@ -89,9 +92,9 @@ public final class SnapshotServiceTest {
     cxt.jmxConnectionFactory = mock(JmxConnectionFactory.class);
     when(cxt.jmxConnectionFactory.connectAny(any(Collection.class))).thenReturn(proxy);
     Node host = Node.builder().withHostname("127.0.0.1").build();
-
+    ISnapshot mockSnapshotDao = mock(ISnapshot.class);
     Pair<Node,String> result = SnapshotService
-        .create(cxt, SNAPSHOT_MANAGER_EXECUTOR)
+        .create(cxt, SNAPSHOT_MANAGER_EXECUTOR, mockSnapshotDao)
         .takeSnapshot("Test", host, "keyspace1", "keyspace2");
 
     Assertions.assertThat(result.getLeft().getHostname()).isEqualTo("127.0.0.1");
@@ -114,9 +117,9 @@ public final class SnapshotServiceTest {
     HostConnectionCounters connectionCounters = mock(HostConnectionCounters.class);
     when(cxt.jmxConnectionFactory.connectAny(any(Collection.class))).thenReturn(proxy);
     when(cxt.jmxConnectionFactory.getHostConnectionCounters()).thenReturn(connectionCounters);
-
+    ISnapshot mockSnapshotDao = mock(ISnapshot.class);
     List<Snapshot> result = SnapshotService
-        .create(cxt, SNAPSHOT_MANAGER_EXECUTOR)
+        .create(cxt, SNAPSHOT_MANAGER_EXECUTOR, mockSnapshotDao)
         .listSnapshots(Node.builder().withHostname("127.0.0.1").build());
 
     Assertions.assertThat(result).isEmpty();
@@ -134,9 +137,9 @@ public final class SnapshotServiceTest {
     cxt.config = TestRepairConfiguration.defaultConfig();
     cxt.jmxConnectionFactory = mock(JmxConnectionFactory.class);
     when(cxt.jmxConnectionFactory.connectAny(any(Collection.class))).thenReturn(proxy);
-
+    ISnapshot mockSnapshotDao = mock(ISnapshot.class);
     SnapshotService
-        .create(cxt, SNAPSHOT_MANAGER_EXECUTOR)
+        .create(cxt, SNAPSHOT_MANAGER_EXECUTOR, mockSnapshotDao)
         .clearSnapshot("test", Node.builder().withHostname("127.0.0.1").build());
 
     verify(storageMBean, times(1)).clearSnapshot("test");
@@ -168,9 +171,10 @@ public final class SnapshotServiceTest {
         .build();
 
     when(cxt.storage.getCluster(anyString())).thenReturn(cluster);
+    ISnapshot mockSnapshotDao = mock(ISnapshot.class);
 
     SnapshotService
-        .create(cxt, SNAPSHOT_MANAGER_EXECUTOR, () -> clusterFacadeSpy)
+        .create(cxt, SNAPSHOT_MANAGER_EXECUTOR, () -> clusterFacadeSpy, mockSnapshotDao)
         .clearSnapshotClusterWide("snapshot", "testCluster");
 
     verify(storageMBean, times(2)).clearSnapshot("snapshot");
@@ -203,9 +207,10 @@ public final class SnapshotServiceTest {
         .build();
 
     when(cxt.storage.getCluster(anyString())).thenReturn(cluster);
+    ISnapshot mockSnapshotDao = mock(ISnapshot.class);
 
     List<Pair<Node,String>> result = SnapshotService
-        .create(cxt, SNAPSHOT_MANAGER_EXECUTOR, () -> clusterFacadeSpy)
+        .create(cxt, SNAPSHOT_MANAGER_EXECUTOR, () -> clusterFacadeSpy, mockSnapshotDao)
         .takeSnapshotClusterWide("snapshot", "testCluster", "testOwner", "testCause");
 
     Assertions.assertThat(result.size()).isEqualTo(3);

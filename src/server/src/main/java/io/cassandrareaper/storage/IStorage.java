@@ -19,10 +19,12 @@ package io.cassandrareaper.storage;
 
 import io.cassandrareaper.storage.cluster.ICluster;
 import io.cassandrareaper.storage.events.IEvents;
+import io.cassandrareaper.storage.metrics.IMetrics;
 import io.cassandrareaper.storage.repairrun.IRepairRun;
 import io.cassandrareaper.storage.repairschedule.IRepairSchedule;
 import io.cassandrareaper.storage.repairsegment.IRepairSegment;
 import io.cassandrareaper.storage.repairunit.IRepairUnit;
+import io.cassandrareaper.storage.snapshot.ISnapshot;
 
 import io.dropwizard.lifecycle.Managed;
 
@@ -34,10 +36,13 @@ public interface IStorage extends Managed,
     IRepairSegment,
     IRepairUnit,
     IRepairSchedule,
-    ICluster, io.cassandrareaper.storage.snapshot.ISnapshot, io.cassandrareaper.storage.metrics.IMetrics {
+    ICluster,
+    IMetrics {
 
   boolean isStorageConnected();
 
   IEvents getEventsDao();
+
+  ISnapshot getSnapshotDao();
 
 }

@@ -23,7 +23,6 @@ import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairSchedule;
 import io.cassandrareaper.core.RepairSegment;
 import io.cassandrareaper.core.RepairUnit;
-import io.cassandrareaper.core.Snapshot;
 import io.cassandrareaper.resources.view.RepairRunStatus;
 import io.cassandrareaper.resources.view.RepairScheduleStatus;
 import io.cassandrareaper.storage.cluster.MemClusterDao;
@@ -34,6 +33,7 @@ import io.cassandrareaper.storage.repairrun.MemRepairRunDao;
 import io.cassandrareaper.storage.repairschedule.MemRepairScheduleDao;
 import io.cassandrareaper.storage.repairsegment.MemRepairSegment;
 import io.cassandrareaper.storage.repairunit.MemRepairUnitDao;
+import io.cassandrareaper.storage.snapshot.ISnapshot;
 import io.cassandrareaper.storage.snapshot.MemSnapshotDao;
 
 import java.util.Collection;
@@ -264,21 +264,6 @@ public final class MemoryStorageFacade implements IStorage {
   }
 
   @Override
-  public boolean saveSnapshot(Snapshot snapshot) {
-    return memSnapshotDao.saveSnapshot(snapshot);
-  }
-
-  @Override
-  public boolean deleteSnapshot(Snapshot snapshot) {
-    return memSnapshotDao.deleteSnapshot(snapshot);
-  }
-
-  @Override
-  public Snapshot getSnapshot(String clusterName, String snapshotName) {
-    return memSnapshotDao.getSnapshot(clusterName, snapshotName);
-  }
-
-  @Override
   public List<PercentRepairedMetric> getPercentRepairedMetrics(String clusterName, UUID repairScheduleId, Long since) {
     return memMetricsDao.getPercentRepairedMetrics(clusterName, repairScheduleId, since);
   }
@@ -301,5 +286,10 @@ public final class MemoryStorageFacade implements IStorage {
   @Override
   public IEvents getEventsDao() {
     return this.memEventsDao;
+  }
+
+  @Override
+  public ISnapshot getSnapshotDao() {
+    return this.memSnapshotDao;
   }
 }
