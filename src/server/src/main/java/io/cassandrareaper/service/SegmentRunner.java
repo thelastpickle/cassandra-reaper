@@ -152,41 +152,20 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
         repairRunner);
   }
 
-  @Override
-  public void run() {
-    boolean ran = false;
-    RepairSegment segment = context.storage.getRepairSegment(repairRunner.getRepairRunId(), segmentId).get();
-    if (takeLead(segment)) {
-      try {
-        ran = runRepair();
-      } finally {
-        releaseLead(segment);
-      }
-    }
-    if (ran) {
-      long delay = intensityBasedDelayMillis(intensity);
-      try {
-        Thread.sleep(delay);
-      } catch (InterruptedException e) {
-        LOG.warn("Slept shorter than intended delay.");
-      }
-    }
-  }
-
   static void postponeSegment(AppContext context, RepairSegment segment) {
     LOG.info("Reset segment {}", segment.getId());
     RepairUnit unit = context.storage.getRepairUnit(segment.getRepairUnitId());
     RepairSegment postponed
         = segment
-          .reset()
-          // set coordinator host to null only for full repairs
-          .withCoordinatorHost(unit.getIncrementalRepair() ? segment.getCoordinatorHost() : null)
-          .withFailCount(segment.getFailCount() + 1)
-          .withId(segment.getId())
-          .build();
+        .reset()
+        // set coordinator host to null only for full repairs
+        .withCoordinatorHost(unit.getIncrementalRepair() ? segment.getCoordinatorHost() : null)
+        .withFailCount(segment.getFailCount() + 1)
+        .withId(segment.getId())
+        .build();
 
-    if ( context.storage instanceof IDistributedStorage ) {
-      ((IDistributedStorage)context.storage).updateRepairSegmentUnsafe(postponed);
+    if (context.storage instanceof IDistributedStorage) {
+      ((IDistributedStorage) context.storage).updateRepairSegmentUnsafe(postponed);
     } else {
       context.storage.updateRepairSegment(postponed);
     }
@@ -226,6 +205,58 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
     abort(context, segment, jmxConnection);
   }
 
+
+  /**
+   * This method is intended to be temporary, until we find the root issue of too many open files issue.
+   */
+  private static long getOpenFilesAmount() {
+    OperatingSystemMXBean os = ManagementFactory.getOperatingSystemMXBean();
+    long amountOfOpenFiles = -1;
+    if (os instanceof UnixOperatingSystemMXBean) {
+      amountOfOpenFiles = ((UnixOperatingSystemMXBean) os).getOpenFileDescriptorCount();
+    }
+    return amountOfOpenFiles;
+  }
+
+  private static String metricNameForPostpone(RepairUnit unit, RepairSegment segment) {
+    return MetricRegistry.name(
+        SegmentRunner.class,
+        "postpone",
+        cleanHostName(segment.getCoordinatorHost()),
+        cleanName(unit.getClusterName()),
+        cleanName(unit.getKeyspaceName()));
+  }
+
+  static String parseRepairId(String message) {
+    Matcher uuidMatcher = REPAIR_UUID_PATTERN.matcher(message);
+    if (uuidMatcher.find()) {
+      return uuidMatcher.group();
+    } else {
+      return null;
+    }
+  }
+
+  @Override
+  public void run() {
+    boolean ran = false;
+    RepairSegment segment = context.storage.getRepairSegment(repairRunner.getRepairRunId(), segmentId).get();
+    if (takeLead(segment)) {
+      try {
+        ran = runRepair();
+      } finally {
+        releaseLead(segment);
+      }
+    }
+    if (ran) {
+      long delay = intensityBasedDelayMillis(intensity);
+      try {
+        Thread.sleep(delay);
+      } catch (InterruptedException e) {
+        LOG.warn("Slept shorter than intended delay.");
+      }
+    }
+  }
+
   /**
    * Remember to call method postponeCurrentSegment() outside of synchronized(condition) block.
    */
@@ -240,18 +271,6 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
     } catch (InterruptedException e) {
       LOG.debug("Interrupted while sleeping after a segment was postponed... weird stuff...");
     }
-  }
-
-  /**
-   * This method is intended to be temporary, until we find the root issue of too many open files issue.
-   */
-  private static long getOpenFilesAmount() {
-    OperatingSystemMXBean os = ManagementFactory.getOperatingSystemMXBean();
-    long amountOfOpenFiles = -1;
-    if (os instanceof UnixOperatingSystemMXBean) {
-      amountOfOpenFiles = ((UnixOperatingSystemMXBean) os).getOpenFileDescriptorCount();
-    }
-    return amountOfOpenFiles;
   }
 
   private boolean runRepair() {
@@ -271,7 +290,8 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
 
         try {
           Thread.sleep(SLEEP_TIME_AFTER_POSTPONE_IN_MS);
-        } catch (InterruptedException ignore) { }
+        } catch (InterruptedException ignore) {
+        }
         return false;
       }
 
@@ -288,26 +308,26 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
                 ? context.getLocalNodeAddress()
                 : coordinator.getHost();
             segment = segment
-                    .with()
-                    .withState(RepairSegment.State.STARTED)
-                    .withCoordinatorHost(coordinatorHost)
-                    .withStartTime(DateTime.now())
-                    .withId(segmentId)
-                    .build();
+                .with()
+                .withState(RepairSegment.State.STARTED)
+                .withCoordinatorHost(coordinatorHost)
+                .withStartTime(DateTime.now())
+                .withId(segmentId)
+                .build();
 
             context.storage.updateRepairSegment(segment);
 
             repairNo = coordinator.triggerRepair(
-                    segment.getStartToken(),
-                    segment.getEndToken(),
-                    keyspace,
-                    validationParallelism,
-                    tablesToRepair,
-                    fullRepair,
-                    repairUnit.getDatacenters(),
-                    this,
-                    segment.getTokenRange().getTokenRanges(),
-                    repairUnit.getRepairThreadCount());
+                segment.getStartToken(),
+                segment.getEndToken(),
+                keyspace,
+                validationParallelism,
+                tablesToRepair,
+                fullRepair,
+                repairUnit.getDatacenters(),
+                this,
+                segment.getTokenRange().getTokenRanges(),
+                repairUnit.getRepairThreadCount());
 
             if (0 != repairNo) {
               processTriggeredSegment(segment, coordinator, repairNo);
@@ -419,15 +439,6 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
     }
   }
 
-  private static String metricNameForPostpone(RepairUnit unit, RepairSegment segment) {
-    return MetricRegistry.name(
-            SegmentRunner.class,
-            "postpone",
-            cleanHostName(segment.getCoordinatorHost()),
-            cleanName(unit.getClusterName()),
-            cleanName(unit.getKeyspaceName()));
-  }
-
   private String metricNameForRepairing(RepairSegment rs) {
     return MetricRegistry.name(
         SegmentRunner.class,
@@ -450,8 +461,8 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
    * Called when there is an event coming either from JMX or this runner regarding on-going repairs.
    *
    * @param repairNo repair sequence number, obtained when triggering a repair
-   * @param status new status of the repair
-   * @param message additional information about the repair
+   * @param status   new status of the repair
+   * @param message  additional information about the repair
    */
   @Override
   public void handle(
@@ -517,7 +528,8 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
           // then their writes to repair_run table and any call to releaseLead(..) will throw an exception
           try {
             releaseLead(segment);
-          } catch (AssertionError ignore) { }
+          } catch (AssertionError ignore) {
+          }
         }
       }
     }
@@ -806,15 +818,6 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
     }
   }
 
-  static String parseRepairId(String message) {
-    Matcher uuidMatcher = REPAIR_UUID_PATTERN.matcher(message);
-    if (uuidMatcher.find()) {
-      return uuidMatcher.group();
-    } else {
-      return null;
-    }
-  }
-
   /**
    * Calculate the delay that should be used before starting the next repair segment.
    *
@@ -836,7 +839,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
     } else {
       LOG.error(
           "Segment {} returned with startTime {} and endTime {}. This should not happen."
-          + "Intensity cannot apply, so next run will start immediately.",
+              + "Intensity cannot apply, so next run will start immediately.",
           repairSegment.getId(),
           repairSegment.getStartTime(),
           repairSegment.getEndTime());
@@ -846,7 +849,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
 
   private boolean takeLead(RepairSegment segment) {
     try (Timer.Context cx
-        = context.metricRegistry.timer(MetricRegistry.name(SegmentRunner.class, "takeLead")).time()) {
+             = context.metricRegistry.timer(MetricRegistry.name(SegmentRunner.class, "takeLead")).time()) {
 
       boolean result = false;
       if (repairUnit.getIncrementalRepair()) {
@@ -856,7 +859,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
       } else {
         result = context.storage instanceof IDistributedStorage
             ? ((IDistributedStorage) context.storage).lockRunningRepairsForNodes(this.repairRunner.getRepairRunId(),
-                segment.getId(), segment.getReplicas().keySet())
+            segment.getId(), segment.getReplicas().keySet())
             : true;
       }
       if (!result) {
@@ -868,7 +871,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
 
   private boolean renewLead(RepairSegment segment) {
     try (Timer.Context cx
-        = context.metricRegistry.timer(MetricRegistry.name(SegmentRunner.class, "renewLead")).time()) {
+             = context.metricRegistry.timer(MetricRegistry.name(SegmentRunner.class, "renewLead")).time()) {
 
       if (repairUnit.getIncrementalRepair()) {
         boolean result = context.storage instanceof IDistributedStorage
@@ -882,7 +885,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
       } else {
         boolean resultLock2 = context.storage instanceof IDistributedStorage
             ? ((IDistributedStorage) context.storage).renewRunningRepairsForNodes(this.repairRunner.getRepairRunId(),
-                segment.getId(), segment.getReplicas().keySet())
+            segment.getId(), segment.getReplicas().keySet())
             : true;
         if (!resultLock2) {
           context.metricRegistry.counter(MetricRegistry.name(SegmentRunner.class, "renewLead", "failed")).inc();
@@ -896,7 +899,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
 
   private void releaseLead(RepairSegment segment) {
     try (Timer.Context cx
-        = context.metricRegistry.timer(MetricRegistry.name(SegmentRunner.class, "releaseLead")).time()) {
+             = context.metricRegistry.timer(MetricRegistry.name(SegmentRunner.class, "releaseLead")).time()) {
       if (context.storage instanceof IDistributedStorage) {
         if (repairUnit.getIncrementalRepair()) {
           ((IDistributedStorage) context.storage).releaseLead(leaderElectionId);

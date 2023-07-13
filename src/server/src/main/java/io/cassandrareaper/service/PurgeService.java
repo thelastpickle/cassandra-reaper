@@ -22,6 +22,7 @@ import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.storage.IDistributedStorage;
+import io.cassandrareaper.storage.repairrun.IRepairRun;
 
 import java.util.Collection;
 import java.util.List;
@@ -42,12 +43,15 @@ public final class PurgeService {
 
   private final AppContext context;
 
-  private PurgeService(AppContext context) {
+  private final IRepairRun repairRunDao;
+
+  private PurgeService(AppContext context, IRepairRun repairRunDao) {
     this.context = context;
+    this.repairRunDao = repairRunDao;
   }
 
-  public static PurgeService create(AppContext context) {
-    return new PurgeService(context);
+  public static PurgeService create(AppContext context, IRepairRun repairRunDao) {
+    return new PurgeService(context, repairRunDao);
   }
 
   public Integer purgeDatabase() throws ReaperException {
@@ -61,7 +65,7 @@ public final class PurgeService {
       for (Cluster cluster : clusters) {
 
         Collection<RepairRun> repairRuns
-            = context.storage.getRepairRunsForCluster(cluster.getName(), Optional.empty());
+            = repairRunDao.getRepairRunsForCluster(cluster.getName(), Optional.empty());
 
         if (context.config.getPurgeRecordsAfterInDays() > 0) {
           // Purge all runs that are older than threshold
@@ -98,7 +102,7 @@ public final class PurgeService {
       for (int i = context.config.getNumberOfRunsToKeepPerUnit();
           i < repairRunsForUnit.size();
           i++) {
-        context.storage.deleteRepairRun(repairRunsForUnit.get(i).getId());
+        repairRunDao.deleteRepairRun(repairRunsForUnit.get(i).getId());
         purgedRuns++;
       }
     }
@@ -126,7 +130,7 @@ public final class PurgeService {
                                 context.config.getPurgeRecordsAfterInDays()))) // filter by date
         .forEach(
             run -> {
-              context.storage.deleteRepairRun(run.getId());
+              repairRunDao.deleteRepairRun(run.getId());
               purgedRuns.incrementAndGet();
             });
 

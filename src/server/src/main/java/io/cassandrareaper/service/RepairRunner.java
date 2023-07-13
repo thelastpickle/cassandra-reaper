@@ -33,6 +33,7 @@ import io.cassandrareaper.jmx.EndpointSnitchInfoProxy;
 import io.cassandrareaper.jmx.JmxProxy;
 import io.cassandrareaper.metrics.PrometheusMetricsFilter;
 import io.cassandrareaper.storage.IDistributedStorage;
+import io.cassandrareaper.storage.repairrun.IRepairRun;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -102,22 +103,27 @@ final class RepairRunner implements Runnable {
   private final RepairUnit repairUnit;
   private AtomicBoolean isRunning = new AtomicBoolean(false);
 
+  private final IRepairRun repairRunDao;
+
   private RepairRunner(
       AppContext context,
       UUID repairRunId,
-      ClusterFacade clusterFacade) throws ReaperException {
+      ClusterFacade clusterFacade,
+      IRepairRun repairRunDao) throws ReaperException {
 
     LOG.debug("Creating RepairRunner for run with ID {}", repairRunId);
     this.context = context;
     this.clusterFacade = clusterFacade;
-    this.repairRunService = RepairRunService.create(context);
+    this.repairRunService = RepairRunService.create(context, repairRunDao);
     this.repairRunId = repairRunId;
-    Optional<RepairRun> repairRun = context.storage.getRepairRun(repairRunId);
+    Optional<RepairRun> repairRun = repairRunDao.getRepairRun(repairRunId);
     assert repairRun.isPresent() : "No RepairRun with ID " + repairRunId + " found from storage";
     this.isRunning.set(repairRun.get().getRunState() == RepairRun.RunState.RUNNING);
     this.cluster = context.storage.getCluster(repairRun.get().getClusterName());
     repairUnit = context.storage.getRepairUnit(repairRun.get().getRepairUnitId());
     this.clusterName = cluster.getName();
+
+    this.repairRunDao = repairRunDao;
 
     localEndpointRanges = context.config.isInSidecarMode()
         ? clusterFacade.getRangesForLocalEndpoint(cluster, repairUnit.getKeyspaceName())
@@ -177,9 +183,10 @@ final class RepairRunner implements Runnable {
   public static RepairRunner create(
       AppContext context,
       UUID repairRunId,
-      ClusterFacade clusterFacade) throws ReaperException {
+      ClusterFacade clusterFacade,
+      IRepairRun repairRunDao) throws ReaperException {
 
-    return new RepairRunner(context, repairRunId, clusterFacade);
+    return new RepairRunner(context, repairRunId, clusterFacade, repairRunDao);
   }
 
   private void registerMetric(String metricName, Gauge<?> gauge) {
@@ -213,7 +220,7 @@ final class RepairRunner implements Runnable {
           .collect(Collectors.toList()));
 
     try {
-      Optional<RepairRun> repairRun = context.storage.getRepairRun(repairRunId);
+      Optional<RepairRun> repairRun = repairRunDao.getRepairRun(repairRunId);
       if ((!repairRun.isPresent() || repairRun.get().getRunState().isTerminated())) {
         // this might happen if a run is deleted while paused etc.
         LOG.warn("RepairRun \"{}\" does not exist. Killing RepairRunner for this run instance.", repairRunId);
@@ -277,8 +284,8 @@ final class RepairRunner implements Runnable {
   private void start() throws ReaperException, InterruptedException {
     LOG.info("Repairs for repair run #{} starting", repairRunId);
     synchronized (this) {
-      RepairRun repairRun = context.storage.getRepairRun(repairRunId).get();
-      context.storage.updateRepairRun(
+      RepairRun repairRun = repairRunDao.getRepairRun(repairRunId).get();
+      repairRunDao.updateRepairRun(
           repairRun.with().runState(RepairRun.RunState.RUNNING).startTime(DateTime.now()).build(repairRun.getId()));
     }
 
@@ -307,12 +314,12 @@ final class RepairRunner implements Runnable {
     LOG.info("Repairs for repair run #{} done", repairRunId);
     synchronized (this) {
       // if the segment has been removed ignore. should only happen in tests on backends that delete repair segments.
-      Optional<RepairRun> repairRun = context.storage.getRepairRun(repairRunId);
+      Optional<RepairRun> repairRun = repairRunDao.getRepairRun(repairRunId);
       if (repairRun.isPresent()) {
         try {
           DateTime repairRunCompleted = DateTime.now();
 
-          context.storage.updateRepairRun(
+          repairRunDao.updateRepairRun(
               repairRun.get()
                   .with()
                   .runState(RepairRun.RunState.DONE)
@@ -350,7 +357,7 @@ final class RepairRunner implements Runnable {
    */
   @VisibleForTesting
   public void maybeAdaptRepairSchedule() {
-    Optional<RepairRun> repairRun = context.storage.getRepairRun(repairRunId);
+    Optional<RepairRun> repairRun = repairRunDao.getRepairRun(repairRunId);
     if (repairRun.isPresent() && Boolean.TRUE.equals(repairRun.get().getAdaptiveSchedule())) {
       Collection<RepairSegment> segments
           = context.storage.getSegmentsWithState(repairRunId, RepairSegment.State.DONE);
@@ -634,7 +641,7 @@ final class RepairRunner implements Runnable {
     final double intensity;
     final RepairParallelism validationParallelism;
     {
-      repairRun = context.storage.getRepairRun(repairRunId).get();
+      repairRun = repairRunDao.getRepairRun(repairRunId).get();
       unitId = repairRun.getRepairUnitId();
       intensity = repairRun.getIntensity();
       validationParallelism = repairRun.getRepairParallelism();
@@ -667,8 +674,8 @@ final class RepairRunner implements Runnable {
             segment.toString());
         // This segment has a faulty token range. Abort the entire repair run.
         synchronized (this) {
-          context.storage.updateRepairRun(
-              context.storage.getRepairRun(repairRunId).get()
+          repairRunDao.updateRepairRun(
+              repairRunDao.getRepairRun(repairRunId).get()
                   .with()
                   .runState(RepairRun.RunState.ERROR)
                   .lastEvent(String.format("No coordinators for range %s", segment))
@@ -793,14 +800,14 @@ final class RepairRunner implements Runnable {
 
   void updateLastEvent(String newEvent) {
     synchronized (this) {
-      Optional<RepairRun> repairRun = context.storage.getRepairRun(repairRunId);
+      Optional<RepairRun> repairRun = repairRunDao.getRepairRun(repairRunId);
       // absent if deleted. should only happen in tests on backends that delete repair segments.
       if (!repairRun.isPresent() || repairRun.get().getRunState().isTerminated()) {
         LOG.warn(
             "Will not update lastEvent of run that has already terminated. The message was: " + "\"{}\"",
             newEvent);
       } else {
-        context.storage.updateRepairRun(
+        repairRunDao.updateRepairRun(
             repairRun.get().with().lastEvent(newEvent).build(repairRunId),
             Optional.of(false));
         LOG.info(newEvent);
@@ -829,7 +836,7 @@ final class RepairRunner implements Runnable {
           .tables(RepairUnitService.create(context).getTablesToRepair(cluster, repairUnit))
           .build(repairRun.getId());
 
-      context.storage.updateRepairRun(newRepairRun, Optional.of(false));
+      repairRunDao.updateRepairRun(newRepairRun, Optional.of(false));
       return newRepairRun;
     }
     return repairRun;

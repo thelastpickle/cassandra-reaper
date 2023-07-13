@@ -58,7 +58,7 @@ public class ReaperResourceTest extends TestCase {
     final AppContext context;
 
     MockObjects(
-            AppContext context) {
+        AppContext context) {
       super();
       this.context = context;
     }

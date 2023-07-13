@@ -70,7 +70,7 @@ public final class SnapshotServiceTest {
 
     ISnapshot mockSnapshotDao = mock(ISnapshot.class);
 
-    Pair<Node,String> result = SnapshotService
+    Pair<Node, String> result = SnapshotService
         .create(cxt, SNAPSHOT_MANAGER_EXECUTOR, mockSnapshotDao)
         .takeSnapshot("Test", Node.builder().withHostname("127.0.0.1").build());
 
@@ -93,7 +93,7 @@ public final class SnapshotServiceTest {
     when(cxt.jmxConnectionFactory.connectAny(any(Collection.class))).thenReturn(proxy);
     Node host = Node.builder().withHostname("127.0.0.1").build();
     ISnapshot mockSnapshotDao = mock(ISnapshot.class);
-    Pair<Node,String> result = SnapshotService
+    Pair<Node, String> result = SnapshotService
         .create(cxt, SNAPSHOT_MANAGER_EXECUTOR, mockSnapshotDao)
         .takeSnapshot("Test", host, "keyspace1", "keyspace2");
 
@@ -209,12 +209,12 @@ public final class SnapshotServiceTest {
     when(cxt.storage.getCluster(anyString())).thenReturn(cluster);
     ISnapshot mockSnapshotDao = mock(ISnapshot.class);
 
-    List<Pair<Node,String>> result = SnapshotService
+    List<Pair<Node, String>> result = SnapshotService
         .create(cxt, SNAPSHOT_MANAGER_EXECUTOR, () -> clusterFacadeSpy, mockSnapshotDao)
         .takeSnapshotClusterWide("snapshot", "testCluster", "testOwner", "testCause");
 
     Assertions.assertThat(result.size()).isEqualTo(3);
-    for (int i = 0 ; i < 3 ; ++i) {
+    for (int i = 0; i < 3; ++i) {
       Assertions.assertThat(result.get(i).getLeft().getClusterName()).isEqualTo("testcluster");
       Assertions.assertThat(result.get(i).getLeft().getHostname()).isEqualTo("127.0.0." + (i + 1));
       Assertions.assertThat(result.get(i).getRight()).isEqualTo("snapshot");

@@ -25,13 +25,10 @@ import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.GenericMetric;
 import io.cassandrareaper.core.PercentRepairedMetric;
 import io.cassandrareaper.core.RepairRun;
-import io.cassandrareaper.core.RepairRun.Builder;
-import io.cassandrareaper.core.RepairRun.RunState;
 import io.cassandrareaper.core.RepairSchedule;
 import io.cassandrareaper.core.RepairSegment;
 import io.cassandrareaper.core.RepairSegment.State;
 import io.cassandrareaper.core.RepairUnit;
-import io.cassandrareaper.resources.view.RepairRunStatus;
 import io.cassandrareaper.resources.view.RepairScheduleStatus;
 import io.cassandrareaper.service.RingRange;
 import io.cassandrareaper.storage.IDistributedStorage;
@@ -56,7 +53,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.SortedSet;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -87,7 +83,7 @@ import systems.composable.dropwizard.cassandra.pooling.PoolingOptionsFactory;
 import systems.composable.dropwizard.cassandra.retry.RetryPolicyFactory;
 
 
-public final class CassandraStorageFacade implements IStorage, IDistributedStorage, IRepairRun {
+public final class CassandraStorageFacade implements IStorage, IDistributedStorage {
   private static final Logger LOG = LoggerFactory.getLogger(CassandraStorageFacade.class);
   private static final AtomicBoolean UNINITIALISED = new AtomicBoolean(true);
   public final CassRepairSegmentDao cassRepairSegmentDao;
@@ -275,38 +271,6 @@ public final class CassandraStorageFacade implements IStorage, IDistributedStora
     return cassClusterDao.deleteCluster(clusterName);
   }
 
-  @Override
-  public RepairRun addRepairRun(Builder repairRun, Collection<RepairSegment.Builder> newSegments) {
-
-    return cassRepairRunDao.addRepairRun(repairRun, newSegments);
-  }
-
-  @Override
-  public boolean updateRepairRun(RepairRun repairRun) {
-    return cassRepairRunDao.updateRepairRun(repairRun);
-  }
-
-  @Override
-  public boolean updateRepairRun(RepairRun repairRun, Optional<Boolean> updateRepairState) {
-
-    return cassRepairRunDao.updateRepairRun(repairRun, updateRepairState);
-  }
-
-  @Override
-  public Optional<RepairRun> getRepairRun(UUID id) {
-    return cassRepairRunDao.getRepairRun(id);
-  }
-
-  @Override
-  public Collection<RepairRun> getRepairRunsForCluster(String clusterName, Optional<Integer> limit) {
-
-    return cassRepairRunDao.getRepairRunsForCluster(clusterName, limit);
-  }
-
-  @Override
-  public List<RepairRun> getRepairRunsForClusterPrioritiseRunning(String clusterName, Optional<Integer> limit) {
-    return cassRepairRunDao.getRepairRunsForClusterPrioritiseRunning(clusterName, limit);
-  }
 
   @Override
   public int getSegmentAmountForRepairRun(UUID runId) {
@@ -316,27 +280,6 @@ public final class CassandraStorageFacade implements IStorage, IDistributedStora
   @Override
   public int getSegmentAmountForRepairRunWithState(UUID runId, RepairSegment.State state) {
     return cassRepairSegmentDao.getSegmentAmountForRepairRunWithState(runId, state);
-  }
-
-  @Override
-  public Collection<RepairRun> getRepairRunsForUnit(UUID repairUnitId) {
-
-    return cassRepairRunDao.getRepairRunsForUnit(repairUnitId);
-  }
-
-  /**
-   * Create a collection of RepairRun objects out of a list of ResultSetFuture. Used to handle async queries on the
-   * repair_run table with a list of ids.
-   */
-  @Override
-  public Collection<RepairRun> getRepairRunsWithState(RunState runState) {
-
-    return cassRepairRunDao.getRepairRunsWithState(runState);
-  }
-
-  @Override
-  public Optional<RepairRun> deleteRepairRun(UUID id) {
-    return cassRepairRunDao.deleteRepairRun(id);
   }
 
   @Override
@@ -417,12 +360,6 @@ public final class CassandraStorageFacade implements IStorage, IDistributedStora
   }
 
   @Override
-  public SortedSet<UUID> getRepairRunIdsForCluster(String clusterName, Optional<Integer> limit) {
-
-    return cassRepairRunDao.getRepairRunIdsForCluster(clusterName, limit);
-  }
-
-  @Override
   public RepairSchedule addRepairSchedule(io.cassandrareaper.core.RepairSchedule.Builder repairSchedule) {
 
     return cassRepairScheduleDao.addRepairSchedule(repairSchedule);
@@ -473,11 +410,6 @@ public final class CassandraStorageFacade implements IStorage, IDistributedStora
   public Optional<RepairSchedule> deleteRepairSchedule(UUID id) {
 
     return cassRepairScheduleDao.deleteRepairSchedule(id);
-  }
-
-  @Override
-  public Collection<RepairRunStatus> getClusterRunStatuses(String clusterName, int limit) {
-    return cassRepairRunDao.getClusterRunStatuses(clusterName, limit);
   }
 
   @Override
@@ -671,6 +603,11 @@ public final class CassandraStorageFacade implements IStorage, IDistributedStora
   @Override
   public ISnapshot getSnapshotDao() {
     return this.cassSnapshotDao;
+  }
+
+  @Override
+  public IRepairRun getRepairRunDao() {
+    return this.cassRepairRunDao;
   }
 
   public enum CassandraMode {

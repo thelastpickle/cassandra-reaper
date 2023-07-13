@@ -29,6 +29,7 @@ import io.cassandrareaper.resources.view.RepairRunStatus;
 import io.cassandrareaper.service.PurgeService;
 import io.cassandrareaper.service.RepairRunService;
 import io.cassandrareaper.service.RepairUnitService;
+import io.cassandrareaper.storage.repairrun.IRepairRun;
 
 import java.net.URI;
 import java.util.ArrayList;
@@ -76,10 +77,13 @@ public final class RepairRunResource {
   private final RepairUnitService repairUnitService;
   private final RepairRunService repairRunService;
 
-  public RepairRunResource(AppContext context) {
+  private final IRepairRun repairRunDao;
+
+  public RepairRunResource(AppContext context, IRepairRun repairRunDao) {
     this.context = context;
     this.repairUnitService = RepairUnitService.create(context);
-    this.repairRunService = RepairRunService.create(context);
+    this.repairRunService = RepairRunService.create(context, repairRunDao);
+    this.repairRunDao = repairRunDao;
   }
 
   /**
@@ -400,7 +404,7 @@ public final class RepairRunResource {
         return createMissingArgumentResponse("state");
       }
 
-      Optional<RepairRun> repairRun = context.storage.getRepairRun(repairRunId);
+      Optional<RepairRun> repairRun = repairRunDao.getRepairRun(repairRunId);
       if (!repairRun.isPresent()) {
         return Response.status(Status.NOT_FOUND).entity("repair run " + repairRunId + " doesn't exist").build();
       }
@@ -458,7 +462,7 @@ public final class RepairRunResource {
       }
       final double intensity = parseIntensity(intensityStr.get());
 
-      Optional<RepairRun> repairRun = context.storage.getRepairRun(repairRunId);
+      Optional<RepairRun> repairRun = repairRunDao.getRepairRun(repairRunId);
       if (!repairRun.isPresent()) {
         return Response.status(Status.NOT_FOUND).entity("repair run " + repairRunId + " doesn't exist").build();
       }
@@ -494,7 +498,7 @@ public final class RepairRunResource {
   }
 
   private boolean isUnitAlreadyRepairing(RepairRun repairRun) {
-    return context.storage.getRepairRunsForUnit(repairRun.getRepairUnitId()).stream()
+    return repairRunDao.getRepairRunsForUnit(repairRun.getRepairUnitId()).stream()
         .anyMatch((run) -> (!run.getId().equals(repairRun.getId()) && run.getRunState().equals(RunState.RUNNING)));
   }
 
@@ -543,7 +547,7 @@ public final class RepairRunResource {
       @PathParam("id") UUID repairRunId) {
 
     LOG.debug("get repair_run called with: id = {}", repairRunId);
-    final Optional<RepairRun> repairRun = context.storage.getRepairRun(repairRunId);
+    final Optional<RepairRun> repairRun = repairRunDao.getRepairRun(repairRunId);
     if (repairRun.isPresent()) {
       RepairRunStatus repairRunStatus = getRepairRunStatus(repairRun.get());
       return Response.ok().entity(repairRunStatus).build();
@@ -560,7 +564,7 @@ public final class RepairRunResource {
   public Response getRepairRunSegments(@PathParam("id") UUID repairRunId) {
 
     LOG.debug("get repair_run called with: id = {}", repairRunId);
-    final Optional<RepairRun> repairRun = context.storage.getRepairRun(repairRunId);
+    final Optional<RepairRun> repairRun = repairRunDao.getRepairRun(repairRunId);
     if (repairRun.isPresent()) {
       Collection<RepairSegment> segments = context.storage.getRepairSegmentsForRun(repairRunId);
       return Response.ok().entity(segments).build();
@@ -576,7 +580,7 @@ public final class RepairRunResource {
   @Path("/{id}/segments/abort/{segment_id}")
   public Response abortRepairRunSegment(@PathParam("id") UUID repairRunId, @PathParam("segment_id") UUID segmentId) {
     LOG.debug("abort segment called with: run id = {} and segment id = {}", repairRunId, segmentId);
-    final Optional<RepairRun> repairRun = context.storage.getRepairRun(repairRunId);
+    final Optional<RepairRun> repairRun = repairRunDao.getRepairRun(repairRunId);
     if (repairRun.isPresent()) {
 
       if (RepairRun.RunState.RUNNING == repairRun.get().getRunState()
@@ -610,8 +614,7 @@ public final class RepairRunResource {
       @QueryParam("limit") Optional<Integer> limit) {
 
     LOG.debug("get repair run for cluster called with: cluster_name = {}", clusterName);
-    final Collection<RepairRun> repairRuns = context
-        .storage
+    final Collection<RepairRun> repairRuns = repairRunDao
         .getRepairRunsForClusterPrioritiseRunning(clusterName, limit);
     final Collection<RepairRunStatus> repairRunViews = new ArrayList<>();
     for (final RepairRun repairRun : repairRuns) {
@@ -666,7 +669,7 @@ public final class RepairRunResource {
 
       List<RepairRun> repairRuns = Lists.newArrayList();
       clusters.forEach(clstr -> repairRuns.addAll(
-          context.storage.getRepairRunsForClusterPrioritiseRunning(clstr.getName(), limit))
+          repairRunDao.getRepairRunsForClusterPrioritiseRunning(clstr.getName(), limit))
       );
       List<RepairRunStatus> runStatuses = Lists.newArrayList();
       RepairRunService.sortByRunState(repairRuns);
@@ -740,7 +743,7 @@ public final class RepairRunResource {
           .entity("required query parameter \"owner\" is missing")
           .build();
     }
-    final Optional<RepairRun> runToDelete = context.storage.getRepairRun(runId);
+    final Optional<RepairRun> runToDelete = repairRunDao.getRepairRun(runId);
     if (runToDelete.isPresent()) {
       if (RepairRun.RunState.RUNNING == runToDelete.get().getRunState()) {
         return Response.status(Response.Status.CONFLICT)
@@ -755,12 +758,12 @@ public final class RepairRunResource {
         String msg = String.format("Repair run %s has running segments, which must finish before deleting", runId);
         return Response.status(Response.Status.CONFLICT).entity(msg).build();
       }
-      context.storage.deleteRepairRun(runId);
+      repairRunDao.deleteRepairRun(runId);
       return Response.accepted().build();
     }
     try {
       // safety clean, in case of zombie segments
-      context.storage.deleteRepairRun(runId);
+      repairRunDao.deleteRepairRun(runId);
     } catch (RuntimeException ignore) { }
     return Response.status(Response.Status.NOT_FOUND).entity("Repair run %s" + runId + " not found").build();
   }
@@ -768,7 +771,7 @@ public final class RepairRunResource {
   @POST
   @Path("/purge")
   public Response purgeRepairRuns() throws ReaperException {
-    int purgedRepairs = PurgeService.create(context).purgeDatabase();
+    int purgedRepairs = PurgeService.create(context, repairRunDao).purgeDatabase();
     return Response.ok().entity(purgedRepairs).build();
   }
 

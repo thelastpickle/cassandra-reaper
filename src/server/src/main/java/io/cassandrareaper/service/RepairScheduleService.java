@@ -22,6 +22,7 @@ import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairSchedule;
 import io.cassandrareaper.core.RepairUnit;
+import io.cassandrareaper.storage.repairrun.IRepairRun;
 
 import java.util.Collection;
 import java.util.Objects;
@@ -43,14 +44,17 @@ public final class RepairScheduleService {
   private final AppContext context;
   private final RepairUnitService repairUnitService;
 
-  private RepairScheduleService(AppContext context) {
+  private final IRepairRun repairRunDao;
+
+  private RepairScheduleService(AppContext context, IRepairRun repairRunDao) {
     this.context = context;
     this.repairUnitService = RepairUnitService.create(context);
     registerRepairScheduleMetrics(context.storage.getAllRepairSchedules());
+    this.repairRunDao = repairRunDao;
   }
 
-  public static RepairScheduleService create(AppContext context) {
-    return new RepairScheduleService(context);
+  public static RepairScheduleService create(AppContext context, IRepairRun repairRunDao) {
+    return new RepairScheduleService(context, repairRunDao);
   }
 
   public Optional<RepairSchedule> conflictingRepairSchedule(Cluster cluster, RepairUnit.Builder repairUnit) {
@@ -177,7 +181,7 @@ public final class RepairScheduleService {
               new IllegalArgumentException("Repair schedule not found"))
           .getLastRun());
 
-      Long millisSinceLastRepair = latestRepairUuid.map(uuid -> context.storage.getRepairRun(uuid))
+      Long millisSinceLastRepair = latestRepairUuid.map(uuid -> repairRunDao.getRepairRun(uuid))
           .filter(Optional::isPresent)
           .map(Optional::get)
           .map(RepairRun::getEndTime)
@@ -194,4 +198,3 @@ public final class RepairScheduleService {
 
   }
 }
-

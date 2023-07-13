@@ -24,6 +24,7 @@ import io.cassandrareaper.core.RepairSegment;
 import io.cassandrareaper.core.RepairUnit;
 import io.cassandrareaper.jmx.ClusterFacade;
 import io.cassandrareaper.storage.IDistributedStorage;
+import io.cassandrareaper.storage.repairrun.IRepairRun;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -66,13 +67,16 @@ public final class RepairManager implements AutoCloseable {
   private final long retryDelayMillis;
   private final int maxParallelRepairs;
 
+  private final IRepairRun repairRunDao;
+
   private RepairManager(
       AppContext context,
       ClusterFacade clusterFacade,
       ScheduledExecutorService executor,
       long retryDelay,
       TimeUnit retryDelayTimeUnit,
-      int maxParallelRepairs
+      int maxParallelRepairs,
+      IRepairRun repairRunDao
   ) throws ReaperException {
 
     this.context = context;
@@ -82,6 +86,7 @@ public final class RepairManager implements AutoCloseable {
     this.executor = MoreExecutors.listeningDecorator(
         new InstrumentedScheduledExecutorService(executor, context.metricRegistry));
     this.maxParallelRepairs = maxParallelRepairs;
+    this.repairRunDao = repairRunDao;
   }
 
   @VisibleForTesting
@@ -91,7 +96,8 @@ public final class RepairManager implements AutoCloseable {
       ScheduledExecutorService executor,
       long retryDelay,
       TimeUnit retryDelayTimeUnit,
-      int maxParallelRepairs
+      int maxParallelRepairs,
+      IRepairRun repairRunDao
   ) throws ReaperException {
 
     return new RepairManager(
@@ -100,7 +106,8 @@ public final class RepairManager implements AutoCloseable {
         executor,
         retryDelay,
         retryDelayTimeUnit,
-        maxParallelRepairs);
+        maxParallelRepairs,
+        repairRunDao);
   }
 
   public static RepairManager create(
@@ -108,7 +115,8 @@ public final class RepairManager implements AutoCloseable {
       ScheduledExecutorService executor,
       long retryDelay,
       TimeUnit retryDelayTimeUnit,
-      int maxParallelRepairs
+      int maxParallelRepairs,
+      IRepairRun repairRunDao
   ) throws ReaperException {
 
     return create(
@@ -117,7 +125,8 @@ public final class RepairManager implements AutoCloseable {
         executor,
         retryDelay,
         retryDelayTimeUnit,
-        maxParallelRepairs);
+        maxParallelRepairs,
+        repairRunDao);
   }
 
   /**
@@ -125,8 +134,8 @@ public final class RepairManager implements AutoCloseable {
    */
   public void resumeRunningRepairRuns() throws ReaperException {
     try {
-      Collection<RepairRun> runningRepairRuns = context.storage.getRepairRunsWithState(RepairRun.RunState.RUNNING);
-      Collection<RepairRun> pausedRepairRuns = context.storage.getRepairRunsWithState(RepairRun.RunState.PAUSED);
+      Collection<RepairRun> runningRepairRuns = repairRunDao.getRepairRunsWithState(RepairRun.RunState.RUNNING);
+      Collection<RepairRun> pausedRepairRuns = repairRunDao.getRepairRunsWithState(RepairRun.RunState.PAUSED);
       abortAllRunningSegmentsWithNoLeader(runningRepairRuns);
       abortAllRunningSegmentsInKnownPausedRepairRuns(pausedRepairRuns);
       resumeUnkownRunningRepairRuns(runningRepairRuns);
@@ -286,7 +295,7 @@ public final class RepairManager implements AutoCloseable {
           }
         }
       } else {
-        abortSegments(Arrays.asList(segment), context.storage.getRepairRun(runId).get());
+        abortSegments(Arrays.asList(segment), repairRunDao.getRepairRun(runId).get());
       }
       return context.storage.getRepairSegment(runId, segmentId).get();
     } catch (AssertionError error) {
@@ -313,7 +322,7 @@ public final class RepairManager implements AutoCloseable {
             .runState(RepairRun.RunState.RUNNING)
             .startTime(DateTime.now())
             .build(runToBeStarted.getId());
-        if (!context.storage.updateRepairRun(updatedRun)) {
+        if (!repairRunDao.updateRepairRun(updatedRun)) {
           throw new ReaperException("failed updating repair run " + updatedRun.getId());
         }
         startRunner(updatedRun);
@@ -325,7 +334,7 @@ public final class RepairManager implements AutoCloseable {
             .pauseTime(null)
             .build(runToBeStarted.getId());
 
-        if (!context.storage.updateRepairRun(updatedRun)) {
+        if (!repairRunDao.updateRepairRun(updatedRun)) {
           throw new ReaperException("failed updating repair run " + updatedRun.getId());
         }
         return updatedRun;
@@ -337,7 +346,7 @@ public final class RepairManager implements AutoCloseable {
       case ERROR: {
         RepairRun updatedRun = runToBeStarted.with().runState(RepairRun.RunState.RUNNING).endTime(null).build(
             runToBeStarted.getId());
-        if (!context.storage.updateRepairRun(updatedRun)) {
+        if (!repairRunDao.updateRepairRun(updatedRun)) {
           throw new ReaperException("failed updating repair run " + updatedRun.getId());
         }
         startRunner(updatedRun);
@@ -350,7 +359,7 @@ public final class RepairManager implements AutoCloseable {
 
   public RepairRun updateRepairRunIntensity(RepairRun repairRun, Double intensity) throws ReaperException {
     RepairRun updatedRun = repairRun.with().intensity(intensity).build(repairRun.getId());
-    if (!context.storage.updateRepairRun(updatedRun, Optional.of(false))) {
+    if (!repairRunDao.updateRepairRun(updatedRun, Optional.of(false))) {
       throw new ReaperException("failed updating repair run " + updatedRun.getId());
     }
     return updatedRun;
@@ -367,7 +376,7 @@ public final class RepairManager implements AutoCloseable {
 
       LOG.debug("scheduling repair for repair run #{}", run.getId());
       try {
-        RepairRunner newRunner = RepairRunner.create(context, run.getId(), clusterFacade);
+        RepairRunner newRunner = RepairRunner.create(context, run.getId(), clusterFacade, repairRunDao);
         repairRunners.put(run.getId(), newRunner);
         executor.submit(newRunner);
       } catch (ReaperException e) {
@@ -395,7 +404,7 @@ public final class RepairManager implements AutoCloseable {
         .pauseTime(DateTime.now())
         .build(runToBePaused.getId());
 
-    if (!context.storage.updateRepairRun(updatedRun)) {
+    if (!repairRunDao.updateRepairRun(updatedRun)) {
       throw new ReaperException("failed updating repair run " + updatedRun.getId());
     }
     return updatedRun;
@@ -408,7 +417,7 @@ public final class RepairManager implements AutoCloseable {
         .endTime(DateTime.now())
         .build(runToBeAborted.getId());
 
-    if (!context.storage.updateRepairRun(updatedRun)) {
+    if (!repairRunDao.updateRepairRun(updatedRun)) {
       throw new ReaperException("failed updating repair run " + updatedRun.getId());
     }
 

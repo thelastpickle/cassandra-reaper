@@ -78,7 +78,7 @@ public final class ClusterRepairSchedulerTest {
         .build();
 
     context.jmxConnectionFactory = mock(JmxConnectionFactory.class);
-    clusterRepairAuto = new ClusterRepairScheduler(context);
+    clusterRepairAuto = new ClusterRepairScheduler(context, context.storage.getRepairRunDao());
     jmxProxy = mock(JmxProxy.class);
 
     when(context.jmxConnectionFactory.connectAny(Mockito.anyCollection())).thenReturn(jmxProxy);
@@ -93,10 +93,10 @@ public final class ClusterRepairSchedulerTest {
     when(jmxProxy.getKeyspaces()).thenReturn(Lists.newArrayList("keyspace1", "keyspace3"));
 
     when(jmxProxy.getTablesForKeyspace("keyspace1")).thenReturn(
-            Sets.newHashSet(Table.builder().withName("table1").withCompactionStrategy(STCS).build()));
+        Sets.newHashSet(Table.builder().withName("table1").withCompactionStrategy(STCS).build()));
 
     when(jmxProxy.getTablesForKeyspace("keyspace3")).thenReturn(
-            Sets.newHashSet(Table.builder().withName("table1").withCompactionStrategy(STCS).build()));
+        Sets.newHashSet(Table.builder().withName("table1").withCompactionStrategy(STCS).build()));
 
     clusterRepairAuto.scheduleRepairs(cluster);
     assertThat(context.storage.getAllRepairSchedules()).hasSize(2);
@@ -136,10 +136,10 @@ public final class ClusterRepairSchedulerTest {
     when(jmxProxy.getKeyspaces()).thenReturn(Lists.newArrayList("keyspace1", "keyspace2"));
 
     when(jmxProxy.getTablesForKeyspace("keyspace1")).thenReturn(
-            Sets.newHashSet(Table.builder().withName("table1").withCompactionStrategy(STCS).build()));
+        Sets.newHashSet(Table.builder().withName("table1").withCompactionStrategy(STCS).build()));
 
     when(jmxProxy.getTablesForKeyspace("keyspace2")).thenReturn(
-            Sets.newHashSet(Table.builder().withName("table2").withCompactionStrategy(STCS).build()));
+        Sets.newHashSet(Table.builder().withName("table2").withCompactionStrategy(STCS).build()));
 
     clusterRepairAuto.scheduleRepairs(cluster);
     assertThat(context.storage.getAllRepairSchedules()).hasSize(2);
@@ -157,7 +157,7 @@ public final class ClusterRepairSchedulerTest {
     when(jmxProxy.getKeyspaces()).thenReturn(Lists.newArrayList("system", "system_auth", "system_traces", "keyspace2"));
 
     when(jmxProxy.getTablesForKeyspace("keyspace2")).thenReturn(
-            Sets.newHashSet(Table.builder().withName("table1").withCompactionStrategy(STCS).build()));
+        Sets.newHashSet(Table.builder().withName("table1").withCompactionStrategy(STCS).build()));
 
     clusterRepairAuto.scheduleRepairs(cluster);
     assertThat(context.storage.getAllRepairSchedules()).hasSize(1);
@@ -190,13 +190,13 @@ public final class ClusterRepairSchedulerTest {
     when(jmxProxy.getKeyspaces()).thenReturn(Lists.newArrayList("keyspace1", "keyspace2", "keyspace3", "keyspace4"));
 
     when(jmxProxy.getTablesForKeyspace("keyspace1")).thenReturn(
-            Sets.newHashSet(Table.builder().withName("sometable").withCompactionStrategy(STCS).build()));
+        Sets.newHashSet(Table.builder().withName("sometable").withCompactionStrategy(STCS).build()));
 
     when(jmxProxy.getTablesForKeyspace("keyspace2")).thenReturn(
-            Sets.newHashSet(Table.builder().withName("sometable").withCompactionStrategy(STCS).build()));
+        Sets.newHashSet(Table.builder().withName("sometable").withCompactionStrategy(STCS).build()));
 
     when(jmxProxy.getTablesForKeyspace("keyspace4")).thenReturn(
-            Sets.newHashSet(Table.builder().withName("sometable").withCompactionStrategy(STCS).build()));
+        Sets.newHashSet(Table.builder().withName("sometable").withCompactionStrategy(STCS).build()));
 
     clusterRepairAuto.scheduleRepairs(cluster);
 

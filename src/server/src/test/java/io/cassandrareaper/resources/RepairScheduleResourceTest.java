@@ -45,11 +45,103 @@ import static org.mockito.Mockito.when;
 public class RepairScheduleResourceTest {
   private static final URI REPAIR_SCHEDULE_URI = URI.create("http://reaper_host/repair_schedule/");
 
+  private static MockObjects initFailedUpdateStorageMocks(URI uri, UUID repairScheduleId) {
+    MockObjects mockObjects = new MockObjects();
+
+    final AppContext context = new AppContext();
+
+    IStorage mockedStorage = mock(IStorage.class);
+    RepairSchedule repairSchedule = RepairSchedule.builder(UUID.randomUUID())
+        .nextActivation(DateTime.now())
+        .owner("test")
+        .repairParallelism(RepairParallelism.PARALLEL)
+        .intensity(1.0D)
+        .daysBetween(1)
+        .segmentCountPerNode(2)
+        .build(repairScheduleId);
+    mockObjects.setRepairSchedule(repairSchedule);
+
+    when(mockedStorage.getRepairSchedule(repairScheduleId)).thenReturn(Optional.of(repairSchedule));
+    when(mockedStorage.updateRepairSchedule(any())).thenReturn(false);
+    context.storage = mockedStorage;
+
+    context.config = TestRepairConfiguration.defaultConfig();
+    mockObjects.setContext(context);
+
+    UriInfo uriInfo = mock(UriInfo.class);
+    when(uriInfo.getBaseUriBuilder()).thenReturn(UriBuilder.fromUri(uri));
+    mockObjects.setUriInfo(uriInfo);
+
+    return mockObjects;
+  }
+
+  private static MockObjects initInMemoryMocks(URI uri) {
+    MockObjects mockObjects = new MockObjects();
+
+    AppContext context = new AppContext();
+    context.storage = new MemoryStorageFacade();
+    context.config = TestRepairConfiguration.defaultConfig();
+    mockObjects.setContext(context);
+
+    UriInfo uriInfo = mock(UriInfo.class);
+    when(uriInfo.getBaseUriBuilder()).thenReturn(UriBuilder.fromUri(uri));
+    mockObjects.setUriInfo(uriInfo);
+
+    RepairUnit.Builder mockRepairUnitBuilder = RepairUnit.builder()
+        .incrementalRepair(false)
+        .repairThreadCount(1)
+        .clusterName("cluster-test")
+        .keyspaceName("keyspace-test")
+        .timeout(30);
+    RepairUnit repairUnit = context.storage.addRepairUnit(mockRepairUnitBuilder);
+    mockObjects.setRepairUnit(repairUnit);
+
+    RepairSchedule.Builder mockRepairScheduleBuilder = RepairSchedule.builder(repairUnit.getId())
+        .daysBetween(1)
+        .nextActivation(DateTime.now())
+        .segmentCountPerNode(2)
+        .owner("owner-test")
+        .repairParallelism(RepairParallelism.PARALLEL)
+        .creationTime(DateTime.now())
+        .intensity(0.5D)
+        .state(RepairSchedule.State.ACTIVE);
+    RepairSchedule repairSchedule = context.storage.addRepairSchedule(mockRepairScheduleBuilder);
+    mockObjects.setRepairSchedule(repairSchedule);
+
+    return mockObjects;
+  }
+
+  private static RepairSchedule buildBasicTestRepairSchedule() {
+    DateTime nextActivation = DateTime.now();
+    UUID id = UUID.randomUUID();
+    UUID unitId = UUID.randomUUID();
+    RepairSchedule repairSchedule = RepairSchedule.builder(unitId)
+        .nextActivation(nextActivation)
+        .owner("test")
+        .repairParallelism(RepairParallelism.PARALLEL)
+        .intensity(1.0D)
+        .daysBetween(1)
+        .segmentCountPerNode(2)
+        .build(id);
+    return repairSchedule;
+  }
+
+  private static EditableRepairSchedule buildBasicTestEditableRepairSchedule() {
+    EditableRepairSchedule editableRepairSchedule = new EditableRepairSchedule();
+    editableRepairSchedule.setIntensity(1.0D);
+    editableRepairSchedule.setOwner("owner-test-2");
+    editableRepairSchedule.setDaysBetween(10);
+    editableRepairSchedule.setSegmentCountPerNode(20);
+    editableRepairSchedule.setRepairParallelism(RepairParallelism.SEQUENTIAL);
+    return editableRepairSchedule;
+  }
+
   @Test
   public void testPatchRepairScheduleBadPathParam() {
     final MockObjects mocks = initInMemoryMocks(REPAIR_SCHEDULE_URI);
 
-    RepairScheduleResource repairScheduleResource = new RepairScheduleResource(mocks.context);
+    RepairScheduleResource repairScheduleResource = new RepairScheduleResource(mocks.context,
+        mocks.context.storage.getRepairRunDao());
 
     Response response = repairScheduleResource.patchRepairSchedule(
         mocks.uriInfo,
@@ -70,7 +162,8 @@ public class RepairScheduleResourceTest {
   public void testPatchRepairScheduleEmptyBody() {
     final MockObjects mocks = initInMemoryMocks(REPAIR_SCHEDULE_URI);
 
-    RepairScheduleResource repairScheduleResource = new RepairScheduleResource(mocks.context);
+    RepairScheduleResource repairScheduleResource = new RepairScheduleResource(mocks.context,
+        mocks.context.storage.getRepairRunDao());
 
     Response response = repairScheduleResource.patchRepairSchedule(
         mocks.uriInfo,
@@ -93,7 +186,8 @@ public class RepairScheduleResourceTest {
     final RepairSchedule mockRepairSchedule = mocks.getRepairSchedule();
 
     // Create a set of changes to patch
-    RepairScheduleResource repairScheduleResource = new RepairScheduleResource(mocks.context);
+    RepairScheduleResource repairScheduleResource = new RepairScheduleResource(mocks.context,
+        mocks.context.storage.getRepairRunDao());
     EditableRepairSchedule editableRepairSchedule = buildBasicTestEditableRepairSchedule();
 
     // Apply the changes
@@ -113,7 +207,8 @@ public class RepairScheduleResourceTest {
     final MockObjects mocks = initFailedUpdateStorageMocks(REPAIR_SCHEDULE_URI, UUID.randomUUID());
 
     // Create a set of changes to patch
-    RepairScheduleResource repairScheduleResource = new RepairScheduleResource(mocks.context);
+    RepairScheduleResource repairScheduleResource = new RepairScheduleResource(mocks.context,
+        mocks.context.storage.getRepairRunDao());
     EditableRepairSchedule editableRepairSchedule = buildBasicTestEditableRepairSchedule();
 
     // Apply the changes - with a random UUID that won't be found
@@ -134,7 +229,8 @@ public class RepairScheduleResourceTest {
     final RepairSchedule mockRepairSchedule = mocks.getRepairSchedule();
 
     // Create a set of changes to patch
-    RepairScheduleResource repairScheduleResource = new RepairScheduleResource(mocks.context);
+    RepairScheduleResource repairScheduleResource = new RepairScheduleResource(mocks.context,
+        mocks.context.storage.getRepairRunDao());
     EditableRepairSchedule editableRepairSchedule = buildBasicTestEditableRepairSchedule();
 
     // Apply the changes
@@ -256,97 +352,6 @@ public class RepairScheduleResourceTest {
     assertThat(patchedRepairSchedule.getIntensity()).isNotNull().isEqualTo(0.0D);
     assertThat(patchedRepairSchedule.getDaysBetween()).isNotNull().isEqualTo(2);
     assertThat(patchedRepairSchedule.getSegmentCountPerNode()).isNotNull().isEqualTo(3);
-  }
-
-  private static MockObjects initFailedUpdateStorageMocks(URI uri, UUID repairScheduleId) {
-    MockObjects mockObjects = new MockObjects();
-
-    final AppContext context = new AppContext();
-
-    IStorage mockedStorage = mock(IStorage.class);
-    RepairSchedule repairSchedule = RepairSchedule.builder(UUID.randomUUID())
-        .nextActivation(DateTime.now())
-        .owner("test")
-        .repairParallelism(RepairParallelism.PARALLEL)
-        .intensity(1.0D)
-        .daysBetween(1)
-        .segmentCountPerNode(2)
-        .build(repairScheduleId);
-    mockObjects.setRepairSchedule(repairSchedule);
-
-    when(mockedStorage.getRepairSchedule(repairScheduleId)).thenReturn(Optional.of(repairSchedule));
-    when(mockedStorage.updateRepairSchedule(any())).thenReturn(false);
-    context.storage = mockedStorage;
-
-    context.config = TestRepairConfiguration.defaultConfig();
-    mockObjects.setContext(context);
-
-    UriInfo uriInfo = mock(UriInfo.class);
-    when(uriInfo.getBaseUriBuilder()).thenReturn(UriBuilder.fromUri(uri));
-    mockObjects.setUriInfo(uriInfo);
-
-    return mockObjects;
-  }
-
-  private static MockObjects initInMemoryMocks(URI uri) {
-    MockObjects mockObjects = new MockObjects();
-
-    AppContext context = new AppContext();
-    context.storage = new MemoryStorageFacade();
-    context.config = TestRepairConfiguration.defaultConfig();
-    mockObjects.setContext(context);
-
-    UriInfo uriInfo = mock(UriInfo.class);
-    when(uriInfo.getBaseUriBuilder()).thenReturn(UriBuilder.fromUri(uri));
-    mockObjects.setUriInfo(uriInfo);
-
-    RepairUnit.Builder mockRepairUnitBuilder = RepairUnit.builder()
-        .incrementalRepair(false)
-        .repairThreadCount(1)
-        .clusterName("cluster-test")
-        .keyspaceName("keyspace-test")
-        .timeout(30);
-    RepairUnit repairUnit = context.storage.addRepairUnit(mockRepairUnitBuilder);
-    mockObjects.setRepairUnit(repairUnit);
-
-    RepairSchedule.Builder mockRepairScheduleBuilder = RepairSchedule.builder(repairUnit.getId())
-        .daysBetween(1)
-        .nextActivation(DateTime.now())
-        .segmentCountPerNode(2)
-        .owner("owner-test")
-        .repairParallelism(RepairParallelism.PARALLEL)
-        .creationTime(DateTime.now())
-        .intensity(0.5D)
-        .state(RepairSchedule.State.ACTIVE);
-    RepairSchedule repairSchedule = context.storage.addRepairSchedule(mockRepairScheduleBuilder);
-    mockObjects.setRepairSchedule(repairSchedule);
-
-    return mockObjects;
-  }
-
-  private static RepairSchedule buildBasicTestRepairSchedule() {
-    DateTime nextActivation = DateTime.now();
-    UUID id = UUID.randomUUID();
-    UUID unitId = UUID.randomUUID();
-    RepairSchedule repairSchedule = RepairSchedule.builder(unitId)
-        .nextActivation(nextActivation)
-        .owner("test")
-        .repairParallelism(RepairParallelism.PARALLEL)
-        .intensity(1.0D)
-        .daysBetween(1)
-        .segmentCountPerNode(2)
-        .build(id);
-    return repairSchedule;
-  }
-
-  private static EditableRepairSchedule buildBasicTestEditableRepairSchedule() {
-    EditableRepairSchedule editableRepairSchedule = new EditableRepairSchedule();
-    editableRepairSchedule.setIntensity(1.0D);
-    editableRepairSchedule.setOwner("owner-test-2");
-    editableRepairSchedule.setDaysBetween(10);
-    editableRepairSchedule.setSegmentCountPerNode(20);
-    editableRepairSchedule.setRepairParallelism(RepairParallelism.SEQUENTIAL);
-    return editableRepairSchedule;
   }
 
   private static final class MockObjects {

@@ -192,7 +192,8 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
         environment.lifecycle().scheduledExecutorService("RepairRunner").threads(repairThreads).build(),
         config.getRepairManagerSchedulingIntervalSeconds(),
         TimeUnit.SECONDS,
-        maxParallelRepairs);
+        maxParallelRepairs,
+        context.storage.getRepairRunDao());
 
     RequestUtils.setCorsEnabled(config.isEnableCrossOrigin());
     // Enable cross-origin requests for using external GUI applications.
@@ -215,11 +216,14 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
     environment.jersey().register(pingResource);
 
     final ClusterResource addClusterResource = ClusterResource.create(context, cryptograph,
-        context.storage.getEventsDao());
+        context.storage.getEventsDao(),
+        context.storage.getRepairRunDao());
     environment.jersey().register(addClusterResource);
-    final RepairRunResource addRepairRunResource = new RepairRunResource(context);
+    final RepairRunResource addRepairRunResource = new RepairRunResource(context,
+        context.storage.getRepairRunDao());
     environment.jersey().register(addRepairRunResource);
-    final RepairScheduleResource addRepairScheduleResource = new RepairScheduleResource(context);
+    final RepairScheduleResource addRepairScheduleResource = new RepairScheduleResource(context,
+        context.storage.getRepairRunDao());
     environment.jersey().register(addRepairScheduleResource);
     final SnapshotResource snapshotResource = new SnapshotResource(context, environment,
         context.storage.getSnapshotDao());
@@ -254,12 +258,13 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
     }
 
     Thread.sleep(1000);
-    context.schedulingManager = SchedulingManager.create(context);
+    context.schedulingManager = SchedulingManager.create(context,
+        context.storage.getRepairRunDao());
     context.schedulingManager.start();
 
     if (config.hasAutoSchedulingEnabled()) {
       LOG.debug("using specified configuration for auto scheduling: {}", config.getAutoScheduling());
-      AutoSchedulingManager.start(context);
+      AutoSchedulingManager.start(context, context.storage.getRepairRunDao());
     }
 
     initializeJmxSeedsForAllClusters();
@@ -421,7 +426,8 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
   }
 
   private void schedulePurge(ScheduledExecutorService scheduler) {
-    final PurgeService purgeManager = PurgeService.create(context);
+    final PurgeService purgeManager = PurgeService.create(context,
+        context.storage.getRepairRunDao());
 
     scheduler.scheduleWithFixedDelay(
         () -> {

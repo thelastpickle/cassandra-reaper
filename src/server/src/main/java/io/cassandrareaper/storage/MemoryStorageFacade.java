@@ -19,16 +19,15 @@ package io.cassandrareaper.storage;
 
 import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.PercentRepairedMetric;
-import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairSchedule;
 import io.cassandrareaper.core.RepairSegment;
 import io.cassandrareaper.core.RepairUnit;
-import io.cassandrareaper.resources.view.RepairRunStatus;
 import io.cassandrareaper.resources.view.RepairScheduleStatus;
 import io.cassandrareaper.storage.cluster.MemClusterDao;
 import io.cassandrareaper.storage.events.IEvents;
 import io.cassandrareaper.storage.events.MemEventsDao;
 import io.cassandrareaper.storage.metrics.MemMetricsDao;
+import io.cassandrareaper.storage.repairrun.IRepairRun;
 import io.cassandrareaper.storage.repairrun.MemRepairRunDao;
 import io.cassandrareaper.storage.repairschedule.MemRepairScheduleDao;
 import io.cassandrareaper.storage.repairsegment.MemRepairSegment;
@@ -39,7 +38,6 @@ import io.cassandrareaper.storage.snapshot.MemSnapshotDao;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
-import java.util.SortedSet;
 import java.util.UUID;
 
 import org.slf4j.Logger;
@@ -103,50 +101,6 @@ public final class MemoryStorageFacade implements IStorage {
     return memClusterDao.deleteCluster(clusterName);
   }
 
-  @Override
-  public RepairRun addRepairRun(RepairRun.Builder repairRun, Collection<RepairSegment.Builder> newSegments) {
-    return memRepairRunDao.addRepairRun(repairRun, newSegments);
-  }
-
-  @Override
-  public boolean updateRepairRun(RepairRun repairRun) {
-    return memRepairRunDao.updateRepairRun(repairRun);
-  }
-
-  @Override
-  public boolean updateRepairRun(RepairRun repairRun, Optional<Boolean> updateRepairState) {
-    return memRepairRunDao.updateRepairRun(repairRun, updateRepairState);
-  }
-
-  @Override
-  public Optional<RepairRun> getRepairRun(UUID id) {
-    return memRepairRunDao.getRepairRun(id);
-  }
-
-  @Override
-  public List<RepairRun> getRepairRunsForCluster(String clusterName, Optional<Integer> limit) {
-    return memRepairRunDao.getRepairRunsForCluster(clusterName, limit);
-  }
-
-  @Override
-  public List<RepairRun> getRepairRunsForClusterPrioritiseRunning(String clusterName, Optional<Integer> limit) {
-    return memRepairRunDao.getRepairRunsForClusterPrioritiseRunning(clusterName, limit);
-  }
-
-  @Override
-  public Collection<RepairRun> getRepairRunsForUnit(UUID repairUnitId) {
-    return memRepairRunDao.getRepairRunsForUnit(repairUnitId);
-  }
-
-  @Override
-  public Collection<RepairRun> getRepairRunsWithState(RepairRun.RunState runState) {
-    return memRepairRunDao.getRepairRunsWithState(runState);
-  }
-
-  @Override
-  public Optional<RepairRun> deleteRepairRun(UUID id) {
-    return memRepairRunDao.deleteRepairRun(id);
-  }
 
   @Override
   public RepairUnit addRepairUnit(RepairUnit.Builder repairUnit) {
@@ -191,11 +145,6 @@ public final class MemoryStorageFacade implements IStorage {
   @Override
   public Collection<RepairSegment> getSegmentsWithState(UUID runId, RepairSegment.State segmentState) {
     return memRepairSegment.getSegmentsWithState(runId, segmentState);
-  }
-
-  @Override
-  public SortedSet<UUID> getRepairRunIdsForCluster(String clusterName, Optional<Integer> limit) {
-    return memRepairRunDao.getRepairRunIdsForCluster(clusterName, limit);
   }
 
   @Override
@@ -254,11 +203,6 @@ public final class MemoryStorageFacade implements IStorage {
   }
 
   @Override
-  public Collection<RepairRunStatus> getClusterRunStatuses(String clusterName, int limit) {
-    return memRepairRunDao.getClusterRunStatuses(clusterName, limit);
-  }
-
-  @Override
   public Collection<RepairScheduleStatus> getClusterScheduleStatuses(String clusterName) {
     return memRepairScheduleDao.getClusterScheduleStatuses(clusterName);
   }
@@ -291,5 +235,10 @@ public final class MemoryStorageFacade implements IStorage {
   @Override
   public ISnapshot getSnapshotDao() {
     return this.memSnapshotDao;
+  }
+
+  @Override
+  public IRepairRun getRepairRunDao() {
+    return this.memRepairRunDao;
   }
 }

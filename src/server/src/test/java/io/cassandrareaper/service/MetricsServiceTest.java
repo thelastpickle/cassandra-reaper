@@ -35,7 +35,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-
 import javax.management.JMException;
 import javax.management.MBeanServerConnection;
 import javax.management.ObjectName;
@@ -128,7 +127,7 @@ public class MetricsServiceTest {
     AppContext context = new AppContext();
     List<ThreadPoolStat> threadPoolStats
         = ClusterFacade.create(context).convertToThreadPoolStats(
-            MetricsProxy.convertToGenericMetrics(jmxStats, node));
+        MetricsProxy.convertToGenericMetrics(jmxStats, node));
     ThreadPoolStat tpstat = threadPoolStats.get(0);
 
     assertEquals(1, tpstat.getPendingTasks().intValue());
@@ -213,7 +212,7 @@ public class MetricsServiceTest {
     Node node = Node.builder().withHostname("127.0.0.1").build();
     List<DroppedMessages> droppedMessages
         = clusterFacade.convertToDroppedMessages(
-            MetricsProxy.convertToGenericMetrics(jmxStats, node));
+        MetricsProxy.convertToGenericMetrics(jmxStats, node));
     DroppedMessages dropped = droppedMessages.get(0);
 
     assertEquals(1, dropped.getMeanRate().intValue());

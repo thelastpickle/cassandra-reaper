@@ -40,7 +40,6 @@ import java.util.UUID;
 
 import com.datastax.driver.core.utils.UUIDs;
 import com.google.common.collect.Sets;
-
 import org.apache.cassandra.repair.RepairParallelism;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.joda.time.DateTime;
@@ -91,10 +90,10 @@ public final class RepairUnitServiceTest {
     when(context.jmxConnectionFactory.connectAny(Mockito.any(Collection.class))).thenReturn(proxy);
 
     when(proxy.getTablesForKeyspace(Mockito.anyString()))
-            .thenReturn(Sets.newHashSet(
-                    Table.builder().withName("table1").withCompactionStrategy(STCS).build(),
-                    Table.builder().withName("table2").withCompactionStrategy(STCS).build(),
-                    Table.builder().withName("table3").withCompactionStrategy(STCS).build()));
+        .thenReturn(Sets.newHashSet(
+            Table.builder().withName("table1").withCompactionStrategy(STCS).build(),
+            Table.builder().withName("table2").withCompactionStrategy(STCS).build(),
+            Table.builder().withName("table3").withCompactionStrategy(STCS).build()));
 
     RepairUnit unit = RepairUnit.builder()
         .clusterName(cluster.getName())
@@ -115,19 +114,19 @@ public final class RepairUnitServiceTest {
     when(context.jmxConnectionFactory.connectAny(Mockito.any(Collection.class))).thenReturn(proxy);
 
     when(proxy.getTablesForKeyspace(Mockito.anyString()))
-          .thenReturn(Sets.newHashSet(
-                Table.builder().withName("table1").build(),
-                Table.builder().withName("table2").build(),
-                Table.builder().withName("table3").build()));
+        .thenReturn(Sets.newHashSet(
+            Table.builder().withName("table1").build(),
+            Table.builder().withName("table2").build(),
+            Table.builder().withName("table3").build()));
 
     RepairUnit unit = RepairUnit.builder()
-          .clusterName(cluster.getName())
-          .keyspaceName("test")
-          .blacklistedTables(Sets.newHashSet("table1"))
-          .incrementalRepair(false)
-          .repairThreadCount(4)
-          .timeout(30)
-          .build(UUIDs.timeBased());
+        .clusterName(cluster.getName())
+        .keyspaceName("test")
+        .blacklistedTables(Sets.newHashSet("table1"))
+        .incrementalRepair(false)
+        .repairThreadCount(4)
+        .timeout(30)
+        .build(UUIDs.timeBased());
 
     assertEquals(Sets.newHashSet("table2", "table3"), service.getTablesToRepair(cluster, unit));
   }
@@ -139,10 +138,10 @@ public final class RepairUnitServiceTest {
     when(context.jmxConnectionFactory.connectAny(Mockito.any(Collection.class))).thenReturn(proxy);
 
     when(proxy.getTablesForKeyspace(Mockito.anyString()))
-            .thenReturn(Sets.newHashSet(
-                    Table.builder().withName("table1").withCompactionStrategy(TWCS).build(),
-                    Table.builder().withName("table2").withCompactionStrategy(STCS).build(),
-                    Table.builder().withName("table3").withCompactionStrategy(STCS).build()));
+        .thenReturn(Sets.newHashSet(
+            Table.builder().withName("table1").withCompactionStrategy(TWCS).build(),
+            Table.builder().withName("table2").withCompactionStrategy(STCS).build(),
+            Table.builder().withName("table3").withCompactionStrategy(STCS).build()));
 
     RepairUnit unit = RepairUnit.builder()
         .clusterName(cluster.getName())
@@ -162,10 +161,10 @@ public final class RepairUnitServiceTest {
     when(context.jmxConnectionFactory.connectAny(Mockito.any(Collection.class))).thenReturn(proxy);
 
     when(proxy.getTablesForKeyspace(Mockito.anyString()))
-            .thenReturn(Sets.newHashSet(
-                    Table.builder().withName("table1").withCompactionStrategy(STCS).build(),
-                    Table.builder().withName("table2").withCompactionStrategy(STCS).build(),
-                    Table.builder().withName("table3").withCompactionStrategy(STCS).build()));
+        .thenReturn(Sets.newHashSet(
+            Table.builder().withName("table1").withCompactionStrategy(STCS).build(),
+            Table.builder().withName("table2").withCompactionStrategy(STCS).build(),
+            Table.builder().withName("table3").withCompactionStrategy(STCS).build()));
 
     RepairUnit unit = RepairUnit.builder()
         .clusterName(cluster.getName())
@@ -186,10 +185,10 @@ public final class RepairUnitServiceTest {
     when(context.jmxConnectionFactory.connectAny(Mockito.any(Collection.class))).thenReturn(proxy);
 
     when(proxy.getTablesForKeyspace(Mockito.anyString()))
-            .thenReturn(Sets.newHashSet(
-                    Table.builder().withName("table1").withCompactionStrategy(STCS).build(),
-                    Table.builder().withName("table2").withCompactionStrategy(STCS).build(),
-                    Table.builder().withName("table3").withCompactionStrategy(TWCS).build()));
+        .thenReturn(Sets.newHashSet(
+            Table.builder().withName("table1").withCompactionStrategy(STCS).build(),
+            Table.builder().withName("table2").withCompactionStrategy(STCS).build(),
+            Table.builder().withName("table3").withCompactionStrategy(TWCS).build()));
 
     RepairUnit unit = RepairUnit.builder()
         .clusterName(cluster.getName())
@@ -210,10 +209,10 @@ public final class RepairUnitServiceTest {
     when(context.jmxConnectionFactory.connectAny(Mockito.any(Collection.class))).thenReturn(proxy);
 
     when(proxy.getTablesForKeyspace(Mockito.anyString()))
-            .thenReturn(Sets.newHashSet(
-                    Table.builder().withName("table1").withCompactionStrategy(STCS).build(),
-                    Table.builder().withName("table2").withCompactionStrategy(STCS).build(),
-                    Table.builder().withName("table3").withCompactionStrategy(STCS).build()));
+        .thenReturn(Sets.newHashSet(
+            Table.builder().withName("table1").withCompactionStrategy(STCS).build(),
+            Table.builder().withName("table2").withCompactionStrategy(STCS).build(),
+            Table.builder().withName("table3").withCompactionStrategy(STCS).build()));
 
     RepairUnit unit = RepairUnit.builder()
         .clusterName(cluster.getName())
@@ -235,10 +234,10 @@ public final class RepairUnitServiceTest {
     when(context.jmxConnectionFactory.connectAny(Mockito.any(Collection.class))).thenReturn(proxy);
 
     when(proxy.getTablesForKeyspace(Mockito.anyString()))
-            .thenReturn(Sets.newHashSet(
-                    Table.builder().withName("table1").withCompactionStrategy(STCS).build(),
-                    Table.builder().withName("table2").withCompactionStrategy(TWCS).build(),
-                    Table.builder().withName("table3").withCompactionStrategy(STCS).build()));
+        .thenReturn(Sets.newHashSet(
+            Table.builder().withName("table1").withCompactionStrategy(STCS).build(),
+            Table.builder().withName("table2").withCompactionStrategy(TWCS).build(),
+            Table.builder().withName("table3").withCompactionStrategy(STCS).build()));
 
     RepairUnit unit = RepairUnit.builder()
         .clusterName(cluster.getName())
@@ -260,10 +259,10 @@ public final class RepairUnitServiceTest {
     when(context.jmxConnectionFactory.connectAny(Mockito.any(Collection.class))).thenReturn(proxy);
 
     when(proxy.getTablesForKeyspace(Mockito.anyString()))
-            .thenReturn(Sets.newHashSet(
-                    Table.builder().withName("table1").withCompactionStrategy(STCS).build(),
-                    Table.builder().withName("table2").withCompactionStrategy(STCS).build(),
-                    Table.builder().withName("table3").withCompactionStrategy(STCS).build()));
+        .thenReturn(Sets.newHashSet(
+            Table.builder().withName("table1").withCompactionStrategy(STCS).build(),
+            Table.builder().withName("table2").withCompactionStrategy(STCS).build(),
+            Table.builder().withName("table3").withCompactionStrategy(STCS).build()));
 
     RepairUnit unit = RepairUnit.builder()
         .clusterName(cluster.getName())
@@ -285,10 +284,10 @@ public final class RepairUnitServiceTest {
 
     when(proxy.getTablesForKeyspace(Mockito.anyString()))
         .thenReturn(Sets.newHashSet(
-                Table.builder().withName("table1").withCompactionStrategy(STCS).build(),
-                Table.builder().withName("table2").withCompactionStrategy(STCS).build(),
-                Table.builder().withName("table3").withCompactionStrategy(STCS).build(),
-                Table.builder().withName("table4").withCompactionStrategy(STCS).build()));
+            Table.builder().withName("table1").withCompactionStrategy(STCS).build(),
+            Table.builder().withName("table2").withCompactionStrategy(STCS).build(),
+            Table.builder().withName("table3").withCompactionStrategy(STCS).build(),
+            Table.builder().withName("table4").withCompactionStrategy(STCS).build()));
 
     RepairUnit unit = RepairUnit.builder()
         .clusterName(cluster.getName())
@@ -311,10 +310,10 @@ public final class RepairUnitServiceTest {
 
     when(proxy.getTablesForKeyspace(Mockito.anyString()))
         .thenReturn(Sets.newHashSet(
-                Table.builder().withName("table1").withCompactionStrategy(STCS).build(),
-                Table.builder().withName("table2").withCompactionStrategy(STCS).build(),
-                Table.builder().withName("table3").withCompactionStrategy(STCS).build(),
-                Table.builder().withName("table4").withCompactionStrategy(STCS).build()));
+            Table.builder().withName("table1").withCompactionStrategy(STCS).build(),
+            Table.builder().withName("table2").withCompactionStrategy(STCS).build(),
+            Table.builder().withName("table3").withCompactionStrategy(STCS).build(),
+            Table.builder().withName("table4").withCompactionStrategy(STCS).build()));
 
     RepairUnit unit = RepairUnit.builder()
         .clusterName(cluster.getName())
@@ -346,10 +345,10 @@ public final class RepairUnitServiceTest {
 
     when(proxy.getTablesForKeyspace(Mockito.anyString()))
         .thenReturn(Sets.newHashSet(
-                Table.builder().withName("table1").withCompactionStrategy(STCS).build(),
-                Table.builder().withName("table2").withCompactionStrategy(STCS).build(),
-                Table.builder().withName("table3").withCompactionStrategy(STCS).build(),
-                Table.builder().withName("table4").withCompactionStrategy(STCS).build()));
+            Table.builder().withName("table1").withCompactionStrategy(STCS).build(),
+            Table.builder().withName("table2").withCompactionStrategy(STCS).build(),
+            Table.builder().withName("table3").withCompactionStrategy(STCS).build(),
+            Table.builder().withName("table4").withCompactionStrategy(STCS).build()));
 
     RepairUnit unit = RepairUnit.builder()
         .clusterName(cluster.getName())
@@ -381,10 +380,10 @@ public final class RepairUnitServiceTest {
 
     when(proxy.getTablesForKeyspace(Mockito.anyString()))
         .thenReturn(Sets.newHashSet(
-                Table.builder().withName("table1").withCompactionStrategy(STCS).build(),
-                Table.builder().withName("table2").withCompactionStrategy(STCS).build(),
-                Table.builder().withName("table3").withCompactionStrategy(STCS).build(),
-                Table.builder().withName("table4").withCompactionStrategy(STCS).build()));
+            Table.builder().withName("table1").withCompactionStrategy(STCS).build(),
+            Table.builder().withName("table2").withCompactionStrategy(STCS).build(),
+            Table.builder().withName("table3").withCompactionStrategy(STCS).build(),
+            Table.builder().withName("table4").withCompactionStrategy(STCS).build()));
 
     RepairUnit unit = RepairUnit.builder()
         .clusterName(cluster.getName())
@@ -412,10 +411,10 @@ public final class RepairUnitServiceTest {
 
     when(proxy.getTablesForKeyspace(Mockito.anyString()))
         .thenReturn(Sets.newHashSet(
-                Table.builder().withName("table1").withCompactionStrategy(STCS).build(),
-                Table.builder().withName("table2").withCompactionStrategy(STCS).build(),
-                Table.builder().withName("table3").withCompactionStrategy(STCS).build(),
-                Table.builder().withName("table4").withCompactionStrategy(STCS).build()));
+            Table.builder().withName("table1").withCompactionStrategy(STCS).build(),
+            Table.builder().withName("table2").withCompactionStrategy(STCS).build(),
+            Table.builder().withName("table3").withCompactionStrategy(STCS).build(),
+            Table.builder().withName("table4").withCompactionStrategy(STCS).build()));
 
     RepairUnit unit = RepairUnit.builder()
         .clusterName(cluster.getName())
@@ -443,10 +442,10 @@ public final class RepairUnitServiceTest {
 
     when(proxy.getTablesForKeyspace(Mockito.anyString()))
         .thenReturn(Sets.newHashSet(
-                Table.builder().withName("table1").withCompactionStrategy(STCS).build(),
-                Table.builder().withName("table2").withCompactionStrategy(STCS).build(),
-                Table.builder().withName("table3").withCompactionStrategy(STCS).build(),
-                Table.builder().withName("table4").withCompactionStrategy(STCS).build()));
+            Table.builder().withName("table1").withCompactionStrategy(STCS).build(),
+            Table.builder().withName("table2").withCompactionStrategy(STCS).build(),
+            Table.builder().withName("table3").withCompactionStrategy(STCS).build(),
+            Table.builder().withName("table4").withCompactionStrategy(STCS).build()));
 
     RepairUnit unit = RepairUnit.builder()
         .clusterName(cluster.getName())
@@ -478,10 +477,10 @@ public final class RepairUnitServiceTest {
 
     when(proxy.getTablesForKeyspace(Mockito.anyString()))
         .thenReturn(Sets.newHashSet(
-                Table.builder().withName("table1").withCompactionStrategy(STCS).build(),
-                Table.builder().withName("table2").withCompactionStrategy(STCS).build(),
-                Table.builder().withName("table3").withCompactionStrategy(STCS).build(),
-                Table.builder().withName("table4").withCompactionStrategy(STCS).build()));
+            Table.builder().withName("table1").withCompactionStrategy(STCS).build(),
+            Table.builder().withName("table2").withCompactionStrategy(STCS).build(),
+            Table.builder().withName("table3").withCompactionStrategy(STCS).build(),
+            Table.builder().withName("table4").withCompactionStrategy(STCS).build()));
 
     RepairUnit unit = RepairUnit.builder()
         .clusterName(cluster.getName())
@@ -523,10 +522,10 @@ public final class RepairUnitServiceTest {
 
     when(proxy.getTablesForKeyspace(Mockito.anyString()))
         .thenReturn(Sets.newHashSet(
-                Table.builder().withName("table1").withCompactionStrategy(STCS).build(),
-                Table.builder().withName("table2").withCompactionStrategy(STCS).build(),
-                Table.builder().withName("table3").withCompactionStrategy(STCS).build(),
-                Table.builder().withName("table4").withCompactionStrategy(STCS).build()));
+            Table.builder().withName("table1").withCompactionStrategy(STCS).build(),
+            Table.builder().withName("table2").withCompactionStrategy(STCS).build(),
+            Table.builder().withName("table3").withCompactionStrategy(STCS).build(),
+            Table.builder().withName("table4").withCompactionStrategy(STCS).build()));
 
     when(proxy.getLiveNodes()).thenReturn(Arrays.asList("node1", "node2"));
 
@@ -601,10 +600,10 @@ public final class RepairUnitServiceTest {
 
     when(proxy.getTablesForKeyspace(Mockito.anyString()))
         .thenReturn(Sets.newHashSet(
-                Table.builder().withName("table1").withCompactionStrategy(STCS).build(),
-                Table.builder().withName("table2").withCompactionStrategy(STCS).build(),
-                Table.builder().withName("table3").withCompactionStrategy(STCS).build(),
-                Table.builder().withName("table4").withCompactionStrategy(STCS).build()));
+            Table.builder().withName("table1").withCompactionStrategy(STCS).build(),
+            Table.builder().withName("table2").withCompactionStrategy(STCS).build(),
+            Table.builder().withName("table3").withCompactionStrategy(STCS).build(),
+            Table.builder().withName("table4").withCompactionStrategy(STCS).build()));
 
     when(proxy.getLiveNodes()).thenReturn(Arrays.asList("node1", "node2"));
 
@@ -647,10 +646,10 @@ public final class RepairUnitServiceTest {
 
     when(proxy.getTablesForKeyspace(Mockito.anyString()))
         .thenReturn(Sets.newHashSet(
-                Table.builder().withName("table1").withCompactionStrategy(STCS).build(),
-                Table.builder().withName("table2").withCompactionStrategy(STCS).build(),
-                Table.builder().withName("table3").withCompactionStrategy(STCS).build(),
-                Table.builder().withName("table4").withCompactionStrategy(STCS).build()));
+            Table.builder().withName("table1").withCompactionStrategy(STCS).build(),
+            Table.builder().withName("table2").withCompactionStrategy(STCS).build(),
+            Table.builder().withName("table3").withCompactionStrategy(STCS).build(),
+            Table.builder().withName("table4").withCompactionStrategy(STCS).build()));
 
     RepairUnit unit = RepairUnit.builder()
         .clusterName(cluster.getName())
@@ -682,10 +681,10 @@ public final class RepairUnitServiceTest {
 
     when(proxy.getTablesForKeyspace(Mockito.anyString()))
         .thenReturn(Sets.newHashSet(
-                Table.builder().withName("table1").withCompactionStrategy(STCS).build(),
-                Table.builder().withName("table2").withCompactionStrategy(STCS).build(),
-                Table.builder().withName("table3").withCompactionStrategy(STCS).build(),
-                Table.builder().withName("table4").withCompactionStrategy(STCS).build()));
+            Table.builder().withName("table1").withCompactionStrategy(STCS).build(),
+            Table.builder().withName("table2").withCompactionStrategy(STCS).build(),
+            Table.builder().withName("table3").withCompactionStrategy(STCS).build(),
+            Table.builder().withName("table4").withCompactionStrategy(STCS).build()));
 
     when(proxy.getLiveNodes()).thenReturn(Arrays.asList("node1", "node2"));
 
@@ -848,7 +847,7 @@ public final class RepairUnitServiceTest {
         .build(UUIDs.timeBased());
 
     when(localContext.storage.getRepairSchedulesForClusterAndKeyspace(any(), any()))
-      .thenReturn(Arrays.asList(repairSchedule));
+        .thenReturn(Arrays.asList(repairSchedule));
     assertTrue("Unit is not conflicting with existing schedules",
         repairUnitService.unitConflicts(cluster, unitBuilder));
   }
