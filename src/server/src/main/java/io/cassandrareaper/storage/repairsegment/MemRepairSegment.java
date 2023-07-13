@@ -67,7 +67,8 @@ public class MemRepairSegment implements IRepairSegment {
 
   @Override
   public boolean updateRepairSegment(RepairSegment newRepairSegment) {
-    if (memoryStorageFacade.getRepairSegment(newRepairSegment.getRunId(), newRepairSegment.getId()) == null) {
+    if (memoryStorageFacade.getRepairSegmentDao().getRepairSegment(newRepairSegment.getRunId(),
+        newRepairSegment.getId()) == null) {
       return false;
     } else {
       this.repairSegments.put(newRepairSegment.getId(), newRepairSegment);

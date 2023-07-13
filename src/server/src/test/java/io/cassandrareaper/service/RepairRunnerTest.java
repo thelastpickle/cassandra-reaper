@@ -40,6 +40,7 @@ import io.cassandrareaper.storage.IStorage;
 import io.cassandrareaper.storage.MemoryStorageFacade;
 import io.cassandrareaper.storage.cassandra.CassandraStorageFacade;
 import io.cassandrareaper.storage.repairrun.IRepairRun;
+import io.cassandrareaper.storage.repairsegment.IRepairSegment;
 
 import java.io.IOException;
 import java.math.BigInteger;
@@ -236,8 +237,9 @@ public final class RepairRunnerTest {
                     .build(),
                 cf.getId())));
     final UUID runId = run.getId();
-    final UUID segmentId = storage.getNextFreeSegments(run.getId()).get(0).getId();
-    assertEquals(storage.getRepairSegment(runId, segmentId).get().getState(), RepairSegment.State.NOT_STARTED);
+    final UUID segmentId = storage.getRepairSegmentDao().getNextFreeSegments(run.getId()).get(0).getId();
+    assertEquals(storage.getRepairSegmentDao().getRepairSegment(runId, segmentId).get().getState(),
+        RepairSegment.State.NOT_STARTED);
     AppContext context = new AppContext();
     context.storage = storage;
     context.config = new ReaperApplicationConfiguration();
@@ -260,7 +262,8 @@ public final class RepairRunnerTest {
     when(jmx.triggerRepair(any(), any(), any(), any(), any(), anyBoolean(), any(), any(), any(), anyInt()))
         .then(
             (invocation) -> {
-              assertEquals(RepairSegment.State.STARTED, storage.getRepairSegment(runId, segmentId).get().getState());
+              assertEquals(RepairSegment.State.STARTED,
+                  storage.getRepairSegmentDao().getRepairSegment(runId, segmentId).get().getState());
               final int repairNumber = repairAttempts.getAndIncrement();
               switch (repairNumber) {
                 case 1:
@@ -273,7 +276,7 @@ public final class RepairRunnerTest {
                               Optional.empty(), null, jmx);
                       assertEquals(
                           RepairSegment.State.RUNNING,
-                          storage.getRepairSegment(runId, segmentId).get().getState());
+                          storage.getRepairSegmentDao().getRepairSegment(runId, segmentId).get().getState());
                     }
                   }.start();
                   break;
@@ -288,7 +291,7 @@ public final class RepairRunnerTest {
                               Optional.empty(), null, jmx);
                       assertEquals(
                           RepairSegment.State.RUNNING,
-                          storage.getRepairSegment(runId, segmentId).get().getState());
+                          storage.getRepairSegmentDao().getRepairSegment(runId, segmentId).get().getState());
                       ((RepairStatusHandler) invocation.getArgument(7))
                           .handle(
                               repairNumber,
@@ -296,7 +299,7 @@ public final class RepairRunnerTest {
                               Optional.empty(), null, jmx);
                       assertEquals(
                           RepairSegment.State.DONE,
-                          storage.getRepairSegment(runId, segmentId).get().getState());
+                          storage.getRepairSegmentDao().getRepairSegment(runId, segmentId).get().getState());
                       ((RepairStatusHandler) invocation.getArgument(7))
                           .handle(repairNumber,
                               Optional.of(ActiveRepairService.Status.FINISHED),
@@ -390,8 +393,9 @@ public final class RepairRunnerTest {
                     .build(),
                 cf.getId())));
     final UUID runId = run.getId();
-    final UUID segmentId = storage.getNextFreeSegments(run.getId()).get(0).getId();
-    assertEquals(storage.getRepairSegment(runId, segmentId).get().getState(), RepairSegment.State.NOT_STARTED);
+    final UUID segmentId = storage.getRepairSegmentDao().getNextFreeSegments(run.getId()).get(0).getId();
+    assertEquals(storage.getRepairSegmentDao().getRepairSegment(runId, segmentId).get().getState(),
+        RepairSegment.State.NOT_STARTED);
     AppContext context = new AppContext();
     context.storage = storage;
     context.config = new ReaperApplicationConfiguration();
@@ -414,7 +418,7 @@ public final class RepairRunnerTest {
             (invocation) -> {
               assertEquals(
                   RepairSegment.State.STARTED,
-                  storage.getRepairSegment(runId, segmentId).get().getState());
+                  storage.getRepairSegmentDao().getRepairSegment(runId, segmentId).get().getState());
               final int repairNumber = repairAttempts.getAndIncrement();
               switch (repairNumber) {
                 case 1:
@@ -427,7 +431,7 @@ public final class RepairRunnerTest {
                               Optional.of(ProgressEventType.START), null, jmx);
                       assertEquals(
                           RepairSegment.State.RUNNING,
-                          storage.getRepairSegment(runId, segmentId).get().getState());
+                          storage.getRepairSegmentDao().getRepairSegment(runId, segmentId).get().getState());
                     }
                   }.start();
                   break;
@@ -441,14 +445,14 @@ public final class RepairRunnerTest {
                               Optional.of(ProgressEventType.START), null, jmx);
                       assertEquals(
                           RepairSegment.State.RUNNING,
-                          storage.getRepairSegment(runId, segmentId).get().getState());
+                          storage.getRepairSegmentDao().getRepairSegment(runId, segmentId).get().getState());
                       ((RepairStatusHandler) invocation.getArgument(7))
                           .handle(
                               repairNumber, Optional.empty(),
                               Optional.of(ProgressEventType.SUCCESS), null, jmx);
                       assertEquals(
                           RepairSegment.State.DONE,
-                          storage.getRepairSegment(runId, segmentId).get().getState());
+                          storage.getRepairSegmentDao().getRepairSegment(runId, segmentId).get().getState());
                       ((RepairStatusHandler) invocation.getArgument(7))
                           .handle(
                               repairNumber, Optional.empty(),
@@ -539,8 +543,9 @@ public final class RepairRunnerTest {
     DateTimeUtils.setCurrentMillisFixed(timeRun);
     RepairRun run = generateRepairRunForPendingCompactions(intensity, storage, cf);
     final UUID runId = run.getId();
-    final UUID segmentId = storage.getNextFreeSegments(run.getId()).get(0).getId();
-    assertEquals(storage.getRepairSegment(runId, segmentId).get().getState(), RepairSegment.State.NOT_STARTED);
+    final UUID segmentId = storage.getRepairSegmentDao().getNextFreeSegments(run.getId()).get(0).getId();
+    assertEquals(storage.getRepairSegmentDao().getRepairSegment(runId, segmentId).get().getState(),
+        RepairSegment.State.NOT_STARTED);
     final JmxProxy jmx = JmxProxyTest.mockJmxProxyImpl();
     when(jmx.getClusterName()).thenReturn(cluster.getName());
     when(jmx.isConnectionAlive()).thenReturn(true);
@@ -669,8 +674,9 @@ public final class RepairRunnerTest {
     DateTimeUtils.setCurrentMillisFixed(timeRun);
     RepairRun run = generateRepairRunForPendingCompactions(intensity, storage, cf);
     final UUID runId = run.getId();
-    final UUID segmentId = storage.getNextFreeSegments(run.getId()).get(0).getId();
-    assertEquals(storage.getRepairSegment(runId, segmentId).get().getState(), RepairSegment.State.NOT_STARTED);
+    final UUID segmentId = storage.getRepairSegmentDao().getNextFreeSegments(run.getId()).get(0).getId();
+    assertEquals(storage.getRepairSegmentDao().getRepairSegment(runId, segmentId).get().getState(),
+        RepairSegment.State.NOT_STARTED);
     final JmxProxy jmx = JmxProxyTest.mockJmxProxyImpl();
     when(jmx.getClusterName()).thenReturn(cluster.getName());
     when(jmx.isConnectionAlive()).thenReturn(true);
@@ -866,8 +872,9 @@ public final class RepairRunnerTest {
         cf,
         null);
     final UUID runId = run.getId();
-    final UUID segmentId = storage.getNextFreeSegments(run.getId()).get(0).getId();
-    assertEquals(storage.getRepairSegment(runId, segmentId).get().getState(), RepairSegment.State.NOT_STARTED);
+    final UUID segmentId = storage.getRepairSegmentDao().getNextFreeSegments(run.getId()).get(0).getId();
+    assertEquals(storage.getRepairSegmentDao().getRepairSegment(runId, segmentId).get().getState(),
+        RepairSegment.State.NOT_STARTED);
     final JmxProxy jmx = JmxProxyTest.mockJmxProxyImpl();
     when(jmx.getClusterName()).thenReturn(cluster.getName());
     when(jmx.isConnectionAlive()).thenReturn(true);
@@ -1065,8 +1072,9 @@ public final class RepairRunnerTest {
         cf,
         UUID.fromString(endpointToHostIDMap.get("127.0.0.1")));
     final UUID runId = run.getId();
-    final UUID segmentId = storage.getNextFreeSegments(run.getId()).get(0).getId();
-    assertEquals(storage.getRepairSegment(runId, segmentId).get().getState(), RepairSegment.State.NOT_STARTED);
+    final UUID segmentId = storage.getRepairSegmentDao().getNextFreeSegments(run.getId()).get(0).getId();
+    assertEquals(storage.getRepairSegmentDao().getRepairSegment(runId, segmentId).get().getState(),
+        RepairSegment.State.NOT_STARTED);
     final JmxProxy jmx = JmxProxyTest.mockJmxProxyImpl();
     when(jmx.getClusterName()).thenReturn(cluster.getName());
     when(jmx.isConnectionAlive()).thenReturn(true);
@@ -1285,8 +1293,9 @@ public final class RepairRunnerTest {
         null
     );
     final UUID runId = run.getId();
-    final UUID segmentId = storage.getNextFreeSegments(run.getId()).get(0).getId();
-    assertEquals(storage.getRepairSegment(runId, segmentId).get().getState(), RepairSegment.State.NOT_STARTED);
+    final UUID segmentId = storage.getRepairSegmentDao().getNextFreeSegments(run.getId()).get(0).getId();
+    assertEquals(storage.getRepairSegmentDao().getRepairSegment(runId, segmentId).get().getState(),
+        RepairSegment.State.NOT_STARTED);
     final JmxProxy proxy = JmxProxyTest.mockJmxProxyImpl();
     when(proxy.getClusterName()).thenReturn(cluster.getName());
     when(proxy.isConnectionAlive()).thenReturn(true);
@@ -1378,12 +1387,15 @@ public final class RepairRunnerTest {
 
     IRepairRun mockedRepairRun = mock(IRepairRun.class);
     Mockito.when(mockedRepairRun.getRepairRun(any())).thenReturn(Optional.of(run));
-
+    IRepairSegment mockedRepairSegmentDao = mock(IRepairSegment.class);
     List<RepairSegment> segments = generateRepairSegments(10, 0, 1, repairUnit.getId());
+    Mockito.when(mockedRepairSegmentDao.getSegmentsWithState(any(), any())).thenReturn(segments);
+    Mockito.when(context.storage.getRepairSegmentDao()).thenReturn(mockedRepairSegmentDao);
+
+
     Mockito.when(((IDistributedStorage) context.storage).countRunningReapers()).thenReturn(1);
     Mockito.when(((CassandraStorageFacade) context.storage).getRepairRunDao()).thenReturn(mockedRepairRun);
     Mockito.when(((CassandraStorageFacade) context.storage).getRepairUnit(any(UUID.class))).thenReturn(repairUnit);
-    Mockito.when(((CassandraStorageFacade) context.storage).getSegmentsWithState(any(), any())).thenReturn(segments);
     Mockito.when((((CassandraStorageFacade) context.storage).getRepairSchedulesForClusterAndKeyspace(any(), any())))
         .thenReturn(schedules);
 
@@ -1468,10 +1480,13 @@ public final class RepairRunnerTest {
     Mockito.when(((CassandraStorageFacade) context.storage).getRepairRunDao()).thenReturn(mockedRepairRunDao);
     Mockito.when(mockedRepairRunDao.getRepairRun(any())).thenReturn(Optional.of(run));
 
+    IRepairSegment mockedRepairSegmentDao = mock(IRepairSegment.class);
     List<RepairSegment> segments = generateRepairSegments(100, 35, 10, repairUnit.getId());
+    Mockito.when(mockedRepairSegmentDao.getSegmentsWithState(any(), any())).thenReturn(segments);
+    Mockito.when(context.storage.getRepairSegmentDao()).thenReturn(mockedRepairSegmentDao);
+
     Mockito.when(((IDistributedStorage) context.storage).countRunningReapers()).thenReturn(1);
     Mockito.when(((CassandraStorageFacade) context.storage).getRepairUnit(any(UUID.class))).thenReturn(repairUnit);
-    Mockito.when(((CassandraStorageFacade) context.storage).getSegmentsWithState(any(), any())).thenReturn(segments);
     Mockito.when((((CassandraStorageFacade) context.storage).getRepairSchedulesForClusterAndKeyspace(any(), any())))
         .thenReturn(schedules);
 
@@ -1558,10 +1573,13 @@ public final class RepairRunnerTest {
     Mockito.when(context.storage.getRepairRunDao()).thenReturn(mockedRepairRunDao);
     Mockito.when(mockedRepairRunDao.getRepairRun(any())).thenReturn(Optional.of(run));
 
+    IRepairSegment mockedRepairSegmentDao = mock(IRepairSegment.class);
     List<RepairSegment> segments = generateRepairSegments(100, 10, maxDuration, repairUnit.getId());
+    Mockito.when(mockedRepairSegmentDao.getSegmentsWithState(any(), any())).thenReturn(segments);
+    Mockito.when(context.storage.getRepairSegmentDao()).thenReturn(mockedRepairSegmentDao);
+
     Mockito.when(((IDistributedStorage) context.storage).countRunningReapers()).thenReturn(1);
     Mockito.when(((CassandraStorageFacade) context.storage).getRepairUnit(any(UUID.class))).thenReturn(repairUnit);
-    Mockito.when(((CassandraStorageFacade) context.storage).getSegmentsWithState(any(), any())).thenReturn(segments);
     Mockito.when((((CassandraStorageFacade) context.storage).getRepairSchedulesForClusterAndKeyspace(any(), any())))
         .thenReturn(schedules);
 
@@ -1636,10 +1654,13 @@ public final class RepairRunnerTest {
     Mockito.when(mockedRepairRunDao.getRepairRun(any())).thenReturn(Optional.of(run));
     Mockito.when(((CassandraStorageFacade) context.storage).getRepairRunDao()).thenReturn(mockedRepairRunDao);
 
+    IRepairSegment mockedRepairSegmentDao = mock(IRepairSegment.class);
     List<RepairSegment> segments = generateRepairSegments(100, 30, maxDuration, repairUnit.getId());
+    Mockito.when(mockedRepairSegmentDao.getSegmentsWithState(any(), any())).thenReturn(segments);
+    Mockito.when(context.storage.getRepairSegmentDao()).thenReturn(mockedRepairSegmentDao);
+
     Mockito.when(((IDistributedStorage) context.storage).countRunningReapers()).thenReturn(1);
     Mockito.when(((CassandraStorageFacade) context.storage).getRepairUnit(any(UUID.class))).thenReturn(repairUnit);
-    Mockito.when(((CassandraStorageFacade) context.storage).getSegmentsWithState(any(), any())).thenReturn(segments);
 
     Mockito.when(context.storage.getCluster(any())).thenReturn(cluster);
     JmxConnectionFactory jmxConnectionFactory = mock(JmxConnectionFactory.class);
@@ -1738,10 +1759,14 @@ public final class RepairRunnerTest {
     Mockito.when(mockedRepairRunDao.getRepairRun(any())).thenReturn(Optional.of(run));
     Mockito.when(((CassandraStorageFacade) context.storage).getRepairRunDao()).thenReturn(mockedRepairRunDao);
 
+    IRepairSegment mockedRepairSegmentDao = mock(IRepairSegment.class);
     List<RepairSegment> segments = generateRepairSegments(100, 30, maxDuration, repairUnit.getId());
+    Mockito.when(mockedRepairSegmentDao.getSegmentsWithState(any(), any())).thenReturn(segments);
+    Mockito.when(context.storage.getRepairSegmentDao()).thenReturn(mockedRepairSegmentDao);
+
     Mockito.when(((IDistributedStorage) context.storage).countRunningReapers()).thenReturn(1);
     Mockito.when(((CassandraStorageFacade) context.storage).getRepairUnit(any(UUID.class))).thenReturn(repairUnit);
-    Mockito.when(((CassandraStorageFacade) context.storage).getSegmentsWithState(any(), any())).thenReturn(segments);
+
 
     List<UUID> runningRepairs = Lists.newArrayList();
     for (int i = 0; i < 3; i++) {
@@ -1792,10 +1817,13 @@ public final class RepairRunnerTest {
         .timeout(segmentTimeout)
         .build(UUID.randomUUID());
 
+    IRepairSegment mockedRepairSegmentDao = mock(IRepairSegment.class);
     List<RepairSegment> segments = generateRepairSegments(100, 30, maxDuration, repairUnit.getId());
+    Mockito.when(mockedRepairSegmentDao.getSegmentsWithState(any(), any())).thenReturn(segments);
+    Mockito.when(context.storage.getRepairSegmentDao()).thenReturn(mockedRepairSegmentDao);
+
     Mockito.when(((IDistributedStorage) context.storage).countRunningReapers()).thenReturn(1);
     Mockito.when(((CassandraStorageFacade) context.storage).getRepairUnit(any(UUID.class))).thenReturn(repairUnit);
-    Mockito.when(((CassandraStorageFacade) context.storage).getSegmentsWithState(any(), any())).thenReturn(segments);
 
     List<UUID> runningRepairs = Lists.newArrayList();
     for (int i = 0; i < 3; i++) {

@@ -276,7 +276,7 @@ public final class RepairRunResourceTest {
     // tokens [0, 100, 200], 6 requested segments per node and 3 nodes causes generating 20 RepairSegments
     assertEquals(
         20,
-        context.storage.getSegmentAmountForRepairRunWithState(
+        context.storage.getRepairSegmentDao().getSegmentAmountForRepairRunWithState(
             run.getId(), RepairSegment.State.NOT_STARTED));
 
     // adding another repair run should work as well
@@ -494,7 +494,7 @@ public final class RepairRunResourceTest {
     assertEquals(RepairRun.RunState.NOT_STARTED, repairRun.getRunState());
     // but the running segment should be untouched
     assertEquals(0,
-        context.storage.getSegmentAmountForRepairRunWithState(runId,
+        context.storage.getRepairSegmentDao().getSegmentAmountForRepairRunWithState(runId,
             RepairSegment.State.RUNNING));
   }
 

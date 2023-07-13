@@ -30,6 +30,7 @@ import io.cassandrareaper.storage.IDistributedStorage;
 import io.cassandrareaper.storage.IStorage;
 import io.cassandrareaper.storage.cassandra.CassandraStorageFacade;
 import io.cassandrareaper.storage.repairrun.IRepairRun;
+import io.cassandrareaper.storage.repairsegment.IRepairSegment;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -129,11 +130,14 @@ public final class RepairManagerTest {
         .withRunId(run.getId())
         .withId(UUIDs.timeBased())
         .build();
+    IRepairSegment mockedRepairSegmentDao = mock(IRepairSegment.class);
+    Mockito.when(context.storage.getRepairSegmentDao()).thenReturn(mockedRepairSegmentDao);
+    when(mockedRepairSegmentDao.getSegmentsWithState(any(), any())).thenReturn(Arrays.asList(segment));
 
     context.repairManager.repairRunners.put(run.getId(), mock(RepairRunner.class));
     Mockito.doNothing().when(context.repairManager).abortSegments(any(), any());
     Mockito.doReturn(run).when(context.repairManager).startRepairRun(run);
-    when(context.storage.getSegmentsWithState(any(), any())).thenReturn(Arrays.asList(segment));
+
     when(((IDistributedStorage) context.storage).getLockedSegmentsForRun(any())).thenReturn(Collections.emptySet());
     when(context.storage.getRepairUnit(any(UUID.class))).thenReturn(cf);
 
@@ -215,7 +219,9 @@ public final class RepairManagerTest {
     Mockito.doReturn(run).when(context.repairManager).startRepairRun(run);
     when(mockedRepairRunDao.getRepairRunsWithState(RepairRun.RunState.RUNNING)).thenReturn(Arrays.asList(run));
     when(mockedRepairRunDao.getRepairRunsWithState(RepairRun.RunState.PAUSED)).thenReturn(Collections.emptyList());
-    when(context.storage.getSegmentsWithState(any(), any())).thenReturn(Arrays.asList(segment));
+    IRepairSegment mockedRepairSegmentDao = mock(IRepairSegment.class);
+    Mockito.when(context.storage.getRepairSegmentDao()).thenReturn(mockedRepairSegmentDao);
+    when(mockedRepairSegmentDao.getSegmentsWithState(any(), any())).thenReturn(Arrays.asList(segment));
     when(context.storage.getRepairUnit(any(UUID.class))).thenReturn(cf);
     when(((IDistributedStorage) context.storage).getLockedSegmentsForRun(any())).thenReturn(
         new HashSet<UUID>(Arrays.asList(segment.getId())));
@@ -290,13 +296,16 @@ public final class RepairManagerTest {
         .withId(UUIDs.timeBased())
         .build();
 
+    IRepairSegment mockedRepairSegmentDao = mock(IRepairSegment.class);
+    Mockito.when(context.storage.getRepairSegmentDao()).thenReturn(mockedRepairSegmentDao);
+    when(mockedRepairSegmentDao.getSegmentsWithState(any(), any())).thenReturn(Arrays.asList(segment));
 
     context.repairManager.repairRunners.put(run.getId(), mock(RepairRunner.class));
     Mockito.doNothing().when(context.repairManager).abortSegments(any(), any());
     Mockito.doReturn(run).when(context.repairManager).startRepairRun(run);
     when(mockedRepairRunDao.getRepairRunsWithState(RepairRun.RunState.RUNNING)).thenReturn(Arrays.asList(run));
     when(mockedRepairRunDao.getRepairRunsWithState(RepairRun.RunState.PAUSED)).thenReturn(Collections.emptyList());
-    when(context.storage.getSegmentsWithState(any(), any())).thenReturn(Arrays.asList(segment));
+
     when(context.storage.getRepairUnit(any(UUID.class))).thenReturn(cf);
 
     context.repairManager.resumeRunningRepairRuns();
@@ -373,10 +382,12 @@ public final class RepairManagerTest {
     Mockito.doNothing().when(context.repairManager).abortSegments(any(), any());
     Mockito.doReturn(run).when(context.repairManager).startRepairRun(run);
 
+    IRepairSegment mockedRepairSegmentDao = mock(IRepairSegment.class);
+    Mockito.when(context.storage.getRepairSegmentDao()).thenReturn(mockedRepairSegmentDao);
+    when(mockedRepairSegmentDao.getSegmentsWithState(any(), any())).thenReturn(Arrays.asList(segment));
 
     when(mockedRepairRunDao.getRepairRunsWithState(RepairRun.RunState.RUNNING)).thenReturn(Arrays.asList(run));
     when(mockedRepairRunDao.getRepairRunsWithState(RepairRun.RunState.PAUSED)).thenReturn(Collections.emptyList());
-    when(context.storage.getSegmentsWithState(any(), any())).thenReturn(Arrays.asList(segment));
     when(context.storage.getRepairUnit(any(UUID.class))).thenReturn(cf);
 
     context.repairManager.resumeRunningRepairRuns();

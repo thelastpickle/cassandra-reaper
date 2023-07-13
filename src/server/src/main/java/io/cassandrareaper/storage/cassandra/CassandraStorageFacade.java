@@ -27,7 +27,6 @@ import io.cassandrareaper.core.PercentRepairedMetric;
 import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairSchedule;
 import io.cassandrareaper.core.RepairSegment;
-import io.cassandrareaper.core.RepairSegment.State;
 import io.cassandrareaper.core.RepairUnit;
 import io.cassandrareaper.resources.view.RepairScheduleStatus;
 import io.cassandrareaper.service.RingRange;
@@ -43,6 +42,7 @@ import io.cassandrareaper.storage.repairrun.CassRepairRunDao;
 import io.cassandrareaper.storage.repairrun.IRepairRun;
 import io.cassandrareaper.storage.repairschedule.CassRepairScheduleDao;
 import io.cassandrareaper.storage.repairsegment.CassRepairSegmentDao;
+import io.cassandrareaper.storage.repairsegment.IRepairSegment;
 import io.cassandrareaper.storage.repairunit.CassRepairUnitDao;
 import io.cassandrareaper.storage.snapshot.CassSnapshotDao;
 import io.cassandrareaper.storage.snapshot.ISnapshot;
@@ -271,17 +271,6 @@ public final class CassandraStorageFacade implements IStorage, IDistributedStora
     return cassClusterDao.deleteCluster(clusterName);
   }
 
-
-  @Override
-  public int getSegmentAmountForRepairRun(UUID runId) {
-    return cassRepairSegmentDao.getSegmentAmountForRepairRun(runId);
-  }
-
-  @Override
-  public int getSegmentAmountForRepairRunWithState(UUID runId, RepairSegment.State state) {
-    return cassRepairSegmentDao.getSegmentAmountForRepairRunWithState(runId, state);
-  }
-
   @Override
   public RepairUnit addRepairUnit(RepairUnit.Builder newRepairUnit) {
 
@@ -306,34 +295,9 @@ public final class CassandraStorageFacade implements IStorage, IDistributedStora
   }
 
   @Override
-  public boolean updateRepairSegment(RepairSegment segment) {
-
-    return cassRepairSegmentDao.updateRepairSegment(segment);
-  }
-
-  @Override
   public boolean updateRepairSegmentUnsafe(RepairSegment segment) {
 
     return cassRepairSegmentDao.updateRepairSegmentUnsafe(segment);
-  }
-
-  @Override
-  public Optional<RepairSegment> getRepairSegment(UUID runId, UUID segmentId) {
-
-    return cassRepairSegmentDao.getRepairSegment(runId, segmentId);
-  }
-
-  @Override
-  public Collection<RepairSegment> getRepairSegmentsForRun(UUID runId) {
-    // First gather segments ids
-
-    return cassRepairSegmentDao.getRepairSegmentsForRun(runId);
-  }
-
-  @Override
-  public List<RepairSegment> getNextFreeSegments(UUID runId) {
-
-    return cassRepairSegmentDao.getNextFreeSegments(runId);
   }
 
   @Override
@@ -351,12 +315,6 @@ public final class CassandraStorageFacade implements IStorage, IDistributedStora
 
   private boolean segmentIsCandidate(RepairSegment seg, Set<String> lockedNodes) {
     return cassRepairSegmentDao.segmentIsCandidate(seg, lockedNodes);
-  }
-
-  @Override
-  public Collection<RepairSegment> getSegmentsWithState(UUID runId, State segmentState) {
-
-    return cassRepairSegmentDao.getSegmentsWithState(runId, segmentState);
   }
 
   @Override
@@ -608,6 +566,11 @@ public final class CassandraStorageFacade implements IStorage, IDistributedStora
   @Override
   public IRepairRun getRepairRunDao() {
     return this.cassRepairRunDao;
+  }
+
+  @Override
+  public IRepairSegment getRepairSegmentDao() {
+    return this.cassRepairSegmentDao;
   }
 
   public enum CassandraMode {

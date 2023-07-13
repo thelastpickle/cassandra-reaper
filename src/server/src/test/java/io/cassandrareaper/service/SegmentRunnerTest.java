@@ -36,6 +36,7 @@ import io.cassandrareaper.jmx.JmxProxyTest;
 import io.cassandrareaper.jmx.RepairStatusHandler;
 import io.cassandrareaper.storage.IStorage;
 import io.cassandrareaper.storage.MemoryStorageFacade;
+import io.cassandrareaper.storage.repairsegment.IRepairSegment;
 
 import java.io.IOException;
 import java.math.BigInteger;
@@ -134,7 +135,7 @@ public final class SegmentRunnerTest {
         .build());
 
     final UUID runId = run.getId();
-    final UUID segmentId = context.storage.getNextFreeSegments(
+    final UUID segmentId = context.storage.getRepairSegmentDao().getNextFreeSegments(
         run.getId()).get(0).getId();
 
     final ExecutorService executor = Executors.newSingleThreadExecutor();
@@ -158,7 +159,7 @@ public final class SegmentRunnerTest {
             (invocation) -> {
               assertEquals(
                   RepairSegment.State.STARTED,
-                  context.storage.getRepairSegment(runId, segmentId).get().getState());
+                  context.storage.getRepairSegmentDao().getRepairSegment(runId, segmentId).get().getState());
 
               future.setValue(
                   executor.submit(
@@ -175,7 +176,8 @@ public final class SegmentRunnerTest {
 
                           assertEquals(
                               RepairSegment.State.RUNNING,
-                              context.storage.getRepairSegment(runId, segmentId).get().getState());
+                              context.storage.getRepairSegmentDao().getRepairSegment(runId,
+                                  segmentId).get().getState());
                         }
                       }));
               return 1;
@@ -211,16 +213,17 @@ public final class SegmentRunnerTest {
     future.getValue().get();
     executor.shutdown();
 
-    assertEquals(RepairSegment.State.NOT_STARTED, context.storage.getRepairSegment(runId, segmentId).get().getState());
-    assertEquals(1, context.storage.getRepairSegment(runId, segmentId).get().getFailCount());
+    assertEquals(RepairSegment.State.NOT_STARTED,
+        context.storage.getRepairSegmentDao().getRepairSegment(runId, segmentId).get().getState());
+    assertEquals(1, context.storage.getRepairSegmentDao().getRepairSegment(runId, segmentId).get().getFailCount());
   }
 
   @Test
-  public void successTest() throws InterruptedException, ReaperException, ExecutionException,
-      MalformedObjectNameException, ReflectionException, IOException {
+  public void successTest() throws InterruptedException, ReaperException,
+      ExecutionException, MalformedObjectNameException,
+      ReflectionException, IOException {
     final IStorage storage = new MemoryStorageFacade();
     final int segmentTimeout = 30;
-
     RepairUnit cf = storage.addRepairUnit(
         RepairUnit.builder()
             .clusterName("reaper")
@@ -255,7 +258,7 @@ public final class SegmentRunnerTest {
         .build());
 
     final UUID runId = run.getId();
-    final UUID segmentId = storage.getNextFreeSegments(run.getId()).get(0).getId();
+    final UUID segmentId = storage.getRepairSegmentDao().getNextFreeSegments(run.getId()).get(0).getId();
     final ExecutorService executor = Executors.newSingleThreadExecutor();
     final MutableObject<Future<?>> future = new MutableObject<>();
     AppContext context = new AppContext();
@@ -279,7 +282,7 @@ public final class SegmentRunnerTest {
             (invocation) -> {
               assertEquals(
                   RepairSegment.State.STARTED,
-                  storage.getRepairSegment(runId, segmentId).get().getState());
+                  storage.getRepairSegmentDao().getRepairSegment(runId, segmentId).get().getState());
 
               future.setValue(
                   executor.submit(
@@ -294,7 +297,7 @@ public final class SegmentRunnerTest {
 
                         assertEquals(
                             RepairSegment.State.RUNNING,
-                            storage.getRepairSegment(runId, segmentId).get().getState());
+                            storage.getRepairSegmentDao().getRepairSegment(runId, segmentId).get().getState());
 
                         // test an unrelated repair. Should throw exception
                         try {
@@ -305,7 +308,6 @@ public final class SegmentRunnerTest {
                                   Optional.empty(),
                                   "Repair command 2 has failed",
                                   jmx);
-
                           throw new AssertionError("illegal handle of wrong repairNo");
                         } catch (IllegalArgumentException ignore) {
                         }
@@ -320,7 +322,7 @@ public final class SegmentRunnerTest {
 
                         assertEquals(
                             RepairSegment.State.DONE,
-                            storage.getRepairSegment(runId, segmentId).get().getState());
+                            storage.getRepairSegmentDao().getRepairSegment(runId, segmentId).get().getState());
 
                         ((RepairStatusHandler) invocation.getArgument(7))
                             .handle(
@@ -332,7 +334,7 @@ public final class SegmentRunnerTest {
 
                         assertEquals(
                             RepairSegment.State.DONE,
-                            storage.getRepairSegment(runId, segmentId).get().getState());
+                            storage.getRepairSegmentDao().getRepairSegment(runId, segmentId).get().getState());
                       }));
               return 1;
             });
@@ -364,8 +366,9 @@ public final class SegmentRunnerTest {
     future.getValue().get();
     executor.shutdown();
 
-    assertEquals(RepairSegment.State.DONE, storage.getRepairSegment(runId, segmentId).get().getState());
-    assertEquals(0, storage.getRepairSegment(runId, segmentId).get().getFailCount());
+    assertEquals(RepairSegment.State.DONE,
+        storage.getRepairSegmentDao().getRepairSegment(runId, segmentId).get().getState());
+    assertEquals(0, storage.getRepairSegmentDao().getRepairSegment(runId, segmentId).get().getFailCount());
   }
 
   @Test
@@ -409,7 +412,7 @@ public final class SegmentRunnerTest {
         .build());
 
     final UUID runId = run.getId();
-    final UUID segmentId = storage.getNextFreeSegments(run.getId()).get(0).getId();
+    final UUID segmentId = storage.getRepairSegmentDao().getNextFreeSegments(run.getId()).get(0).getId();
 
     final ExecutorService executor = Executors.newSingleThreadExecutor();
     final MutableObject<Future<?>> future = new MutableObject<>();
@@ -438,7 +441,7 @@ public final class SegmentRunnerTest {
             (invocation) -> {
               assertEquals(
                   RepairSegment.State.STARTED,
-                  storage.getRepairSegment(runId, segmentId).get().getState());
+                  storage.getRepairSegmentDao().getRepairSegment(runId, segmentId).get().getState());
 
               future.setValue(
                   executor.submit(
@@ -453,7 +456,7 @@ public final class SegmentRunnerTest {
 
                         assertEquals(
                             RepairSegment.State.RUNNING,
-                            storage.getRepairSegment(runId, segmentId).get().getState());
+                            storage.getRepairSegmentDao().getRepairSegment(runId, segmentId).get().getState());
 
                         ((RepairStatusHandler) invocation.getArgument(7))
                             .handle(
@@ -465,7 +468,7 @@ public final class SegmentRunnerTest {
 
                         assertEquals(
                             RepairSegment.State.NOT_STARTED,
-                            storage.getRepairSegment(runId, segmentId).get().getState());
+                            storage.getRepairSegmentDao().getRepairSegment(runId, segmentId).get().getState());
 
                         ((RepairStatusHandler) invocation.getArgument(7))
                             .handle(
@@ -477,7 +480,7 @@ public final class SegmentRunnerTest {
 
                         assertEquals(
                             RepairSegment.State.NOT_STARTED,
-                            storage.getRepairSegment(runId, segmentId).get().getState());
+                            storage.getRepairSegmentDao().getRepairSegment(runId, segmentId).get().getState());
                       }));
 
               return 1;
@@ -511,8 +514,9 @@ public final class SegmentRunnerTest {
     future.getValue().get();
     executor.shutdown();
 
-    assertEquals(RepairSegment.State.NOT_STARTED, storage.getRepairSegment(runId, segmentId).get().getState());
-    assertEquals(2, storage.getRepairSegment(runId, segmentId).get().getFailCount());
+    assertEquals(RepairSegment.State.NOT_STARTED,
+        storage.getRepairSegmentDao().getRepairSegment(runId, segmentId).get().getState());
+    assertEquals(2, storage.getRepairSegmentDao().getRepairSegment(runId, segmentId).get().getFailCount());
   }
 
   @Test
@@ -556,7 +560,7 @@ public final class SegmentRunnerTest {
         .build());
 
     final UUID runId = run.getId();
-    final UUID segmentId = storage.getNextFreeSegments(run.getId()).get(0).getId();
+    final UUID segmentId = storage.getRepairSegmentDao().getNextFreeSegments(run.getId()).get(0).getId();
 
     final ExecutorService executor = Executors.newSingleThreadExecutor();
     final MutableObject<Future<?>> future = new MutableObject<>();
@@ -585,7 +589,7 @@ public final class SegmentRunnerTest {
             invocation -> {
               assertEquals(
                   RepairSegment.State.STARTED,
-                  storage.getRepairSegment(runId, segmentId).get().getState());
+                  storage.getRepairSegmentDao().getRepairSegment(runId, segmentId).get().getState());
 
               future.setValue(
                   executor.submit(
@@ -608,7 +612,7 @@ public final class SegmentRunnerTest {
 
                         assertEquals(
                             RepairSegment.State.RUNNING,
-                            storage.getRepairSegment(runId, segmentId).get().getState());
+                            storage.getRepairSegmentDao().getRepairSegment(runId, segmentId).get().getState());
 
                         ((RepairStatusHandler) invocation.getArgument(7))
                             .handle(
@@ -620,7 +624,7 @@ public final class SegmentRunnerTest {
 
                         assertEquals(
                             RepairSegment.State.DONE,
-                            storage.getRepairSegment(runId, segmentId).get().getState());
+                            storage.getRepairSegmentDao().getRepairSegment(runId, segmentId).get().getState());
                       }));
               return 1;
             });
@@ -654,8 +658,8 @@ public final class SegmentRunnerTest {
     executor.shutdown();
 
     assertEquals(
-        RepairSegment.State.DONE, storage.getRepairSegment(runId, segmentId).get().getState());
-    assertEquals(0, storage.getRepairSegment(runId, segmentId).get().getFailCount());
+        RepairSegment.State.DONE, storage.getRepairSegmentDao().getRepairSegment(runId, segmentId).get().getState());
+    assertEquals(0, storage.getRepairSegmentDao().getRepairSegment(runId, segmentId).get().getFailCount());
   }
 
   @Test
@@ -699,7 +703,7 @@ public final class SegmentRunnerTest {
         .build());
 
     final UUID runId = run.getId();
-    final UUID segmentId = storage.getNextFreeSegments(run.getId()).get(0).getId();
+    final UUID segmentId = storage.getRepairSegmentDao().getNextFreeSegments(run.getId()).get(0).getId();
 
     final ExecutorService executor = Executors.newSingleThreadExecutor();
     final MutableObject<Future<?>> future = new MutableObject<>();
@@ -728,7 +732,7 @@ public final class SegmentRunnerTest {
             invocation -> {
               assertEquals(
                   RepairSegment.State.STARTED,
-                  storage.getRepairSegment(runId, segmentId).get().getState());
+                  storage.getRepairSegmentDao().getRepairSegment(runId, segmentId).get().getState());
 
               future.setValue(
                   executor.submit(
@@ -751,7 +755,7 @@ public final class SegmentRunnerTest {
 
                         assertEquals(
                             RepairSegment.State.RUNNING,
-                            storage.getRepairSegment(runId, segmentId).get().getState());
+                            storage.getRepairSegmentDao().getRepairSegment(runId, segmentId).get().getState());
 
                         ((RepairStatusHandler) invocation.getArgument(7))
                             .handle(
@@ -763,7 +767,7 @@ public final class SegmentRunnerTest {
 
                         assertEquals(
                             RepairSegment.State.DONE,
-                            storage.getRepairSegment(runId, segmentId).get().getState());
+                            storage.getRepairSegmentDao().getRepairSegment(runId, segmentId).get().getState());
                       }));
               return 1;
             });
@@ -797,9 +801,9 @@ public final class SegmentRunnerTest {
     executor.shutdown();
 
     assertEquals(
-        RepairSegment.State.DONE, storage.getRepairSegment(runId, segmentId).get().getState());
+        RepairSegment.State.DONE, storage.getRepairSegmentDao().getRepairSegment(runId, segmentId).get().getState());
 
-    assertEquals(0, storage.getRepairSegment(runId, segmentId).get().getFailCount());
+    assertEquals(0, storage.getRepairSegmentDao().getRepairSegment(runId, segmentId).get().getFailCount());
   }
 
   @Test
@@ -844,7 +848,7 @@ public final class SegmentRunnerTest {
         .build());
 
     final UUID runId = run.getId();
-    final UUID segmentId = storage.getNextFreeSegments(run.getId()).get(0).getId();
+    final UUID segmentId = storage.getRepairSegmentDao().getNextFreeSegments(run.getId()).get(0).getId();
 
     final ExecutorService executor = Executors.newSingleThreadExecutor();
     final MutableObject<Future<?>> future = new MutableObject<>();
@@ -873,7 +877,7 @@ public final class SegmentRunnerTest {
             invocation -> {
               assertEquals(
                   RepairSegment.State.STARTED,
-                  storage.getRepairSegment(runId, segmentId).get().getState());
+                  storage.getRepairSegmentDao().getRepairSegment(runId, segmentId).get().getState());
 
               future.setValue(
                   executor.submit(
@@ -896,7 +900,7 @@ public final class SegmentRunnerTest {
 
                         assertEquals(
                             RepairSegment.State.RUNNING,
-                            storage.getRepairSegment(runId, segmentId).get().getState());
+                            storage.getRepairSegmentDao().getRepairSegment(runId, segmentId).get().getState());
 
                         ((RepairStatusHandler) invocation.getArgument(7))
                             .handle(
@@ -908,7 +912,7 @@ public final class SegmentRunnerTest {
 
                         assertEquals(
                             RepairSegment.State.NOT_STARTED,
-                            storage.getRepairSegment(runId, segmentId).get().getState());
+                            storage.getRepairSegmentDao().getRepairSegment(runId, segmentId).get().getState());
                       }));
               return 1;
             });
@@ -943,9 +947,9 @@ public final class SegmentRunnerTest {
 
     assertEquals(
         RepairSegment.State.NOT_STARTED,
-        storage.getRepairSegment(runId, segmentId).get().getState());
+        storage.getRepairSegmentDao().getRepairSegment(runId, segmentId).get().getState());
 
-    assertEquals(2, storage.getRepairSegment(runId, segmentId).get().getFailCount());
+    assertEquals(2, storage.getRepairSegmentDao().getRepairSegment(runId, segmentId).get().getFailCount());
   }
 
   @Test
@@ -990,7 +994,7 @@ public final class SegmentRunnerTest {
         .build());
 
     final UUID runId = run.getId();
-    final UUID segmentId = storage.getNextFreeSegments(run.getId()).get(0).getId();
+    final UUID segmentId = storage.getRepairSegmentDao().getNextFreeSegments(run.getId()).get(0).getId();
 
     final ExecutorService executor = Executors.newSingleThreadExecutor();
     final MutableObject<Future<?>> future = new MutableObject<>();
@@ -1019,7 +1023,7 @@ public final class SegmentRunnerTest {
             invocation -> {
               assertEquals(
                   RepairSegment.State.STARTED,
-                  storage.getRepairSegment(runId, segmentId).get().getState());
+                  storage.getRepairSegmentDao().getRepairSegment(runId, segmentId).get().getState());
 
               future.setValue(
                   executor.submit(
@@ -1042,7 +1046,7 @@ public final class SegmentRunnerTest {
 
                         assertEquals(
                             RepairSegment.State.RUNNING,
-                            storage.getRepairSegment(runId, segmentId).get().getState());
+                            storage.getRepairSegmentDao().getRepairSegment(runId, segmentId).get().getState());
 
                         ((RepairStatusHandler) invocation.getArgument(7))
                             .handle(
@@ -1054,7 +1058,7 @@ public final class SegmentRunnerTest {
 
                         assertEquals(
                             RepairSegment.State.NOT_STARTED,
-                            storage.getRepairSegment(runId, segmentId).get().getState());
+                            storage.getRepairSegmentDao().getRepairSegment(runId, segmentId).get().getState());
                       }));
               return 1;
             });
@@ -1089,9 +1093,9 @@ public final class SegmentRunnerTest {
 
     assertEquals(
         RepairSegment.State.NOT_STARTED,
-        storage.getRepairSegment(runId, segmentId).get().getState());
+        storage.getRepairSegmentDao().getRepairSegment(runId, segmentId).get().getState());
 
-    assertEquals(2, storage.getRepairSegment(runId, segmentId).get().getFailCount());
+    assertEquals(2, storage.getRepairSegmentDao().getRepairSegment(runId, segmentId).get().getFailCount());
   }
 
   @Test
@@ -1167,7 +1171,7 @@ public final class SegmentRunnerTest {
         .build());
 
     final UUID runId = run.getId();
-    final UUID segmentId = storage.getNextFreeSegments(run.getId()).get(0).getId();
+    final UUID segmentId = storage.getRepairSegmentDao().getNextFreeSegments(run.getId()).get(0).getId();
 
     AppContext context = new AppContext();
     context.storage = storage;
@@ -1216,8 +1220,9 @@ public final class SegmentRunnerTest {
 
     sr.run();
 
-    assertEquals(RepairSegment.State.NOT_STARTED, storage.getRepairSegment(runId, segmentId).get().getState());
-    assertEquals(1, storage.getRepairSegment(runId, segmentId).get().getFailCount());
+    assertEquals(RepairSegment.State.NOT_STARTED,
+        storage.getRepairSegmentDao().getRepairSegment(runId, segmentId).get().getState());
+    assertEquals(1, storage.getRepairSegmentDao().getRepairSegment(runId, segmentId).get().getFailCount());
   }
 
   @Test
@@ -1261,7 +1266,7 @@ public final class SegmentRunnerTest {
         .build());
 
     final UUID runId = run.getId();
-    final UUID segmentId = storage.getNextFreeSegments(run.getId()).get(0).getId();
+    final UUID segmentId = storage.getRepairSegmentDao().getNextFreeSegments(run.getId()).get(0).getId();
 
     AppContext context = new AppContext();
     context.storage = storage;
@@ -1310,8 +1315,9 @@ public final class SegmentRunnerTest {
 
     sr.run();
 
-    assertEquals(RepairSegment.State.DONE, storage.getRepairSegment(runId, segmentId).get().getState());
-    assertEquals(0, storage.getRepairSegment(runId, segmentId).get().getFailCount());
+    assertEquals(RepairSegment.State.DONE,
+        storage.getRepairSegmentDao().getRepairSegment(runId, segmentId).get().getState());
+    assertEquals(0, storage.getRepairSegmentDao().getRepairSegment(runId, segmentId).get().getFailCount());
   }
 
   @Test
@@ -1328,7 +1334,10 @@ public final class SegmentRunnerTest {
     when(segment.getStartTime()).thenReturn(DateTime.now());
     when(segment.getEndTime()).thenReturn(null);
     when(ru.getKeyspaceName()).thenReturn("reaper");
-    when(storage.getRepairSegment(any(), any())).thenReturn(Optional.of(segment));
+
+    IRepairSegment mockedRepairSegmentDao = mock(IRepairSegment.class);
+    Mockito.when(storage.getRepairSegmentDao()).thenReturn(mockedRepairSegmentDao);
+    when(mockedRepairSegmentDao.getRepairSegment(any(), any())).thenReturn(Optional.of(segment));
 
     ClusterFacade clusterFacade = mock(ClusterFacade.class);
 
@@ -1378,7 +1387,7 @@ public final class SegmentRunnerTest {
         .build());
 
     final UUID runId = run.getId();
-    final UUID segmentId = storage.getNextFreeSegments(run.getId()).get(0).getId();
+    final UUID segmentId = storage.getRepairSegmentDao().getNextFreeSegments(run.getId()).get(0).getId();
     AppContext context = new AppContext();
     context.storage = storage;
     context.config = Mockito.mock(ReaperApplicationConfiguration.class);
@@ -1460,7 +1469,7 @@ public final class SegmentRunnerTest {
         .withState(Cluster.State.ACTIVE)
         .build());
 
-    final UUID segmentId = storage.getNextFreeSegments(run.getId()).get(0).getId();
+    final UUID segmentId = storage.getRepairSegmentDao().getNextFreeSegments(run.getId()).get(0).getId();
     AppContext context = new AppContext();
     context.storage = storage;
     context.config = Mockito.mock(ReaperApplicationConfiguration.class);

@@ -20,7 +20,6 @@ package io.cassandrareaper.storage;
 import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.PercentRepairedMetric;
 import io.cassandrareaper.core.RepairSchedule;
-import io.cassandrareaper.core.RepairSegment;
 import io.cassandrareaper.core.RepairUnit;
 import io.cassandrareaper.resources.view.RepairScheduleStatus;
 import io.cassandrareaper.storage.cluster.MemClusterDao;
@@ -30,6 +29,7 @@ import io.cassandrareaper.storage.metrics.MemMetricsDao;
 import io.cassandrareaper.storage.repairrun.IRepairRun;
 import io.cassandrareaper.storage.repairrun.MemRepairRunDao;
 import io.cassandrareaper.storage.repairschedule.MemRepairScheduleDao;
+import io.cassandrareaper.storage.repairsegment.IRepairSegment;
 import io.cassandrareaper.storage.repairsegment.MemRepairSegment;
 import io.cassandrareaper.storage.repairunit.MemRepairUnitDao;
 import io.cassandrareaper.storage.snapshot.ISnapshot;
@@ -123,41 +123,6 @@ public final class MemoryStorageFacade implements IStorage {
   }
 
   @Override
-  public boolean updateRepairSegment(RepairSegment newRepairSegment) {
-    return memRepairSegment.updateRepairSegment(newRepairSegment);
-  }
-
-  @Override
-  public Optional<RepairSegment> getRepairSegment(UUID runId, UUID segmentId) {
-    return memRepairSegment.getRepairSegment(runId, segmentId);
-  }
-
-  @Override
-  public Collection<RepairSegment> getRepairSegmentsForRun(UUID runId) {
-    return memRepairSegment.getRepairSegmentsForRun(runId);
-  }
-
-  @Override
-  public List<RepairSegment> getNextFreeSegments(UUID runId) {
-    return memRepairSegment.getNextFreeSegments(runId);
-  }
-
-  @Override
-  public Collection<RepairSegment> getSegmentsWithState(UUID runId, RepairSegment.State segmentState) {
-    return memRepairSegment.getSegmentsWithState(runId, segmentState);
-  }
-
-  @Override
-  public int getSegmentAmountForRepairRun(UUID runId) {
-    return memRepairSegment.getSegmentAmountForRepairRun(runId);
-  }
-
-  @Override
-  public int getSegmentAmountForRepairRunWithState(UUID runId, RepairSegment.State state) {
-    return memRepairSegment.getSegmentAmountForRepairRunWithState(runId, state);
-  }
-
-  @Override
   public RepairSchedule addRepairSchedule(RepairSchedule.Builder repairSchedule) {
     return memRepairScheduleDao.addRepairSchedule(repairSchedule);
   }
@@ -240,5 +205,10 @@ public final class MemoryStorageFacade implements IStorage {
   @Override
   public IRepairRun getRepairRunDao() {
     return this.memRepairRunDao;
+  }
+
+  @Override
+  public IRepairSegment getRepairSegmentDao() {
+    return this.memRepairSegment;
   }
 }

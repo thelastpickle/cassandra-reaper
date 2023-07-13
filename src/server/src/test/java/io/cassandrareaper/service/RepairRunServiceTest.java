@@ -34,7 +34,6 @@ import io.cassandrareaper.jmx.JmxProxyTest;
 import io.cassandrareaper.storage.IStorage;
 import io.cassandrareaper.storage.MemoryStorageFacade;
 import io.cassandrareaper.storage.repairrun.IRepairRun;
-import io.cassandrareaper.storage.repairsegment.IRepairSegment;
 
 import java.math.BigInteger;
 import java.net.UnknownHostException;
@@ -810,7 +809,7 @@ public final class RepairRunServiceTest {
 
   @Test
   public void getDatacentersToRepairBasedOnParamTest() throws ReaperException {
-    final IRepairSegment storage = mock(IStorage.class);
+    final IStorage storage = mock(IStorage.class);
     Set<String> datacenters = RepairRunService.getDatacentersToRepairBasedOnParam(Optional.of("dc1,dc2"));
     assertEquals("Datacenters were not parsed correctly", 2, datacenters.size());
   }

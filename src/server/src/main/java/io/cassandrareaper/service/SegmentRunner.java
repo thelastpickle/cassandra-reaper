@@ -167,14 +167,14 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
     if (context.storage instanceof IDistributedStorage) {
       ((IDistributedStorage) context.storage).updateRepairSegmentUnsafe(postponed);
     } else {
-      context.storage.updateRepairSegment(postponed);
+      context.storage.getRepairSegmentDao().updateRepairSegment(postponed);
     }
   }
 
   private static void postpone(AppContext context, RepairSegment segment, RepairUnit repairUnit) {
     LOG.info("Postponing segment {}", segment.getId());
     try {
-      context.storage.updateRepairSegment(
+      context.storage.getRepairSegmentDao().updateRepairSegment(
           segment
               .reset()
               // set coordinator host to null only for full repairs
@@ -204,7 +204,6 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
   private void abort(RepairSegment segment, JmxProxy jmxConnection) {
     abort(context, segment, jmxConnection);
   }
-
 
   /**
    * This method is intended to be temporary, until we find the root issue of too many open files issue.
@@ -239,7 +238,8 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
   @Override
   public void run() {
     boolean ran = false;
-    RepairSegment segment = context.storage.getRepairSegment(repairRunner.getRepairRunId(), segmentId).get();
+    RepairSegment segment = context.storage.getRepairSegmentDao().getRepairSegment(repairRunner.getRepairRunId(),
+        segmentId).get();
     if (takeLead(segment)) {
       try {
         ran = runRepair();
@@ -262,7 +262,8 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
    */
   void postponeCurrentSegment() {
     synchronized (condition) {
-      RepairSegment segment = context.storage.getRepairSegment(repairRunner.getRepairRunId(), segmentId).get();
+      RepairSegment segment = context.storage.getRepairSegmentDao().getRepairSegment(repairRunner.getRepairRunId(),
+          segmentId).get();
       postpone(context, segment, context.storage.getRepairUnit(segment.getRepairUnitId()));
     }
 
@@ -275,7 +276,8 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
 
   private boolean runRepair() {
     LOG.debug("Run repair for segment #{}", segmentId);
-    RepairSegment segment = context.storage.getRepairSegment(repairRunner.getRepairRunId(), segmentId).get();
+    RepairSegment segment = context.storage.getRepairSegmentDao().getRepairSegment(repairRunner.getRepairRunId(),
+        segmentId).get();
     Thread.currentThread().setName(clusterName + ":" + segment.getRunId() + ":" + segmentId);
 
     try (Timer.Context cxt = context.metricRegistry.timer(metricNameForRunRepair(segment)).time()) {
@@ -315,7 +317,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
                 .withId(segmentId)
                 .build();
 
-            context.storage.updateRepairSegment(segment);
+            context.storage.getRepairSegmentDao().updateRepairSegment(segment);
 
             repairNo = coordinator.triggerRepair(
                 segment.getStartToken(),
@@ -334,7 +336,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
             } else {
               LOG.info("Nothing to repair for segment {} in keyspace {}", segmentId, keyspace);
 
-              context.storage.updateRepairSegment(
+              context.storage.getRepairSegmentDao().updateRepairSegment(
                   segment
                       .with()
                       .withState(RepairSegment.State.DONE)
@@ -386,7 +388,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
         boolean isDoneOrFailed = condition.await(waitTime, TimeUnit.MILLISECONDS);
 
         isDoneOrFailed |= RepairSegment.State.DONE == context.storage
-            .getRepairSegment(segment.getRunId(), segmentId).get().getState();
+            .getRepairSegmentDao().getRepairSegment(segment.getRunId(), segmentId).get().getState();
 
         if (isDoneOrFailed) {
           break;
@@ -398,7 +400,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
     } finally {
       coordinator.removeRepairStatusHandler(repairNo);
       RepairSegment resultingSegment
-          = context.storage.getRepairSegment(repairRunner.getRepairRunId(), segmentId).get();
+          = context.storage.getRepairSegmentDao().getRepairSegment(repairRunner.getRepairRunId(), segmentId).get();
 
       LOG.info(
           "Repair command {} on segment {} returned with state {}",
@@ -472,7 +474,8 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
       String message,
       JmxProxy jmxProxy) {
 
-    final RepairSegment segment = context.storage.getRepairSegment(repairRunner.getRepairRunId(), segmentId).get();
+    final RepairSegment segment = context.storage.getRepairSegmentDao().getRepairSegment(repairRunner.getRepairRunId(),
+        segmentId).get();
     Thread.currentThread().setName(clusterName + ":" + segment.getRunId() + ":" + segmentId);
     LOG.debug(
         "handle called for repairCommandId {}, outcome {} / {} and message: {}",
@@ -489,7 +492,8 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
     boolean failOutsideSynchronizedBlock = false;
     // DO NOT ADD EXTERNAL CALLS INSIDE THIS SYNCHRONIZED BLOCK (JMX PROXY ETC)
     synchronized (condition) {
-      RepairSegment currentSegment = context.storage.getRepairSegment(repairRunner.getRepairRunId(), segmentId).get();
+      RepairSegment currentSegment = context.storage.getRepairSegmentDao().getRepairSegment(
+          repairRunner.getRepairRunId(), segmentId).get();
 
       Preconditions.checkState(
           RepairSegment.State.NOT_STARTED != currentSegment.getState() || successOrFailedNotified.get(),
@@ -550,7 +554,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
               && RepairSegment.State.STARTED == currentSegment.getState()
               && renewLead(currentSegment)) {
 
-            context.storage.updateRepairSegment(
+            context.storage.getRepairSegmentDao().updateRepairSegment(
                 currentSegment
                     .with()
                     .withState(RepairSegment.State.RUNNING)
@@ -584,7 +588,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
                 segmentId,
                 repairNumber);
 
-            context.storage.updateRepairSegment(
+            context.storage.getRepairSegmentDao().updateRepairSegment(
                 currentSegment
                     .with()
                     .withState(RepairSegment.State.DONE)
@@ -676,7 +680,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
               && RepairSegment.State.STARTED == currentSegment.getState()
               && renewLead(currentSegment)) {
 
-            context.storage.updateRepairSegment(
+            context.storage.getRepairSegmentDao().updateRepairSegment(
                 currentSegment
                     .with()
                     .withState(RepairSegment.State.RUNNING)
@@ -714,7 +718,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
                   segmentId,
                   repairNumber);
 
-              context.storage.updateRepairSegment(
+              context.storage.getRepairSegmentDao().updateRepairSegment(
                   currentSegment
                       .with()
                       .withState(RepairSegment.State.DONE)
@@ -824,7 +828,8 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
    * @return the delay in milliseconds.
    */
   long intensityBasedDelayMillis(double intensity) {
-    RepairSegment repairSegment = context.storage.getRepairSegment(repairRunner.getRepairRunId(), segmentId).get();
+    RepairSegment repairSegment = context.storage.getRepairSegmentDao().getRepairSegment(repairRunner.getRepairRunId(),
+        segmentId).get();
     if (repairSegment.getEndTime() == null && repairSegment.getStartTime() == null) {
       return 0;
     } else if (repairSegment.getEndTime() != null && repairSegment.getStartTime() != null) {
