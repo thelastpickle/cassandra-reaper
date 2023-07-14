@@ -569,8 +569,10 @@ public final class ClusterResourceTest {
             Optional.of(JMX_USERNAME), Optional.of(JMX_PASSWORD));
 
     assertEquals(HttpStatus.CREATED_201, response.getStatus());
-    assertEquals(1, mocks.context.storage.getAllRepairSchedules().size());
-    assertEquals(1, mocks.context.storage.getRepairSchedulesForClusterAndKeyspace(CLUSTER_NAME, "keyspace1").size());
+    assertEquals(1, mocks.context.storage.getRepairScheduleDao().getAllRepairSchedules().size());
+    assertEquals(1,
+        mocks.context.storage.getRepairScheduleDao().getRepairSchedulesForClusterAndKeyspace(CLUSTER_NAME, "keyspace1")
+            .size());
   }
 
   @Test
@@ -601,8 +603,10 @@ public final class ClusterResourceTest {
             Optional.of(JMX_USERNAME), Optional.of(JMX_PASSWORD));
 
     assertEquals(HttpStatus.CREATED_201, response.getStatus());
-    assertEquals(1, mocks.context.storage.getAllRepairSchedules().size());
-    assertEquals(1, mocks.context.storage.getRepairSchedulesForClusterAndKeyspace(CLUSTER_NAME, "keyspace1").size());
+    assertEquals(1, mocks.context.storage.getRepairScheduleDao().getAllRepairSchedules().size());
+    assertEquals(1,
+        mocks.context.storage.getRepairScheduleDao().getRepairSchedulesForClusterAndKeyspace(CLUSTER_NAME, "keyspace1")
+            .size());
 
     assertEquals(HttpStatus.CONFLICT_409, clusterResource.deleteCluster(CLUSTER_NAME, Optional.empty()).getStatus());
 

@@ -32,7 +32,6 @@ import io.dropwizard.lifecycle.Managed;
  * API definition for cassandra-reaper.
  */
 public interface IStorage extends Managed,
-    IRepairSchedule,
     ICluster,
     IMetrics {
 
@@ -47,5 +46,7 @@ public interface IStorage extends Managed,
   IRepairSegment getRepairSegmentDao();
 
   IRepairUnit getRepairUnitDao();
+
+  IRepairSchedule getRepairScheduleDao();
 
 }

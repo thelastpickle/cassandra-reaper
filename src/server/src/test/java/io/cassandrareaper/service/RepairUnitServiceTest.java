@@ -30,6 +30,7 @@ import io.cassandrareaper.jmx.JmxConnectionFactory;
 import io.cassandrareaper.jmx.JmxProxy;
 import io.cassandrareaper.jmx.JmxProxyTest;
 import io.cassandrareaper.storage.IStorage;
+import io.cassandrareaper.storage.repairschedule.IRepairSchedule;
 import io.cassandrareaper.storage.repairunit.IRepairUnit;
 
 import java.net.UnknownHostException;
@@ -803,6 +804,10 @@ public final class RepairUnitServiceTest {
       throws ReaperException, UnknownHostException, InterruptedException {
     ClusterFacade clusterFacade = mock(ClusterFacade.class);
     when(clusterFacade.getCassandraVersion(any())).thenThrow(new ReaperException("ouch"));
+
+    IRepairSchedule mockedRepairScheduleDao = Mockito.mock(IRepairSchedule.class);
+    Mockito.when(context.storage.getRepairScheduleDao()).thenReturn(mockedRepairScheduleDao);
+
     RepairUnitService repairUnitService = RepairUnitService.create(context, () -> clusterFacade);
 
     RepairUnit.Builder unitBuilder = RepairUnit.builder()
@@ -833,7 +838,6 @@ public final class RepairUnitServiceTest {
     localContext.jmxConnectionFactory = mock(JmxConnectionFactory.class);
     ClusterFacade clusterFacade = mock(ClusterFacade.class);
     when(clusterFacade.getCassandraVersion(any())).thenThrow(new ReaperException("ouch"));
-    RepairUnitService repairUnitService = RepairUnitService.create(localContext, () -> clusterFacade);
 
     RepairUnit.Builder unitBuilder = RepairUnit.builder()
         .clusterName(cluster.getName())
@@ -855,8 +859,11 @@ public final class RepairUnitServiceTest {
         .segmentCountPerNode(10)
         .build(UUIDs.timeBased());
 
-    when(localContext.storage.getRepairSchedulesForClusterAndKeyspace(any(), any()))
+    IRepairSchedule mockedRepairScheduleDao = Mockito.mock(IRepairSchedule.class);
+    Mockito.when(localContext.storage.getRepairScheduleDao()).thenReturn(mockedRepairScheduleDao);
+    when(mockedRepairScheduleDao.getRepairSchedulesForClusterAndKeyspace(any(), any()))
         .thenReturn(Arrays.asList(repairSchedule));
+    RepairUnitService repairUnitService = RepairUnitService.create(localContext, () -> clusterFacade);
     assertTrue("Unit is not conflicting with existing schedules",
         repairUnitService.unitConflicts(cluster, unitBuilder));
   }

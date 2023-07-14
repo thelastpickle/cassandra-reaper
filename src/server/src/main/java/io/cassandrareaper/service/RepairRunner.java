@@ -412,7 +412,7 @@ final class RepairRunner implements Runnable {
     // update schedule with new segment per node value
     RepairSchedule newSchedule
         = scheduleToTune.with().segmentCountPerNode(newSegmentCountPerNode).build(scheduleToTune.getId());
-    context.storage.updateRepairSchedule(newSchedule);
+    context.storage.getRepairScheduleDao().updateRepairSchedule(newSchedule);
 
   }
 
@@ -437,13 +437,14 @@ final class RepairRunner implements Runnable {
     // update schedule with new segment per node value
     RepairSchedule newSchedule
         = scheduleToTune.with().segmentCountPerNode(newSegmentCountPerNode).build(scheduleToTune.getId());
-    context.storage.updateRepairSchedule(newSchedule);
+    context.storage.getRepairScheduleDao().updateRepairSchedule(newSchedule);
   }
 
   private RepairSchedule getScheduleForRun() {
     // find schedule
     Collection<RepairSchedule> schedulesForKeyspace
-        = context.storage.getRepairSchedulesForClusterAndKeyspace(clusterName, repairUnit.getKeyspaceName());
+        = context.storage.getRepairScheduleDao()
+        .getRepairSchedulesForClusterAndKeyspace(clusterName, repairUnit.getKeyspaceName());
     List<RepairSchedule> schedulesToTune = schedulesForKeyspace.stream()
         .filter(schedule -> schedule.getRepairUnitId().equals(repairUnit.getId()))
         .collect(Collectors.toList());

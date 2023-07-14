@@ -181,7 +181,7 @@ public final class ClusterResource {
           jmxUsername,
           jmxPasswordIsSet,
           repairRunDao.getClusterRunStatuses(cluster.getName(), limit.orElse(Integer.MAX_VALUE)),
-          context.storage.getClusterScheduleStatuses(cluster.getName()),
+          context.storage.getRepairScheduleDao().getClusterScheduleStatuses(cluster.getName()),
           clusterFacade.getNodesStatus(cluster));
 
       return Response.ok().entity(clusterStatus).build();
@@ -438,7 +438,8 @@ public final class ClusterResource {
 
     LOG.info("delete cluster {}", clusterName);
     try {
-      Collection<RepairSchedule> repairSchedulesForCluster = context.storage.getRepairSchedulesForCluster(clusterName);
+      Collection<RepairSchedule> repairSchedulesForCluster = context.storage.getRepairScheduleDao()
+          .getRepairSchedulesForCluster(clusterName);
       if (!force.orElse(Boolean.FALSE)) {
         if (!repairSchedulesForCluster.isEmpty()) {
           return Response.status(Response.Status.CONFLICT)

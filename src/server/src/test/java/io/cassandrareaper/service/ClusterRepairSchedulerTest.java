@@ -99,9 +99,10 @@ public final class ClusterRepairSchedulerTest {
         Sets.newHashSet(Table.builder().withName("table1").withCompactionStrategy(STCS).build()));
 
     clusterRepairAuto.scheduleRepairs(cluster);
-    assertThat(context.storage.getAllRepairSchedules()).hasSize(2);
+    assertThat(context.storage.getRepairScheduleDao().getAllRepairSchedules()).hasSize(2);
 
-    assertThatClusterRepairSchedules(context.storage.getRepairSchedulesForCluster(cluster.getName()))
+    assertThatClusterRepairSchedules(
+        context.storage.getRepairScheduleDao().getRepairSchedulesForCluster(cluster.getName()))
         .hasScheduleCount(2)
         .repairScheduleForKeyspace("keyspace1")
         .hasSameConfigItemsAs(context.config)
@@ -117,13 +118,14 @@ public final class ClusterRepairSchedulerTest {
   @Test
   public void removeSchedulesForKeyspaceThatNoLongerExists() throws Exception {
     context.storage.addCluster(cluster);
-    context.storage.addRepairSchedule(oneRepairSchedule(cluster, "keyspace1", TWO_HOURS_AGO));
-    context.storage.addRepairSchedule(oneRepairSchedule(cluster, "keyspace2", TWO_HOURS_AGO));
+    context.storage.getRepairScheduleDao().addRepairSchedule(oneRepairSchedule(cluster, "keyspace1", TWO_HOURS_AGO));
+    context.storage.getRepairScheduleDao().addRepairSchedule(oneRepairSchedule(cluster, "keyspace2", TWO_HOURS_AGO));
     when(jmxProxy.getKeyspaces()).thenReturn(Lists.newArrayList("keyspace1"));
     clusterRepairAuto.scheduleRepairs(cluster);
-    assertThat(context.storage.getAllRepairSchedules()).hasSize(1);
+    assertThat(context.storage.getRepairScheduleDao().getAllRepairSchedules()).hasSize(1);
 
-    assertThatClusterRepairSchedules(context.storage.getRepairSchedulesForCluster(cluster.getName()))
+    assertThatClusterRepairSchedules(
+        context.storage.getRepairScheduleDao().getRepairSchedulesForCluster(cluster.getName()))
         .hasScheduleCount(1)
         .repairScheduleForKeyspace("keyspace1").hasCreationTimeCloseTo(TWO_HOURS_AGO);
   }
@@ -131,7 +133,7 @@ public final class ClusterRepairSchedulerTest {
   @Test
   public void addSchedulesForNewKeyspace() throws Exception {
     context.storage.addCluster(cluster);
-    context.storage.addRepairSchedule(oneRepairSchedule(cluster, "keyspace1", TWO_HOURS_AGO));
+    context.storage.getRepairScheduleDao().addRepairSchedule(oneRepairSchedule(cluster, "keyspace1", TWO_HOURS_AGO));
 
     when(jmxProxy.getKeyspaces()).thenReturn(Lists.newArrayList("keyspace1", "keyspace2"));
 
@@ -142,9 +144,10 @@ public final class ClusterRepairSchedulerTest {
         Sets.newHashSet(Table.builder().withName("table2").withCompactionStrategy(STCS).build()));
 
     clusterRepairAuto.scheduleRepairs(cluster);
-    assertThat(context.storage.getAllRepairSchedules()).hasSize(2);
+    assertThat(context.storage.getRepairScheduleDao().getAllRepairSchedules()).hasSize(2);
 
-    assertThatClusterRepairSchedules(context.storage.getRepairSchedulesForCluster(cluster.getName()))
+    assertThatClusterRepairSchedules(
+        context.storage.getRepairScheduleDao().getRepairSchedulesForCluster(cluster.getName()))
         .hasScheduleCount(2)
         .repairScheduleForKeyspace("keyspace1").hasCreationTime(TWO_HOURS_AGO)
         .andThen()
@@ -160,9 +163,10 @@ public final class ClusterRepairSchedulerTest {
         Sets.newHashSet(Table.builder().withName("table1").withCompactionStrategy(STCS).build()));
 
     clusterRepairAuto.scheduleRepairs(cluster);
-    assertThat(context.storage.getAllRepairSchedules()).hasSize(1);
+    assertThat(context.storage.getRepairScheduleDao().getAllRepairSchedules()).hasSize(1);
 
-    assertThatClusterRepairSchedules(context.storage.getRepairSchedulesForCluster(cluster.getName()))
+    assertThatClusterRepairSchedules(
+        context.storage.getRepairScheduleDao().getRepairSchedulesForCluster(cluster.getName()))
         .hasScheduleCount(1)
         .repairScheduleForKeyspace("keyspace2");
   }
@@ -173,7 +177,7 @@ public final class ClusterRepairSchedulerTest {
     when(jmxProxy.getKeyspaces()).thenReturn(Lists.newArrayList("keyspace1"));
     when(jmxProxy.getTablesForKeyspace("keyspace1")).thenReturn(Sets.newHashSet());
     clusterRepairAuto.scheduleRepairs(cluster);
-    assertThat(context.storage.getAllRepairSchedules()).hasSize(0);
+    assertThat(context.storage.getRepairScheduleDao().getAllRepairSchedules()).hasSize(0);
   }
 
   @Test
@@ -200,7 +204,8 @@ public final class ClusterRepairSchedulerTest {
 
     clusterRepairAuto.scheduleRepairs(cluster);
 
-    assertThatClusterRepairSchedules(context.storage.getRepairSchedulesForCluster(cluster.getName()))
+    assertThatClusterRepairSchedules(
+        context.storage.getRepairScheduleDao().getRepairSchedulesForCluster(cluster.getName()))
         .hasScheduleCount(3)
         .repairScheduleForKeyspace("keyspace1")
         .hasNextActivationDateCloseTo(timeOfFirstSchedule())
@@ -219,7 +224,7 @@ public final class ClusterRepairSchedulerTest {
 
     clusterRepairAuto.scheduleRepairs(cluster);
 
-    assertThat(context.storage.getAllRepairSchedules()).hasSize(0);
+    assertThat(context.storage.getRepairScheduleDao().getAllRepairSchedules()).hasSize(0);
   }
 
   @Test
@@ -228,13 +233,14 @@ public final class ClusterRepairSchedulerTest {
         Arrays.asList(cluster.getName() + "-1", cluster.getName() + "-2")
     );
     context.storage.addCluster(cluster);
-    context.storage.addRepairSchedule(oneRepairSchedule(cluster, "keyspace1", TWO_HOURS_AGO));
+    context.storage.getRepairScheduleDao().addRepairSchedule(oneRepairSchedule(cluster, "keyspace1", TWO_HOURS_AGO));
     when(jmxProxy.getKeyspaces()).thenReturn(Lists.newArrayList("keyspace1"));
 
     clusterRepairAuto.scheduleRepairs(cluster);
-    assertThat(context.storage.getAllRepairSchedules()).hasSize(1);
+    assertThat(context.storage.getRepairScheduleDao().getAllRepairSchedules()).hasSize(1);
 
-    assertThatClusterRepairSchedules(context.storage.getRepairSchedulesForCluster(cluster.getName()))
+    assertThatClusterRepairSchedules(
+        context.storage.getRepairScheduleDao().getRepairSchedulesForCluster(cluster.getName()))
         .hasScheduleCount(1)
         .repairScheduleForKeyspace("keyspace1").hasCreationTimeCloseTo(TWO_HOURS_AGO);
   }

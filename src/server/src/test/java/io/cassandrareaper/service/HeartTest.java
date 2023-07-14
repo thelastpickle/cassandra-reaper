@@ -27,6 +27,7 @@ import io.cassandrareaper.jmx.JmxConnectionFactory;
 import io.cassandrareaper.jmx.JmxProxy;
 import io.cassandrareaper.storage.MemoryStorageFacade;
 import io.cassandrareaper.storage.cassandra.CassandraStorageFacade;
+import io.cassandrareaper.storage.repairschedule.IRepairSchedule;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -84,8 +85,10 @@ public final class HeartTest {
         .withState(State.ACTIVE)
         .build();
     Mockito.when(context.storage.getClusters()).thenReturn(Arrays.asList(cluster));
+    IRepairSchedule mockedRepairScheduleDao = Mockito.mock(IRepairSchedule.class);
+    Mockito.when(context.storage.getRepairScheduleDao()).thenReturn(mockedRepairScheduleDao);
     Mockito.when(
-        context.storage.getRepairSchedulesForCluster(any(), anyBoolean())).thenReturn(Collections.emptyList());
+        mockedRepairScheduleDao.getRepairSchedulesForCluster(any(), anyBoolean())).thenReturn(Collections.emptyList());
 
     try (Heart heart = Heart.create(context)) {
       heart.beat();
@@ -120,7 +123,10 @@ public final class HeartTest {
         .withState(State.ACTIVE)
         .build();
     Mockito.when(context.storage.getClusters()).thenReturn(Arrays.asList(cluster));
-    Mockito.when(context.storage.getRepairSchedulesForCluster(any(), anyBoolean())).thenReturn(Collections.emptyList());
+    IRepairSchedule mockedRepairScheduleDao = Mockito.mock(IRepairSchedule.class);
+    Mockito.when(context.storage.getRepairScheduleDao()).thenReturn(mockedRepairScheduleDao);
+    Mockito.when(mockedRepairScheduleDao.getRepairSchedulesForCluster(any(), anyBoolean()))
+        .thenReturn(Collections.emptyList());
 
     try (Heart heart = Heart.create(context)) {
       heart.beat();
@@ -147,7 +153,10 @@ public final class HeartTest {
     context.config.setDatacenterAvailability(ReaperApplicationConfiguration.DatacenterAvailability.EACH);
     context.storage = Mockito.mock(CassandraStorageFacade.class);
     context.jmxConnectionFactory = new JmxConnectionFactory(context, new NoopCrypotograph());
-    Mockito.when(context.storage.getRepairSchedulesForCluster(any(), anyBoolean())).thenReturn(Collections.emptyList());
+    IRepairSchedule mockedRepairScheduleDao = Mockito.mock(IRepairSchedule.class);
+    Mockito.when(context.storage.getRepairScheduleDao()).thenReturn(mockedRepairScheduleDao);
+    Mockito.when(mockedRepairScheduleDao.getRepairSchedulesForCluster(any(), anyBoolean()))
+        .thenReturn(Collections.emptyList());
 
     try (Heart heart = Heart.create(context)) {
       context.isDistributed.set(true);

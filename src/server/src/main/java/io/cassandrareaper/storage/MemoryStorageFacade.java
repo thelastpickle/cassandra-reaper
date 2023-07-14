@@ -19,14 +19,13 @@ package io.cassandrareaper.storage;
 
 import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.PercentRepairedMetric;
-import io.cassandrareaper.core.RepairSchedule;
-import io.cassandrareaper.resources.view.RepairScheduleStatus;
 import io.cassandrareaper.storage.cluster.MemClusterDao;
 import io.cassandrareaper.storage.events.IEvents;
 import io.cassandrareaper.storage.events.MemEventsDao;
 import io.cassandrareaper.storage.metrics.MemMetricsDao;
 import io.cassandrareaper.storage.repairrun.IRepairRun;
 import io.cassandrareaper.storage.repairrun.MemRepairRunDao;
+import io.cassandrareaper.storage.repairschedule.IRepairSchedule;
 import io.cassandrareaper.storage.repairschedule.MemRepairScheduleDao;
 import io.cassandrareaper.storage.repairsegment.IRepairSegment;
 import io.cassandrareaper.storage.repairsegment.MemRepairSegment;
@@ -37,7 +36,6 @@ import io.cassandrareaper.storage.snapshot.MemSnapshotDao;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 import org.slf4j.Logger;
@@ -102,56 +100,6 @@ public final class MemoryStorageFacade implements IStorage {
   }
 
   @Override
-  public RepairSchedule addRepairSchedule(RepairSchedule.Builder repairSchedule) {
-    return memRepairScheduleDao.addRepairSchedule(repairSchedule);
-  }
-
-  @Override
-  public Optional<RepairSchedule> getRepairSchedule(UUID id) {
-    return memRepairScheduleDao.getRepairSchedule(id);
-  }
-
-  @Override
-  public Collection<RepairSchedule> getRepairSchedulesForCluster(String clusterName) {
-    return memRepairScheduleDao.getRepairSchedulesForCluster(clusterName);
-  }
-
-  @Override
-  public Collection<RepairSchedule> getRepairSchedulesForCluster(String clusterName, boolean incremental) {
-    return memRepairScheduleDao.getRepairSchedulesForCluster(clusterName, incremental);
-  }
-
-  @Override
-  public Collection<RepairSchedule> getRepairSchedulesForKeyspace(String keyspaceName) {
-    return memRepairScheduleDao.getRepairSchedulesForKeyspace(keyspaceName);
-  }
-
-  @Override
-  public Collection<RepairSchedule> getRepairSchedulesForClusterAndKeyspace(String clusterName, String keyspaceName) {
-    return memRepairScheduleDao.getRepairSchedulesForClusterAndKeyspace(clusterName, keyspaceName);
-  }
-
-  @Override
-  public Collection<RepairSchedule> getAllRepairSchedules() {
-    return memRepairScheduleDao.getAllRepairSchedules();
-  }
-
-  @Override
-  public boolean updateRepairSchedule(RepairSchedule newRepairSchedule) {
-    return memRepairScheduleDao.updateRepairSchedule(newRepairSchedule);
-  }
-
-  @Override
-  public Optional<RepairSchedule> deleteRepairSchedule(UUID id) {
-    return memRepairScheduleDao.deleteRepairSchedule(id);
-  }
-
-  @Override
-  public Collection<RepairScheduleStatus> getClusterScheduleStatuses(String clusterName) {
-    return memRepairScheduleDao.getClusterScheduleStatuses(clusterName);
-  }
-
-  @Override
   public List<PercentRepairedMetric> getPercentRepairedMetrics(String clusterName, UUID repairScheduleId, Long since) {
     return memMetricsDao.getPercentRepairedMetrics(clusterName, repairScheduleId, since);
   }
@@ -195,4 +143,10 @@ public final class MemoryStorageFacade implements IStorage {
   public IRepairUnit getRepairUnitDao() {
     return this.memRepairUnitDao;
   }
+
+  @Override
+  public IRepairSchedule getRepairScheduleDao() {
+    return this.memRepairScheduleDao;
+  }
+
 }

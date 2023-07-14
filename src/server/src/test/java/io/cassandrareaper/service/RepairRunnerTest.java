@@ -40,6 +40,7 @@ import io.cassandrareaper.storage.IStorage;
 import io.cassandrareaper.storage.MemoryStorageFacade;
 import io.cassandrareaper.storage.cassandra.CassandraStorageFacade;
 import io.cassandrareaper.storage.repairrun.IRepairRun;
+import io.cassandrareaper.storage.repairschedule.IRepairSchedule;
 import io.cassandrareaper.storage.repairsegment.IRepairSegment;
 import io.cassandrareaper.storage.repairunit.IRepairUnit;
 
@@ -1403,7 +1404,9 @@ public final class RepairRunnerTest {
     Mockito.when(((CassandraStorageFacade) context.storage).getRepairUnitDao()).thenReturn(mockedRepairUnitDao);
     Mockito.when(mockedRepairUnitDao.getRepairUnit(any(UUID.class))).thenReturn(repairUnit);
 
-    Mockito.when((((CassandraStorageFacade) context.storage).getRepairSchedulesForClusterAndKeyspace(any(), any())))
+    IRepairSchedule mockedRepairScheduleDao = Mockito.mock(IRepairSchedule.class);
+    Mockito.when(context.storage.getRepairScheduleDao()).thenReturn(mockedRepairScheduleDao);
+    Mockito.when(mockedRepairScheduleDao.getRepairSchedulesForClusterAndKeyspace(any(), any()))
         .thenReturn(schedules);
 
     Mockito.when(context.storage.getCluster(any())).thenReturn(cluster);
@@ -1497,7 +1500,9 @@ public final class RepairRunnerTest {
     Mockito.when(((CassandraStorageFacade) context.storage).getRepairUnitDao()).thenReturn(mockedRepairUnitDao);
     Mockito.when(mockedRepairUnitDao.getRepairUnit(any(UUID.class))).thenReturn(repairUnit);
 
-    Mockito.when((((CassandraStorageFacade) context.storage).getRepairSchedulesForClusterAndKeyspace(any(), any())))
+    IRepairSchedule mockedRepairScheduleDao = Mockito.mock(IRepairSchedule.class);
+    Mockito.when(context.storage.getRepairScheduleDao()).thenReturn(mockedRepairScheduleDao);
+    Mockito.when(mockedRepairScheduleDao.getRepairSchedulesForClusterAndKeyspace(any(), any()))
         .thenReturn(schedules);
 
     Mockito.when(context.storage.getCluster(any())).thenReturn(cluster);
@@ -1593,7 +1598,9 @@ public final class RepairRunnerTest {
     Mockito.when(((CassandraStorageFacade) context.storage).getRepairUnitDao()).thenReturn(mockedRepairUnitDao);
     Mockito.when(mockedRepairUnitDao.getRepairUnit(any(UUID.class))).thenReturn(repairUnit);
 
-    Mockito.when((((CassandraStorageFacade) context.storage).getRepairSchedulesForClusterAndKeyspace(any(), any())))
+    IRepairSchedule mockedRepairScheduleDao = Mockito.mock(IRepairSchedule.class);
+    Mockito.when(context.storage.getRepairScheduleDao()).thenReturn(mockedRepairScheduleDao);
+    Mockito.when(mockedRepairScheduleDao.getRepairSchedulesForClusterAndKeyspace(any(), any()))
         .thenReturn(schedules);
 
     Mockito.when(context.storage.getCluster(any())).thenReturn(cluster);
@@ -1784,7 +1791,6 @@ public final class RepairRunnerTest {
     IRepairUnit mockedRepairUnitDao = mock(IRepairUnit.class);
     Mockito.when(((CassandraStorageFacade) context.storage).getRepairUnitDao()).thenReturn(mockedRepairUnitDao);
     Mockito.when(mockedRepairUnitDao.getRepairUnit(any(UUID.class))).thenReturn(repairUnit);
-
 
 
     List<UUID> runningRepairs = Lists.newArrayList();

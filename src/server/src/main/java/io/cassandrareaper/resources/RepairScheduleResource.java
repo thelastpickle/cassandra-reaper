@@ -38,7 +38,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
-
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
 import javax.ws.rs.Consumes;
@@ -87,6 +86,65 @@ public final class RepairScheduleResource {
     this.repairRunDao = repairRunDao;
   }
 
+  private static boolean isPausing(RepairSchedule.State oldState, RepairSchedule.State newState) {
+    return oldState == RepairSchedule.State.ACTIVE && newState == RepairSchedule.State.PAUSED;
+  }
+
+  private static boolean isResuming(RepairSchedule.State oldState, RepairSchedule.State newState) {
+    return oldState == RepairSchedule.State.PAUSED && newState == RepairSchedule.State.ACTIVE;
+  }
+
+  /**
+   * Crafts an URI used to identify given repair schedule.
+   *
+   * @return The created resource URI.
+   */
+  private static URI buildRepairScheduleUri(UriInfo uriInfo, RepairSchedule repairSchedule) {
+    return uriInfo.getBaseUriBuilder().path("repair_schedule").path(repairSchedule.getId().toString()).build();
+  }
+
+  /**
+   * Utility method to apply any valid parameters to an existing RepairSchedule.
+   * This method assumes that any non-null parameter provided is valid and should
+   * be applied.
+   *
+   * @param repairSchedule             - The schedule object to be updated
+   * @param owner                      - The owner value to be used in the update
+   * @param repairParallelism          - the parallelism value to be used in the update
+   * @param intensity                  - The intensity value to be used in the update
+   * @param scheduleDaysBetween        - The days between value to be used in the update
+   * @param segmentCountPerNode        - The segments per node value to be used in the update
+   * @param adaptive                   - Whether or not the schedule is adaptive
+   * @param percentUnrepairedThreshold - Threshold of unrepaired percentage that triggers a repair
+   */
+  protected static RepairSchedule applyRepairPatchParams(
+      final RepairSchedule repairSchedule,
+      final String owner,
+      final RepairParallelism repairParallelism,
+      final Double intensity,
+      final Integer scheduleDaysBetween,
+      final Integer segmentCountPerNode,
+      final Boolean adaptive,
+      final Integer percentUnrepairedThreshold
+  ) {
+    if (repairSchedule == null) {
+      return null;
+    }
+
+    // Apply any valid incoming values to the schedule
+    return repairSchedule.with()
+        .owner(owner != null ? owner.trim() : repairSchedule.getOwner())
+        .repairParallelism(repairParallelism != null ? repairParallelism : repairSchedule.getRepairParallelism())
+        .intensity(intensity != null ? intensity : repairSchedule.getIntensity())
+        .daysBetween(scheduleDaysBetween != null ? scheduleDaysBetween : repairSchedule.getDaysBetween())
+        .segmentCountPerNode(segmentCountPerNode != null
+            ? segmentCountPerNode
+            : repairSchedule.getSegmentCountPerNode())
+        .percentUnrepairedThreshold(percentUnrepairedThreshold)
+        .adaptive(adaptive != null ? adaptive : false)
+        .build(repairSchedule.getId());
+  }
+
   @PATCH
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
@@ -117,7 +175,8 @@ public final class RepairScheduleResource {
     }
 
     // Try to find the schedule to be updated
-    Optional<RepairSchedule> repairScheduleWrapper = context.storage.getRepairSchedule(repairScheduleId);
+    Optional<RepairSchedule> repairScheduleWrapper = context.storage.getRepairScheduleDao()
+        .getRepairSchedule(repairScheduleId);
     // See if we found the schedule
     RepairSchedule repairSchedule = repairScheduleWrapper.orElse(null);
     if (repairSchedule == null) {
@@ -137,7 +196,7 @@ public final class RepairScheduleResource {
     );
 
     // Attempt to update the schedule
-    boolean updated = context.storage.updateRepairSchedule(patchedRepairSchedule);
+    boolean updated = context.storage.getRepairScheduleDao().updateRepairSchedule(patchedRepairSchedule);
     if (updated) {
       return Response.status(Response.Status.OK).entity(getRepairScheduleStatus(patchedRepairSchedule)).build();
     } else {
@@ -205,7 +264,7 @@ public final class RepairScheduleResource {
         if (nextActivation.isBefore(DateTime.now().minusMinutes(15))) {
           return Response.status(Response.Status.BAD_REQUEST)
               .entity("given schedule_trigger_time is too far in the past: "
-                      + RepairRunStatus.dateTimeToIso8601(nextActivation))
+                  + RepairRunStatus.dateTimeToIso8601(nextActivation))
               .build();
         }
       } catch (IllegalArgumentException ex) {
@@ -247,7 +306,7 @@ public final class RepairScheduleResource {
       }
 
       final Set<String> datacentersToRepair = RepairRunService
-            .getDatacentersToRepairBasedOnParam(datacentersToRepairParam);
+          .getDatacentersToRepairBasedOnParam(datacentersToRepairParam);
 
       boolean incremental = isIncrementalRepair(incrementalRepairStr);
       RepairParallelism parallelism = context.config.getRepairParallelism();
@@ -363,20 +422,20 @@ public final class RepairScheduleResource {
           .checkState(unit.getIncrementalRepair() == incremental, "%s!=%s", unit.getIncrementalRepair(), incremental);
       Preconditions
           .checkState((percentUnrepairedThreshold > 0 && incremental) || percentUnrepairedThreshold <= 0,
-            "Setting a % repaired threshold can only be done on incremental schedules");
+              "Setting a % repaired threshold can only be done on incremental schedules");
 
       RepairSchedule newRepairSchedule = repairScheduleService
           .storeNewRepairSchedule(
-            cluster, unit, days, next, owner, segments,
-            parallel, intensity, force, adaptive, percentUnrepairedThreshold);
+              cluster, unit, days, next, owner, segments,
+              parallel, intensity, force, adaptive, percentUnrepairedThreshold);
 
       return Response.created(buildRepairScheduleUri(uriInfo, newRepairSchedule)).build();
     }
 
     return Response
-            .status(Response.Status.NO_CONTENT)
-            .entity("Repair schedule couldn't be created as an existing repair unit seems to conflict with it.")
-            .build();
+        .status(Response.Status.NO_CONTENT)
+        .entity("Repair schedule couldn't be created as an existing repair unit seems to conflict with it.")
+        .build();
   }
 
   private int getDaysBetween(Optional<Integer> scheduleDaysBetween) {
@@ -443,7 +502,8 @@ public final class RepairScheduleResource {
       return Response.status(Response.Status.BAD_REQUEST.getStatusCode()).entity("\"state\" argument missing").build();
     }
 
-    Optional<RepairSchedule> repairSchedule = context.storage.getRepairSchedule(repairScheduleId);
+    Optional<RepairSchedule> repairSchedule = context.storage.getRepairScheduleDao()
+        .getRepairSchedule(repairScheduleId);
     if (!repairSchedule.isPresent()) {
       return Response.status(Response.Status.NOT_FOUND)
           .entity("repair schedule with id " + repairScheduleId + " not found")
@@ -476,14 +536,6 @@ public final class RepairScheduleResource {
     }
   }
 
-  private static boolean isPausing(RepairSchedule.State oldState, RepairSchedule.State newState) {
-    return oldState == RepairSchedule.State.ACTIVE && newState == RepairSchedule.State.PAUSED;
-  }
-
-  private static boolean isResuming(RepairSchedule.State oldState, RepairSchedule.State newState) {
-    return oldState == RepairSchedule.State.PAUSED && newState == RepairSchedule.State.ACTIVE;
-  }
-
   private Response pauseSchedule(RepairSchedule repairSchedule, UriInfo uriInfo) {
     LOG.info("Pausing schedule {}", repairSchedule.getId());
     context.schedulingManager.pauseRepairSchedule(repairSchedule);
@@ -504,7 +556,8 @@ public final class RepairScheduleResource {
   public Response getRepairSchedule(
       @PathParam("id") UUID repairScheduleId) {
     LOG.debug("get repair_schedule called with: id = {}", repairScheduleId);
-    Optional<RepairSchedule> repairSchedule = context.storage.getRepairSchedule(repairScheduleId);
+    Optional<RepairSchedule> repairSchedule = context.storage.getRepairScheduleDao()
+        .getRepairSchedule(repairScheduleId);
     if (repairSchedule.isPresent()) {
       return Response.ok().entity(getRepairScheduleStatus(repairSchedule.get())).build();
     } else {
@@ -521,14 +574,15 @@ public final class RepairScheduleResource {
   @Path("/start/{id}")
   public Response startRepairSchedule(@PathParam("id") UUID repairScheduleId) {
     LOG.debug("start repair_schedule called with: id = {}", repairScheduleId);
-    Optional<RepairSchedule> repairSchedule = context.storage.getRepairSchedule(repairScheduleId);
+    Optional<RepairSchedule> repairSchedule = context.storage.getRepairScheduleDao()
+        .getRepairSchedule(repairScheduleId);
     if (repairSchedule.isPresent()) {
       RepairSchedule newSchedule = repairSchedule.get()
           .with()
           .nextActivation(DateTime.now())
           .build(repairScheduleId);
 
-      context.storage.updateRepairSchedule(newSchedule);
+      context.storage.getRepairScheduleDao().updateRepairSchedule(newSchedule);
       return Response.ok().entity(getRepairScheduleStatus(newSchedule)).build();
     } else {
       return Response.status(404)
@@ -546,7 +600,8 @@ public final class RepairScheduleResource {
   public Response getRepairSchedulesForCluster(
       @PathParam("cluster_name") String clusterName) {
     LOG.debug("get repair schedules for cluster called with: cluster_name = {}", clusterName);
-    Collection<RepairSchedule> repairSchedules = context.storage.getRepairSchedulesForCluster(clusterName);
+    Collection<RepairSchedule> repairSchedules = context.storage.getRepairScheduleDao()
+        .getRepairSchedulesForCluster(clusterName);
     Collection<RepairScheduleStatus> repairScheduleViews = new ArrayList<>();
     for (RepairSchedule repairSchedule : repairSchedules) {
       repairScheduleViews.add(getRepairScheduleStatus(repairSchedule));
@@ -563,19 +618,10 @@ public final class RepairScheduleResource {
   }
 
   /**
-   * Crafts an URI used to identify given repair schedule.
-   *
-   * @return The created resource URI.
-   */
-  private static URI buildRepairScheduleUri(UriInfo uriInfo, RepairSchedule repairSchedule) {
-    return uriInfo.getBaseUriBuilder().path("repair_schedule").path(repairSchedule.getId().toString()).build();
-  }
-
-  /**
-   * @param clusterName The cluster name to list the schedules for. If not given, will list all schedules for all
-   *        clusters.
+   * @param clusterName  The cluster name to list the schedules for. If not given, will list all schedules for all
+   *                     clusters.
    * @param keyspaceName The keyspace name to list schedules for. Limits the returned list and works whether the cluster
-   *        name is given or not.
+   *                     name is given or not.
    * @return All schedules in the system.
    */
   @GET
@@ -594,13 +640,14 @@ public final class RepairScheduleResource {
   private Collection<RepairSchedule> getScheduleList(Optional<String> clusterName, Optional<String> keyspaceName) {
     Collection<RepairSchedule> schedules;
     if (clusterName.isPresent() && keyspaceName.isPresent()) {
-      schedules = context.storage.getRepairSchedulesForClusterAndKeyspace(clusterName.get(), keyspaceName.get());
+      schedules = context.storage.getRepairScheduleDao()
+          .getRepairSchedulesForClusterAndKeyspace(clusterName.get(), keyspaceName.get());
     } else if (clusterName.isPresent()) {
-      schedules = context.storage.getRepairSchedulesForCluster(clusterName.get());
+      schedules = context.storage.getRepairScheduleDao().getRepairSchedulesForCluster(clusterName.get());
     } else if (keyspaceName.isPresent()) {
-      schedules = context.storage.getRepairSchedulesForKeyspace(keyspaceName.get());
+      schedules = context.storage.getRepairScheduleDao().getRepairSchedulesForKeyspace(keyspaceName.get());
     } else {
-      schedules = context.storage.getAllRepairSchedules();
+      schedules = context.storage.getRepairScheduleDao().getAllRepairSchedules();
     }
     return schedules;
   }
@@ -612,7 +659,7 @@ public final class RepairScheduleResource {
    * Repair schedule can only be deleted when it is not active, so you must stop it first.
    *
    * @param repairScheduleId The id for the RepairSchedule instance to delete.
-   * @param owner The assigned owner of the deleted resource. Must match the stored one.
+   * @param owner            The assigned owner of the deleted resource. Must match the stored one.
    * @return 202 response code if the delete has been accepted, 409 if schedule can't be stopped.
    */
   @DELETE
@@ -627,7 +674,8 @@ public final class RepairScheduleResource {
           .entity("required query parameter \"owner\" is missing")
           .build();
     }
-    Optional<RepairSchedule> scheduleToDelete = context.storage.getRepairSchedule(repairScheduleId);
+    Optional<RepairSchedule> scheduleToDelete = context.storage.getRepairScheduleDao()
+        .getRepairSchedule(repairScheduleId);
     if (scheduleToDelete.isPresent()) {
       if (RepairSchedule.State.ACTIVE == scheduleToDelete.get().getState()) {
         String msg = String.format("Repair schedule %s currently running. Must be first stopped", repairScheduleId);
@@ -667,47 +715,5 @@ public final class RepairScheduleResource {
       @PathParam("id") UUID repairScheduleId) throws IllegalArgumentException {
     long since = DateTime.now().minusHours(1).getMillis();
     return context.storage.getPercentRepairedMetrics(clusterName, repairScheduleId, since);
-  }
-
-  /**
-   * Utility method to apply any valid parameters to an existing RepairSchedule.
-   * This method assumes that any non-null parameter provided is valid and should
-   * be applied.
-   *
-   * @param repairSchedule - The schedule object to be updated
-   * @param owner - The owner value to be used in the update
-   * @param repairParallelism - the parallelism value to be used in the update
-   * @param intensity - The intensity value to be used in the update
-   * @param scheduleDaysBetween - The days between value to be used in the update
-   * @param segmentCountPerNode - The segments per node value to be used in the update
-   * @param adaptive - Whether or not the schedule is adaptive
-   * @param percentUnrepairedThreshold - Threshold of unrepaired percentage that triggers a repair
-   */
-  protected static RepairSchedule applyRepairPatchParams(
-      final RepairSchedule repairSchedule,
-      final String owner,
-      final RepairParallelism repairParallelism,
-      final Double intensity,
-      final Integer scheduleDaysBetween,
-      final Integer segmentCountPerNode,
-      final Boolean adaptive,
-      final Integer percentUnrepairedThreshold
-  ) {
-    if (repairSchedule == null) {
-      return null;
-    }
-
-    // Apply any valid incoming values to the schedule
-    return repairSchedule.with()
-        .owner(owner != null ? owner.trim() : repairSchedule.getOwner())
-        .repairParallelism(repairParallelism != null ? repairParallelism : repairSchedule.getRepairParallelism())
-        .intensity(intensity != null ? intensity : repairSchedule.getIntensity())
-        .daysBetween(scheduleDaysBetween != null ? scheduleDaysBetween : repairSchedule.getDaysBetween())
-        .segmentCountPerNode(segmentCountPerNode != null
-            ? segmentCountPerNode
-            : repairSchedule.getSegmentCountPerNode())
-        .percentUnrepairedThreshold(percentUnrepairedThreshold)
-        .adaptive(adaptive != null ? adaptive : false)
-        .build(repairSchedule.getId());
   }
 }

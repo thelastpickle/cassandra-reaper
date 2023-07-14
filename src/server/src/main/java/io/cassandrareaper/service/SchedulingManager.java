@@ -96,7 +96,7 @@ public final class SchedulingManager extends TimerTask {
     RepairSchedule updatedSchedule
         = schedule.with().state(RepairSchedule.State.PAUSED).pauseTime(DateTime.now()).build(schedule.getId());
 
-    if (!context.storage.updateRepairSchedule(updatedSchedule)) {
+    if (!context.storage.getRepairScheduleDao().updateRepairSchedule(updatedSchedule)) {
       throw new IllegalStateException(String.format("failed updating repair schedule %s", updatedSchedule.getId()));
     }
     return updatedSchedule;
@@ -106,7 +106,7 @@ public final class SchedulingManager extends TimerTask {
     RepairSchedule updatedSchedule
         = schedule.with().state(RepairSchedule.State.ACTIVE).pauseTime(null).build(schedule.getId());
 
-    if (!context.storage.updateRepairSchedule(updatedSchedule)) {
+    if (!context.storage.getRepairScheduleDao().updateRepairSchedule(updatedSchedule)) {
       throw new IllegalStateException(String.format("failed updating repair schedule %s", updatedSchedule.getId()));
     }
     return updatedSchedule;
@@ -121,7 +121,7 @@ public final class SchedulingManager extends TimerTask {
       LOG.debug("Checking for repair schedules...");
       UUID lastId = null;
       try {
-        Collection<RepairSchedule> schedules = context.storage.getAllRepairSchedules();
+        Collection<RepairSchedule> schedules = context.storage.getRepairScheduleDao().getAllRepairSchedules();
         // Cleanup metric registry from deleted schedules
         cleanupMetricsRegistry(schedules);
         // Start repairs for schedules that require it
@@ -205,7 +205,7 @@ public final class SchedulingManager extends TimerTask {
           RepairSchedule schedule
               = schdle.with().nextActivation(schdle.getFollowingActivation()).build(schdle.getId());
 
-          context.storage.updateRepairSchedule(schedule);
+          context.storage.getRepairScheduleDao().updateRepairSchedule(schedule);
 
           LOG.info(
               "repair unit '{}' should be repaired based on RepairSchedule with id '{}'",
@@ -315,12 +315,12 @@ public final class SchedulingManager extends TimerTask {
   }
 
   public void maybeRegisterRepairRunCompleted(RepairRun repairRun) {
-    Collection<RepairSchedule> repairSchedulesForCluster = context.storage
+    Collection<RepairSchedule> repairSchedulesForCluster = context.storage.getRepairScheduleDao()
         .getRepairSchedulesForCluster(repairRun.getClusterName());
 
     repairSchedulesForCluster.stream().filter(schedule -> repairRunComesFromSchedule(repairRun, schedule))
         .findFirst()
-        .ifPresent(schedule -> context.storage.updateRepairSchedule(
+        .ifPresent(schedule -> context.storage.getRepairScheduleDao().updateRepairSchedule(
             schedule.with().lastRun(repairRun.getId()).build(schedule.getId())));
   }
 }

@@ -25,9 +25,7 @@ import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.GenericMetric;
 import io.cassandrareaper.core.PercentRepairedMetric;
 import io.cassandrareaper.core.RepairRun;
-import io.cassandrareaper.core.RepairSchedule;
 import io.cassandrareaper.core.RepairSegment;
-import io.cassandrareaper.resources.view.RepairScheduleStatus;
 import io.cassandrareaper.service.RingRange;
 import io.cassandrareaper.storage.IDistributedStorage;
 import io.cassandrareaper.storage.IStorage;
@@ -40,6 +38,7 @@ import io.cassandrareaper.storage.metrics.CassMetricsDao;
 import io.cassandrareaper.storage.repairrun.CassRepairRunDao;
 import io.cassandrareaper.storage.repairrun.IRepairRun;
 import io.cassandrareaper.storage.repairschedule.CassRepairScheduleDao;
+import io.cassandrareaper.storage.repairschedule.IRepairSchedule;
 import io.cassandrareaper.storage.repairsegment.CassRepairSegmentDao;
 import io.cassandrareaper.storage.repairsegment.IRepairSegment;
 import io.cassandrareaper.storage.repairunit.CassRepairUnitDao;
@@ -294,64 +293,6 @@ public final class CassandraStorageFacade implements IStorage, IDistributedStora
     return cassRepairSegmentDao.segmentIsCandidate(seg, lockedNodes);
   }
 
-  @Override
-  public RepairSchedule addRepairSchedule(io.cassandrareaper.core.RepairSchedule.Builder repairSchedule) {
-
-    return cassRepairScheduleDao.addRepairSchedule(repairSchedule);
-  }
-
-  @Override
-  public Optional<RepairSchedule> getRepairSchedule(UUID repairScheduleId) {
-
-    return cassRepairScheduleDao.getRepairSchedule(repairScheduleId);
-  }
-
-  @Override
-  public Collection<RepairSchedule> getRepairSchedulesForCluster(String clusterName) {
-
-    return cassRepairScheduleDao.getRepairSchedulesForCluster(clusterName);
-  }
-
-  @Override
-  public Collection<RepairSchedule> getRepairSchedulesForCluster(String clusterName, boolean incremental) {
-    return cassRepairScheduleDao.getRepairSchedulesForCluster(clusterName, incremental);
-  }
-
-  @Override
-  public Collection<RepairSchedule> getRepairSchedulesForKeyspace(String keyspaceName) {
-
-    return cassRepairScheduleDao.getRepairSchedulesForKeyspace(keyspaceName);
-  }
-
-  @Override
-  public Collection<RepairSchedule> getRepairSchedulesForClusterAndKeyspace(String clusterName, String keyspaceName) {
-
-    return cassRepairScheduleDao.getRepairSchedulesForClusterAndKeyspace(clusterName, keyspaceName);
-  }
-
-  @Override
-  public Collection<RepairSchedule> getAllRepairSchedules() {
-
-    return cassRepairScheduleDao.getAllRepairSchedules();
-  }
-
-  @Override
-  public boolean updateRepairSchedule(RepairSchedule newRepairSchedule) {
-
-    return cassRepairScheduleDao.updateRepairSchedule(newRepairSchedule);
-  }
-
-  @Override
-  public Optional<RepairSchedule> deleteRepairSchedule(UUID id) {
-
-    return cassRepairScheduleDao.deleteRepairSchedule(id);
-  }
-
-  @Override
-  public Collection<RepairScheduleStatus> getClusterScheduleStatuses(String clusterName) {
-    return cassRepairScheduleDao.getClusterScheduleStatuses(clusterName);
-  }
-
   private RepairRun buildRepairRunFromRow(Row repairRunResult, UUID id) {
     return cassRepairRunDao.buildRepairRunFromRow(repairRunResult, id);
   }
@@ -553,6 +494,11 @@ public final class CassandraStorageFacade implements IStorage, IDistributedStora
   @Override
   public IRepairUnit getRepairUnitDao() {
     return this.cassRepairUnitDao;
+  }
+
+  @Override
+  public IRepairSchedule getRepairScheduleDao() {
+    return this.cassRepairScheduleDao;
   }
 
   public enum CassandraMode {
