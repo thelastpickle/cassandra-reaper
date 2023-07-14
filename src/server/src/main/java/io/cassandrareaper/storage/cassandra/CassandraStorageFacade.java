@@ -96,7 +96,7 @@ public final class CassandraStorageFacade implements IStorage, IDistributedStora
   private final CassClusterDao cassClusterDao;
   private final CassEventsDao cassEventsDao;
   private final CassMetricsDao cassMetricsDao;
-  private final Concurrency concurrency;
+  private final ConcurrencyDao concurrency;
   private final CassSnapshotDao cassSnapshotDao;
   private final OperationsDao operationsDao;
   private PreparedStatement saveHeartbeatPrepStmt;
@@ -149,7 +149,7 @@ public final class CassandraStorageFacade implements IStorage, IDistributedStora
     this.cassMetricsDao = new CassMetricsDao(session);
     this.cassSnapshotDao = new CassSnapshotDao(session);
     this.operationsDao = new OperationsDao(session);
-    this.concurrency = new Concurrency(version, reaperInstanceId, session);
+    this.concurrency = new ConcurrencyDao(version, reaperInstanceId, session);
     this.cassRepairUnitDao = new CassRepairUnitDao(defaultTimeout, session);
     this.cassRepairSegmentDao = new CassRepairSegmentDao(concurrency, cassRepairUnitDao, session);
     this.cassRepairScheduleDao = new CassRepairScheduleDao(cassRepairUnitDao, session);

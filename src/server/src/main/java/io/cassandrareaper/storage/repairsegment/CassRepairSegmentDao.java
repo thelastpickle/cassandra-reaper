@@ -22,7 +22,7 @@ import io.cassandrareaper.core.RepairSegment;
 import io.cassandrareaper.core.Segment;
 import io.cassandrareaper.service.RingRange;
 import io.cassandrareaper.storage.JsonParseUtils;
-import io.cassandrareaper.storage.cassandra.Concurrency;
+import io.cassandrareaper.storage.cassandra.ConcurrencyDao;
 import io.cassandrareaper.storage.repairunit.CassRepairUnitDao;
 
 import java.math.BigInteger;
@@ -60,16 +60,16 @@ public class CassRepairSegmentDao implements IRepairSegment {
   PreparedStatement getRepairSegmentsByRunIdAndStatePrepStmt = null;
   @Nullable // null on Cassandra-2 as it's not supported syntax
   PreparedStatement getRepairSegmentCountByRunIdAndStatePrepStmt = null;
-  private final Concurrency concurrency;
+  private final ConcurrencyDao concurrencyDao;
   private final CassRepairUnitDao cassRepairUnitDao;
   private final Session session;
 
   //TODO: Consider removing Cassandra 2 support so we don't need to look at the version.
-  public CassRepairSegmentDao(Concurrency concurrency,
+  public CassRepairSegmentDao(ConcurrencyDao concurrencyDao,
                               CassRepairUnitDao cassRepairUnitDao,
                               Session session) {
     this.session = session;
-    this.concurrency = concurrency;
+    this.concurrencyDao = concurrencyDao;
     this.cassRepairUnitDao = cassRepairUnitDao;
     prepareStatements();
   }
@@ -199,8 +199,8 @@ public class CassRepairSegmentDao implements IRepairSegment {
   @Override
   public boolean updateRepairSegment(RepairSegment segment) {
 
-    assert concurrency.hasLeadOnSegment(segment)
-        || (concurrency.hasLeadOnSegment(segment.getRunId())
+    assert concurrencyDao.hasLeadOnSegment(segment)
+        || (concurrencyDao.hasLeadOnSegment(segment.getRunId())
         && cassRepairUnitDao.getRepairUnit(segment.getRepairUnitId()).getIncrementalRepair())
         : "non-leader trying to update repair segment " + segment.getId() + " of run " + segment.getRunId();
 
@@ -277,7 +277,7 @@ public class CassRepairSegmentDao implements IRepairSegment {
     List<RepairSegment> segments = Lists.<RepairSegment>newArrayList(getRepairSegmentsForRun(runId));
     Collections.shuffle(segments);
 
-    Set<String> lockedNodes = concurrency.getLockedNodesForRun(runId);
+    Set<String> lockedNodes = concurrencyDao.getLockedNodesForRun(runId);
     List<RepairSegment> candidates = segments.stream()
         .filter(seg -> segmentIsCandidate(seg, lockedNodes))
         .collect(Collectors.toList());
@@ -291,7 +291,7 @@ public class CassRepairSegmentDao implements IRepairSegment {
     List<RepairSegment> segments
         = Lists.<RepairSegment>newArrayList(getRepairSegmentsForRun(runId));
     Collections.shuffle(segments);
-    Set<String> lockedNodes = concurrency.getLockedNodesForRun(runId);
+    Set<String> lockedNodes = concurrencyDao.getLockedNodesForRun(runId);
     List<RepairSegment> candidates = segments.stream()
         .filter(seg -> segmentIsCandidate(seg, lockedNodes))
         .filter(seg -> segmentIsWithinRanges(seg, ranges))
