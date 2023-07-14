@@ -39,6 +39,7 @@ import io.cassandrareaper.storage.IDistributedStorage;
 import io.cassandrareaper.storage.IStorage;
 import io.cassandrareaper.storage.MemoryStorageFacade;
 import io.cassandrareaper.storage.cassandra.CassandraStorageFacade;
+import io.cassandrareaper.storage.cluster.ICluster;
 import io.cassandrareaper.storage.repairrun.IRepairRun;
 import io.cassandrareaper.storage.repairschedule.IRepairSchedule;
 import io.cassandrareaper.storage.repairsegment.IRepairSegment;
@@ -212,7 +213,7 @@ public final class RepairRunnerTest {
     final int repairThreadCount = 1;
     final int segmentTimeout = 1;
     final IStorage storage = new MemoryStorageFacade();
-    storage.addCluster(cluster);
+    storage.getClusterDao().addCluster(cluster);
     RepairUnit cf = storage.getRepairUnitDao().addRepairUnit(
         RepairUnit.builder()
             .clusterName(cluster.getName())
@@ -369,7 +370,7 @@ public final class RepairRunnerTest {
     final int repairThreadCount = 1;
     final int segmentTimeout = 1;
     final IStorage storage = new MemoryStorageFacade();
-    storage.addCluster(cluster);
+    storage.getClusterDao().addCluster(cluster);
     DateTimeUtils.setCurrentMillisFixed(timeRun);
     RepairUnit cf = storage.getRepairUnitDao().addRepairUnit(
         RepairUnit.builder()
@@ -529,7 +530,7 @@ public final class RepairRunnerTest {
     AppContext context = new AppContext();
     context.storage = storage;
     context.config = new ReaperApplicationConfiguration();
-    storage.addCluster(cluster);
+    storage.getClusterDao().addCluster(cluster);
     UUID cf = storage.getRepairUnitDao().addRepairUnit(
             RepairUnit.builder()
                 .clusterName(cluster.getName())
@@ -660,7 +661,7 @@ public final class RepairRunnerTest {
     AppContext context = new AppContext();
     context.storage = storage;
     context.config = new ReaperApplicationConfiguration();
-    storage.addCluster(cluster);
+    storage.getClusterDao().addCluster(cluster);
     UUID cf = storage.getRepairUnitDao().addRepairUnit(
             RepairUnit.builder()
                 .clusterName(cluster.getName())
@@ -854,7 +855,7 @@ public final class RepairRunnerTest {
     AppContext context = new AppContext();
     context.storage = storage;
     context.config = new ReaperApplicationConfiguration();
-    storage.addCluster(cluster);
+    storage.getClusterDao().addCluster(cluster);
     UUID cf = storage.getRepairUnitDao().addRepairUnit(
             RepairUnit.builder()
                 .clusterName(cluster.getName())
@@ -1054,7 +1055,7 @@ public final class RepairRunnerTest {
     AppContext context = new AppContext();
     context.storage = storage;
     context.config = new ReaperApplicationConfiguration();
-    storage.addCluster(cluster);
+    storage.getClusterDao().addCluster(cluster);
     UUID cf = storage.getRepairUnitDao().addRepairUnit(
             RepairUnit.builder()
                 .clusterName(cluster.getName())
@@ -1223,8 +1224,9 @@ public final class RepairRunnerTest {
     IRepairUnit mockedRepairUnitDao = mock(IRepairUnit.class);
     Mockito.when(((CassandraStorageFacade) context.storage).getRepairUnitDao()).thenReturn(mockedRepairUnitDao);
     Mockito.when(mockedRepairUnitDao.getRepairUnit(any(UUID.class))).thenReturn(repairUnit);
-
-    Mockito.when(context.storage.getCluster(any())).thenReturn(cluster);
+    ICluster mockedClusterDao = Mockito.mock(ICluster.class);
+    Mockito.when(context.storage.getClusterDao()).thenReturn(mockedClusterDao);
+    Mockito.when(mockedClusterDao.getCluster(any())).thenReturn(cluster);
     JmxConnectionFactory jmxConnectionFactory = mock(JmxConnectionFactory.class);
     JmxProxy jmx = mock(JmxProxy.class);
     when(jmxConnectionFactory.connectAny(any(Collection.class))).thenReturn(jmx);
@@ -1276,7 +1278,7 @@ public final class RepairRunnerTest {
     AppContext context = new AppContext();
     context.storage = storage;
     context.config = new ReaperApplicationConfiguration();
-    storage.addCluster(cluster);
+    storage.getClusterDao().addCluster(cluster);
     final UUID cf = storage.getRepairUnitDao().addRepairUnit(
             RepairUnit.builder()
                 .clusterName(cluster.getName())
@@ -1408,8 +1410,9 @@ public final class RepairRunnerTest {
     Mockito.when(context.storage.getRepairScheduleDao()).thenReturn(mockedRepairScheduleDao);
     Mockito.when(mockedRepairScheduleDao.getRepairSchedulesForClusterAndKeyspace(any(), any()))
         .thenReturn(schedules);
-
-    Mockito.when(context.storage.getCluster(any())).thenReturn(cluster);
+    ICluster mockedClusterDao = Mockito.mock(ICluster.class);
+    Mockito.when(context.storage.getClusterDao()).thenReturn(mockedClusterDao);
+    Mockito.when(mockedClusterDao.getCluster(any())).thenReturn(cluster);
     JmxConnectionFactory jmxConnectionFactory = mock(JmxConnectionFactory.class);
     JmxProxy jmx = mock(JmxProxy.class);
     when(jmxConnectionFactory.connectAny(any(Collection.class))).thenReturn(jmx);
@@ -1504,8 +1507,9 @@ public final class RepairRunnerTest {
     Mockito.when(context.storage.getRepairScheduleDao()).thenReturn(mockedRepairScheduleDao);
     Mockito.when(mockedRepairScheduleDao.getRepairSchedulesForClusterAndKeyspace(any(), any()))
         .thenReturn(schedules);
-
-    Mockito.when(context.storage.getCluster(any())).thenReturn(cluster);
+    ICluster mockedClusterDao = Mockito.mock(ICluster.class);
+    Mockito.when(context.storage.getClusterDao()).thenReturn(mockedClusterDao);
+    Mockito.when(mockedClusterDao.getCluster(any())).thenReturn(cluster);
     JmxConnectionFactory jmxConnectionFactory = mock(JmxConnectionFactory.class);
     JmxProxy jmx = mock(JmxProxy.class);
     when(jmxConnectionFactory.connectAny(any(Collection.class))).thenReturn(jmx);
@@ -1602,8 +1606,12 @@ public final class RepairRunnerTest {
     Mockito.when(context.storage.getRepairScheduleDao()).thenReturn(mockedRepairScheduleDao);
     Mockito.when(mockedRepairScheduleDao.getRepairSchedulesForClusterAndKeyspace(any(), any()))
         .thenReturn(schedules);
+    ICluster mockedClusterDao = Mockito.mock(ICluster.class);
+    Mockito.when(context.storage.getClusterDao()).thenReturn(mockedClusterDao);
+    Mockito.when(mockedClusterDao.getCluster(any())).thenReturn(cluster);
 
-    Mockito.when(context.storage.getCluster(any())).thenReturn(cluster);
+
+    Mockito.when(mockedClusterDao.getCluster(any())).thenReturn(cluster);
     JmxConnectionFactory jmxConnectionFactory = mock(JmxConnectionFactory.class);
     JmxProxy jmx = mock(JmxProxy.class);
     when(jmxConnectionFactory.connectAny(any(Collection.class))).thenReturn(jmx);
@@ -1684,8 +1692,9 @@ public final class RepairRunnerTest {
     Mockito.when(((CassandraStorageFacade) context.storage).getRepairUnitDao()).thenReturn(mockedRepairUnitDao);
     Mockito.when(mockedRepairUnitDao.getRepairUnit(any(UUID.class))).thenReturn(repairUnit);
 
-
-    Mockito.when(context.storage.getCluster(any())).thenReturn(cluster);
+    ICluster mockedClusterDao = Mockito.mock(ICluster.class);
+    Mockito.when(context.storage.getClusterDao()).thenReturn(mockedClusterDao);
+    Mockito.when(mockedClusterDao.getCluster(any())).thenReturn(cluster);
     JmxConnectionFactory jmxConnectionFactory = mock(JmxConnectionFactory.class);
     JmxProxy jmx = mock(JmxProxy.class);
     when(jmxConnectionFactory.connectAny(any(Collection.class))).thenReturn(jmx);
@@ -1755,7 +1764,9 @@ public final class RepairRunnerTest {
     context.storage = Mockito.mock(CassandraStorageFacade.class);
     context.config = new ReaperApplicationConfiguration();
     context.config.setMaxParallelRepairs(3);
-    Mockito.when(context.storage.getCluster(any())).thenReturn(cluster);
+    ICluster mockedClusterDao = Mockito.mock(ICluster.class);
+    Mockito.when(context.storage.getClusterDao()).thenReturn(mockedClusterDao);
+    Mockito.when(mockedClusterDao.getCluster(any())).thenReturn(cluster);
 
     RepairUnit repairUnit = RepairUnit.builder()
         .clusterName(cluster.getName())
@@ -1828,7 +1839,9 @@ public final class RepairRunnerTest {
     context.storage = Mockito.mock(CassandraStorageFacade.class);
     context.config = new ReaperApplicationConfiguration();
     context.config.setMaxParallelRepairs(3);
-    Mockito.when(context.storage.getCluster(any())).thenReturn(cluster);
+    ICluster mockedClusterDao = Mockito.mock(ICluster.class);
+    Mockito.when(context.storage.getClusterDao()).thenReturn(mockedClusterDao);
+    Mockito.when(mockedClusterDao.getCluster(any())).thenReturn(cluster);
 
     RepairUnit repairUnit = RepairUnit.builder()
         .clusterName(cluster.getName())

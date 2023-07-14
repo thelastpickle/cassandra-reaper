@@ -79,7 +79,7 @@ public final class SnapshotResource {
 
     try {
       Node node = Node.builder()
-              .withCluster(context.storage.getCluster(clusterName))
+              .withCluster(context.storage.getClusterDao().getCluster(clusterName))
               .withHostname(host.get())
               .build();
 
@@ -153,7 +153,7 @@ public final class SnapshotResource {
     try {
       Map<String, List<Snapshot>> snapshots = snapshotManager.listSnapshotsGroupedByName(
               Node.builder()
-                  .withCluster(context.storage.getCluster(clusterName))
+                  .withCluster(context.storage.getClusterDao().getCluster(clusterName))
                   .withHostname(host)
                   .build());
 
@@ -197,7 +197,7 @@ public final class SnapshotResource {
     try {
       if (host.isPresent() && snapshotName.isPresent()) {
         Node node = Node.builder()
-                .withCluster(context.storage.getCluster(clusterName))
+                .withCluster(context.storage.getClusterDao().getCluster(clusterName))
                 .withHostname(host.get())
                 .build();
 

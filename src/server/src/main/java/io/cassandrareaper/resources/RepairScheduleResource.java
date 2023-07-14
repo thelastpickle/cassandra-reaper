@@ -278,7 +278,7 @@ public final class RepairScheduleResource {
             .build();
       }
 
-      Cluster cluster = context.storage.getCluster(Cluster.toSymbolicName(clusterName.get()));
+      Cluster cluster = context.storage.getClusterDao().getCluster(Cluster.toSymbolicName(clusterName.get()));
 
       Set<String> tableNames;
       try {

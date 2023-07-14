@@ -297,7 +297,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
         return false;
       }
 
-      Cluster cluster = context.storage.getCluster(clusterName);
+      Cluster cluster = context.storage.getClusterDao().getCluster(clusterName);
       JmxProxy coordinator = clusterFacade.connect(cluster, potentialCoordinators);
       String keyspace = repairUnit.getKeyspaceName();
       boolean fullRepair = !repairUnit.getIncrementalRepair();
@@ -807,7 +807,9 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
     if (repairId != null) {
       for (String involvedNode : potentialCoordinators) {
         try {
-          JmxProxy jmx = clusterFacade.connect(context.storage.getCluster(clusterName), Arrays.asList(involvedNode));
+          JmxProxy jmx = clusterFacade.connect(
+              context.storage.getClusterDao().getCluster(clusterName),
+              Arrays.asList(involvedNode));
           // there is no way of telling if the snapshot was cleared or not :(
           SnapshotProxy.create(jmx).clearSnapshot(repairId, keyspace);
         } catch (ReaperException | NumberFormatException e) {

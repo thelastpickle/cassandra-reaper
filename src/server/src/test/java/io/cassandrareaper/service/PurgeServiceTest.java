@@ -24,6 +24,7 @@ import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairRun.RunState;
 import io.cassandrareaper.storage.IStorage;
+import io.cassandrareaper.storage.cluster.ICluster;
 import io.cassandrareaper.storage.repairrun.IRepairRun;
 
 import java.util.Arrays;
@@ -63,8 +64,9 @@ public final class PurgeServiceTest {
     context.storage = mock(IStorage.class);
 
     List<Cluster> clusters = Arrays.asList(Cluster.builder().withName(CLUSTER_NAME).withSeedHosts(SEEDS).build());
-
-    when(context.storage.getClusters()).thenReturn(clusters);
+    ICluster mockedClusterDao = mock(ICluster.class);
+    when(context.storage.getClusterDao()).thenReturn(mockedClusterDao);
+    when(context.storage.getClusterDao().getClusters()).thenReturn(clusters);
 
     // Add repair runs to the mock
     List<RepairRun> repairRuns = Lists.newArrayList();
@@ -105,8 +107,9 @@ public final class PurgeServiceTest {
     context.storage = mock(IStorage.class);
 
     List<Cluster> clusters = Arrays.asList(Cluster.builder().withName(CLUSTER_NAME).withSeedHosts(SEEDS).build());
-
-    when(context.storage.getClusters()).thenReturn(clusters);
+    ICluster mockedClusterDao = mock(ICluster.class);
+    when(context.storage.getClusterDao()).thenReturn(mockedClusterDao);
+    when(context.storage.getClusterDao().getClusters()).thenReturn(clusters);
 
     // Add repair runs to the mock
     List<RepairRun> repairRuns = Lists.newArrayList();
@@ -149,7 +152,9 @@ public final class PurgeServiceTest {
 
     List<Cluster> clusters = Arrays.asList(Cluster.builder().withName(CLUSTER_NAME).withSeedHosts(SEEDS).build());
 
-    when(context.storage.getClusters()).thenReturn(clusters);
+    ICluster mockedClusterDao = mock(ICluster.class);
+    when(context.storage.getClusterDao()).thenReturn(mockedClusterDao);
+    when(mockedClusterDao.getClusters()).thenReturn(clusters);
 
     // Add repair runs to the mock
     List<RepairRun> repairRuns = Lists.newArrayList();

@@ -19,6 +19,7 @@ package io.cassandrareaper.storage;
 
 import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.PercentRepairedMetric;
+import io.cassandrareaper.storage.cluster.ICluster;
 import io.cassandrareaper.storage.cluster.MemClusterDao;
 import io.cassandrareaper.storage.events.IEvents;
 import io.cassandrareaper.storage.events.MemEventsDao;
@@ -34,7 +35,6 @@ import io.cassandrareaper.storage.repairunit.MemRepairUnitDao;
 import io.cassandrareaper.storage.snapshot.ISnapshot;
 import io.cassandrareaper.storage.snapshot.MemSnapshotDao;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
@@ -68,35 +68,8 @@ public final class MemoryStorageFacade implements IStorage {
     return true;
   }
 
-  @Override
-  public Collection<Cluster> getClusters() {
-    return memClusterDao.getClusters();
-  }
-
-  @Override
-  public boolean addCluster(Cluster cluster) {
-    return memClusterDao.addCluster(cluster);
-  }
-
-  @Override
-  public boolean updateCluster(Cluster newCluster) {
-    return memClusterDao.updateCluster(newCluster);
-  }
-
-
   private boolean addClusterAssertions(Cluster cluster) {
     return memClusterDao.addClusterAssertions(cluster);
-  }
-
-  @Override
-  public Cluster getCluster(String clusterName) {
-    return memClusterDao.getCluster(clusterName);
-  }
-
-  @Override
-  public Cluster deleteCluster(String clusterName) {
-
-    return memClusterDao.deleteCluster(clusterName);
   }
 
   @Override
@@ -147,6 +120,11 @@ public final class MemoryStorageFacade implements IStorage {
   @Override
   public IRepairSchedule getRepairScheduleDao() {
     return this.memRepairScheduleDao;
+  }
+
+  @Override
+  public ICluster getClusterDao() {
+    return this.memClusterDao;
   }
 
 }

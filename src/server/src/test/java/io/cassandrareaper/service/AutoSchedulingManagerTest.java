@@ -59,8 +59,8 @@ public final class AutoSchedulingManagerTest {
 
   @Test
   public void schedulesRepairForAllKeyspacesInAllClusters() throws Exception {
-    context.storage.addCluster(CLUSTER_1);
-    context.storage.addCluster(CLUSTER_2);
+    context.storage.getClusterDao().addCluster(CLUSTER_1);
+    context.storage.getClusterDao().addCluster(CLUSTER_2);
 
     repairAutoSchedulingManager.run();
 
@@ -70,8 +70,8 @@ public final class AutoSchedulingManagerTest {
 
   @Test
   public void continueProcessingOtherClusterWhenSchedulingFailsForACluster() throws Exception {
-    context.storage.addCluster(CLUSTER_1);
-    context.storage.addCluster(CLUSTER_2);
+    context.storage.getClusterDao().addCluster(CLUSTER_1);
+    context.storage.getClusterDao().addCluster(CLUSTER_2);
 
     doThrow(new RuntimeException("throw for test purposes")).when(clusterRepairScheduler).scheduleRepairs(CLUSTER_1);
 

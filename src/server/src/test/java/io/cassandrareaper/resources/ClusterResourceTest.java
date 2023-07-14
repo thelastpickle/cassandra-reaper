@@ -85,9 +85,9 @@ public final class ClusterResourceTest {
             Optional.of(JMX_PASSWORD));
 
     Assertions.assertThat(response.getStatus()).isEqualTo(HttpStatus.CREATED_201);
-    assertEquals(1, mocks.context.storage.getClusters().size());
+    assertEquals(1, mocks.context.storage.getClusterDao().getClusters().size());
 
-    Cluster cluster = mocks.context.storage.getCluster(CLUSTER_NAME);
+    Cluster cluster = mocks.context.storage.getClusterDao().getCluster(CLUSTER_NAME);
     assertNotNull("Did not find expected cluster", cluster);
     assertEquals(0,
         mocks.context.storage.getRepairRunDao().getRepairRunsForCluster(cluster.getName(), Optional.of(1)).size());
@@ -111,7 +111,7 @@ public final class ClusterResourceTest {
         .withState(Cluster.State.ACTIVE)
         .build();
 
-    mocks.context.storage.addCluster(cluster);
+    mocks.context.storage.getClusterDao().addCluster(cluster);
 
     ClusterResource clusterResource = ClusterResource.create(mocks.context, mocks.cryptograph,
         mocks.context.storage.getEventsDao(),
@@ -125,9 +125,9 @@ public final class ClusterResourceTest {
 
     Assertions.assertThat(response.getStatus()).isEqualTo(HttpStatus.NO_CONTENT_204);
     assertTrue(response.getLocation().toString().endsWith("/cluster/" + cluster.getName()));
-    assertEquals(1, mocks.context.storage.getClusters().size());
+    assertEquals(1, mocks.context.storage.getClusterDao().getClusters().size());
 
-    cluster = mocks.context.storage.getCluster(CLUSTER_NAME);
+    cluster = mocks.context.storage.getClusterDao().getCluster(CLUSTER_NAME);
     assertNotNull("Did not find expected cluster", cluster);
     assertEquals(0,
         mocks.context.storage.getRepairRunDao().getRepairRunsForCluster(cluster.getName(), Optional.of(1)).size());
@@ -148,7 +148,7 @@ public final class ClusterResourceTest {
         .withState(Cluster.State.ACTIVE)
         .build();
 
-    mocks.context.storage.addCluster(cluster);
+    mocks.context.storage.getClusterDao().addCluster(cluster);
 
     ClusterResource clusterResource = ClusterResource.create(mocks.context, mocks.cryptograph,
         mocks.context.storage.getEventsDao(),
@@ -164,9 +164,9 @@ public final class ClusterResourceTest {
 
     Assertions.assertThat(response.getStatus()).isEqualTo(HttpStatus.NO_CONTENT_204);
     assertTrue(response.getLocation().toString().endsWith("/cluster/" + cluster.getName()));
-    assertEquals(1, mocks.context.storage.getClusters().size());
+    assertEquals(1, mocks.context.storage.getClusterDao().getClusters().size());
 
-    cluster = mocks.context.storage.getCluster(CLUSTER_NAME);
+    cluster = mocks.context.storage.getClusterDao().getCluster(CLUSTER_NAME);
     assertNotNull("Did not find expected cluster", cluster);
     assertEquals(0,
         mocks.context.storage.getRepairRunDao().getRepairRunsForCluster(cluster.getName(), Optional.of(1)).size());
@@ -219,7 +219,7 @@ public final class ClusterResourceTest {
         .withState(Cluster.State.ACTIVE)
         .build();
 
-    mocks.context.storage.addCluster(cluster);
+    mocks.context.storage.getClusterDao().addCluster(cluster);
 
     ClusterResource clusterResource
         = ClusterResource.create(mocks.context, new NoopCrypotograph(), () -> mocks.clusterFacade,
@@ -239,7 +239,7 @@ public final class ClusterResourceTest {
         .withState(Cluster.State.ACTIVE)
         .build();
 
-    mocks.context.storage.addCluster(cluster);
+    mocks.context.storage.getClusterDao().addCluster(cluster);
 
     ClusterResource clusterResource
         = ClusterResource.create(mocks.context, new NoopCrypotograph(), () -> mocks.clusterFacade,
@@ -262,7 +262,7 @@ public final class ClusterResourceTest {
         .withState(Cluster.State.ACTIVE)
         .build();
 
-    mocks.context.storage.addCluster(cluster);
+    mocks.context.storage.getClusterDao().addCluster(cluster);
 
     ClusterResource clusterResource
         = ClusterResource.create(mocks.context, new NoopCrypotograph(), () -> mocks.clusterFacade,
@@ -285,7 +285,7 @@ public final class ClusterResourceTest {
         .withState(Cluster.State.ACTIVE)
         .build();
 
-    mocks.context.storage.addCluster(cluster);
+    mocks.context.storage.getClusterDao().addCluster(cluster);
 
     cluster = Cluster.builder()
         .withName("cluster2")
@@ -293,7 +293,7 @@ public final class ClusterResourceTest {
         .withState(Cluster.State.ACTIVE)
         .build();
 
-    mocks.context.storage.addCluster(cluster);
+    mocks.context.storage.getClusterDao().addCluster(cluster);
 
     ClusterResource clusterResource
         = ClusterResource.create(mocks.context, new NoopCrypotograph(), () -> mocks.clusterFacade,
@@ -316,7 +316,7 @@ public final class ClusterResourceTest {
         .withState(Cluster.State.ACTIVE)
         .build();
 
-    mocks.context.storage.addCluster(cluster);
+    mocks.context.storage.getClusterDao().addCluster(cluster);
 
     cluster = Cluster.builder()
         .withName("cluster2")
@@ -324,7 +324,7 @@ public final class ClusterResourceTest {
         .withState(Cluster.State.ACTIVE)
         .build();
 
-    mocks.context.storage.addCluster(cluster);
+    mocks.context.storage.getClusterDao().addCluster(cluster);
 
     ClusterResource clusterResource
         = ClusterResource.create(mocks.context, new NoopCrypotograph(), () -> mocks.clusterFacade,
@@ -347,7 +347,7 @@ public final class ClusterResourceTest {
         .withState(Cluster.State.ACTIVE)
         .build();
 
-    mocks.context.storage.addCluster(cluster);
+    mocks.context.storage.getClusterDao().addCluster(cluster);
 
     cluster = Cluster.builder()
         .withName("cluster2")
@@ -355,7 +355,7 @@ public final class ClusterResourceTest {
         .withState(Cluster.State.ACTIVE)
         .build();
 
-    mocks.context.storage.addCluster(cluster);
+    mocks.context.storage.getClusterDao().addCluster(cluster);
 
     ClusterResource clusterResource
         = ClusterResource.create(mocks.context, new NoopCrypotograph(), () -> mocks.clusterFacade,
@@ -378,7 +378,7 @@ public final class ClusterResourceTest {
         .withState(Cluster.State.ACTIVE)
         .build();
 
-    mocks.context.storage.addCluster(cluster);
+    mocks.context.storage.getClusterDao().addCluster(cluster);
 
     cluster = Cluster.builder()
         .withName("abc")
@@ -386,7 +386,7 @@ public final class ClusterResourceTest {
         .withState(Cluster.State.ACTIVE)
         .build();
 
-    mocks.context.storage.addCluster(cluster);
+    mocks.context.storage.getClusterDao().addCluster(cluster);
 
     ClusterResource clusterResource
         = ClusterResource.create(mocks.context, new NoopCrypotograph(), () -> mocks.clusterFacade,
@@ -409,7 +409,7 @@ public final class ClusterResourceTest {
         .withState(Cluster.State.UNREACHABLE)
         .build();
 
-    mocks.context.storage.addCluster(cluster);
+    mocks.context.storage.getClusterDao().addCluster(cluster);
 
     cluster = Cluster.builder()
         .withName("cluster2")
@@ -417,7 +417,7 @@ public final class ClusterResourceTest {
         .withState(Cluster.State.ACTIVE)
         .build();
 
-    mocks.context.storage.addCluster(cluster);
+    mocks.context.storage.getClusterDao().addCluster(cluster);
 
     ClusterResource clusterResource
         = ClusterResource.create(mocks.context, new NoopCrypotograph(), () -> mocks.clusterFacade,
@@ -439,7 +439,7 @@ public final class ClusterResourceTest {
         .withSeedHosts(ImmutableSet.of(SEED_HOST))
         .build();
 
-    mocks.context.storage.addCluster(cluster);
+    mocks.context.storage.getClusterDao().addCluster(cluster);
   }
 
   @Test(expected = IllegalArgumentException.class)
@@ -452,7 +452,7 @@ public final class ClusterResourceTest {
         .withState(Cluster.State.ACTIVE)
         .build();
 
-    mocks.context.storage.addCluster(cluster);
+    mocks.context.storage.getClusterDao().addCluster(cluster);
 
     cluster = Cluster.builder()
         .withName(CLUSTER_NAME)
@@ -460,7 +460,7 @@ public final class ClusterResourceTest {
         .withState(Cluster.State.ACTIVE)
         .build();
 
-    mocks.context.storage.addCluster(cluster);
+    mocks.context.storage.getClusterDao().addCluster(cluster);
   }
 
   @Test
@@ -482,9 +482,9 @@ public final class ClusterResourceTest {
 
     assertEquals(HttpStatus.OK_200, response.getStatus());
     assertTrue(response.getLocation().toString().endsWith("/cluster/" + CLUSTER_NAME));
-    assertEquals(1, mocks.context.storage.getClusters().size());
+    assertEquals(1, mocks.context.storage.getClusterDao().getClusters().size());
 
-    Cluster cluster = mocks.context.storage.getCluster(CLUSTER_NAME);
+    Cluster cluster = mocks.context.storage.getClusterDao().getCluster(CLUSTER_NAME);
     Assertions.assertThat(cluster.getSeedHosts()).hasSize(2);
     Assertions.assertThat(cluster.getSeedHosts()).contains(SEED_HOST + 1);
 
@@ -523,9 +523,9 @@ public final class ClusterResourceTest {
 
     assertEquals(HttpStatus.OK_200, response.getStatus());
     assertTrue(response.getLocation().toString().endsWith("/cluster/" + CLUSTER_NAME));
-    assertEquals(1, mocks.context.storage.getClusters().size());
+    assertEquals(1, mocks.context.storage.getClusterDao().getClusters().size());
 
-    Cluster cluster = mocks.context.storage.getCluster(CLUSTER_NAME);
+    Cluster cluster = mocks.context.storage.getClusterDao().getCluster(CLUSTER_NAME);
     Assertions.assertThat(cluster.getSeedHosts()).hasSize(2);
     Assertions.assertThat(cluster.getSeedHosts()).contains(SEED_HOST + 1);
 

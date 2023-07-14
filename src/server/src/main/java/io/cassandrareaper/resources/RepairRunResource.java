@@ -149,7 +149,7 @@ public final class RepairRunResource {
           .build();
     }
     try {
-      Cluster cluster = context.storage.getCluster(Cluster.toSymbolicName(clusterName.get()));
+      Cluster cluster = context.storage.getClusterDao().getCluster(Cluster.toSymbolicName(clusterName.get()));
 
       if (!datacentersStr.orElse("").isEmpty() && !nodesStr.orElse("").isEmpty()) {
         return Response.status(Response.Status.BAD_REQUEST)
@@ -365,7 +365,7 @@ public final class RepairRunResource {
         // hijack the segment count in case of incremental repair
         segments = -1;
       }
-      final Cluster cluster = context.storage.getCluster(Cluster.toSymbolicName(clusterName.get()));
+      final Cluster cluster = context.storage.getClusterDao().getCluster(Cluster.toSymbolicName(clusterName.get()));
       Set<String> tableNames;
       try {
         tableNames = repairRunService.getTableNamesBasedOnParam(cluster, keyspace.get(), tableNamesParam);
@@ -718,8 +718,8 @@ public final class RepairRunResource {
       }
 
       Collection<Cluster> clusters = cluster.isPresent() && !cluster.get().equals("all")
-          ? Collections.singleton(context.storage.getCluster(cluster.get()))
-          : context.storage.getClusters();
+          ? Collections.singleton(context.storage.getClusterDao().getCluster(cluster.get()))
+          : context.storage.getClusterDao().getClusters();
 
       List<RepairRun> repairRuns = Lists.newArrayList();
       clusters.forEach(clstr -> repairRuns.addAll(

@@ -101,7 +101,7 @@ public final class SnapshotService {
 
     try {
       List<Pair<Node, String>> snapshotResults = Lists.newArrayList();
-      Cluster cluster = context.storage.getCluster(clusterName);
+      Cluster cluster = context.storage.getClusterDao().getCluster(clusterName);
 
       Snapshot snapshot = Snapshot.builder()
               .withClusterName(clusterName)
@@ -158,7 +158,7 @@ public final class SnapshotService {
   public Map<String, Map<String, List<Snapshot>>> listSnapshotsClusterWide(String clusterName) throws ReaperException {
     try {
       // Map with the snapshot name as key and a map of <host,
-      Cluster cluster = context.storage.getCluster(clusterName);
+      Cluster cluster = context.storage.getClusterDao().getCluster(clusterName);
       List<String> liveNodes = clusterFacade.getLiveNodes(cluster);
 
       List<Callable<List<Snapshot>>> listSnapshotTasks = liveNodes
@@ -218,7 +218,7 @@ public final class SnapshotService {
 
   public void clearSnapshotClusterWide(String snapshotName, String clusterName) throws ReaperException {
     try {
-      Cluster cluster = context.storage.getCluster(clusterName);
+      Cluster cluster = context.storage.getClusterDao().getCluster(clusterName);
       List<String> liveNodes = clusterFacade.getLiveNodes(cluster);
 
       List<Callable<Node>> clearSnapshotTasks = liveNodes

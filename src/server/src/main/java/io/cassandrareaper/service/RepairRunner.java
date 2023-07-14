@@ -119,7 +119,7 @@ final class RepairRunner implements Runnable {
     Optional<RepairRun> repairRun = repairRunDao.getRepairRun(repairRunId);
     assert repairRun.isPresent() : "No RepairRun with ID " + repairRunId + " found from storage";
     this.isRunning.set(repairRun.get().getRunState() == RepairRun.RunState.RUNNING);
-    this.cluster = context.storage.getCluster(repairRun.get().getClusterName());
+    this.cluster = context.storage.getClusterDao().getCluster(repairRun.get().getClusterName());
     repairUnit = context.storage.getRepairUnitDao().getRepairUnit(repairRun.get().getRepairUnitId());
     this.clusterName = cluster.getName();
 
@@ -307,14 +307,14 @@ final class RepairRunner implements Runnable {
    */
   private void updateClusterNodeList() throws ReaperException {
     Set<String> liveNodes = ImmutableSet.copyOf(clusterFacade.getLiveNodes(cluster));
-    Cluster cluster = context.storage.getCluster(clusterName);
+    Cluster cluster = context.storage.getClusterDao().getCluster(clusterName);
     // Note that the seed hosts only get updated if enableDynamicSeedList is true. This is
     // consistent with the logic in ClusterResource.findClusterWithSeedHost.
     if (context.config.getEnableDynamicSeedList() && !cluster.getSeedHosts().equals(liveNodes)
         && !liveNodes.isEmpty()) {
       // Updating storage only if the seed lists has changed
       LOG.info("Updating the seed list for cluster {} as topology changed since the last repair.", clusterName);
-      context.storage.updateCluster(cluster.with().withSeedHosts(liveNodes).build());
+      context.storage.getClusterDao().updateCluster(cluster.with().withSeedHosts(liveNodes).build());
     }
   }
 

@@ -28,6 +28,7 @@ import io.cassandrareaper.jmx.JmxConnectionFactory;
 import io.cassandrareaper.jmx.JmxProxy;
 import io.cassandrareaper.jmx.JmxProxyTest;
 import io.cassandrareaper.storage.IStorage;
+import io.cassandrareaper.storage.cluster.ICluster;
 import io.cassandrareaper.storage.snapshot.ISnapshot;
 
 import java.io.IOException;
@@ -169,8 +170,11 @@ public final class SnapshotServiceTest {
         .withPartitioner("murmur3")
         .withSeedHosts(ImmutableSet.of("127.0.0.1"))
         .build();
+    ICluster mockedClusterDao = Mockito.mock(ICluster.class);
+    Mockito.when(cxt.storage.getClusterDao()).thenReturn(mockedClusterDao);
+    Mockito.when(mockedClusterDao.getCluster(any())).thenReturn(cluster);
+    when(mockedClusterDao.getCluster(anyString())).thenReturn(cluster);
 
-    when(cxt.storage.getCluster(anyString())).thenReturn(cluster);
     ISnapshot mockSnapshotDao = mock(ISnapshot.class);
 
     SnapshotService
@@ -206,7 +210,11 @@ public final class SnapshotServiceTest {
         .withSeedHosts(ImmutableSet.of("127.0.0.1"))
         .build();
 
-    when(cxt.storage.getCluster(anyString())).thenReturn(cluster);
+    ICluster mockedClusterDao = Mockito.mock(ICluster.class);
+    Mockito.when(cxt.storage.getClusterDao()).thenReturn(mockedClusterDao);
+    Mockito.when(mockedClusterDao.getCluster(any())).thenReturn(cluster);
+
+    when(mockedClusterDao.getCluster(anyString())).thenReturn(cluster);
     ISnapshot mockSnapshotDao = mock(ISnapshot.class);
 
     List<Pair<Node, String>> result = SnapshotService

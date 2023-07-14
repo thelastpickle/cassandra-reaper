@@ -59,7 +59,7 @@ public final class PurgeService {
     if (context.config.getNumberOfRunsToKeepPerUnit() != 0
         || context.config.getPurgeRecordsAfterInDays() != 0) {
       // List clusters
-      Collection<Cluster> clusters = context.storage.getClusters();
+      Collection<Cluster> clusters = context.storage.getClusterDao().getClusters();
 
       // List repair runs
       for (Cluster cluster : clusters) {

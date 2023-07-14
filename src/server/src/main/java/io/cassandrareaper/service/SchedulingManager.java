@@ -259,7 +259,7 @@ public final class SchedulingManager extends TimerTask {
   private RepairRun createNewRunForUnit(RepairSchedule schedule, RepairUnit repairUnit) throws ReaperException {
 
     return repairRunService.registerRepairRun(
-        context.storage.getCluster(repairUnit.getClusterName()),
+        context.storage.getClusterDao().getCluster(repairUnit.getClusterName()),
         repairUnit,
         Optional.of(getCauseName(schedule)),
         schedule.getOwner(),

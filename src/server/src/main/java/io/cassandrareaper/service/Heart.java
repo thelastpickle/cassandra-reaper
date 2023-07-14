@@ -112,7 +112,7 @@ public final class Heart implements AutoCloseable {
         forkJoinPool.submit(() -> {
           try (Timer.Context t0 = timer(context, "updatingNodeMetrics")) {
             ClusterFacade clusterFacade = ClusterFacade.create(context);
-            Collection<Cluster> clusters = context.storage.getClusters();
+            Collection<Cluster> clusters = context.storage.getClusterDao().getClusters();
             updateMetricsForClusters(clusterFacade, clusters);
           } finally {
             assert updatingNodeMetrics.get();
@@ -157,7 +157,7 @@ public final class Heart implements AutoCloseable {
             // In distributed modes other than SIDECAR, metrics are grabbed for all accessible nodes
             // in all managed clusters
             ClusterFacade clusterFacade = ClusterFacade.create(context);
-            Collection<Cluster> clusters = context.storage.getClusters();
+            Collection<Cluster> clusters = context.storage.getClusterDao().getClusters();
             forkJoinPool.submit(() -> {
               updateMetricsForClusters(clusterFacade, clusters);
             }).get();
@@ -171,7 +171,9 @@ public final class Heart implements AutoCloseable {
                   lastMetricBeat.get(),
                   System.currentTimeMillis());
             }
-            updatePercentRepairedForNode(Optional.empty(), context.storage.getClusters().stream().findFirst().get());
+            updatePercentRepairedForNode(
+                Optional.empty(),
+                context.storage.getClusterDao().getClusters().stream().findFirst().get());
             metricsService.grabAndStoreCompactionStats(Optional.empty());
             metricsService.grabAndStoreActiveStreams(Optional.empty());
           }

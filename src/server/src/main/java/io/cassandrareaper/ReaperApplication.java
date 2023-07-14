@@ -373,12 +373,13 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
       return false;
     }
 
-    if (context.storage.getClusters().stream().noneMatch(c -> c.getName().equals(cluster.get().getName()))) {
+    if (context.storage.getClusterDao().getClusters().stream()
+        .noneMatch(c -> c.getName().equals(cluster.get().getName()))) {
       LOG.info("registering new cluster : {}", cluster.get().getName());
 
       // it is ok for this be called in parallel by different sidecars on the same cluster,
       // so long we're not split-brain
-      context.storage.addCluster(cluster.get());
+      context.storage.getClusterDao().addCluster(cluster.get());
     }
     return true;
   }
@@ -463,6 +464,7 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
 
       context
           .storage
+          .getClusterDao()
           .getClusters()
           .parallelStream()
           .sorted()

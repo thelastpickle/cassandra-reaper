@@ -126,7 +126,7 @@ public final class SegmentRunnerTest {
                     .build(),
                 cf.getId())));
 
-    context.storage.addCluster(Cluster.builder()
+    context.storage.getClusterDao().addCluster(Cluster.builder()
         .withName(cf.getClusterName())
         .withPartitioner("Murmur3Partitioner")
         .withSeedHosts(cf.getNodes())
@@ -249,7 +249,7 @@ public final class SegmentRunnerTest {
                     .withReplicas(replicas)
                     .build(),
                 cf.getId())));
-    storage.addCluster(Cluster.builder()
+    storage.getClusterDao().addCluster(Cluster.builder()
         .withName(cf.getClusterName())
         .withPartitioner("Murmur3Partitioner")
         .withSeedHosts(cf.getNodes())
@@ -403,7 +403,7 @@ public final class SegmentRunnerTest {
                     .build(),
                 cf.getId())));
 
-    storage.addCluster(Cluster.builder()
+    storage.getClusterDao().addCluster(Cluster.builder()
         .withName(cf.getClusterName())
         .withPartitioner("Murmur3Partitioner")
         .withSeedHosts(cf.getNodes())
@@ -551,7 +551,7 @@ public final class SegmentRunnerTest {
                     .build(),
                 cf.getId())));
 
-    storage.addCluster(Cluster.builder()
+    storage.getClusterDao().addCluster(Cluster.builder()
         .withName(cf.getClusterName())
         .withPartitioner("Murmur3Partitioner")
         .withSeedHosts(cf.getNodes())
@@ -694,7 +694,7 @@ public final class SegmentRunnerTest {
                     .build(),
                 cf.getId())));
 
-    storage.addCluster(Cluster.builder()
+    storage.getClusterDao().addCluster(Cluster.builder()
         .withName(cf.getClusterName())
         .withPartitioner("Murmur3Partitioner")
         .withSeedHosts(cf.getNodes())
@@ -839,7 +839,7 @@ public final class SegmentRunnerTest {
                     .build(),
                 cf.getId())));
 
-    storage.addCluster(Cluster.builder()
+    storage.getClusterDao().addCluster(Cluster.builder()
         .withName(cf.getClusterName())
         .withPartitioner("Murmur3Partitioner")
         .withSeedHosts(cf.getNodes())
@@ -985,7 +985,7 @@ public final class SegmentRunnerTest {
                     .build(),
                 cf.getId())));
 
-    storage.addCluster(Cluster.builder()
+    storage.getClusterDao().addCluster(Cluster.builder()
         .withName(cf.getClusterName())
         .withPartitioner("Murmur3Partitioner")
         .withSeedHosts(cf.getNodes())
@@ -1162,7 +1162,7 @@ public final class SegmentRunnerTest {
                     .build(),
                 cf.getId())));
 
-    storage.addCluster(Cluster.builder()
+    storage.getClusterDao().addCluster(Cluster.builder()
         .withName(cf.getClusterName())
         .withPartitioner("Murmur3Partitioner")
         .withSeedHosts(cf.getNodes())
@@ -1257,7 +1257,7 @@ public final class SegmentRunnerTest {
                     .build(),
                 cf.getId())));
 
-    storage.addCluster(Cluster.builder()
+    storage.getClusterDao().addCluster(Cluster.builder()
         .withName(cf.getClusterName())
         .withPartitioner("Murmur3Partitioner")
         .withSeedHosts(cf.getNodes())
@@ -1378,7 +1378,7 @@ public final class SegmentRunnerTest {
                     .withReplicas(replicas)
                     .build(),
                 cf.getId())));
-    storage.addCluster(Cluster.builder()
+    storage.getClusterDao().addCluster(Cluster.builder()
         .withName(cf.getClusterName())
         .withPartitioner("Murmur3Partitioner")
         .withSeedHosts(cf.getNodes())
@@ -1461,7 +1461,7 @@ public final class SegmentRunnerTest {
                     .withReplicas(replicas)
                     .build(),
                 cf.getId())));
-    storage.addCluster(Cluster.builder()
+    storage.getClusterDao().addCluster(Cluster.builder()
         .withName(cf.getClusterName())
         .withPartitioner("Murmur3Partitioner")
         .withSeedHosts(cf.getNodes())

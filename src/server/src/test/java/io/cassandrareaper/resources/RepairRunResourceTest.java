@@ -133,7 +133,7 @@ public final class RepairRunResourceTest {
         .withState(Cluster.State.ACTIVE)
         .build();
 
-    context.storage.addCluster(cluster);
+    context.storage.getClusterDao().addCluster(cluster);
 
     context.config = new ReaperApplicationConfiguration();
     context.config.setSegmentCount(SEGMENT_CNT);
@@ -257,7 +257,7 @@ public final class RepairRunResourceTest {
     assertEquals(201, response.getStatus());
     assertTrue(response.getEntity() instanceof RepairRunStatus);
 
-    assertEquals(1, context.storage.getClusters().size());
+    assertEquals(1, context.storage.getClusterDao().getClusters().size());
     assertEquals(1, context.storage.getRepairRunDao().getRepairRunsForCluster(clustername, Optional.of(2)).size());
     assertEquals(1,
         context.storage.getRepairRunDao().getRepairRunsForClusterPrioritiseRunning(clustername, Optional.of(2)).size());
@@ -285,7 +285,7 @@ public final class RepairRunResourceTest {
     assertEquals(201, response.getStatus());
     assertTrue(response.getEntity() instanceof RepairRunStatus);
 
-    assertEquals(1, context.storage.getClusters().size());
+    assertEquals(1, context.storage.getClusterDao().getClusters().size());
     assertEquals(1, context.storage.getRepairRunDao().getRepairRunsForCluster(clustername, Optional.of(1)).size());
     assertEquals(2, context.storage.getRepairRunDao().getRepairRunsForCluster(clustername, Optional.of(2)).size());
     assertEquals(2, context.storage.getRepairRunDao().getRepairRunsForCluster(clustername, Optional.of(3)).size());

@@ -146,7 +146,7 @@ public final class ClusterResource {
   public Response getClusterList(@QueryParam("seedHost") Optional<String> seedHost) {
     LOG.debug("get cluster list called");
 
-    Collection<String> clusters = context.storage.getClusters()
+    Collection<String> clusters = context.storage.getClusterDao().getClusters()
         .stream()
         .filter(c -> !seedHost.isPresent() || c.getSeedHosts().contains(seedHost.get()))
         .sorted()
@@ -164,7 +164,7 @@ public final class ClusterResource {
 
     LOG.debug("get cluster called with cluster_name: {}", clusterName);
     try {
-      Cluster cluster = context.storage.getCluster(clusterName);
+      Cluster cluster = context.storage.getClusterDao().getCluster(clusterName);
 
       String jmxUsername = "";
       boolean jmxPasswordIsSet = false;
@@ -199,7 +199,8 @@ public final class ClusterResource {
   public Response getClusterTables(@PathParam("cluster_name") String clusterName) throws ReaperException {
     try {
       return Response.ok()
-          .entity(ClusterFacade.create(context).listTablesByKeyspace(context.storage.getCluster(clusterName)))
+          .entity(ClusterFacade.create(context)
+              .listTablesByKeyspace(context.storage.getClusterDao().getCluster(clusterName)))
           .build();
     } catch (IllegalArgumentException ex) {
       return Response.status(404).entity(ex).build();
@@ -309,7 +310,7 @@ public final class ClusterResource {
       return Response.status(Response.Status.BAD_REQUEST).entity(msg).build();
     }
 
-    Optional<Cluster> existingCluster = context.storage.getClusters().stream()
+    Optional<Cluster> existingCluster = context.storage.getClusterDao().getClusters().stream()
         .filter(c -> c.getName().equalsIgnoreCase(cluster.get().getName()))
         .findAny();
 
@@ -335,7 +336,7 @@ public final class ClusterResource {
       }
     } else {
       LOG.info("creating new cluster based on given seed host: {}", cluster.get().getName());
-      context.storage.addCluster(cluster.get());
+      context.storage.getClusterDao().addCluster(cluster.get());
 
       if (context.config.hasAutoSchedulingEnabled()) {
         try {
@@ -416,7 +417,7 @@ public final class ClusterResource {
             .withLastContact(LocalDate.now())
             .build();
 
-        context.storage.updateCluster(cluster);
+        context.storage.getClusterDao().updateCluster(cluster);
       }
       return cluster;
     } catch (ReaperException e) {
@@ -469,7 +470,7 @@ public final class ClusterResource {
       // delete existing repair schedules to properly unregister metrics associated with the schedules
       repairSchedulesForCluster
           .forEach(repairSchedule -> repairScheduleService.deleteRepairSchedule(repairSchedule.getId()));
-      context.storage.deleteCluster(clusterName);
+      context.storage.getClusterDao().deleteCluster(clusterName);
       return Response.accepted().build();
     } catch (IllegalArgumentException ex) {
       return Response.status(Response.Status.NOT_FOUND)

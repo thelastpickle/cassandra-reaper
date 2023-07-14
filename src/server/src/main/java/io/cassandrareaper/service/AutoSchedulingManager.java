@@ -70,7 +70,7 @@ public final class AutoSchedulingManager extends TimerTask {
   @Override
   public void run() {
     LOG.debug("Checking cluster keyspaces to identify which ones require repair schedules...");
-    Collection<Cluster> clusters = context.storage.getClusters();
+    Collection<Cluster> clusters = context.storage.getClusterDao().getClusters();
     for (Cluster cluster : clusters) {
       try {
         clusterRepairScheduler.scheduleRepairs(cluster);

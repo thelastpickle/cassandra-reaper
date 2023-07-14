@@ -21,7 +21,6 @@ package io.cassandrareaper.storage.cassandra;
 import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperApplicationConfiguration;
 import io.cassandrareaper.ReaperException;
-import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.GenericMetric;
 import io.cassandrareaper.core.PercentRepairedMetric;
 import io.cassandrareaper.core.RepairRun;
@@ -32,6 +31,7 @@ import io.cassandrareaper.storage.IStorage;
 import io.cassandrareaper.storage.OpType;
 import io.cassandrareaper.storage.cassandra.codecs.DateTimeCodec;
 import io.cassandrareaper.storage.cluster.CassClusterDao;
+import io.cassandrareaper.storage.cluster.ICluster;
 import io.cassandrareaper.storage.events.CassEventsDao;
 import io.cassandrareaper.storage.events.IEvents;
 import io.cassandrareaper.storage.metrics.CassMetricsDao;
@@ -46,8 +46,6 @@ import io.cassandrareaper.storage.repairunit.IRepairUnit;
 import io.cassandrareaper.storage.snapshot.CassSnapshotDao;
 import io.cassandrareaper.storage.snapshot.ISnapshot;
 
-import java.io.IOException;
-import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -231,43 +229,6 @@ public final class CassandraStorageFacade implements IStorage, IDistributedStora
   @Override
   public boolean isStorageConnected() {
     return session != null && !session.isClosed();
-  }
-
-  @Override
-  public Collection<Cluster> getClusters() {
-    // cache the clusters list for ten seconds
-    return cassClusterDao.getClusters();
-  }
-
-  @Override
-  public boolean addCluster(Cluster cluster) {
-    return cassClusterDao.addCluster(cluster);
-  }
-
-  @Override
-  public boolean updateCluster(Cluster newCluster) {
-    return cassClusterDao.updateCluster(newCluster);
-  }
-
-  private boolean addClusterAssertions(Cluster cluster) {
-
-    return cassClusterDao.addClusterAssertions(cluster);
-  }
-
-  @Override
-  public Cluster getCluster(String clusterName) {
-    return cassClusterDao.getCluster(clusterName);
-  }
-
-  private Cluster parseCluster(Row row) throws IOException {
-
-    return cassClusterDao.parseCluster(row);
-  }
-
-  @Override
-  public Cluster deleteCluster(String clusterName) {
-
-    return cassClusterDao.deleteCluster(clusterName);
   }
 
   @Override
@@ -499,6 +460,11 @@ public final class CassandraStorageFacade implements IStorage, IDistributedStora
   @Override
   public IRepairSchedule getRepairScheduleDao() {
     return this.cassRepairScheduleDao;
+  }
+
+  @Override
+  public ICluster getClusterDao() {
+    return this.cassClusterDao;
   }
 
   public enum CassandraMode {

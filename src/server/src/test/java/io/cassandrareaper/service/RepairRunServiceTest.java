@@ -248,7 +248,7 @@ public final class RepairRunServiceTest {
         BigInteger.valueOf(200L));
     final IStorage storage = new MemoryStorageFacade();
 
-    storage.addCluster(cluster);
+    storage.getClusterDao().addCluster(cluster);
 
     RepairUnit cf = storage.getRepairUnitDao().addRepairUnit(
         RepairUnit.builder()
@@ -336,7 +336,7 @@ public final class RepairRunServiceTest {
         BigInteger.valueOf(200L));
     final IStorage storage = new MemoryStorageFacade();
 
-    storage.addCluster(cluster);
+    storage.getClusterDao().addCluster(cluster);
 
     RepairUnit cf = storage.getRepairUnitDao().addRepairUnit(
         RepairUnit.builder()
@@ -838,7 +838,7 @@ public final class RepairRunServiceTest {
         BigInteger.valueOf(200L));
     final IStorage storage = new MemoryStorageFacade();
 
-    storage.addCluster(cluster);
+    storage.getClusterDao().addCluster(cluster);
 
     RepairUnit cf = storage.getRepairUnitDao().addRepairUnit(
         RepairUnit.builder()

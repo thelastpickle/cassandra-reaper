@@ -26,6 +26,7 @@ import io.cassandrareaper.core.RepairRun.RunState;
 import io.cassandrareaper.core.RepairSchedule;
 import io.cassandrareaper.core.RepairUnit;
 import io.cassandrareaper.storage.cassandra.CassandraStorageFacade;
+import io.cassandrareaper.storage.cluster.ICluster;
 import io.cassandrareaper.storage.repairrun.IRepairRun;
 import io.cassandrareaper.storage.repairschedule.IRepairSchedule;
 import io.cassandrareaper.storage.repairunit.IRepairUnit;
@@ -242,6 +243,9 @@ public final class SchedulingManagerTest {
     IRepairSchedule mockedRepairScheduleDao = Mockito.mock(IRepairSchedule.class);
     Mockito.when(context.storage.getRepairScheduleDao()).thenReturn(mockedRepairScheduleDao);
     when(mockedRepairScheduleDao.updateRepairSchedule(any())).thenReturn(true);
+
+    ICluster mockedClusterDao = Mockito.mock(ICluster.class);
+    Mockito.when(context.storage.getClusterDao()).thenReturn(mockedClusterDao);
 
     context.config = new ReaperApplicationConfiguration();
     context.config.setPercentRepairedCheckIntervalMinutes(10);

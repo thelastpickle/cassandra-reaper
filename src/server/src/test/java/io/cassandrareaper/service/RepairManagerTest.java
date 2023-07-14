@@ -29,6 +29,7 @@ import io.cassandrareaper.jmx.ClusterFacade;
 import io.cassandrareaper.storage.IDistributedStorage;
 import io.cassandrareaper.storage.IStorage;
 import io.cassandrareaper.storage.cassandra.CassandraStorageFacade;
+import io.cassandrareaper.storage.cluster.ICluster;
 import io.cassandrareaper.storage.repairrun.IRepairRun;
 import io.cassandrareaper.storage.repairsegment.IRepairSegment;
 import io.cassandrareaper.storage.repairunit.IRepairUnit;
@@ -109,8 +110,10 @@ public final class RepairManagerTest {
     when(mockedRepairRunDao.getRepairRunsWithState(RepairRun.RunState.RUNNING)).thenReturn(Arrays.asList(run));
     when(mockedRepairRunDao.getRepairRunsWithState(RepairRun.RunState.PAUSED)).thenReturn(Collections.emptyList());
     when(storage.getRepairRunDao()).thenReturn(mockedRepairRunDao);
-
-    storage.addCluster(Cluster.builder().withName(clusterName).withSeedHosts(ImmutableSet.of("127.0.0.1")).build());
+    ICluster mockedClusterDao = Mockito.mock(ICluster.class);
+    Mockito.when(storage.getClusterDao()).thenReturn(mockedClusterDao);
+    storage.getClusterDao()
+        .addCluster(Cluster.builder().withName(clusterName).withSeedHosts(ImmutableSet.of("127.0.0.1")).build());
 
     AppContext context = new AppContext();
     context.storage = storage;
@@ -175,7 +178,11 @@ public final class RepairManagerTest {
     IRepairRun mockedRepairRunDao = mock(IRepairRun.class);
     when(storage.getRepairRunDao()).thenReturn(mockedRepairRunDao);
 
-    storage.addCluster(Cluster.builder().withName(clusterName).withSeedHosts(ImmutableSet.of("127.0.0.1")).build());
+    ICluster mockedClusterDao = Mockito.mock(ICluster.class);
+    Mockito.when(storage.getClusterDao()).thenReturn(mockedClusterDao);
+
+    storage.getClusterDao()
+        .addCluster(Cluster.builder().withName(clusterName).withSeedHosts(ImmutableSet.of("127.0.0.1")).build());
 
     AppContext context = new AppContext();
     context.storage = storage;
@@ -262,7 +269,10 @@ public final class RepairManagerTest {
     final IStorage storage = mock(IStorage.class);
     IRepairRun mockedRepairRunDao = mock(IRepairRun.class);
     when(storage.getRepairRunDao()).thenReturn(mockedRepairRunDao);
-    storage.addCluster(Cluster.builder().withName(clusterName).withSeedHosts(ImmutableSet.of("127.0.0.1")).build());
+    ICluster mockedClusterDao = Mockito.mock(ICluster.class);
+    Mockito.when(storage.getClusterDao()).thenReturn(mockedClusterDao);
+    storage.getClusterDao()
+        .addCluster(Cluster.builder().withName(clusterName).withSeedHosts(ImmutableSet.of("127.0.0.1")).build());
 
     final RepairUnit cf = RepairUnit.builder()
         .clusterName(clusterName)
@@ -347,8 +357,10 @@ public final class RepairManagerTest {
     final IStorage storage = mock(IStorage.class);
     IRepairRun mockedRepairRunDao = mock(IRepairRun.class);
     when(storage.getRepairRunDao()).thenReturn(mockedRepairRunDao);
-
-    storage.addCluster(Cluster.builder().withName(clusterName).withSeedHosts(ImmutableSet.of("127.0.0.1")).build());
+    ICluster mockedClusterDao = Mockito.mock(ICluster.class);
+    Mockito.when(storage.getClusterDao()).thenReturn(mockedClusterDao);
+    storage.getClusterDao()
+        .addCluster(Cluster.builder().withName(clusterName).withSeedHosts(ImmutableSet.of("127.0.0.1")).build());
 
     AppContext context = new AppContext();
     context.storage = storage;
@@ -420,8 +432,13 @@ public final class RepairManagerTest {
     when(context.storage.getRepairRunDao()).thenReturn(mockedRepairRunDao);
     when(mockedRepairRunDao.updateRepairRun(any(), any())).thenReturn(true);
 
-    context.storage
-        .addCluster(Cluster.builder().withName(clusterName).withSeedHosts(ImmutableSet.of("127.0.0.1")).build());
+    ICluster mockedClusterDao = Mockito.mock(ICluster.class);
+    Mockito.when(context.storage.getClusterDao()).thenReturn(mockedClusterDao);
+
+
+    mockedClusterDao
+        .addCluster(Cluster.builder().withName(clusterName)
+            .withSeedHosts(ImmutableSet.of("127.0.0.1")).build());
 
     context.repairManager = RepairManager.create(
         context,
@@ -476,13 +493,17 @@ public final class RepairManagerTest {
     IRepairRun mockedRepairRunDao = mock(IRepairRun.class);
     when(context.storage.getRepairRunDao()).thenReturn(mockedRepairRunDao);
     doReturn(true).when(mockedRepairRunDao).updateRepairRun(any());
+
+    ICluster mockedClusterDao = Mockito.mock(ICluster.class);
+    Mockito.when(context.storage.getClusterDao()).thenReturn(mockedClusterDao);
+
     ClusterFacade clusterFacade = mock(ClusterFacade.class);
     String cluster1 = "cluster1";
     String cluster2 = "cluster2";
     doReturn(Cluster.builder().withName(cluster1).withSeedHosts(ImmutableSet.of("127.0.0.1")).build()).when(
-        context.storage).getCluster(eq(cluster1));
+        mockedClusterDao).getCluster(eq(cluster1));
     doReturn(Cluster.builder().withName(cluster2).withSeedHosts(ImmutableSet.of("127.0.0.2")).build()).when(
-        context.storage).getCluster(eq(cluster2));
+        mockedClusterDao).getCluster(eq(cluster2));
 
     Map<UUID, RepairRun> repairRuns = Maps.newConcurrentMap();
     Map<UUID, RepairUnit> repairUnits = Maps.newConcurrentMap();
