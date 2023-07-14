@@ -24,7 +24,7 @@ import io.cassandrareaper.core.RepairSegment;
 import io.cassandrareaper.core.RepairUnit;
 import io.cassandrareaper.jmx.ClusterFacade;
 import io.cassandrareaper.storage.IDistributedStorage;
-import io.cassandrareaper.storage.repairrun.IRepairRun;
+import io.cassandrareaper.storage.repairrun.IRepairRunDao;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -67,7 +67,7 @@ public final class RepairManager implements AutoCloseable {
   private final long retryDelayMillis;
   private final int maxParallelRepairs;
 
-  private final IRepairRun repairRunDao;
+  private final IRepairRunDao repairRunDao;
 
   private RepairManager(
       AppContext context,
@@ -76,7 +76,7 @@ public final class RepairManager implements AutoCloseable {
       long retryDelay,
       TimeUnit retryDelayTimeUnit,
       int maxParallelRepairs,
-      IRepairRun repairRunDao
+      IRepairRunDao repairRunDao
   ) throws ReaperException {
 
     this.context = context;
@@ -97,7 +97,7 @@ public final class RepairManager implements AutoCloseable {
       long retryDelay,
       TimeUnit retryDelayTimeUnit,
       int maxParallelRepairs,
-      IRepairRun repairRunDao
+      IRepairRunDao repairRunDao
   ) throws ReaperException {
 
     return new RepairManager(
@@ -116,7 +116,7 @@ public final class RepairManager implements AutoCloseable {
       long retryDelay,
       TimeUnit retryDelayTimeUnit,
       int maxParallelRepairs,
-      IRepairRun repairRunDao
+      IRepairRunDao repairRunDao
   ) throws ReaperException {
 
     return create(

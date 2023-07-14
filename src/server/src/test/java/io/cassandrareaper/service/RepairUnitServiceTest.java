@@ -29,9 +29,9 @@ import io.cassandrareaper.jmx.ClusterFacade;
 import io.cassandrareaper.jmx.JmxConnectionFactory;
 import io.cassandrareaper.jmx.JmxProxy;
 import io.cassandrareaper.jmx.JmxProxyTest;
-import io.cassandrareaper.storage.IStorage;
-import io.cassandrareaper.storage.repairschedule.IRepairSchedule;
-import io.cassandrareaper.storage.repairunit.IRepairUnit;
+import io.cassandrareaper.storage.IStorageDao;
+import io.cassandrareaper.storage.repairschedule.IRepairScheduleDao;
+import io.cassandrareaper.storage.repairunit.IRepairUnitDao;
 
 import java.net.UnknownHostException;
 import java.util.Arrays;
@@ -77,8 +77,8 @@ public final class RepairUnitServiceTest {
     context = new AppContext();
     context.config = new ReaperApplicationConfiguration();
     context.config.setBlacklistTwcsTables(true);
-    IStorage storage = mock(IStorage.class);
-    IRepairUnit mockedRepairUnitDao = mock(IRepairUnit.class);
+    IStorageDao storage = mock(IStorageDao.class);
+    IRepairUnitDao mockedRepairUnitDao = mock(IRepairUnitDao.class);
     Mockito.when(storage.getRepairUnitDao()).thenReturn(mockedRepairUnitDao);
     when(mockedRepairUnitDao.getRepairUnit(any(RepairUnit.Builder.class))).thenReturn(Optional.empty());
 
@@ -805,7 +805,7 @@ public final class RepairUnitServiceTest {
     ClusterFacade clusterFacade = mock(ClusterFacade.class);
     when(clusterFacade.getCassandraVersion(any())).thenThrow(new ReaperException("ouch"));
 
-    IRepairSchedule mockedRepairScheduleDao = Mockito.mock(IRepairSchedule.class);
+    IRepairScheduleDao mockedRepairScheduleDao = Mockito.mock(IRepairScheduleDao.class);
     Mockito.when(context.storage.getRepairScheduleDao()).thenReturn(mockedRepairScheduleDao);
 
     RepairUnitService repairUnitService = RepairUnitService.create(context, () -> clusterFacade);
@@ -828,8 +828,8 @@ public final class RepairUnitServiceTest {
     AppContext localContext = new AppContext();
     localContext.config = new ReaperApplicationConfiguration();
     localContext.config.setBlacklistTwcsTables(true);
-    IStorage storage = mock(IStorage.class);
-    IRepairUnit mockedRepairUnitDao = mock(IRepairUnit.class);
+    IStorageDao storage = mock(IStorageDao.class);
+    IRepairUnitDao mockedRepairUnitDao = mock(IRepairUnitDao.class);
     Mockito.when(storage.getRepairUnitDao()).thenReturn(mockedRepairUnitDao);
     when(mockedRepairUnitDao.getRepairUnit(any(RepairUnit.Builder.class))).thenReturn(Optional.empty());
 
@@ -859,7 +859,7 @@ public final class RepairUnitServiceTest {
         .segmentCountPerNode(10)
         .build(UUIDs.timeBased());
 
-    IRepairSchedule mockedRepairScheduleDao = Mockito.mock(IRepairSchedule.class);
+    IRepairScheduleDao mockedRepairScheduleDao = Mockito.mock(IRepairScheduleDao.class);
     Mockito.when(localContext.storage.getRepairScheduleDao()).thenReturn(mockedRepairScheduleDao);
     when(mockedRepairScheduleDao.getRepairSchedulesForClusterAndKeyspace(any(), any()))
         .thenReturn(Arrays.asList(repairSchedule));

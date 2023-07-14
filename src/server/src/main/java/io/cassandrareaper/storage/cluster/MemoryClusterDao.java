@@ -18,10 +18,10 @@
 package io.cassandrareaper.storage.cluster;
 
 import io.cassandrareaper.core.Cluster;
-import io.cassandrareaper.storage.events.MemEventsDao;
-import io.cassandrareaper.storage.repairrun.MemRepairRunDao;
-import io.cassandrareaper.storage.repairschedule.MemRepairScheduleDao;
-import io.cassandrareaper.storage.repairunit.MemRepairUnitDao;
+import io.cassandrareaper.storage.events.MemoryEventsDao;
+import io.cassandrareaper.storage.repairrun.MemoryRepairRunDao;
+import io.cassandrareaper.storage.repairschedule.MemoryRepairScheduleDao;
+import io.cassandrareaper.storage.repairunit.MemoryRepairUnitDao;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -33,20 +33,20 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
 import org.apache.commons.lang3.StringUtils;
 
-public class MemClusterDao implements ICluster {
+public class MemoryClusterDao implements IClusterDao {
   public final ConcurrentMap<String, Cluster> clusters = Maps.newConcurrentMap();
-  private final MemRepairUnitDao memRepairUnitDao;
-  private final MemRepairRunDao memRepairRunDao;
-  private final MemRepairScheduleDao memRepairScheduleDao;
+  private final MemoryRepairUnitDao memoryRepairUnitDao;
+  private final MemoryRepairRunDao memoryRepairRunDao;
+  private final MemoryRepairScheduleDao memRepairScheduleDao;
 
-  private final MemEventsDao memEventsDao;
+  private final MemoryEventsDao memEventsDao;
 
-  public MemClusterDao(MemRepairUnitDao memRepairUnitDao,
-                       MemRepairRunDao memRepairRunDao,
-                       MemRepairScheduleDao memRepairScheduleDao,
-                       MemEventsDao memEventsDao) {
-    this.memRepairUnitDao = memRepairUnitDao;
-    this.memRepairRunDao = memRepairRunDao;
+  public MemoryClusterDao(MemoryRepairUnitDao memoryRepairUnitDao,
+                          MemoryRepairRunDao memoryRepairRunDao,
+                          MemoryRepairScheduleDao memRepairScheduleDao,
+                          MemoryEventsDao memEventsDao) {
+    this.memoryRepairUnitDao = memoryRepairUnitDao;
+    this.memoryRepairRunDao = memoryRepairRunDao;
     this.memRepairScheduleDao = memRepairScheduleDao;
     this.memEventsDao = memEventsDao;
   }
@@ -106,22 +106,22 @@ public class MemClusterDao implements ICluster {
     memRepairScheduleDao.getRepairSchedulesForCluster(clusterName).forEach(
         schedule -> memRepairScheduleDao.deleteRepairSchedule(schedule.getId())
     );
-    memRepairRunDao.getRepairRunIdsForCluster(clusterName, Optional.empty())
-          .forEach(runId -> memRepairRunDao.deleteRepairRun(runId));
+    memoryRepairRunDao.getRepairRunIdsForCluster(clusterName, Optional.empty())
+          .forEach(runId -> memoryRepairRunDao.deleteRepairRun(runId));
 
     memEventsDao.getEventSubscriptions(clusterName)
           .stream()
           .filter(subscription -> subscription.getId().isPresent())
           .forEach(subscription -> memEventsDao.deleteEventSubscription(subscription.getId().get()));
 
-    memRepairUnitDao.repairUnits.values().stream()
+    memoryRepairUnitDao.repairUnits.values().stream()
           .filter((unit) -> unit.getClusterName().equals(clusterName))
           .forEach((unit) -> {
-            assert memRepairRunDao.getRepairRunsForUnit(
-                  unit.getId()).isEmpty() : StringUtils.join(memRepairRunDao.getRepairRunsForUnit(unit.getId())
+            assert memoryRepairRunDao.getRepairRunsForUnit(
+                  unit.getId()).isEmpty() : StringUtils.join(memoryRepairRunDao.getRepairRunsForUnit(unit.getId())
             );
-            memRepairUnitDao.repairUnits.remove(unit.getId());
-            memRepairUnitDao.repairUnitsByKey.remove(unit.with());
+            memoryRepairUnitDao.repairUnits.remove(unit.getId());
+            memoryRepairUnitDao.repairUnitsByKey.remove(unit.with());
           });
 
     return clusters.remove(clusterName);

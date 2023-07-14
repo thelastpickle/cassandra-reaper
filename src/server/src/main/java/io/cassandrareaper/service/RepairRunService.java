@@ -28,7 +28,7 @@ import io.cassandrareaper.core.Table;
 import io.cassandrareaper.jmx.ClusterFacade;
 import io.cassandrareaper.jmx.EndpointSnitchInfoProxy;
 import io.cassandrareaper.jmx.JmxProxy;
-import io.cassandrareaper.storage.repairrun.IRepairRun;
+import io.cassandrareaper.storage.repairrun.IRepairRunDao;
 
 import java.math.BigInteger;
 import java.util.Arrays;
@@ -70,9 +70,9 @@ public final class RepairRunService {
   private final RepairUnitService repairUnitService;
   private final ClusterFacade clusterFacade;
 
-  private final IRepairRun repairRunDao;
+  private final IRepairRunDao repairRunDao;
 
-  private RepairRunService(AppContext context, Supplier<ClusterFacade> clusterFacadeSupplier, IRepairRun repairRunDao) {
+  private RepairRunService(AppContext context, Supplier<ClusterFacade> clusterFacadeSupplier, IRepairRunDao repairRunDao) {
     this.context = context;
     this.repairUnitService = RepairUnitService.create(context);
     this.clusterFacade = clusterFacadeSupplier.get();
@@ -81,11 +81,11 @@ public final class RepairRunService {
 
   @VisibleForTesting
   static RepairRunService create(AppContext context, Supplier<ClusterFacade> supplier,
-                                 IRepairRun repairRunDao) throws ReaperException {
+                                 IRepairRunDao repairRunDao) throws ReaperException {
     return new RepairRunService(context, supplier, repairRunDao);
   }
 
-  public static RepairRunService create(AppContext context, IRepairRun repairRunDao) {
+  public static RepairRunService create(AppContext context, IRepairRunDao repairRunDao) {
     return new RepairRunService(context, () -> ClusterFacade.create(context), repairRunDao);
   }
 

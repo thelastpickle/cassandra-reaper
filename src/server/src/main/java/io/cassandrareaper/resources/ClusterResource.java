@@ -28,8 +28,8 @@ import io.cassandrareaper.jmx.ClusterFacade;
 import io.cassandrareaper.resources.view.ClusterStatus;
 import io.cassandrareaper.service.ClusterRepairScheduler;
 import io.cassandrareaper.service.RepairScheduleService;
-import io.cassandrareaper.storage.events.IEvents;
-import io.cassandrareaper.storage.repairrun.IRepairRun;
+import io.cassandrareaper.storage.events.IEventsDao;
+import io.cassandrareaper.storage.repairrun.IRepairRunDao;
 
 import java.net.URI;
 import java.time.LocalDate;
@@ -72,18 +72,18 @@ public final class ClusterResource {
 
   private final AppContext context;
 
-  private final IEvents eventsDao;
+  private final IEventsDao eventsDao;
   private final ClusterRepairScheduler clusterRepairScheduler;
   private final ClusterFacade clusterFacade;
   private final Cryptograph cryptograph;
   private final RepairScheduleService repairScheduleService;
-  private final IRepairRun repairRunDao;
+  private final IRepairRunDao repairRunDao;
 
   private ClusterResource(AppContext context,
                           Cryptograph cryptograph,
                           Supplier<ClusterFacade> clusterFacadeSupplier,
-                          IEvents eventsDao,
-                          IRepairRun repairRunDao) {
+                          IEventsDao eventsDao,
+                          IRepairRunDao repairRunDao) {
     this.context = context;
     this.clusterRepairScheduler = new ClusterRepairScheduler(context, repairRunDao);
     this.clusterFacade = clusterFacadeSupplier.get();
@@ -97,13 +97,13 @@ public final class ClusterResource {
   static ClusterResource create(AppContext context,
                                 Cryptograph cryptograph,
                                 Supplier<ClusterFacade> supplier,
-                                IEvents eventsDao,
-                                IRepairRun repairRunDao) {
+                                IEventsDao eventsDao,
+                                IRepairRunDao repairRunDao) {
     return new ClusterResource(context, cryptograph, supplier, eventsDao, repairRunDao);
   }
 
   public static ClusterResource create(AppContext context, Cryptograph cryptograph,
-                                       IEvents eventsDao, IRepairRun repairRunDao) {
+                                       IEventsDao eventsDao, IRepairRunDao repairRunDao) {
     return new ClusterResource(context, cryptograph, () -> ClusterFacade.create(context), eventsDao, repairRunDao);
   }
 

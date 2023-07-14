@@ -26,10 +26,10 @@ import io.cassandrareaper.core.RepairRun.RunState;
 import io.cassandrareaper.core.RepairSchedule;
 import io.cassandrareaper.core.RepairUnit;
 import io.cassandrareaper.storage.cassandra.CassandraStorageFacade;
-import io.cassandrareaper.storage.cluster.ICluster;
-import io.cassandrareaper.storage.repairrun.IRepairRun;
-import io.cassandrareaper.storage.repairschedule.IRepairSchedule;
-import io.cassandrareaper.storage.repairunit.IRepairUnit;
+import io.cassandrareaper.storage.cluster.IClusterDao;
+import io.cassandrareaper.storage.repairrun.IRepairRunDao;
+import io.cassandrareaper.storage.repairschedule.IRepairScheduleDao;
+import io.cassandrareaper.storage.repairunit.IRepairUnitDao;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -128,7 +128,7 @@ public final class SchedulingManagerTest {
 
     AppContext context = new AppContext();
     context.storage = mock(CassandraStorageFacade.class);
-    IRepairRun mockedRepairRunDao = mock(IRepairRun.class);
+    IRepairRunDao mockedRepairRunDao = mock(IRepairRunDao.class);
     Mockito.when(mockedRepairRunDao.getRepairRun(any())).thenReturn(Optional.of(repairRun));
     Mockito.when(((CassandraStorageFacade) context.storage).getRepairRunDao()).thenReturn(mockedRepairRunDao);
 
@@ -164,7 +164,7 @@ public final class SchedulingManagerTest {
     context.storage = mock(CassandraStorageFacade.class);
     RepairManager repairManager = mock(RepairManager.class);
     context.repairManager = repairManager;
-    IRepairRun mockedRepairRunDao = mock(IRepairRun.class);
+    IRepairRunDao mockedRepairRunDao = mock(IRepairRunDao.class);
     Mockito.when(mockedRepairRunDao.getRepairRun(any())).thenReturn(Optional.of(repairRun));
     Mockito.when(((CassandraStorageFacade) context.storage).getRepairRunDao()).thenReturn(mockedRepairRunDao);
 
@@ -211,7 +211,7 @@ public final class SchedulingManagerTest {
         .startTime(startTime)
         .endTime(endTime)
         .build(UUIDs.timeBased());
-    IRepairRun mockedRepairRunDao = mock(IRepairRun.class);
+    IRepairRunDao mockedRepairRunDao = mock(IRepairRunDao.class);
     Mockito.when(mockedRepairRunDao.getRepairRun(any())).thenReturn(Optional.of(repairRun));
     Mockito.when(((CassandraStorageFacade) context.storage).getRepairRunDao()).thenReturn(mockedRepairRunDao);
 
@@ -225,7 +225,7 @@ public final class SchedulingManagerTest {
         .percentUnrepairedThreshold(5)
         .state(RepairSchedule.State.ACTIVE)
         .build(UUIDs.timeBased());
-    IRepairUnit mockedRepairUnitDao = mock(IRepairUnit.class);
+    IRepairUnitDao mockedRepairUnitDao = mock(IRepairUnitDao.class);
     Mockito.when(context.storage.getRepairUnitDao()).thenReturn(mockedRepairUnitDao);
     when(mockedRepairUnitDao.getRepairUnit(any(UUID.class))).thenReturn(repairUnit);
 
@@ -240,11 +240,11 @@ public final class SchedulingManagerTest {
 
     when(context.storage.getPercentRepairedMetrics(any(), any(), any()))
         .thenReturn(Lists.newArrayList(percentRepairedMetric));
-    IRepairSchedule mockedRepairScheduleDao = Mockito.mock(IRepairSchedule.class);
+    IRepairScheduleDao mockedRepairScheduleDao = Mockito.mock(IRepairScheduleDao.class);
     Mockito.when(context.storage.getRepairScheduleDao()).thenReturn(mockedRepairScheduleDao);
     when(mockedRepairScheduleDao.updateRepairSchedule(any())).thenReturn(true);
 
-    ICluster mockedClusterDao = Mockito.mock(ICluster.class);
+    IClusterDao mockedClusterDao = Mockito.mock(IClusterDao.class);
     Mockito.when(context.storage.getClusterDao()).thenReturn(mockedClusterDao);
 
     context.config = new ReaperApplicationConfiguration();
@@ -291,7 +291,7 @@ public final class SchedulingManagerTest {
         .startTime(DateTime.now().minusMinutes(10))
         .endTime(DateTime.now().minusMinutes(5))
         .build(UUIDs.timeBased());
-    IRepairRun mockedRepairRunDao = mock(IRepairRun.class);
+    IRepairRunDao mockedRepairRunDao = mock(IRepairRunDao.class);
     Mockito.when(mockedRepairRunDao.getRepairRun(any())).thenReturn(Optional.of(repairRun));
     Mockito.when(((CassandraStorageFacade) context.storage).getRepairRunDao()).thenReturn(mockedRepairRunDao);
 
@@ -305,7 +305,7 @@ public final class SchedulingManagerTest {
         .percentUnrepairedThreshold(5)
         .state(RepairSchedule.State.ACTIVE)
         .build(UUIDs.timeBased());
-    IRepairUnit mockedRepairUnitDao = mock(IRepairUnit.class);
+    IRepairUnitDao mockedRepairUnitDao = mock(IRepairUnitDao.class);
     Mockito.when(context.storage.getRepairUnitDao()).thenReturn(mockedRepairUnitDao);
     when(mockedRepairUnitDao.getRepairUnit(any(UUID.class))).thenReturn(repairUnit);
 
@@ -320,7 +320,7 @@ public final class SchedulingManagerTest {
 
     when(context.storage.getPercentRepairedMetrics(any(), any(), any()))
         .thenReturn(Lists.newArrayList(percentRepairedMetric));
-    IRepairSchedule mockedRepairScheduleDao = Mockito.mock(IRepairSchedule.class);
+    IRepairScheduleDao mockedRepairScheduleDao = Mockito.mock(IRepairScheduleDao.class);
     Mockito.when(context.storage.getRepairScheduleDao()).thenReturn(mockedRepairScheduleDao);
     when(mockedRepairScheduleDao.updateRepairSchedule(any())).thenReturn(true);
 
@@ -368,12 +368,12 @@ public final class SchedulingManagerTest {
         .startTime(DateTime.now().minusMinutes(10))
         .endTime(DateTime.now().minusMinutes(5))
         .build(UUIDs.timeBased());
-    IRepairRun mockedRepairRunDao = mock(IRepairRun.class);
+    IRepairRunDao mockedRepairRunDao = mock(IRepairRunDao.class);
     Mockito.when(mockedRepairRunDao.getRepairRun(any())).thenReturn(Optional.of(repairRun));
     Mockito.when(((CassandraStorageFacade) context.storage).getRepairRunDao()).thenReturn(mockedRepairRunDao);
 
 
-    IRepairUnit mockedRepairUnitDao = mock(IRepairUnit.class);
+    IRepairUnitDao mockedRepairUnitDao = mock(IRepairUnitDao.class);
     Mockito.when(context.storage.getRepairUnitDao()).thenReturn(mockedRepairUnitDao);
     when(mockedRepairUnitDao.getRepairUnit(any(UUID.class))).thenReturn(repairUnit);
 

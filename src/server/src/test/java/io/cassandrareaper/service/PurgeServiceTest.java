@@ -23,9 +23,9 @@ import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairRun.RunState;
-import io.cassandrareaper.storage.IStorage;
-import io.cassandrareaper.storage.cluster.ICluster;
-import io.cassandrareaper.storage.repairrun.IRepairRun;
+import io.cassandrareaper.storage.IStorageDao;
+import io.cassandrareaper.storage.cluster.IClusterDao;
+import io.cassandrareaper.storage.repairrun.IRepairRunDao;
 
 import java.util.Arrays;
 import java.util.List;
@@ -61,10 +61,10 @@ public final class PurgeServiceTest {
     context.config.setPurgeRecordsAfterInDays(1);
 
     // Create storage mock
-    context.storage = mock(IStorage.class);
+    context.storage = mock(IStorageDao.class);
 
     List<Cluster> clusters = Arrays.asList(Cluster.builder().withName(CLUSTER_NAME).withSeedHosts(SEEDS).build());
-    ICluster mockedClusterDao = mock(ICluster.class);
+    IClusterDao mockedClusterDao = mock(IClusterDao.class);
     when(context.storage.getClusterDao()).thenReturn(mockedClusterDao);
     when(context.storage.getClusterDao().getClusters()).thenReturn(clusters);
 
@@ -86,7 +86,7 @@ public final class PurgeServiceTest {
               .runState(RunState.DONE)
               .build(UUIDs.timeBased()));
     }
-    IRepairRun mockedRepairRunDao = mock(IRepairRun.class);
+    IRepairRunDao mockedRepairRunDao = mock(IRepairRunDao.class);
     when(context.storage.getRepairRunDao()).thenReturn(mockedRepairRunDao);
     when(mockedRepairRunDao.getRepairRunsForCluster(anyString(), any())).thenReturn(repairRuns);
 
@@ -104,10 +104,10 @@ public final class PurgeServiceTest {
     context.config.setNumberOfRunsToKeepPerUnit(5);
 
     // Create storage mock
-    context.storage = mock(IStorage.class);
+    context.storage = mock(IStorageDao.class);
 
     List<Cluster> clusters = Arrays.asList(Cluster.builder().withName(CLUSTER_NAME).withSeedHosts(SEEDS).build());
-    ICluster mockedClusterDao = mock(ICluster.class);
+    IClusterDao mockedClusterDao = mock(IClusterDao.class);
     when(context.storage.getClusterDao()).thenReturn(mockedClusterDao);
     when(context.storage.getClusterDao().getClusters()).thenReturn(clusters);
 
@@ -130,7 +130,7 @@ public final class PurgeServiceTest {
               .build(UUIDs.timeBased()));
     }
 
-    IRepairRun mockedRepairRunDao = mock(IRepairRun.class);
+    IRepairRunDao mockedRepairRunDao = mock(IRepairRunDao.class);
     when(context.storage.getRepairRunDao()).thenReturn(mockedRepairRunDao);
     when(mockedRepairRunDao.getRepairRunsForCluster(anyString(), any())).thenReturn(repairRuns);
 
@@ -148,11 +148,11 @@ public final class PurgeServiceTest {
     context.config.setPurgeRecordsAfterInDays(1);
 
     // Create storage mock
-    context.storage = mock(IStorage.class);
+    context.storage = mock(IStorageDao.class);
 
     List<Cluster> clusters = Arrays.asList(Cluster.builder().withName(CLUSTER_NAME).withSeedHosts(SEEDS).build());
 
-    ICluster mockedClusterDao = mock(ICluster.class);
+    IClusterDao mockedClusterDao = mock(IClusterDao.class);
     when(context.storage.getClusterDao()).thenReturn(mockedClusterDao);
     when(mockedClusterDao.getClusters()).thenReturn(clusters);
 
@@ -175,7 +175,7 @@ public final class PurgeServiceTest {
               .build(UUIDs.timeBased()));
     }
 
-    IRepairRun mockedRepairRunDao = mock(IRepairRun.class);
+    IRepairRunDao mockedRepairRunDao = mock(IRepairRunDao.class);
     when(context.storage.getRepairRunDao()).thenReturn(mockedRepairRunDao);
     when(mockedRepairRunDao.getRepairRunsForCluster(anyString(), any())).thenReturn(repairRuns);
 

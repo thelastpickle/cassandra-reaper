@@ -22,9 +22,9 @@ import io.cassandrareaper.core.RepairSchedule;
 import io.cassandrareaper.core.RepairUnit;
 import io.cassandrareaper.resources.view.RepairScheduleStatus;
 import io.cassandrareaper.service.TestRepairConfiguration;
-import io.cassandrareaper.storage.IStorage;
+import io.cassandrareaper.storage.IStorageDao;
 import io.cassandrareaper.storage.MemoryStorageFacade;
-import io.cassandrareaper.storage.repairschedule.IRepairSchedule;
+import io.cassandrareaper.storage.repairschedule.IRepairScheduleDao;
 
 import java.net.URI;
 import java.util.Optional;
@@ -51,7 +51,7 @@ public class RepairScheduleResourceTest {
 
     final AppContext context = new AppContext();
 
-    IStorage mockedStorage = mock(IStorage.class);
+    IStorageDao mockedStorage = mock(IStorageDao.class);
     RepairSchedule repairSchedule = RepairSchedule.builder(UUID.randomUUID())
         .nextActivation(DateTime.now())
         .owner("test")
@@ -62,7 +62,7 @@ public class RepairScheduleResourceTest {
         .build(repairScheduleId);
     mockObjects.setRepairSchedule(repairSchedule);
 
-    IRepairSchedule mockedRepairScheduleDao = mock(IRepairSchedule.class);
+    IRepairScheduleDao mockedRepairScheduleDao = mock(IRepairScheduleDao.class);
     when(mockedStorage.getRepairScheduleDao()).thenReturn(mockedRepairScheduleDao);
     when(mockedRepairScheduleDao.getRepairSchedule(repairScheduleId)).thenReturn(Optional.of(repairSchedule));
     when(mockedStorage.getRepairScheduleDao().updateRepairSchedule(any())).thenReturn(false);

@@ -17,37 +17,37 @@
 
 package io.cassandrareaper.storage;
 
-import io.cassandrareaper.storage.cluster.ICluster;
-import io.cassandrareaper.storage.events.IEvents;
-import io.cassandrareaper.storage.metrics.IMetrics;
-import io.cassandrareaper.storage.repairrun.IRepairRun;
-import io.cassandrareaper.storage.repairschedule.IRepairSchedule;
-import io.cassandrareaper.storage.repairsegment.IRepairSegment;
-import io.cassandrareaper.storage.repairunit.IRepairUnit;
-import io.cassandrareaper.storage.snapshot.ISnapshot;
+import io.cassandrareaper.storage.cluster.IClusterDao;
+import io.cassandrareaper.storage.events.IEventsDao;
+import io.cassandrareaper.storage.metrics.IMetricsDao;
+import io.cassandrareaper.storage.repairrun.IRepairRunDao;
+import io.cassandrareaper.storage.repairschedule.IRepairScheduleDao;
+import io.cassandrareaper.storage.repairsegment.IRepairSegmentDao;
+import io.cassandrareaper.storage.repairunit.IRepairUnitDao;
+import io.cassandrareaper.storage.snapshot.ISnapshotDao;
 
 import io.dropwizard.lifecycle.Managed;
 
 /**
  * API definition for cassandra-reaper.
  */
-public interface IStorage extends Managed,
-    IMetrics {
+public interface IStorageDao extends Managed,
+    IMetricsDao {
 
   boolean isStorageConnected();
 
-  IEvents getEventsDao();
+  IEventsDao getEventsDao();
 
-  ISnapshot getSnapshotDao();
+  ISnapshotDao getSnapshotDao();
 
-  IRepairRun getRepairRunDao();
+  IRepairRunDao getRepairRunDao();
 
-  IRepairSegment getRepairSegmentDao();
+  IRepairSegmentDao getRepairSegmentDao();
 
-  IRepairUnit getRepairUnitDao();
+  IRepairUnitDao getRepairUnitDao();
 
-  IRepairSchedule getRepairScheduleDao();
+  IRepairScheduleDao getRepairScheduleDao();
 
-  ICluster getClusterDao();
+  IClusterDao getClusterDao();
 
 }

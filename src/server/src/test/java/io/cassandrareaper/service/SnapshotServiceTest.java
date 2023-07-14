@@ -27,9 +27,9 @@ import io.cassandrareaper.jmx.HostConnectionCounters;
 import io.cassandrareaper.jmx.JmxConnectionFactory;
 import io.cassandrareaper.jmx.JmxProxy;
 import io.cassandrareaper.jmx.JmxProxyTest;
-import io.cassandrareaper.storage.IStorage;
-import io.cassandrareaper.storage.cluster.ICluster;
-import io.cassandrareaper.storage.snapshot.ISnapshot;
+import io.cassandrareaper.storage.IStorageDao;
+import io.cassandrareaper.storage.cluster.IClusterDao;
+import io.cassandrareaper.storage.snapshot.ISnapshotDao;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -69,7 +69,7 @@ public final class SnapshotServiceTest {
     cxt.jmxConnectionFactory = mock(JmxConnectionFactory.class);
     when(cxt.jmxConnectionFactory.connectAny(any(Collection.class))).thenReturn(proxy);
 
-    ISnapshot mockSnapshotDao = mock(ISnapshot.class);
+    ISnapshotDao mockSnapshotDao = mock(ISnapshotDao.class);
 
     Pair<Node, String> result = SnapshotService
         .create(cxt, SNAPSHOT_MANAGER_EXECUTOR, mockSnapshotDao)
@@ -93,7 +93,7 @@ public final class SnapshotServiceTest {
     cxt.jmxConnectionFactory = mock(JmxConnectionFactory.class);
     when(cxt.jmxConnectionFactory.connectAny(any(Collection.class))).thenReturn(proxy);
     Node host = Node.builder().withHostname("127.0.0.1").build();
-    ISnapshot mockSnapshotDao = mock(ISnapshot.class);
+    ISnapshotDao mockSnapshotDao = mock(ISnapshotDao.class);
     Pair<Node, String> result = SnapshotService
         .create(cxt, SNAPSHOT_MANAGER_EXECUTOR, mockSnapshotDao)
         .takeSnapshot("Test", host, "keyspace1", "keyspace2");
@@ -118,7 +118,7 @@ public final class SnapshotServiceTest {
     HostConnectionCounters connectionCounters = mock(HostConnectionCounters.class);
     when(cxt.jmxConnectionFactory.connectAny(any(Collection.class))).thenReturn(proxy);
     when(cxt.jmxConnectionFactory.getHostConnectionCounters()).thenReturn(connectionCounters);
-    ISnapshot mockSnapshotDao = mock(ISnapshot.class);
+    ISnapshotDao mockSnapshotDao = mock(ISnapshotDao.class);
     List<Snapshot> result = SnapshotService
         .create(cxt, SNAPSHOT_MANAGER_EXECUTOR, mockSnapshotDao)
         .listSnapshots(Node.builder().withHostname("127.0.0.1").build());
@@ -138,7 +138,7 @@ public final class SnapshotServiceTest {
     cxt.config = TestRepairConfiguration.defaultConfig();
     cxt.jmxConnectionFactory = mock(JmxConnectionFactory.class);
     when(cxt.jmxConnectionFactory.connectAny(any(Collection.class))).thenReturn(proxy);
-    ISnapshot mockSnapshotDao = mock(ISnapshot.class);
+    ISnapshotDao mockSnapshotDao = mock(ISnapshotDao.class);
     SnapshotService
         .create(cxt, SNAPSHOT_MANAGER_EXECUTOR, mockSnapshotDao)
         .clearSnapshot("test", Node.builder().withHostname("127.0.0.1").build());
@@ -163,19 +163,19 @@ public final class SnapshotServiceTest {
     Mockito.doReturn(Arrays.asList("127.0.0.1", "127.0.0.2"))
         .when(clusterFacadeSpy)
         .getLiveNodes(any(), any());
-    cxt.storage = mock(IStorage.class);
+    cxt.storage = mock(IStorageDao.class);
 
     Cluster cluster = Cluster.builder()
         .withName("testCluster")
         .withPartitioner("murmur3")
         .withSeedHosts(ImmutableSet.of("127.0.0.1"))
         .build();
-    ICluster mockedClusterDao = Mockito.mock(ICluster.class);
+    IClusterDao mockedClusterDao = Mockito.mock(IClusterDao.class);
     Mockito.when(cxt.storage.getClusterDao()).thenReturn(mockedClusterDao);
     Mockito.when(mockedClusterDao.getCluster(any())).thenReturn(cluster);
     when(mockedClusterDao.getCluster(anyString())).thenReturn(cluster);
 
-    ISnapshot mockSnapshotDao = mock(ISnapshot.class);
+    ISnapshotDao mockSnapshotDao = mock(ISnapshotDao.class);
 
     SnapshotService
         .create(cxt, SNAPSHOT_MANAGER_EXECUTOR, () -> clusterFacadeSpy, mockSnapshotDao)
@@ -202,7 +202,7 @@ public final class SnapshotServiceTest {
         .when(clusterFacadeSpy)
         .getLiveNodes(any(), any());
 
-    cxt.storage = mock(IStorage.class);
+    cxt.storage = mock(IStorageDao.class);
 
     Cluster cluster = Cluster.builder()
         .withName("testCluster")
@@ -210,12 +210,12 @@ public final class SnapshotServiceTest {
         .withSeedHosts(ImmutableSet.of("127.0.0.1"))
         .build();
 
-    ICluster mockedClusterDao = Mockito.mock(ICluster.class);
+    IClusterDao mockedClusterDao = Mockito.mock(IClusterDao.class);
     Mockito.when(cxt.storage.getClusterDao()).thenReturn(mockedClusterDao);
     Mockito.when(mockedClusterDao.getCluster(any())).thenReturn(cluster);
 
     when(mockedClusterDao.getCluster(anyString())).thenReturn(cluster);
-    ISnapshot mockSnapshotDao = mock(ISnapshot.class);
+    ISnapshotDao mockSnapshotDao = mock(ISnapshotDao.class);
 
     List<Pair<Node, String>> result = SnapshotService
         .create(cxt, SNAPSHOT_MANAGER_EXECUTOR, () -> clusterFacadeSpy, mockSnapshotDao)

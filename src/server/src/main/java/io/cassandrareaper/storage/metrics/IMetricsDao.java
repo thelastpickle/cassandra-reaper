@@ -15,14 +15,19 @@
  * limitations under the License.
  */
 
-package io.cassandrareaper.storage.snapshot;
+package io.cassandrareaper.storage.metrics;
 
-import io.cassandrareaper.core.Snapshot;
+import io.cassandrareaper.core.PercentRepairedMetric;
 
-public interface ISnapshot {
-  boolean saveSnapshot(Snapshot snapshot);
+import java.util.List;
+import java.util.UUID;
 
-  boolean deleteSnapshot(Snapshot snapshot);
+public interface IMetricsDao {
 
-  Snapshot getSnapshot(String clusterName, String snapshotName);
+  List<PercentRepairedMetric> getPercentRepairedMetrics(
+        String clusterName,
+        UUID repairScheduleId,
+        Long since);
+
+  void storePercentRepairedMetric(PercentRepairedMetric metric);
 }

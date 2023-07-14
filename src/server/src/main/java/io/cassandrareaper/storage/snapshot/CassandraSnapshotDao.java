@@ -26,14 +26,14 @@ import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import org.joda.time.DateTime;
 
-public class CassSnapshotDao implements ISnapshot {
+public class CassandraSnapshotDao implements ISnapshotDao {
 
   PreparedStatement getSnapshotPrepStmt;
   PreparedStatement deleteSnapshotPrepStmt;
   PreparedStatement saveSnapshotPrepStmt;
   private final Session session;
 
-  public CassSnapshotDao(Session session) {
+  public CassandraSnapshotDao(Session session) {
     this.session = session;
     prepareStatements();
   }

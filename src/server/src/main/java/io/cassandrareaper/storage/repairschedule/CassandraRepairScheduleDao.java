@@ -21,7 +21,7 @@ package io.cassandrareaper.storage.repairschedule;
 import io.cassandrareaper.core.RepairSchedule;
 import io.cassandrareaper.core.RepairUnit;
 import io.cassandrareaper.resources.view.RepairScheduleStatus;
-import io.cassandrareaper.storage.repairunit.CassRepairUnitDao;
+import io.cassandrareaper.storage.repairunit.CassandraRepairUnitDao;
 
 import java.util.Collection;
 import java.util.List;
@@ -49,20 +49,20 @@ import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class CassRepairScheduleDao implements IRepairSchedule {
+public class CassandraRepairScheduleDao implements IRepairScheduleDao {
   private static final String SELECT_REPAIR_SCHEDULE = "SELECT * FROM repair_schedule_v1";
-  private static final Logger LOG = LoggerFactory.getLogger(CassRepairScheduleDao.class);
+  private static final Logger LOG = LoggerFactory.getLogger(CassandraRepairScheduleDao.class);
   PreparedStatement insertRepairSchedulePrepStmt;
   PreparedStatement getRepairSchedulePrepStmt;
   PreparedStatement getRepairScheduleByClusterAndKsPrepStmt;
   PreparedStatement insertRepairScheduleByClusterAndKsPrepStmt;
   PreparedStatement deleteRepairSchedulePrepStmt;
   PreparedStatement deleteRepairScheduleByClusterAndKsByIdPrepStmt;
-  private final CassRepairUnitDao cassRepairUnitDao;
+  private final CassandraRepairUnitDao cassRepairUnitDao;
   private final Session session;
 
 
-  public CassRepairScheduleDao(CassRepairUnitDao cassRepairUnitDao, Session session) {
+  public CassandraRepairScheduleDao(CassandraRepairUnitDao cassRepairUnitDao, Session session) {
     this.cassRepairUnitDao = cassRepairUnitDao;
     this.session = session;
     prepareStatements();

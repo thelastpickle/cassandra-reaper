@@ -32,14 +32,14 @@ import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 
-public class OperationsDao {
+public class CassandraOperationsDao {
 
   private static final DateTimeFormatter TIME_BUCKET_FORMATTER = DateTimeFormat.forPattern("yyyyMMddHHmm");
   private PreparedStatement insertOperationsPrepStmt;
   private PreparedStatement listOperationsForNodePrepStmt;
   private final Session session;
 
-  public OperationsDao(Session session) {
+  public CassandraOperationsDao(Session session) {
     this.session = session;
     prepareOperationsStatements();
   }

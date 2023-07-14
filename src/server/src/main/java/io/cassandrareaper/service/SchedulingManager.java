@@ -24,7 +24,7 @@ import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairSchedule;
 import io.cassandrareaper.core.RepairUnit;
 import io.cassandrareaper.storage.IDistributedStorage;
-import io.cassandrareaper.storage.repairrun.IRepairRun;
+import io.cassandrareaper.storage.repairrun.IRepairRunDao;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -53,22 +53,22 @@ public final class SchedulingManager extends TimerTask {
   /* nextActivatedSchedule used for nicer logging only */
   private RepairSchedule nextActivatedSchedule;
 
-  private IRepairRun repairRunDao;
+  private IRepairRunDao repairRunDao;
 
   private SchedulingManager(AppContext context, Supplier<RepairRunService> repairRunServiceSupplier,
-                            IRepairRun repairRunDao) {
+                            IRepairRunDao repairRunDao) {
     this.context = context;
     this.repairRunService = repairRunServiceSupplier.get();
     this.repairRunDao = repairRunDao;
   }
 
-  public static SchedulingManager create(AppContext context, IRepairRun repairRunDao) {
+  public static SchedulingManager create(AppContext context, IRepairRunDao repairRunDao) {
     return new SchedulingManager(context, () -> RepairRunService.create(context, repairRunDao), repairRunDao);
   }
 
   @VisibleForTesting
   static SchedulingManager create(AppContext context, Supplier<RepairRunService> repairRunServiceSupplier,
-                                  IRepairRun repairRunDao) {
+                                  IRepairRunDao repairRunDao) {
     return new SchedulingManager(context, repairRunServiceSupplier, repairRunDao);
   }
 

@@ -30,14 +30,14 @@ import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.google.common.base.Preconditions;
 
-public class CassEventsDao implements IEvents {
+public class CassandraEventsDao implements IEventsDao {
   PreparedStatement getDiagnosticEventsPrepStmt;
   PreparedStatement getDiagnosticEventPrepStmt;
   PreparedStatement deleteDiagnosticEventPrepStmt;
   PreparedStatement saveDiagnosticEventPrepStmt;
   private final Session session;
 
-  public CassEventsDao(Session session) {
+  public CassandraEventsDao(Session session) {
     this.session = session;
     prepareStatements();
   }

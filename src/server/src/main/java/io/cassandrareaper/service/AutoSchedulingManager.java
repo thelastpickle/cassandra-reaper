@@ -20,7 +20,7 @@ package io.cassandrareaper.service;
 import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
-import io.cassandrareaper.storage.repairrun.IRepairRun;
+import io.cassandrareaper.storage.repairrun.IRepairRunDao;
 
 import java.util.Collection;
 import java.util.Timer;
@@ -37,7 +37,7 @@ public final class AutoSchedulingManager extends TimerTask {
   private final AppContext context;
   private final ClusterRepairScheduler clusterRepairScheduler;
 
-  private AutoSchedulingManager(AppContext context, IRepairRun repairRunDao) {
+  private AutoSchedulingManager(AppContext context, IRepairRunDao repairRunDao) {
     this(context, new ClusterRepairScheduler(context, repairRunDao));
   }
 
@@ -46,7 +46,7 @@ public final class AutoSchedulingManager extends TimerTask {
     this.clusterRepairScheduler = clusterRepairScheduler;
   }
 
-  public static synchronized void start(AppContext context, IRepairRun repairRunDao) {
+  public static synchronized void start(AppContext context, IRepairRunDao repairRunDao) {
     if (null == repairAutoSchedulingManager) {
       LOG.info(
           "Starting new {} instance. First check in {}ms. Subsequent polls every {}ms",

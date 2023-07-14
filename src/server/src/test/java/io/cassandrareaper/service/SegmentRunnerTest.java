@@ -34,9 +34,9 @@ import io.cassandrareaper.jmx.JmxConnectionFactory;
 import io.cassandrareaper.jmx.JmxProxy;
 import io.cassandrareaper.jmx.JmxProxyTest;
 import io.cassandrareaper.jmx.RepairStatusHandler;
-import io.cassandrareaper.storage.IStorage;
+import io.cassandrareaper.storage.IStorageDao;
 import io.cassandrareaper.storage.MemoryStorageFacade;
-import io.cassandrareaper.storage.repairsegment.IRepairSegment;
+import io.cassandrareaper.storage.repairsegment.IRepairSegmentDao;
 
 import java.io.IOException;
 import java.math.BigInteger;
@@ -222,7 +222,7 @@ public final class SegmentRunnerTest {
   public void successTest() throws InterruptedException, ReaperException,
       ExecutionException, MalformedObjectNameException,
       ReflectionException, IOException {
-    final IStorage storage = new MemoryStorageFacade();
+    final IStorageDao storage = new MemoryStorageFacade();
     final int segmentTimeout = 30;
     RepairUnit cf = storage.getRepairUnitDao().addRepairUnit(
         RepairUnit.builder()
@@ -374,7 +374,7 @@ public final class SegmentRunnerTest {
   @Test
   public void failureTest() throws InterruptedException, ReaperException, ExecutionException,
       MalformedObjectNameException, ReflectionException, IOException {
-    final IStorage storage = new MemoryStorageFacade();
+    final IStorageDao storage = new MemoryStorageFacade();
     final int segmentTimeout = 30;
 
     RepairUnit cf = storage.getRepairUnitDao().addRepairUnit(
@@ -523,7 +523,7 @@ public final class SegmentRunnerTest {
   public void outOfOrderSuccessCass21Test()
       throws InterruptedException, ReaperException, ExecutionException,
       MalformedObjectNameException, ReflectionException, IOException {
-    final IStorage storage = new MemoryStorageFacade();
+    final IStorageDao storage = new MemoryStorageFacade();
 
     RepairUnit cf = storage.getRepairUnitDao().addRepairUnit(
         RepairUnit.builder()
@@ -666,7 +666,7 @@ public final class SegmentRunnerTest {
   public void outOfOrderSuccessCass22Test()
       throws InterruptedException, ReaperException, ExecutionException,
       MalformedObjectNameException, ReflectionException, IOException {
-    final IStorage storage = new MemoryStorageFacade();
+    final IStorageDao storage = new MemoryStorageFacade();
 
     RepairUnit cf = storage.getRepairUnitDao().addRepairUnit(
         RepairUnit.builder()
@@ -810,7 +810,7 @@ public final class SegmentRunnerTest {
   public void outOfOrderFailureCass21Test()
       throws InterruptedException, ReaperException, ExecutionException,
       MalformedObjectNameException, ReflectionException, IOException {
-    final IStorage storage = new MemoryStorageFacade();
+    final IStorageDao storage = new MemoryStorageFacade();
     final int segmentTimeout = 30;
 
     RepairUnit cf = storage.getRepairUnitDao().addRepairUnit(
@@ -956,7 +956,7 @@ public final class SegmentRunnerTest {
   public void outOfOrderFailureTestCass22()
       throws InterruptedException, ReaperException, ExecutionException,
       MalformedObjectNameException, ReflectionException, IOException {
-    final IStorage storage = new MemoryStorageFacade();
+    final IStorageDao storage = new MemoryStorageFacade();
     final int segmentTimeout = 30;
 
     RepairUnit cf = storage.getRepairUnitDao().addRepairUnit(
@@ -1133,7 +1133,7 @@ public final class SegmentRunnerTest {
   @Test
   public void triggerFailureTest() throws InterruptedException, ReaperException, ExecutionException,
       MalformedObjectNameException, ReflectionException, IOException {
-    final IStorage storage = new MemoryStorageFacade();
+    final IStorageDao storage = new MemoryStorageFacade();
     final int segmentTimeout = 30;
 
     RepairUnit cf = storage.getRepairUnitDao().addRepairUnit(
@@ -1228,7 +1228,7 @@ public final class SegmentRunnerTest {
   @Test
   public void nothingToRepairTest() throws InterruptedException, ReaperException, ExecutionException,
       MalformedObjectNameException, ReflectionException, IOException {
-    final IStorage storage = new MemoryStorageFacade();
+    final IStorageDao storage = new MemoryStorageFacade();
     final int segmentTimeout = 30;
 
     RepairUnit cf = storage.getRepairUnitDao().addRepairUnit(
@@ -1323,7 +1323,7 @@ public final class SegmentRunnerTest {
   @Test
   public void failComputingIntensityDelayTest() throws InterruptedException, ReaperException, ExecutionException,
       MalformedObjectNameException, ReflectionException, IOException {
-    final IStorage storage = mock(IStorage.class);
+    final IStorageDao storage = mock(IStorageDao.class);
     AppContext context = new AppContext();
     context.storage = storage;
 
@@ -1335,7 +1335,7 @@ public final class SegmentRunnerTest {
     when(segment.getEndTime()).thenReturn(null);
     when(ru.getKeyspaceName()).thenReturn("reaper");
 
-    IRepairSegment mockedRepairSegmentDao = mock(IRepairSegment.class);
+    IRepairSegmentDao mockedRepairSegmentDao = mock(IRepairSegmentDao.class);
     Mockito.when(storage.getRepairSegmentDao()).thenReturn(mockedRepairSegmentDao);
     when(mockedRepairSegmentDao.getRepairSegment(any(), any())).thenReturn(Optional.of(segment));
 
@@ -1350,7 +1350,7 @@ public final class SegmentRunnerTest {
   @Test
   public void clearSnapshotTest() throws InterruptedException, ReaperException, ExecutionException,
       MalformedObjectNameException, ReflectionException, IOException {
-    final IStorage storage = new MemoryStorageFacade();
+    final IStorageDao storage = new MemoryStorageFacade();
     final int segmentTimeout = 30;
 
     RepairUnit cf = storage.getRepairUnitDao().addRepairUnit(
@@ -1433,7 +1433,7 @@ public final class SegmentRunnerTest {
   @Test
   public void clearSnapshotFailTest() throws InterruptedException, ReaperException, ExecutionException,
       MalformedObjectNameException, ReflectionException, IOException {
-    final IStorage storage = new MemoryStorageFacade();
+    final IStorageDao storage = new MemoryStorageFacade();
     final int segmentTimeout = 30;
 
     RepairUnit cf = storage.getRepairUnitDao().addRepairUnit(

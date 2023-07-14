@@ -21,7 +21,7 @@ package io.cassandrareaper.storage.repairschedule;
 import io.cassandrareaper.core.RepairSchedule;
 import io.cassandrareaper.core.RepairUnit;
 import io.cassandrareaper.resources.view.RepairScheduleStatus;
-import io.cassandrareaper.storage.repairunit.MemRepairUnitDao;
+import io.cassandrareaper.storage.repairunit.MemoryRepairUnitDao;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -35,13 +35,13 @@ import com.datastax.driver.core.utils.UUIDs;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
-public class MemRepairScheduleDao implements IRepairSchedule {
+public class MemoryRepairScheduleDao implements IRepairScheduleDao {
   public final ConcurrentMap<UUID, RepairSchedule> repairSchedules = Maps.newConcurrentMap();
 
-  private final MemRepairUnitDao memRepairUnitDao;
+  private final MemoryRepairUnitDao memoryRepairUnitDao;
 
-  public MemRepairScheduleDao(MemRepairUnitDao memRepairUnitDao) {
-    this.memRepairUnitDao = memRepairUnitDao;
+  public MemoryRepairScheduleDao(MemoryRepairUnitDao memoryRepairUnitDao) {
+    this.memoryRepairUnitDao = memoryRepairUnitDao;
   }
 
   @Override
@@ -60,7 +60,7 @@ public class MemRepairScheduleDao implements IRepairSchedule {
   public Collection<RepairSchedule> getRepairSchedulesForCluster(String clusterName) {
     Collection<RepairSchedule> foundRepairSchedules = new ArrayList<RepairSchedule>();
     for (RepairSchedule repairSchedule : repairSchedules.values()) {
-      RepairUnit repairUnit = memRepairUnitDao.getRepairUnit(repairSchedule.getRepairUnitId());
+      RepairUnit repairUnit = memoryRepairUnitDao.getRepairUnit(repairSchedule.getRepairUnitId());
       if (repairUnit.getClusterName().equals(clusterName)) {
         foundRepairSchedules.add(repairSchedule);
       }
@@ -71,7 +71,7 @@ public class MemRepairScheduleDao implements IRepairSchedule {
   @Override
   public Collection<RepairSchedule> getRepairSchedulesForCluster(String clusterName, boolean incremental) {
     return getRepairSchedulesForCluster(clusterName).stream()
-        .filter(schedule -> memRepairUnitDao
+        .filter(schedule -> memoryRepairUnitDao
               .getRepairUnit(schedule.getRepairUnitId())
               .getIncrementalRepair() == incremental)
         .collect(Collectors.toList());
@@ -81,7 +81,7 @@ public class MemRepairScheduleDao implements IRepairSchedule {
   public Collection<RepairSchedule> getRepairSchedulesForKeyspace(String keyspaceName) {
     Collection<RepairSchedule> foundRepairSchedules = new ArrayList<RepairSchedule>();
     for (RepairSchedule repairSchedule : repairSchedules.values()) {
-      RepairUnit repairUnit = memRepairUnitDao.getRepairUnit(repairSchedule.getRepairUnitId());
+      RepairUnit repairUnit = memoryRepairUnitDao.getRepairUnit(repairSchedule.getRepairUnitId());
       if (repairUnit.getKeyspaceName().equals(keyspaceName)) {
         foundRepairSchedules.add(repairSchedule);
       }
@@ -93,7 +93,7 @@ public class MemRepairScheduleDao implements IRepairSchedule {
   public Collection<RepairSchedule> getRepairSchedulesForClusterAndKeyspace(String clusterName, String keyspaceName) {
     Collection<RepairSchedule> foundRepairSchedules = new ArrayList<RepairSchedule>();
     for (RepairSchedule repairSchedule : repairSchedules.values()) {
-      RepairUnit repairUnit = memRepairUnitDao.getRepairUnit(repairSchedule.getRepairUnitId());
+      RepairUnit repairUnit = memoryRepairUnitDao.getRepairUnit(repairSchedule.getRepairUnitId());
       if (repairUnit.getClusterName().equals(clusterName) && repairUnit.getKeyspaceName().equals(keyspaceName)) {
         foundRepairSchedules.add(repairSchedule);
       }
@@ -121,7 +121,7 @@ public class MemRepairScheduleDao implements IRepairSchedule {
     List<RepairScheduleStatus> scheduleStatuses = Lists.newArrayList();
     Collection<RepairSchedule> schedules = getRepairSchedulesForCluster(clusterName);
     for (RepairSchedule schedule : schedules) {
-      RepairUnit unit = memRepairUnitDao.getRepairUnit(schedule.getRepairUnitId());
+      RepairUnit unit = memoryRepairUnitDao.getRepairUnit(schedule.getRepairUnitId());
       scheduleStatuses.add(new RepairScheduleStatus(schedule, unit));
     }
     return scheduleStatuses;

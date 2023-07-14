@@ -20,7 +20,7 @@ package io.cassandrareaper.resources;
 import io.cassandrareaper.AppContext;
 import io.cassandrareaper.core.DiagEventSubscription;
 import io.cassandrareaper.service.DiagEventSubscriptionService;
-import io.cassandrareaper.storage.events.IEvents;
+import io.cassandrareaper.storage.events.IEventsDao;
 
 import java.net.URI;
 import java.util.Collection;
@@ -56,14 +56,14 @@ public final class DiagEventSubscriptionResource {
 
   private static final Logger LOG = LoggerFactory.getLogger(DiagEventSubscriptionResource.class);
 
-  private final IEvents eventsDao;
+  private final IEventsDao eventsDao;
   private final AppContext context;
   private final DiagEventSubscriptionService diagEventService;
 
   public DiagEventSubscriptionResource(AppContext context,
                                        HttpClient httpClient,
                                        ScheduledExecutorService executor,
-                                       IEvents eventsDao) {
+                                       IEventsDao eventsDao) {
     this.context = context;
     this.eventsDao = eventsDao;
     this.diagEventService = DiagEventSubscriptionService.create(context, httpClient, executor, eventsDao);

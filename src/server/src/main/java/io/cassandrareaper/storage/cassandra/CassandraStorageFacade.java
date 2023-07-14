@@ -27,24 +27,24 @@ import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairSegment;
 import io.cassandrareaper.service.RingRange;
 import io.cassandrareaper.storage.IDistributedStorage;
-import io.cassandrareaper.storage.IStorage;
+import io.cassandrareaper.storage.IStorageDao;
 import io.cassandrareaper.storage.OpType;
 import io.cassandrareaper.storage.cassandra.codecs.DateTimeCodec;
-import io.cassandrareaper.storage.cluster.CassClusterDao;
-import io.cassandrareaper.storage.cluster.ICluster;
-import io.cassandrareaper.storage.events.CassEventsDao;
-import io.cassandrareaper.storage.events.IEvents;
-import io.cassandrareaper.storage.metrics.CassMetricsDao;
-import io.cassandrareaper.storage.repairrun.CassRepairRunDao;
-import io.cassandrareaper.storage.repairrun.IRepairRun;
-import io.cassandrareaper.storage.repairschedule.CassRepairScheduleDao;
-import io.cassandrareaper.storage.repairschedule.IRepairSchedule;
-import io.cassandrareaper.storage.repairsegment.CassRepairSegmentDao;
-import io.cassandrareaper.storage.repairsegment.IRepairSegment;
-import io.cassandrareaper.storage.repairunit.CassRepairUnitDao;
-import io.cassandrareaper.storage.repairunit.IRepairUnit;
-import io.cassandrareaper.storage.snapshot.CassSnapshotDao;
-import io.cassandrareaper.storage.snapshot.ISnapshot;
+import io.cassandrareaper.storage.cluster.CassandraClusterDao;
+import io.cassandrareaper.storage.cluster.IClusterDao;
+import io.cassandrareaper.storage.events.CassandraEventsDao;
+import io.cassandrareaper.storage.events.IEventsDao;
+import io.cassandrareaper.storage.metrics.CassandraMetricsDao;
+import io.cassandrareaper.storage.repairrun.CassandraRepairRunDao;
+import io.cassandrareaper.storage.repairrun.IRepairRunDao;
+import io.cassandrareaper.storage.repairschedule.CassandraRepairScheduleDao;
+import io.cassandrareaper.storage.repairschedule.IRepairScheduleDao;
+import io.cassandrareaper.storage.repairsegment.CassandraRepairSegmentDao;
+import io.cassandrareaper.storage.repairsegment.IRepairSegmentDao;
+import io.cassandrareaper.storage.repairunit.CassandraRepairUnitDao;
+import io.cassandrareaper.storage.repairunit.IRepairUnitDao;
+import io.cassandrareaper.storage.snapshot.CassandraSnapshotDao;
+import io.cassandrareaper.storage.snapshot.ISnapshotDao;
 
 import java.util.List;
 import java.util.Objects;
@@ -80,25 +80,25 @@ import systems.composable.dropwizard.cassandra.pooling.PoolingOptionsFactory;
 import systems.composable.dropwizard.cassandra.retry.RetryPolicyFactory;
 
 
-public final class CassandraStorageFacade implements IStorage, IDistributedStorage {
+public final class CassandraStorageFacade implements IStorageDao, IDistributedStorage {
   private static final Logger LOG = LoggerFactory.getLogger(CassandraStorageFacade.class);
   private static final AtomicBoolean UNINITIALISED = new AtomicBoolean(true);
-  public final CassRepairSegmentDao cassRepairSegmentDao;
+  public final CassandraRepairSegmentDao cassRepairSegmentDao;
   public final int defaultTimeout;
   final VersionNumber version;
   final UUID reaperInstanceId;
   private final com.datastax.driver.core.Cluster cassandra;
   private final Session session;
   private final ObjectMapper objectMapper = new ObjectMapper();
-  private final CassRepairRunDao cassRepairRunDao;
-  private final CassRepairUnitDao cassRepairUnitDao;
-  private final CassRepairScheduleDao cassRepairScheduleDao;
-  private final CassClusterDao cassClusterDao;
-  private final CassEventsDao cassEventsDao;
-  private final CassMetricsDao cassMetricsDao;
-  private final ConcurrencyDao concurrency;
-  private final CassSnapshotDao cassSnapshotDao;
-  private final OperationsDao operationsDao;
+  private final CassandraRepairRunDao cassRepairRunDao;
+  private final CassandraRepairUnitDao cassRepairUnitDao;
+  private final CassandraRepairScheduleDao cassRepairScheduleDao;
+  private final CassandraClusterDao cassClusterDao;
+  private final CassandraEventsDao cassEventsDao;
+  private final CassandraMetricsDao cassMetricsDao;
+  private final CassandraConcurrencyDao concurrency;
+  private final CassandraSnapshotDao cassSnapshotDao;
+  private final CassandraOperationsDao operationsDao;
   private PreparedStatement saveHeartbeatPrepStmt;
   private PreparedStatement deleteHeartbeatPrepStmt;
 
@@ -145,20 +145,20 @@ public final class CassandraStorageFacade implements IStorage, IDistributedStora
       MigrationManager.initializeAndUpgradeSchema(cassandra, session, config, version, mode);
     }
 
-    this.cassEventsDao = new CassEventsDao(session);
-    this.cassMetricsDao = new CassMetricsDao(session);
-    this.cassSnapshotDao = new CassSnapshotDao(session);
-    this.operationsDao = new OperationsDao(session);
-    this.concurrency = new ConcurrencyDao(version, reaperInstanceId, session);
-    this.cassRepairUnitDao = new CassRepairUnitDao(defaultTimeout, session);
-    this.cassRepairSegmentDao = new CassRepairSegmentDao(concurrency, cassRepairUnitDao, session);
-    this.cassRepairScheduleDao = new CassRepairScheduleDao(cassRepairUnitDao, session);
-    this.cassClusterDao = new CassClusterDao(cassRepairScheduleDao,
+    this.cassEventsDao = new CassandraEventsDao(session);
+    this.cassMetricsDao = new CassandraMetricsDao(session);
+    this.cassSnapshotDao = new CassandraSnapshotDao(session);
+    this.operationsDao = new CassandraOperationsDao(session);
+    this.concurrency = new CassandraConcurrencyDao(version, reaperInstanceId, session);
+    this.cassRepairUnitDao = new CassandraRepairUnitDao(defaultTimeout, session);
+    this.cassRepairSegmentDao = new CassandraRepairSegmentDao(concurrency, cassRepairUnitDao, session);
+    this.cassRepairScheduleDao = new CassandraRepairScheduleDao(cassRepairUnitDao, session);
+    this.cassClusterDao = new CassandraClusterDao(cassRepairScheduleDao,
         cassRepairUnitDao,
         cassEventsDao,
         session,
         objectMapper);
-    this.cassRepairRunDao = new CassRepairRunDao(
+    this.cassRepairRunDao = new CassandraRepairRunDao(
         cassRepairUnitDao,
         cassClusterDao,
         cassRepairSegmentDao,
@@ -210,7 +210,7 @@ public final class CassandraStorageFacade implements IStorage, IDistributedStora
   }
 
   private static boolean withinRange(RepairSegment segment, Optional<RingRange> range) {
-    return !range.isPresent() || CassRepairSegmentDao.segmentIsWithinRange(segment, range.get());
+    return !range.isPresent() || CassandraRepairSegmentDao.segmentIsWithinRange(segment, range.get());
   }
 
   private void prepareStatements() {
@@ -433,37 +433,37 @@ public final class CassandraStorageFacade implements IStorage, IDistributedStora
   }
 
   @Override
-  public IEvents getEventsDao() {
+  public IEventsDao getEventsDao() {
     return this.cassEventsDao;
   }
 
   @Override
-  public ISnapshot getSnapshotDao() {
+  public ISnapshotDao getSnapshotDao() {
     return this.cassSnapshotDao;
   }
 
   @Override
-  public IRepairRun getRepairRunDao() {
+  public IRepairRunDao getRepairRunDao() {
     return this.cassRepairRunDao;
   }
 
   @Override
-  public IRepairSegment getRepairSegmentDao() {
+  public IRepairSegmentDao getRepairSegmentDao() {
     return this.cassRepairSegmentDao;
   }
 
   @Override
-  public IRepairUnit getRepairUnitDao() {
+  public IRepairUnitDao getRepairUnitDao() {
     return this.cassRepairUnitDao;
   }
 
   @Override
-  public IRepairSchedule getRepairScheduleDao() {
+  public IRepairScheduleDao getRepairScheduleDao() {
     return this.cassRepairScheduleDao;
   }
 
   @Override
-  public ICluster getClusterDao() {
+  public IClusterDao getClusterDao() {
     return this.cassClusterDao;
   }
 

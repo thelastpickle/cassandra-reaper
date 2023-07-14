@@ -22,7 +22,7 @@ import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Node;
 import io.cassandrareaper.core.Snapshot;
 import io.cassandrareaper.service.SnapshotService;
-import io.cassandrareaper.storage.snapshot.ISnapshot;
+import io.cassandrareaper.storage.snapshot.ISnapshotDao;
 
 import java.util.List;
 import java.util.Map;
@@ -54,7 +54,7 @@ public final class SnapshotResource {
   private final SnapshotService snapshotManager;
   private final AppContext context;
 
-  public SnapshotResource(AppContext context, Environment environment, ISnapshot snapshotDao) {
+  public SnapshotResource(AppContext context, Environment environment, ISnapshotDao snapshotDao) {
     this.context = context;
     snapshotManager = SnapshotService.create(
         context,

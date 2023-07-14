@@ -15,19 +15,19 @@
  * limitations under the License.
  */
 
-package io.cassandrareaper.storage.metrics;
+package io.cassandrareaper.storage.repairunit;
 
-import io.cassandrareaper.core.PercentRepairedMetric;
+import io.cassandrareaper.core.RepairUnit;
 
-import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
-public interface IMetrics {
+public interface IRepairUnitDao {
+  RepairUnit addRepairUnit(RepairUnit.Builder newRepairUnit);
 
-  List<PercentRepairedMetric> getPercentRepairedMetrics(
-        String clusterName,
-        UUID repairScheduleId,
-        Long since);
+  RepairUnit getRepairUnit(UUID id);
 
-  void storePercentRepairedMetric(PercentRepairedMetric metric);
+  Optional<RepairUnit> getRepairUnit(RepairUnit.Builder repairUnit);
+
+  void updateRepairUnit(RepairUnit updatedRepairUnit);
 }

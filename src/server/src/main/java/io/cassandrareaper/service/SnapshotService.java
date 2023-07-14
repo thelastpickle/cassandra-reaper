@@ -24,7 +24,7 @@ import io.cassandrareaper.core.Node;
 import io.cassandrareaper.core.Snapshot;
 import io.cassandrareaper.core.Snapshot.Builder;
 import io.cassandrareaper.jmx.ClusterFacade;
-import io.cassandrareaper.storage.snapshot.ISnapshot;
+import io.cassandrareaper.storage.snapshot.ISnapshotDao;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -60,11 +60,11 @@ public final class SnapshotService {
   private final ExecutorService executor;
   private final Cache<String, Snapshot> cache = CacheBuilder.newBuilder().weakValues().maximumSize(1000).build();
 
-  private final ISnapshot snapshotDao;
+  private final ISnapshotDao snapshotDao;
 
   private SnapshotService(AppContext context, ExecutorService executor,
                           Supplier<ClusterFacade> clusterFacadeSupplier,
-                          ISnapshot snapshotDao) {
+                          ISnapshotDao snapshotDao) {
     this.context = context;
     this.clusterFacade = clusterFacadeSupplier.get();
     this.executor = new InstrumentedExecutorService(executor, context.metricRegistry);
@@ -74,11 +74,11 @@ public final class SnapshotService {
   @VisibleForTesting
   static SnapshotService create(
       AppContext context, ExecutorService executor,
-      Supplier<ClusterFacade> clusterFacadeSupplier, ISnapshot snapshotDao) {
+      Supplier<ClusterFacade> clusterFacadeSupplier, ISnapshotDao snapshotDao) {
     return new SnapshotService(context, executor, clusterFacadeSupplier, snapshotDao);
   }
 
-  public static SnapshotService create(AppContext context, ExecutorService executor, ISnapshot snapshotDao) {
+  public static SnapshotService create(AppContext context, ExecutorService executor, ISnapshotDao snapshotDao) {
     return new SnapshotService(context, executor, () -> ClusterFacade.create(context), snapshotDao);
   }
 

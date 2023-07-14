@@ -22,7 +22,7 @@ import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairSchedule;
 import io.cassandrareaper.core.RepairUnit;
-import io.cassandrareaper.storage.repairrun.IRepairRun;
+import io.cassandrareaper.storage.repairrun.IRepairRunDao;
 
 import java.util.Collection;
 import java.util.Objects;
@@ -44,16 +44,16 @@ public final class RepairScheduleService {
   private final AppContext context;
   private final RepairUnitService repairUnitService;
 
-  private final IRepairRun repairRunDao;
+  private final IRepairRunDao repairRunDao;
 
-  private RepairScheduleService(AppContext context, IRepairRun repairRunDao) {
+  private RepairScheduleService(AppContext context, IRepairRunDao repairRunDao) {
     this.context = context;
     this.repairUnitService = RepairUnitService.create(context);
     registerRepairScheduleMetrics(context.storage.getRepairScheduleDao().getAllRepairSchedules());
     this.repairRunDao = repairRunDao;
   }
 
-  public static RepairScheduleService create(AppContext context, IRepairRun repairRunDao) {
+  public static RepairScheduleService create(AppContext context, IRepairRunDao repairRunDao) {
     return new RepairScheduleService(context, repairRunDao);
   }
 

@@ -23,8 +23,8 @@ import io.cassandrareaper.core.RepairSegment;
 import io.cassandrareaper.core.RepairUnit;
 import io.cassandrareaper.resources.view.RepairRunStatus;
 import io.cassandrareaper.service.RepairRunService;
-import io.cassandrareaper.storage.repairsegment.MemRepairSegment;
-import io.cassandrareaper.storage.repairunit.MemRepairUnitDao;
+import io.cassandrareaper.storage.repairsegment.MemoryRepairSegmentDao;
+import io.cassandrareaper.storage.repairunit.MemoryRepairUnitDao;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -44,22 +44,22 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.joda.time.DateTime;
 
-public class MemRepairRunDao implements IRepairRun {
+public class MemoryRepairRunDao implements IRepairRunDao {
   public final ConcurrentMap<UUID, RepairRun> repairRuns = Maps.newConcurrentMap();
-  private final MemRepairSegment memRepairSegment;
-  private final MemRepairUnitDao memRepairUnitDao;
+  private final MemoryRepairSegmentDao memRepairSegment;
+  private final MemoryRepairUnitDao memoryRepairUnitDao;
 
 
-  public MemRepairRunDao(MemRepairSegment memRepairSegment, MemRepairUnitDao memRepairUnitDao) {
+  public MemoryRepairRunDao(MemoryRepairSegmentDao memRepairSegment, MemoryRepairUnitDao memoryRepairUnitDao) {
     this.memRepairSegment = memRepairSegment;
-    this.memRepairUnitDao = memRepairUnitDao;
+    this.memoryRepairUnitDao = memoryRepairUnitDao;
   }
 
   @Override
   public Collection<RepairRunStatus> getClusterRunStatuses(String clusterName, int limit) {
     List<RepairRunStatus> runStatuses = Lists.newArrayList();
     for (RepairRun run : getRepairRunsForCluster(clusterName, Optional.of(limit))) {
-      RepairUnit unit = memRepairUnitDao.getRepairUnit(run.getRepairUnitId());
+      RepairUnit unit = memoryRepairUnitDao.getRepairUnit(run.getRepairUnitId());
       int segmentsRepaired = memRepairSegment
             .getSegmentAmountForRepairRunWithState(run.getId(), RepairSegment.State.DONE);
       int totalSegments = memRepairSegment.getSegmentAmountForRepairRun(run.getId());

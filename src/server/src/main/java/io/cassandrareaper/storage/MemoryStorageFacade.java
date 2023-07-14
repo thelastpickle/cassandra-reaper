@@ -19,21 +19,21 @@ package io.cassandrareaper.storage;
 
 import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.PercentRepairedMetric;
-import io.cassandrareaper.storage.cluster.ICluster;
-import io.cassandrareaper.storage.cluster.MemClusterDao;
-import io.cassandrareaper.storage.events.IEvents;
-import io.cassandrareaper.storage.events.MemEventsDao;
-import io.cassandrareaper.storage.metrics.MemMetricsDao;
-import io.cassandrareaper.storage.repairrun.IRepairRun;
-import io.cassandrareaper.storage.repairrun.MemRepairRunDao;
-import io.cassandrareaper.storage.repairschedule.IRepairSchedule;
-import io.cassandrareaper.storage.repairschedule.MemRepairScheduleDao;
-import io.cassandrareaper.storage.repairsegment.IRepairSegment;
-import io.cassandrareaper.storage.repairsegment.MemRepairSegment;
-import io.cassandrareaper.storage.repairunit.IRepairUnit;
-import io.cassandrareaper.storage.repairunit.MemRepairUnitDao;
-import io.cassandrareaper.storage.snapshot.ISnapshot;
-import io.cassandrareaper.storage.snapshot.MemSnapshotDao;
+import io.cassandrareaper.storage.cluster.IClusterDao;
+import io.cassandrareaper.storage.cluster.MemoryClusterDao;
+import io.cassandrareaper.storage.events.IEventsDao;
+import io.cassandrareaper.storage.events.MemoryEventsDao;
+import io.cassandrareaper.storage.metrics.MemoryMetricsDao;
+import io.cassandrareaper.storage.repairrun.IRepairRunDao;
+import io.cassandrareaper.storage.repairrun.MemoryRepairRunDao;
+import io.cassandrareaper.storage.repairschedule.IRepairScheduleDao;
+import io.cassandrareaper.storage.repairschedule.MemoryRepairScheduleDao;
+import io.cassandrareaper.storage.repairsegment.IRepairSegmentDao;
+import io.cassandrareaper.storage.repairsegment.MemoryRepairSegmentDao;
+import io.cassandrareaper.storage.repairunit.IRepairUnitDao;
+import io.cassandrareaper.storage.repairunit.MemoryRepairUnitDao;
+import io.cassandrareaper.storage.snapshot.ISnapshotDao;
+import io.cassandrareaper.storage.snapshot.MemorySnapshotDao;
 
 import java.util.List;
 import java.util.UUID;
@@ -45,22 +45,22 @@ import org.slf4j.LoggerFactory;
 /**
  * Implements the StorageAPI using transient Java classes.
  */
-public final class MemoryStorageFacade implements IStorage {
+public final class MemoryStorageFacade implements IStorageDao {
 
   private static final Logger LOG = LoggerFactory.getLogger(MemoryStorageFacade.class);
-  private final MemRepairSegment memRepairSegment = new MemRepairSegment(this);
-  private final MemRepairUnitDao memRepairUnitDao = new MemRepairUnitDao();
-  private final MemRepairRunDao memRepairRunDao = new MemRepairRunDao(memRepairSegment, memRepairUnitDao);
-  private final MemRepairScheduleDao memRepairScheduleDao = new MemRepairScheduleDao(memRepairUnitDao);
-  private final MemEventsDao memEventsDao = new MemEventsDao();
-  private final MemClusterDao memClusterDao = new MemClusterDao(
-      memRepairUnitDao,
-      memRepairRunDao,
+  private final MemoryRepairSegmentDao memRepairSegment = new MemoryRepairSegmentDao(this);
+  private final MemoryRepairUnitDao memoryRepairUnitDao = new MemoryRepairUnitDao();
+  private final MemoryRepairRunDao memoryRepairRunDao = new MemoryRepairRunDao(memRepairSegment, memoryRepairUnitDao);
+  private final MemoryRepairScheduleDao memRepairScheduleDao = new MemoryRepairScheduleDao(memoryRepairUnitDao);
+  private final MemoryEventsDao memEventsDao = new MemoryEventsDao();
+  private final MemoryClusterDao memClusterDao = new MemoryClusterDao(
+      memoryRepairUnitDao,
+      memoryRepairRunDao,
       memRepairScheduleDao,
       memEventsDao
   );
-  private final MemSnapshotDao memSnapshotDao = new MemSnapshotDao();
-  private final MemMetricsDao memMetricsDao = new MemMetricsDao();
+  private final MemorySnapshotDao memSnapshotDao = new MemorySnapshotDao();
+  private final MemoryMetricsDao memMetricsDao = new MemoryMetricsDao();
 
   @Override
   public boolean isStorageConnected() {
@@ -93,37 +93,37 @@ public final class MemoryStorageFacade implements IStorage {
   }
 
   @Override
-  public IEvents getEventsDao() {
+  public IEventsDao getEventsDao() {
     return this.memEventsDao;
   }
 
   @Override
-  public ISnapshot getSnapshotDao() {
+  public ISnapshotDao getSnapshotDao() {
     return this.memSnapshotDao;
   }
 
   @Override
-  public IRepairRun getRepairRunDao() {
-    return this.memRepairRunDao;
+  public IRepairRunDao getRepairRunDao() {
+    return this.memoryRepairRunDao;
   }
 
   @Override
-  public IRepairSegment getRepairSegmentDao() {
+  public IRepairSegmentDao getRepairSegmentDao() {
     return this.memRepairSegment;
   }
 
   @Override
-  public IRepairUnit getRepairUnitDao() {
-    return this.memRepairUnitDao;
+  public IRepairUnitDao getRepairUnitDao() {
+    return this.memoryRepairUnitDao;
   }
 
   @Override
-  public IRepairSchedule getRepairScheduleDao() {
+  public IRepairScheduleDao getRepairScheduleDao() {
     return this.memRepairScheduleDao;
   }
 
   @Override
-  public ICluster getClusterDao() {
+  public IClusterDao getClusterDao() {
     return this.memClusterDao;
   }
 

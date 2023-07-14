@@ -29,7 +29,7 @@ import io.cassandrareaper.resources.view.RepairScheduleStatus;
 import io.cassandrareaper.service.RepairRunService;
 import io.cassandrareaper.service.RepairScheduleService;
 import io.cassandrareaper.service.RepairUnitService;
-import io.cassandrareaper.storage.repairrun.IRepairRun;
+import io.cassandrareaper.storage.repairrun.IRepairRunDao;
 
 import java.net.URI;
 import java.util.ArrayList;
@@ -76,9 +76,9 @@ public final class RepairScheduleResource {
   private final RepairScheduleService repairScheduleService;
   private final RepairRunService repairRunService;
 
-  private final IRepairRun repairRunDao;
+  private final IRepairRunDao repairRunDao;
 
-  public RepairScheduleResource(AppContext context, IRepairRun repairRunDao) {
+  public RepairScheduleResource(AppContext context, IRepairRunDao repairRunDao) {
     this.context = context;
     this.repairUnitService = RepairUnitService.create(context);
     this.repairScheduleService = RepairScheduleService.create(context, repairRunDao);

@@ -37,9 +37,9 @@ import com.google.common.cache.LoadingCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class CassRepairUnitDao implements IRepairUnit {
+public class CassandraRepairUnitDao implements IRepairUnitDao {
   public static final String SELECT_REPAIR_UNIT = "SELECT * FROM repair_unit_v1";
-  private static final Logger LOG = LoggerFactory.getLogger(CassRepairUnitDao.class);
+  private static final Logger LOG = LoggerFactory.getLogger(CassandraRepairUnitDao.class);
   public PreparedStatement deleteRepairUnitPrepStmt;
   PreparedStatement insertRepairUnitPrepStmt;
   PreparedStatement getRepairUnitPrepStmt;
@@ -54,7 +54,7 @@ public class CassRepairUnitDao implements IRepairUnit {
   private final int defaultTimeout;
   private final Session session;
 
-  public CassRepairUnitDao(int defaultTimeout, Session session) {
+  public CassandraRepairUnitDao(int defaultTimeout, Session session) {
     this.defaultTimeout = defaultTimeout;
     this.session = session;
     prepareStatements();

@@ -25,11 +25,11 @@ import io.cassandrareaper.core.Cluster.State;
 import io.cassandrareaper.crypto.NoopCrypotograph;
 import io.cassandrareaper.jmx.JmxConnectionFactory;
 import io.cassandrareaper.jmx.JmxProxy;
-import io.cassandrareaper.storage.IStorage;
+import io.cassandrareaper.storage.IStorageDao;
 import io.cassandrareaper.storage.MemoryStorageFacade;
 import io.cassandrareaper.storage.cassandra.CassandraStorageFacade;
-import io.cassandrareaper.storage.cluster.ICluster;
-import io.cassandrareaper.storage.repairschedule.IRepairSchedule;
+import io.cassandrareaper.storage.cluster.IClusterDao;
+import io.cassandrareaper.storage.repairschedule.IRepairScheduleDao;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -57,8 +57,8 @@ public final class HeartTest {
   public void testBeat_memoryStorage() throws ReaperException, InterruptedException {
     AppContext context = new AppContext();
     context.config = new ReaperApplicationConfiguration();
-    IStorage storage = Mockito.mock(IStorage.class);
-    ICluster mockedClusterDao = Mockito.mock(ICluster.class);
+    IStorageDao storage = Mockito.mock(IStorageDao.class);
+    IClusterDao mockedClusterDao = Mockito.mock(IClusterDao.class);
     Mockito.when(storage.getClusterDao()).thenReturn(mockedClusterDao);
     context.storage = storage;
     Cluster cluster = Cluster.builder()
@@ -81,8 +81,8 @@ public final class HeartTest {
 
     AppContext context = new AppContext();
     context.config = new ReaperApplicationConfiguration();
-    IStorage storage = Mockito.mock(CassandraStorageFacade.class);
-    ICluster mockedClusterDao = Mockito.mock(ICluster.class);
+    IStorageDao storage = Mockito.mock(CassandraStorageFacade.class);
+    IClusterDao mockedClusterDao = Mockito.mock(IClusterDao.class);
     Mockito.when(storage.getClusterDao()).thenReturn(mockedClusterDao);
     context.storage = storage;
     Cluster cluster = Cluster.builder()
@@ -93,7 +93,7 @@ public final class HeartTest {
         .withState(State.ACTIVE)
         .build();
     Mockito.when(context.storage.getClusterDao().getClusters()).thenReturn(Arrays.asList(cluster));
-    IRepairSchedule mockedRepairScheduleDao = Mockito.mock(IRepairSchedule.class);
+    IRepairScheduleDao mockedRepairScheduleDao = Mockito.mock(IRepairScheduleDao.class);
     Mockito.when(context.storage.getRepairScheduleDao()).thenReturn(mockedRepairScheduleDao);
     Mockito.when(
         mockedRepairScheduleDao.getRepairSchedulesForCluster(any(), anyBoolean())).thenReturn(Collections.emptyList());
@@ -122,8 +122,8 @@ public final class HeartTest {
     AppContext context = new AppContext();
     context.config = new ReaperApplicationConfiguration();
     context.config.setDatacenterAvailability(ReaperApplicationConfiguration.DatacenterAvailability.ALL);
-    IStorage storage = Mockito.mock(CassandraStorageFacade.class);
-    ICluster mockedClusterDao = Mockito.mock(ICluster.class);
+    IStorageDao storage = Mockito.mock(CassandraStorageFacade.class);
+    IClusterDao mockedClusterDao = Mockito.mock(IClusterDao.class);
     Mockito.when(storage.getClusterDao()).thenReturn(mockedClusterDao);
     context.storage = storage;
     Cluster cluster = Cluster.builder()
@@ -134,7 +134,7 @@ public final class HeartTest {
         .withState(State.ACTIVE)
         .build();
     Mockito.when(context.storage.getClusterDao().getClusters()).thenReturn(Arrays.asList(cluster));
-    IRepairSchedule mockedRepairScheduleDao = Mockito.mock(IRepairSchedule.class);
+    IRepairScheduleDao mockedRepairScheduleDao = Mockito.mock(IRepairScheduleDao.class);
     Mockito.when(context.storage.getRepairScheduleDao()).thenReturn(mockedRepairScheduleDao);
     Mockito.when(mockedRepairScheduleDao.getRepairSchedulesForCluster(any(), anyBoolean()))
         .thenReturn(Collections.emptyList());
@@ -164,7 +164,7 @@ public final class HeartTest {
     context.config.setDatacenterAvailability(ReaperApplicationConfiguration.DatacenterAvailability.EACH);
     context.storage = Mockito.mock(CassandraStorageFacade.class);
     context.jmxConnectionFactory = new JmxConnectionFactory(context, new NoopCrypotograph());
-    IRepairSchedule mockedRepairScheduleDao = Mockito.mock(IRepairSchedule.class);
+    IRepairScheduleDao mockedRepairScheduleDao = Mockito.mock(IRepairScheduleDao.class);
     Mockito.when(context.storage.getRepairScheduleDao()).thenReturn(mockedRepairScheduleDao);
     Mockito.when(mockedRepairScheduleDao.getRepairSchedulesForCluster(any(), anyBoolean()))
         .thenReturn(Collections.emptyList());
@@ -283,8 +283,8 @@ public final class HeartTest {
     AppContext context = new AppContext();
     context.config = new ReaperApplicationConfiguration();
     context.config.setDatacenterAvailability(ReaperApplicationConfiguration.DatacenterAvailability.EACH);
-    IStorage storage = Mockito.mock(IStorage.class);
-    ICluster mockedClusterDao = Mockito.mock(ICluster.class);
+    IStorageDao storage = Mockito.mock(IStorageDao.class);
+    IClusterDao mockedClusterDao = Mockito.mock(IClusterDao.class);
     Mockito.when(storage.getClusterDao()).thenReturn(mockedClusterDao);
     context.storage = storage;
 

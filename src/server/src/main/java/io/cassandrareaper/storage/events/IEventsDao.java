@@ -15,27 +15,22 @@
  * limitations under the License.
  */
 
-package io.cassandrareaper.storage.cluster;
+package io.cassandrareaper.storage.events;
 
-import io.cassandrareaper.core.Cluster;
+import io.cassandrareaper.core.DiagEventSubscription;
 
 import java.util.Collection;
+import java.util.UUID;
 
-public interface ICluster {
-  Collection<Cluster> getClusters();
+public interface IEventsDao {
+  Collection<DiagEventSubscription> getEventSubscriptions();
 
-  boolean addCluster(Cluster cluster);
+  Collection<DiagEventSubscription> getEventSubscriptions(String clusterName);
 
-  boolean updateCluster(Cluster newCluster);
+  DiagEventSubscription getEventSubscription(UUID id);
 
-  Cluster getCluster(String clusterName);
+  DiagEventSubscription addEventSubscription(DiagEventSubscription subscription);
 
-  /**
-   * Delete the Cluster instance identified by the given cluster name. Delete succeeds only if there are no repair runs
-   * for the targeted cluster.
-   *
-   * @param clusterName The name of the Cluster instance to delete.
-   * @return The deleted Cluster instance if delete succeeds, with state set to DELETED.
-   */
-  Cluster deleteCluster(String clusterName);
+  boolean deleteEventSubscription(UUID id);
+
 }

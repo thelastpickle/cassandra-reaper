@@ -25,7 +25,7 @@ import io.cassandrareaper.core.Node;
 import io.cassandrareaper.jmx.DiagnosticProxy;
 import io.cassandrareaper.jmx.JmxProxy;
 import io.cassandrareaper.resources.view.DiagnosticEvent;
-import io.cassandrareaper.storage.events.IEvents;
+import io.cassandrareaper.storage.events.IEventsDao;
 
 import java.io.IOException;
 import java.util.Collection;
@@ -80,7 +80,7 @@ public final class DiagEventSubscriptionService {
   private static final Map<DiagEventSubscription, Broadcaster> BROADCASTERS = new HashMap<>();
   private static final ObjectMapper JSON_MAPPER = new ObjectMapper(new JsonFactory());
   private static final AtomicLong ID_COUNTER = new AtomicLong(0);
-  private final IEvents eventsDao;
+  private final IEventsDao eventsDao;
   private final Map<Node, NotificationListener> listenerByNode = new ConcurrentHashMap<>();
   private final AppContext context;
   private final HttpClient httpClient;
@@ -90,7 +90,7 @@ public final class DiagEventSubscriptionService {
   private Set<DiagEventSubscription> subsAlwaysActive;
 
   private DiagEventSubscriptionService(AppContext context, HttpClient httpClient, ScheduledExecutorService executor,
-                                       IEvents eventsDao) {
+                                       IEventsDao eventsDao) {
     this.context = context;
     this.httpClient = httpClient;
     this.scheduler = new InstrumentedScheduledExecutorService(executor, context.metricRegistry);
@@ -102,7 +102,7 @@ public final class DiagEventSubscriptionService {
   }
 
   public static DiagEventSubscriptionService create(AppContext cxt, HttpClient client, ScheduledExecutorService exec,
-                                                    IEvents eventsDao) {
+                                                    IEventsDao eventsDao) {
     return new DiagEventSubscriptionService(cxt, client, exec, eventsDao);
   }
 

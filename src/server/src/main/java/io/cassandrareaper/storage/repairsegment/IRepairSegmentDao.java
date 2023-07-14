@@ -26,7 +26,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-public interface IRepairSegment {
+public interface IRepairSegmentDao {
   boolean updateRepairSegment(RepairSegment newRepairSegment);
 
   Optional<RepairSegment> getRepairSegment(UUID runId, UUID segmentId);

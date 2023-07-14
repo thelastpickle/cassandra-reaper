@@ -34,13 +34,13 @@ import com.datastax.driver.core.utils.UUIDs;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
-public class MemRepairSegment implements IRepairSegment {
+public class MemoryRepairSegmentDao implements IRepairSegmentDao {
 
   public final ConcurrentMap<UUID, LinkedHashMap<UUID, RepairSegment>> repairSegmentsByRunId = Maps.newConcurrentMap();
   private final MemoryStorageFacade memoryStorageFacade;
   private final ConcurrentMap<UUID, RepairSegment> repairSegments = Maps.newConcurrentMap();
 
-  public MemRepairSegment(MemoryStorageFacade memoryStorageFacade) {
+  public MemoryRepairSegmentDao(MemoryStorageFacade memoryStorageFacade) {
     this.memoryStorageFacade = memoryStorageFacade;
   }
 

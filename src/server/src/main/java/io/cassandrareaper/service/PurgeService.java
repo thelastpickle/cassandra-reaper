@@ -22,7 +22,7 @@ import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.storage.IDistributedStorage;
-import io.cassandrareaper.storage.repairrun.IRepairRun;
+import io.cassandrareaper.storage.repairrun.IRepairRunDao;
 
 import java.util.Collection;
 import java.util.List;
@@ -43,14 +43,14 @@ public final class PurgeService {
 
   private final AppContext context;
 
-  private final IRepairRun repairRunDao;
+  private final IRepairRunDao repairRunDao;
 
-  private PurgeService(AppContext context, IRepairRun repairRunDao) {
+  private PurgeService(AppContext context, IRepairRunDao repairRunDao) {
     this.context = context;
     this.repairRunDao = repairRunDao;
   }
 
-  public static PurgeService create(AppContext context, IRepairRun repairRunDao) {
+  public static PurgeService create(AppContext context, IRepairRunDao repairRunDao) {
     return new PurgeService(context, repairRunDao);
   }
 

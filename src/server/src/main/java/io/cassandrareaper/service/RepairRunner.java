@@ -33,7 +33,7 @@ import io.cassandrareaper.jmx.EndpointSnitchInfoProxy;
 import io.cassandrareaper.jmx.JmxProxy;
 import io.cassandrareaper.metrics.PrometheusMetricsFilter;
 import io.cassandrareaper.storage.IDistributedStorage;
-import io.cassandrareaper.storage.repairrun.IRepairRun;
+import io.cassandrareaper.storage.repairrun.IRepairRunDao;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -103,13 +103,13 @@ final class RepairRunner implements Runnable {
   private final RepairUnit repairUnit;
   private AtomicBoolean isRunning = new AtomicBoolean(false);
 
-  private final IRepairRun repairRunDao;
+  private final IRepairRunDao repairRunDao;
 
   private RepairRunner(
       AppContext context,
       UUID repairRunId,
       ClusterFacade clusterFacade,
-      IRepairRun repairRunDao) throws ReaperException {
+      IRepairRunDao repairRunDao) throws ReaperException {
 
     LOG.debug("Creating RepairRunner for run with ID {}", repairRunId);
     this.context = context;
@@ -184,7 +184,7 @@ final class RepairRunner implements Runnable {
       AppContext context,
       UUID repairRunId,
       ClusterFacade clusterFacade,
-      IRepairRun repairRunDao) throws ReaperException {
+      IRepairRunDao repairRunDao) throws ReaperException {
 
     return new RepairRunner(context, repairRunId, clusterFacade, repairRunDao);
   }

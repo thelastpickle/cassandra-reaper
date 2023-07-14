@@ -31,9 +31,9 @@ import io.cassandrareaper.jmx.ClusterFacade;
 import io.cassandrareaper.jmx.JmxConnectionFactory;
 import io.cassandrareaper.jmx.JmxProxy;
 import io.cassandrareaper.jmx.JmxProxyTest;
-import io.cassandrareaper.storage.IStorage;
+import io.cassandrareaper.storage.IStorageDao;
 import io.cassandrareaper.storage.MemoryStorageFacade;
-import io.cassandrareaper.storage.repairrun.IRepairRun;
+import io.cassandrareaper.storage.repairrun.IRepairRunDao;
 
 import java.math.BigInteger;
 import java.net.UnknownHostException;
@@ -246,7 +246,7 @@ public final class RepairRunServiceTest {
         BigInteger.valueOf(0L),
         BigInteger.valueOf(100L),
         BigInteger.valueOf(200L));
-    final IStorage storage = new MemoryStorageFacade();
+    final IStorageDao storage = new MemoryStorageFacade();
 
     storage.getClusterDao().addCluster(cluster);
 
@@ -334,7 +334,7 @@ public final class RepairRunServiceTest {
         BigInteger.valueOf(0L),
         BigInteger.valueOf(100L),
         BigInteger.valueOf(200L));
-    final IStorage storage = new MemoryStorageFacade();
+    final IStorageDao storage = new MemoryStorageFacade();
 
     storage.getClusterDao().addCluster(cluster);
 
@@ -416,8 +416,8 @@ public final class RepairRunServiceTest {
         BigInteger.valueOf(0L),
         BigInteger.valueOf(100L),
         BigInteger.valueOf(200L));
-    final IStorage storage = mock(IStorage.class);
-    IRepairRun mockedRepairRunDao = mock(IRepairRun.class);
+    final IStorageDao storage = mock(IStorageDao.class);
+    IRepairRunDao mockedRepairRunDao = mock(IRepairRunDao.class);
     when(storage.getRepairRunDao()).thenReturn(mockedRepairRunDao);
     when(mockedRepairRunDao.addRepairRun(any(), any())).thenReturn(null);
     AppContext context = new AppContext();
@@ -476,8 +476,8 @@ public final class RepairRunServiceTest {
         BigInteger.valueOf(0L),
         BigInteger.valueOf(100L),
         BigInteger.valueOf(200L));
-    final IStorage storage = mock(IStorage.class);
-    IRepairRun mockedRepairRunDao = mock(IRepairRun.class);
+    final IStorageDao storage = mock(IStorageDao.class);
+    IRepairRunDao mockedRepairRunDao = mock(IRepairRunDao.class);
     when(storage.getRepairRunDao()).thenReturn(mockedRepairRunDao);
     when(mockedRepairRunDao.addRepairRun(any(), any())).thenReturn(null);
     AppContext context = new AppContext();
@@ -539,8 +539,8 @@ public final class RepairRunServiceTest {
     final Set<String> BLACKLISTED_TABLES = Collections.emptySet();
     final int REPAIR_THREAD_COUNT = 1;
     final int segmentTimeout = 30;
-    final IStorage storage = mock(IStorage.class);
-    IRepairRun mockedRepairRunDao = mock(IRepairRun.class);
+    final IStorageDao storage = mock(IStorageDao.class);
+    IRepairRunDao mockedRepairRunDao = mock(IRepairRunDao.class);
     when(mockedRepairRunDao.addRepairRun(any(), any())).thenReturn(null);
     when(storage.getRepairRunDao()).thenReturn(mockedRepairRunDao);
     AppContext context = new AppContext();
@@ -601,8 +601,8 @@ public final class RepairRunServiceTest {
     final Set<String> BLACKLISTED_TABLES = Collections.emptySet();
     final int REPAIR_THREAD_COUNT = 1;
     final int segmentTimeout = 30;
-    final IStorage storage = mock(IStorage.class);
-    IRepairRun mockedRepairRunDao = mock(IRepairRun.class);
+    final IStorageDao storage = mock(IStorageDao.class);
+    IRepairRunDao mockedRepairRunDao = mock(IRepairRunDao.class);
     when(mockedRepairRunDao.addRepairRun(any(), any())).thenReturn(null);
     when(storage.getRepairRunDao()).thenReturn(mockedRepairRunDao);
     AppContext context = new AppContext();
@@ -700,7 +700,7 @@ public final class RepairRunServiceTest {
 
   @Test(expected = IllegalArgumentException.class)
   public void getTableNamesBasedOnParamFailTest() throws ReaperException {
-    final IStorage storage = mock(IStorage.class);
+    final IStorageDao storage = mock(IStorageDao.class);
     AppContext context = new AppContext();
     context.storage = storage;
     context.config = new ReaperApplicationConfiguration();
@@ -720,7 +720,7 @@ public final class RepairRunServiceTest {
 
   @Test(expected = IllegalArgumentException.class)
   public void getTableNamesBasedOnParamNoMatchTest() throws ReaperException {
-    final IStorage storage = mock(IStorage.class);
+    final IStorageDao storage = mock(IStorageDao.class);
     AppContext context = new AppContext();
     context.storage = storage;
     context.config = new ReaperApplicationConfiguration();
@@ -741,7 +741,7 @@ public final class RepairRunServiceTest {
 
   @Test(expected = IllegalArgumentException.class)
   public void getNodesToRepairBasedOnParamEmptyFailTest() throws ReaperException {
-    final IStorage storage = mock(IStorage.class);
+    final IStorageDao storage = mock(IStorageDao.class);
     AppContext context = new AppContext();
     context.storage = storage;
     context.config = new ReaperApplicationConfiguration();
@@ -761,7 +761,7 @@ public final class RepairRunServiceTest {
 
   @Test(expected = IllegalArgumentException.class)
   public void getNodesToRepairBasedOnParamNoMatchFailTest() throws ReaperException {
-    final IStorage storage = mock(IStorage.class);
+    final IStorageDao storage = mock(IStorageDao.class);
     AppContext context = new AppContext();
     context.storage = storage;
     context.config = new ReaperApplicationConfiguration();
@@ -784,8 +784,8 @@ public final class RepairRunServiceTest {
 
   @Test(expected = ReaperException.class)
   public void getClusterNodesFailTest() throws ReaperException {
-    final IStorage storage = mock(IStorage.class);
-    IRepairRun mockedRepairRunDao = mock(IRepairRun.class);
+    final IStorageDao storage = mock(IStorageDao.class);
+    IRepairRunDao mockedRepairRunDao = mock(IRepairRunDao.class);
     when(storage.getRepairRunDao()).thenReturn(mockedRepairRunDao);
     AppContext context = new AppContext();
     context.storage = storage;
@@ -809,7 +809,7 @@ public final class RepairRunServiceTest {
 
   @Test
   public void getDatacentersToRepairBasedOnParamTest() throws ReaperException {
-    final IStorage storage = mock(IStorage.class);
+    final IStorageDao storage = mock(IStorageDao.class);
     Set<String> datacenters = RepairRunService.getDatacentersToRepairBasedOnParam(Optional.of("dc1,dc2"));
     assertEquals("Datacenters were not parsed correctly", 2, datacenters.size());
   }
@@ -836,7 +836,7 @@ public final class RepairRunServiceTest {
         BigInteger.valueOf(0L),
         BigInteger.valueOf(100L),
         BigInteger.valueOf(200L));
-    final IStorage storage = new MemoryStorageFacade();
+    final IStorageDao storage = new MemoryStorageFacade();
 
     storage.getClusterDao().addCluster(cluster);
 
