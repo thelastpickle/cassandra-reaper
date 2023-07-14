@@ -181,7 +181,7 @@ public final class SchedulingManager extends TimerTask {
    */
   @VisibleForTesting
   boolean manageSchedule(RepairSchedule schdle) {
-    RepairUnit unit = context.storage.getRepairUnit(schdle.getRepairUnitId());
+    RepairUnit unit = context.storage.getRepairUnitDao().getRepairUnit(schdle.getRepairUnitId());
     boolean overUnrepairedThreshold = false;
     if (unit.getIncrementalRepair() && schdle.getPercentUnrepairedThreshold() > 0) {
       List<PercentRepairedMetric> percentRepairedMetrics = context.storage.getPercentRepairedMetrics(

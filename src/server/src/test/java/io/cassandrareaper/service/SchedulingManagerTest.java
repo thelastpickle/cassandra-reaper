@@ -27,6 +27,7 @@ import io.cassandrareaper.core.RepairSchedule;
 import io.cassandrareaper.core.RepairUnit;
 import io.cassandrareaper.storage.cassandra.CassandraStorageFacade;
 import io.cassandrareaper.storage.repairrun.IRepairRun;
+import io.cassandrareaper.storage.repairunit.IRepairUnit;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -222,7 +223,9 @@ public final class SchedulingManagerTest {
         .percentUnrepairedThreshold(5)
         .state(RepairSchedule.State.ACTIVE)
         .build(UUIDs.timeBased());
-    when(context.storage.getRepairUnit(any(UUID.class))).thenReturn(repairUnit);
+    IRepairUnit mockedRepairUnitDao = mock(IRepairUnit.class);
+    Mockito.when(context.storage.getRepairUnitDao()).thenReturn(mockedRepairUnitDao);
+    when(mockedRepairUnitDao.getRepairUnit(any(UUID.class))).thenReturn(repairUnit);
 
     PercentRepairedMetric percentRepairedMetric = PercentRepairedMetric.builder()
         .withCluster("test")
@@ -296,7 +299,9 @@ public final class SchedulingManagerTest {
         .percentUnrepairedThreshold(5)
         .state(RepairSchedule.State.ACTIVE)
         .build(UUIDs.timeBased());
-    when(context.storage.getRepairUnit(any(UUID.class))).thenReturn(repairUnit);
+    IRepairUnit mockedRepairUnitDao = mock(IRepairUnit.class);
+    Mockito.when(context.storage.getRepairUnitDao()).thenReturn(mockedRepairUnitDao);
+    when(mockedRepairUnitDao.getRepairUnit(any(UUID.class))).thenReturn(repairUnit);
 
     PercentRepairedMetric percentRepairedMetric = PercentRepairedMetric.builder()
         .withCluster("test")
@@ -360,6 +365,11 @@ public final class SchedulingManagerTest {
     Mockito.when(mockedRepairRunDao.getRepairRun(any())).thenReturn(Optional.of(repairRun));
     Mockito.when(((CassandraStorageFacade) context.storage).getRepairRunDao()).thenReturn(mockedRepairRunDao);
 
+
+    IRepairUnit mockedRepairUnitDao = mock(IRepairUnit.class);
+    Mockito.when(context.storage.getRepairUnitDao()).thenReturn(mockedRepairUnitDao);
+    when(mockedRepairUnitDao.getRepairUnit(any(UUID.class))).thenReturn(repairUnit);
+
     RepairSchedule repairSchedule = RepairSchedule.builder(repairUnit.getId())
         .daysBetween(1)
         .nextActivation(DateTime.now().plusDays(1))
@@ -370,7 +380,6 @@ public final class SchedulingManagerTest {
         .percentUnrepairedThreshold(5)
         .state(RepairSchedule.State.PAUSED)
         .build(UUIDs.timeBased());
-    when(context.storage.getRepairUnit(any(UUID.class))).thenReturn(repairUnit);
 
     context.config = new ReaperApplicationConfiguration();
     RepairRunService repairRunService = mock(RepairRunService.class);

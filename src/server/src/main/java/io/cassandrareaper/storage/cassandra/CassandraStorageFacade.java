@@ -27,7 +27,6 @@ import io.cassandrareaper.core.PercentRepairedMetric;
 import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairSchedule;
 import io.cassandrareaper.core.RepairSegment;
-import io.cassandrareaper.core.RepairUnit;
 import io.cassandrareaper.resources.view.RepairScheduleStatus;
 import io.cassandrareaper.service.RingRange;
 import io.cassandrareaper.storage.IDistributedStorage;
@@ -44,6 +43,7 @@ import io.cassandrareaper.storage.repairschedule.CassRepairScheduleDao;
 import io.cassandrareaper.storage.repairsegment.CassRepairSegmentDao;
 import io.cassandrareaper.storage.repairsegment.IRepairSegment;
 import io.cassandrareaper.storage.repairunit.CassRepairUnitDao;
+import io.cassandrareaper.storage.repairunit.IRepairUnit;
 import io.cassandrareaper.storage.snapshot.CassSnapshotDao;
 import io.cassandrareaper.storage.snapshot.ISnapshot;
 
@@ -269,29 +269,6 @@ public final class CassandraStorageFacade implements IStorage, IDistributedStora
   public Cluster deleteCluster(String clusterName) {
 
     return cassClusterDao.deleteCluster(clusterName);
-  }
-
-  @Override
-  public RepairUnit addRepairUnit(RepairUnit.Builder newRepairUnit) {
-
-    return cassRepairUnitDao.addRepairUnit(newRepairUnit);
-  }
-
-  @Override
-  public void updateRepairUnit(RepairUnit updatedRepairUnit) {
-    cassRepairUnitDao.updateRepairUnit(updatedRepairUnit);
-  }
-
-  @Override
-  public RepairUnit getRepairUnit(UUID id) {
-    return cassRepairUnitDao.getRepairUnit(id);
-  }
-
-  @Override
-  public Optional<RepairUnit> getRepairUnit(RepairUnit.Builder params) {
-    // brute force again
-
-    return cassRepairUnitDao.getRepairUnit(params);
   }
 
   @Override
@@ -571,6 +548,11 @@ public final class CassandraStorageFacade implements IStorage, IDistributedStora
   @Override
   public IRepairSegment getRepairSegmentDao() {
     return this.cassRepairSegmentDao;
+  }
+
+  @Override
+  public IRepairUnit getRepairUnitDao() {
+    return this.cassRepairUnitDao;
   }
 
   public enum CassandraMode {

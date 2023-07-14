@@ -154,7 +154,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
 
   static void postponeSegment(AppContext context, RepairSegment segment) {
     LOG.info("Reset segment {}", segment.getId());
-    RepairUnit unit = context.storage.getRepairUnit(segment.getRepairUnitId());
+    RepairUnit unit = context.storage.getRepairUnitDao().getRepairUnit(segment.getRepairUnitId());
     RepairSegment postponed
         = segment
         .reset()
@@ -189,7 +189,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
   }
 
   static void abort(AppContext context, RepairSegment segment, JmxProxy jmxConnection) {
-    postpone(context, segment, context.storage.getRepairUnit(segment.getRepairUnitId()));
+    postpone(context, segment, context.storage.getRepairUnitDao().getRepairUnit(segment.getRepairUnitId()));
     LOG.info("Aborting repair on segment with id {} on coordinator {}", segment.getId(), segment.getCoordinatorHost());
 
     String metric = MetricRegistry.name(
@@ -264,7 +264,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
     synchronized (condition) {
       RepairSegment segment = context.storage.getRepairSegmentDao().getRepairSegment(repairRunner.getRepairRunId(),
           segmentId).get();
-      postpone(context, segment, context.storage.getRepairUnit(segment.getRepairUnitId()));
+      postpone(context, segment, context.storage.getRepairUnitDao().getRepairUnit(segment.getRepairUnitId()));
     }
 
     try {

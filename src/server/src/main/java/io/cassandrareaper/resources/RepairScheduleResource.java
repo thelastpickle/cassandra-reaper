@@ -450,7 +450,7 @@ public final class RepairScheduleResource {
           .build();
     }
 
-    RepairUnit repairUnit = context.storage.getRepairUnit(repairSchedule.get().getRepairUnitId());
+    RepairUnit repairUnit = context.storage.getRepairUnitDao().getRepairUnit(repairSchedule.get().getRepairUnitId());
     RepairSchedule.State newState;
     try {
       newState = RepairSchedule.State.valueOf(state.get().toUpperCase());
@@ -558,7 +558,7 @@ public final class RepairScheduleResource {
    * @return RepairSchedule status for viewing
    */
   private RepairScheduleStatus getRepairScheduleStatus(RepairSchedule repairSchedule) {
-    RepairUnit repairUnit = context.storage.getRepairUnit(repairSchedule.getRepairUnitId());
+    RepairUnit repairUnit = context.storage.getRepairUnitDao().getRepairUnit(repairSchedule.getRepairUnitId());
     return new RepairScheduleStatus(repairSchedule, repairUnit);
   }
 
@@ -585,7 +585,7 @@ public final class RepairScheduleResource {
 
     List<RepairScheduleStatus> scheduleStatuses = Lists.newArrayList();
     getScheduleList(clusterName, keyspaceName).forEach((schedule) -> {
-      RepairUnit unit = context.storage.getRepairUnit(schedule.getRepairUnitId());
+      RepairUnit unit = context.storage.getRepairUnitDao().getRepairUnit(schedule.getRepairUnitId());
       scheduleStatuses.add(new RepairScheduleStatus(schedule, unit));
     });
     return Response.ok().entity(scheduleStatuses).build();

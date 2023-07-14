@@ -194,7 +194,7 @@ public final class RepairRunResourceTest {
         .repairThreadCount(REPAIR_THREAD_COUNT)
         .timeout(SEGMENT_TIMEOUT);
 
-    context.storage.addRepairUnit(repairUnitBuilder);
+    context.storage.getRepairUnitDao().addRepairUnit(repairUnitBuilder);
   }
 
   @After
@@ -265,7 +265,7 @@ public final class RepairRunResourceTest {
     UUID runId = context.storage.getRepairRunDao().getRepairRunIdsForCluster(clustername,
         Optional.empty()).iterator().next();
     RepairRun run = context.storage.getRepairRunDao().getRepairRun(runId).get();
-    final RepairUnit unit = context.storage.getRepairUnit(run.getRepairUnitId());
+    final RepairUnit unit = context.storage.getRepairUnitDao().getRepairUnit(run.getRepairUnitId());
     assertEquals(RepairRun.RunState.NOT_STARTED, run.getRunState());
     assertEquals(TIME_CREATE, run.getCreationTime().getMillis());
     assertEquals(REPAIR_INTENSITY, run.getIntensity(), 0.0f);

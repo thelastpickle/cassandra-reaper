@@ -63,7 +63,7 @@ public final class RepairScheduleService {
         .getRepairSchedulesForClusterAndKeyspace(repairUnit.clusterName, repairUnit.keyspaceName);
 
     for (RepairSchedule sched : repairSchedules) {
-      RepairUnit repairUnitForSched = context.storage.getRepairUnit(sched.getRepairUnitId());
+      RepairUnit repairUnitForSched = context.storage.getRepairUnitDao().getRepairUnit(sched.getRepairUnitId());
       Preconditions.checkState(repairUnitForSched.getClusterName().equals(repairUnit.clusterName));
       Preconditions.checkState(repairUnitForSched.getKeyspaceName().equals(repairUnit.keyspaceName));
 
@@ -80,7 +80,7 @@ public final class RepairScheduleService {
         .getRepairSchedulesForClusterAndKeyspace(repairUnit.clusterName, repairUnit.keyspaceName);
 
     for (RepairSchedule sched : repairSchedules) {
-      RepairUnit repairUnitForSched = context.storage.getRepairUnit(sched.getRepairUnitId());
+      RepairUnit repairUnitForSched = context.storage.getRepairUnitDao().getRepairUnit(sched.getRepairUnitId());
       Preconditions.checkState(repairUnitForSched.getClusterName().equals(repairUnit.clusterName));
       Preconditions.checkState(repairUnitForSched.getKeyspaceName().equals(repairUnit.keyspaceName));
 
@@ -147,7 +147,7 @@ public final class RepairScheduleService {
 
   private void registerScheduleMetrics(UUID repairScheduleId) {
     RepairSchedule schedule = context.storage.getRepairSchedule(repairScheduleId).get();
-    RepairUnit repairUnit = context.storage.getRepairUnit(schedule.getRepairUnitId());
+    RepairUnit repairUnit = context.storage.getRepairUnitDao().getRepairUnit(schedule.getRepairUnitId());
     String metricName = metricName(MILLIS_SINCE_LAST_REPAIR_METRIC_NAME,
             repairUnit.getClusterName(),
             repairUnit.getKeyspaceName(),
@@ -161,7 +161,7 @@ public final class RepairScheduleService {
   private void unregisterScheduleMetrics(UUID repairScheduleId) {
     Optional<RepairSchedule> schedule = context.storage.getRepairSchedule(repairScheduleId);
     schedule.ifPresent(sched -> {
-      RepairUnit repairUnit = context.storage.getRepairUnit(sched.getRepairUnitId());
+      RepairUnit repairUnit = context.storage.getRepairUnitDao().getRepairUnit(sched.getRepairUnitId());
       String metricName = metricName(MILLIS_SINCE_LAST_REPAIR_METRIC_NAME,
           repairUnit.getClusterName(),
           repairUnit.getKeyspaceName(),

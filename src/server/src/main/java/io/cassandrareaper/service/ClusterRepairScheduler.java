@@ -176,7 +176,10 @@ public final class ClusterRepairScheduler {
       Collection<RepairSchedule> currentSchedules = context.storage.getRepairSchedulesForCluster(cluster.getName());
       return currentSchedules
           .stream()
-          .map(repairSchedule -> context.storage.getRepairUnit(repairSchedule.getRepairUnitId()).getKeyspaceName())
+          .map(repairSchedule -> context.storage.getRepairUnitDao()
+              .getRepairUnit(
+                  repairSchedule.getRepairUnitId())
+              .getKeyspaceName())
           .collect(Collectors.toSet());
     }
 

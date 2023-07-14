@@ -690,7 +690,7 @@ public final class RepairRunResource {
    * @return only a status of a repair run, not the entire repair run info.
    */
   private RepairRunStatus getRepairRunStatus(RepairRun repairRun) {
-    RepairUnit repairUnit = context.storage.getRepairUnit(repairRun.getRepairUnitId());
+    RepairUnit repairUnit = context.storage.getRepairUnitDao().getRepairUnit(repairRun.getRepairUnitId());
     int segmentsRepaired = getSegmentAmountForRepairRun(repairRun.getId());
     return new RepairRunStatus(repairRun, repairUnit, segmentsRepaired);
   }
@@ -746,7 +746,7 @@ public final class RepairRunResource {
       if (!desiredStates.isEmpty() && !desiredStates.contains(run.getRunState().name())) {
         continue;
       }
-      RepairUnit runsUnit = context.storage.getRepairUnit(run.getRepairUnitId());
+      RepairUnit runsUnit = context.storage.getRepairUnitDao().getRepairUnit(run.getRepairUnitId());
       int segmentsRepaired = run.getSegmentCount();
       if (!run.getRunState().equals(RepairRun.RunState.DONE)) {
         segmentsRepaired = getSegmentAmountForRepairRun(run.getId());

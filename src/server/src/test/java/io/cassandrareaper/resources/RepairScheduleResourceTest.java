@@ -93,7 +93,7 @@ public class RepairScheduleResourceTest {
         .clusterName("cluster-test")
         .keyspaceName("keyspace-test")
         .timeout(30);
-    RepairUnit repairUnit = context.storage.addRepairUnit(mockRepairUnitBuilder);
+    RepairUnit repairUnit = context.storage.getRepairUnitDao().addRepairUnit(mockRepairUnitBuilder);
     mockObjects.setRepairUnit(repairUnit);
 
     RepairSchedule.Builder mockRepairScheduleBuilder = RepairSchedule.builder(repairUnit.getId())

@@ -100,7 +100,7 @@ public final class SegmentRunnerTest {
     when(context.config.getDatacenterAvailability()).thenReturn(DatacenterAvailability.ALL);
     context.storage = new MemoryStorageFacade();
 
-    RepairUnit cf = context.storage.addRepairUnit(
+    RepairUnit cf = context.storage.getRepairUnitDao().addRepairUnit(
         RepairUnit.builder()
             .clusterName("reaper")
             .keyspaceName("reaper")
@@ -224,7 +224,7 @@ public final class SegmentRunnerTest {
       ReflectionException, IOException {
     final IStorage storage = new MemoryStorageFacade();
     final int segmentTimeout = 30;
-    RepairUnit cf = storage.addRepairUnit(
+    RepairUnit cf = storage.getRepairUnitDao().addRepairUnit(
         RepairUnit.builder()
             .clusterName("reaper")
             .keyspaceName("reaper")
@@ -377,7 +377,7 @@ public final class SegmentRunnerTest {
     final IStorage storage = new MemoryStorageFacade();
     final int segmentTimeout = 30;
 
-    RepairUnit cf = storage.addRepairUnit(
+    RepairUnit cf = storage.getRepairUnitDao().addRepairUnit(
         RepairUnit.builder()
             .clusterName("reaper")
             .keyspaceName("reaper")
@@ -525,7 +525,7 @@ public final class SegmentRunnerTest {
       MalformedObjectNameException, ReflectionException, IOException {
     final IStorage storage = new MemoryStorageFacade();
 
-    RepairUnit cf = storage.addRepairUnit(
+    RepairUnit cf = storage.getRepairUnitDao().addRepairUnit(
         RepairUnit.builder()
             .clusterName("reaper")
             .keyspaceName("reaper")
@@ -668,7 +668,7 @@ public final class SegmentRunnerTest {
       MalformedObjectNameException, ReflectionException, IOException {
     final IStorage storage = new MemoryStorageFacade();
 
-    RepairUnit cf = storage.addRepairUnit(
+    RepairUnit cf = storage.getRepairUnitDao().addRepairUnit(
         RepairUnit.builder()
             .clusterName("reaper")
             .keyspaceName("reaper")
@@ -813,7 +813,7 @@ public final class SegmentRunnerTest {
     final IStorage storage = new MemoryStorageFacade();
     final int segmentTimeout = 30;
 
-    RepairUnit cf = storage.addRepairUnit(
+    RepairUnit cf = storage.getRepairUnitDao().addRepairUnit(
         RepairUnit.builder()
             .clusterName("reaper")
             .keyspaceName("reaper")
@@ -959,7 +959,7 @@ public final class SegmentRunnerTest {
     final IStorage storage = new MemoryStorageFacade();
     final int segmentTimeout = 30;
 
-    RepairUnit cf = storage.addRepairUnit(
+    RepairUnit cf = storage.getRepairUnitDao().addRepairUnit(
         RepairUnit.builder()
             .clusterName("reaper")
             .keyspaceName("reaper")
@@ -1136,7 +1136,7 @@ public final class SegmentRunnerTest {
     final IStorage storage = new MemoryStorageFacade();
     final int segmentTimeout = 30;
 
-    RepairUnit cf = storage.addRepairUnit(
+    RepairUnit cf = storage.getRepairUnitDao().addRepairUnit(
         RepairUnit.builder()
             .clusterName("reaper")
             .keyspaceName("reaper")
@@ -1231,7 +1231,7 @@ public final class SegmentRunnerTest {
     final IStorage storage = new MemoryStorageFacade();
     final int segmentTimeout = 30;
 
-    RepairUnit cf = storage.addRepairUnit(
+    RepairUnit cf = storage.getRepairUnitDao().addRepairUnit(
         RepairUnit.builder()
             .clusterName("reaper")
             .keyspaceName("reaper")
@@ -1353,7 +1353,7 @@ public final class SegmentRunnerTest {
     final IStorage storage = new MemoryStorageFacade();
     final int segmentTimeout = 30;
 
-    RepairUnit cf = storage.addRepairUnit(
+    RepairUnit cf = storage.getRepairUnitDao().addRepairUnit(
         RepairUnit.builder()
             .clusterName("reaper")
             .keyspaceName("reaper")
@@ -1436,7 +1436,7 @@ public final class SegmentRunnerTest {
     final IStorage storage = new MemoryStorageFacade();
     final int segmentTimeout = 30;
 
-    RepairUnit cf = storage.addRepairUnit(
+    RepairUnit cf = storage.getRepairUnitDao().addRepairUnit(
         RepairUnit.builder()
             .clusterName("reaper")
             .keyspaceName("reaper")

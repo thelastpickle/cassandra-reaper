@@ -255,7 +255,7 @@ public final class RepairManager implements AutoCloseable {
   }
 
   private void abortSegmentsWithNoLeader(RepairRun repairRun, Collection<RepairSegment> runningSegments) {
-    RepairUnit repairUnit = context.storage.getRepairUnit(repairRun.getRepairUnitId());
+    RepairUnit repairUnit = context.storage.getRepairUnitDao().getRepairUnit(repairRun.getRepairUnitId());
     if (repairUnit.getIncrementalRepair()) {
       abortSegmentsWithNoLeaderIncremental(repairRun, runningSegments);
     } else {
@@ -325,7 +325,7 @@ public final class RepairManager implements AutoCloseable {
     RepairSegment segment = context.storage.getRepairSegmentDao().getRepairSegment(runId, segmentId).get();
     try {
       if (null == segment.getCoordinatorHost() || RepairSegment.State.DONE == segment.getState()) {
-        RepairUnit repairUnit = context.storage.getRepairUnit(segment.getRepairUnitId());
+        RepairUnit repairUnit = context.storage.getRepairUnitDao().getRepairUnit(segment.getRepairUnitId());
         UUID leaderElectionId = repairUnit.getIncrementalRepair() ? runId : segmentId;
         boolean tookLead;
         if (tookLead = takeLead(context, leaderElectionId) || renewLead(context, leaderElectionId)) {
@@ -347,7 +347,7 @@ public final class RepairManager implements AutoCloseable {
   }
 
   void abortSegments(Collection<RepairSegment> runningSegments, RepairRun repairRun) {
-    RepairUnit repairUnit = context.storage.getRepairUnit(repairRun.getRepairUnitId());
+    RepairUnit repairUnit = context.storage.getRepairUnitDao().getRepairUnit(repairRun.getRepairUnitId());
     for (RepairSegment segment : runningSegments) {
       LOG.debug("Trying to abort stuck segment {} in repair run {}", segment.getId(), repairRun.getId());
       SegmentRunner.postponeSegment(context, segment);

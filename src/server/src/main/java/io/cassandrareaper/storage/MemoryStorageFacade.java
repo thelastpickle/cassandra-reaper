@@ -20,7 +20,6 @@ package io.cassandrareaper.storage;
 import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.PercentRepairedMetric;
 import io.cassandrareaper.core.RepairSchedule;
-import io.cassandrareaper.core.RepairUnit;
 import io.cassandrareaper.resources.view.RepairScheduleStatus;
 import io.cassandrareaper.storage.cluster.MemClusterDao;
 import io.cassandrareaper.storage.events.IEvents;
@@ -31,6 +30,7 @@ import io.cassandrareaper.storage.repairrun.MemRepairRunDao;
 import io.cassandrareaper.storage.repairschedule.MemRepairScheduleDao;
 import io.cassandrareaper.storage.repairsegment.IRepairSegment;
 import io.cassandrareaper.storage.repairsegment.MemRepairSegment;
+import io.cassandrareaper.storage.repairunit.IRepairUnit;
 import io.cassandrareaper.storage.repairunit.MemRepairUnitDao;
 import io.cassandrareaper.storage.snapshot.ISnapshot;
 import io.cassandrareaper.storage.snapshot.MemSnapshotDao;
@@ -99,27 +99,6 @@ public final class MemoryStorageFacade implements IStorage {
   public Cluster deleteCluster(String clusterName) {
 
     return memClusterDao.deleteCluster(clusterName);
-  }
-
-
-  @Override
-  public RepairUnit addRepairUnit(RepairUnit.Builder repairUnit) {
-    return memRepairUnitDao.addRepairUnit(repairUnit);
-  }
-
-  @Override
-  public void updateRepairUnit(RepairUnit updatedRepairUnit) {
-    memRepairUnitDao.updateRepairUnit(updatedRepairUnit);
-  }
-
-  @Override
-  public RepairUnit getRepairUnit(UUID id) {
-    return memRepairUnitDao.getRepairUnit(id);
-  }
-
-  @Override
-  public Optional<RepairUnit> getRepairUnit(RepairUnit.Builder params) {
-    return memRepairUnitDao.getRepairUnit(params);
   }
 
   @Override
@@ -210,5 +189,10 @@ public final class MemoryStorageFacade implements IStorage {
   @Override
   public IRepairSegment getRepairSegmentDao() {
     return this.memRepairSegment;
+  }
+
+  @Override
+  public IRepairUnit getRepairUnitDao() {
+    return this.memRepairUnitDao;
   }
 }

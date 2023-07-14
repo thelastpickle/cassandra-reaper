@@ -30,6 +30,7 @@ import io.cassandrareaper.jmx.JmxConnectionFactory;
 import io.cassandrareaper.jmx.JmxProxy;
 import io.cassandrareaper.jmx.JmxProxyTest;
 import io.cassandrareaper.storage.IStorage;
+import io.cassandrareaper.storage.repairunit.IRepairUnit;
 
 import java.net.UnknownHostException;
 import java.util.Arrays;
@@ -76,8 +77,12 @@ public final class RepairUnitServiceTest {
     context.config = new ReaperApplicationConfiguration();
     context.config.setBlacklistTwcsTables(true);
     IStorage storage = mock(IStorage.class);
-    when(storage.getRepairUnit(any(RepairUnit.Builder.class))).thenReturn(Optional.empty());
-    when(storage.addRepairUnit(any(RepairUnit.Builder.class))).thenReturn(mock(RepairUnit.class));
+    IRepairUnit mockedRepairUnitDao = mock(IRepairUnit.class);
+    Mockito.when(storage.getRepairUnitDao()).thenReturn(mockedRepairUnitDao);
+    when(mockedRepairUnitDao.getRepairUnit(any(RepairUnit.Builder.class))).thenReturn(Optional.empty());
+
+
+    when(storage.getRepairUnitDao().addRepairUnit(any(RepairUnit.Builder.class))).thenReturn(mock(RepairUnit.class));
     context.storage = storage;
     context.jmxConnectionFactory = mock(JmxConnectionFactory.class);
     service = RepairUnitService.create(context);
@@ -819,7 +824,11 @@ public final class RepairUnitServiceTest {
     localContext.config = new ReaperApplicationConfiguration();
     localContext.config.setBlacklistTwcsTables(true);
     IStorage storage = mock(IStorage.class);
-    when(storage.getRepairUnit(any(RepairUnit.Builder.class))).thenReturn(Optional.empty());
+    IRepairUnit mockedRepairUnitDao = mock(IRepairUnit.class);
+    Mockito.when(storage.getRepairUnitDao()).thenReturn(mockedRepairUnitDao);
+    when(mockedRepairUnitDao.getRepairUnit(any(RepairUnit.Builder.class))).thenReturn(Optional.empty());
+
+
     localContext.storage = storage;
     localContext.jmxConnectionFactory = mock(JmxConnectionFactory.class);
     ClusterFacade clusterFacade = mock(ClusterFacade.class);
@@ -836,7 +845,7 @@ public final class RepairUnitServiceTest {
         .timeout(30);
 
     RepairUnit repairUnit = unitBuilder.build(UUIDs.timeBased());
-    when(localContext.storage.getRepairUnit(any(UUID.class))).thenReturn(repairUnit);
+    when(mockedRepairUnitDao.getRepairUnit(any(UUID.class))).thenReturn(repairUnit);
 
     RepairSchedule repairSchedule = RepairSchedule.builder(repairUnit.getId())
         .daysBetween(1)

@@ -244,7 +244,7 @@ public final class ClusterRepairSchedulerTest {
   }
 
   private RepairSchedule.Builder oneRepairSchedule(Cluster cluster, String keyspace, DateTime creationTime) {
-    RepairUnit repairUnit = context.storage.addRepairUnit(oneRepair(cluster, keyspace));
+    RepairUnit repairUnit = context.storage.getRepairUnitDao().addRepairUnit(oneRepair(cluster, keyspace));
 
     return RepairSchedule.builder(repairUnit.getId())
         .creationTime(creationTime)
@@ -285,7 +285,10 @@ public final class ClusterRepairSchedulerTest {
     ClusterRepairScheduleAssertion.RepairScheduleAssertion repairScheduleForKeyspace(String keyspace) {
       RepairSchedule keyspaceRepairSchedule = repairSchedules.stream()
           .filter(repairSchedule
-              -> context.storage.getRepairUnit(repairSchedule.getRepairUnitId()).getKeyspaceName().equals(keyspace))
+              -> context.storage.getRepairUnitDao()
+              .getRepairUnit(repairSchedule.getRepairUnitId())
+              .getKeyspaceName()
+              .equals(keyspace))
           .findFirst()
           .orElseThrow(() -> new AssertionError(format("No repair schedule found for keyspace %s", keyspace)));
       return new ClusterRepairScheduleAssertion.RepairScheduleAssertion(keyspaceRepairSchedule);

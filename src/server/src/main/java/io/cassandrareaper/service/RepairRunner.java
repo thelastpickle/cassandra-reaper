@@ -120,7 +120,7 @@ final class RepairRunner implements Runnable {
     assert repairRun.isPresent() : "No RepairRun with ID " + repairRunId + " found from storage";
     this.isRunning.set(repairRun.get().getRunState() == RepairRun.RunState.RUNNING);
     this.cluster = context.storage.getCluster(repairRun.get().getClusterName());
-    repairUnit = context.storage.getRepairUnit(repairRun.get().getRepairUnitId());
+    repairUnit = context.storage.getRepairUnitDao().getRepairUnit(repairRun.get().getRepairUnitId());
     this.clusterName = cluster.getName();
 
     this.repairRunDao = repairRunDao;
@@ -422,7 +422,7 @@ final class RepairRunner implements Runnable {
     RepairUnit updatedUnit = repairUnit.with().timeout(repairUnit.getTimeout() * 2).build(repairUnit.getId());
 
     // update unit with new timeout
-    context.storage.updateRepairUnit(updatedUnit);
+    context.storage.getRepairUnitDao().updateRepairUnit(updatedUnit);
   }
 
   @VisibleForTesting
@@ -652,7 +652,7 @@ final class RepairRunner implements Runnable {
       repairProgress = (float) amountDone / repairRun.getSegmentCount();
     }
 
-    RepairUnit repairUnit = context.storage.getRepairUnit(unitId);
+    RepairUnit repairUnit = context.storage.getRepairUnitDao().getRepairUnit(unitId);
     repairRun = fixMissingRepairRunTables(repairRun, repairUnit);
     String keyspace = repairUnit.getKeyspaceName();
     LOG.debug("preparing to repair segment {} on run with id {}", segmentId, repairRunId);

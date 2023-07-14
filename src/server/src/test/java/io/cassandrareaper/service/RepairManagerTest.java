@@ -31,6 +31,7 @@ import io.cassandrareaper.storage.IStorage;
 import io.cassandrareaper.storage.cassandra.CassandraStorageFacade;
 import io.cassandrareaper.storage.repairrun.IRepairRun;
 import io.cassandrareaper.storage.repairsegment.IRepairSegment;
+import io.cassandrareaper.storage.repairunit.IRepairUnit;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -139,7 +140,10 @@ public final class RepairManagerTest {
     Mockito.doReturn(run).when(context.repairManager).startRepairRun(run);
 
     when(((IDistributedStorage) context.storage).getLockedSegmentsForRun(any())).thenReturn(Collections.emptySet());
-    when(context.storage.getRepairUnit(any(UUID.class))).thenReturn(cf);
+    IRepairUnit mockedRepairUnitDao = mock(IRepairUnit.class);
+    Mockito.when(((CassandraStorageFacade) context.storage).getRepairUnitDao()).thenReturn(mockedRepairUnitDao);
+    Mockito.when(mockedRepairUnitDao.getRepairUnit(any(UUID.class))).thenReturn(cf);
+
 
     context.repairManager.resumeRunningRepairRuns();
 
@@ -222,7 +226,10 @@ public final class RepairManagerTest {
     IRepairSegment mockedRepairSegmentDao = mock(IRepairSegment.class);
     Mockito.when(context.storage.getRepairSegmentDao()).thenReturn(mockedRepairSegmentDao);
     when(mockedRepairSegmentDao.getSegmentsWithState(any(), any())).thenReturn(Arrays.asList(segment));
-    when(context.storage.getRepairUnit(any(UUID.class))).thenReturn(cf);
+    IRepairUnit mockedRepairUnitDao = mock(IRepairUnit.class);
+    Mockito.when(((CassandraStorageFacade) context.storage).getRepairUnitDao()).thenReturn(mockedRepairUnitDao);
+    Mockito.when(mockedRepairUnitDao.getRepairUnit(any(UUID.class))).thenReturn(cf);
+
     when(((IDistributedStorage) context.storage).getLockedSegmentsForRun(any())).thenReturn(
         new HashSet<UUID>(Arrays.asList(segment.getId())));
 
@@ -257,6 +264,21 @@ public final class RepairManagerTest {
     when(storage.getRepairRunDao()).thenReturn(mockedRepairRunDao);
     storage.addCluster(Cluster.builder().withName(clusterName).withSeedHosts(ImmutableSet.of("127.0.0.1")).build());
 
+    final RepairUnit cf = RepairUnit.builder()
+        .clusterName(clusterName)
+        .keyspaceName(ksName)
+        .columnFamilies(cfNames)
+        .incrementalRepair(incrementalRepair)
+        .nodes(nodes)
+        .datacenters(datacenters)
+        .repairThreadCount(repairThreadCount)
+        .timeout(segmentTimeout)
+        .build(UUIDs.timeBased());
+
+    IRepairUnit mockedRepairUnitDao = mock(IRepairUnit.class);
+    Mockito.when(storage.getRepairUnitDao()).thenReturn(mockedRepairUnitDao);
+    Mockito.when(mockedRepairUnitDao.getRepairUnit(any(UUID.class))).thenReturn(cf);
+
     AppContext context = new AppContext();
     context.config = new ReaperApplicationConfiguration();
     context.storage = storage;
@@ -271,17 +293,6 @@ public final class RepairManagerTest {
 
     repairManager = Mockito.spy(repairManager);
     context.repairManager = repairManager;
-
-    final RepairUnit cf = RepairUnit.builder()
-        .clusterName(clusterName)
-        .keyspaceName(ksName)
-        .columnFamilies(cfNames)
-        .incrementalRepair(incrementalRepair)
-        .nodes(nodes)
-        .datacenters(datacenters)
-        .repairThreadCount(repairThreadCount)
-        .timeout(segmentTimeout)
-        .build(UUIDs.timeBased());
 
     final RepairRun run = RepairRun.builder(clusterName, cf.getId())
         .intensity(intensity)
@@ -306,7 +317,6 @@ public final class RepairManagerTest {
     when(mockedRepairRunDao.getRepairRunsWithState(RepairRun.RunState.RUNNING)).thenReturn(Arrays.asList(run));
     when(mockedRepairRunDao.getRepairRunsWithState(RepairRun.RunState.PAUSED)).thenReturn(Collections.emptyList());
 
-    when(context.storage.getRepairUnit(any(UUID.class))).thenReturn(cf);
 
     context.repairManager.resumeRunningRepairRuns();
 
@@ -388,7 +398,10 @@ public final class RepairManagerTest {
 
     when(mockedRepairRunDao.getRepairRunsWithState(RepairRun.RunState.RUNNING)).thenReturn(Arrays.asList(run));
     when(mockedRepairRunDao.getRepairRunsWithState(RepairRun.RunState.PAUSED)).thenReturn(Collections.emptyList());
-    when(context.storage.getRepairUnit(any(UUID.class))).thenReturn(cf);
+    IRepairUnit mockedRepairUnitDao = mock(IRepairUnit.class);
+    Mockito.when(context.storage.getRepairUnitDao()).thenReturn(mockedRepairUnitDao);
+    Mockito.when(mockedRepairUnitDao.getRepairUnit(any(UUID.class))).thenReturn(cf);
+
 
     context.repairManager.resumeRunningRepairRuns();
 
@@ -493,7 +506,9 @@ public final class RepairManagerTest {
       repairRuns.put(repairRun.getId(), repairRun);
     }
 
-    when(context.storage.getRepairUnit(any(UUID.class))).thenAnswer(
+    IRepairUnit mockedRepairUnitDao = mock(IRepairUnit.class);
+    Mockito.when(((CassandraStorageFacade) context.storage).getRepairUnitDao()).thenReturn(mockedRepairUnitDao);
+    Mockito.when(mockedRepairUnitDao.getRepairUnit(any(UUID.class))).thenAnswer(
         new Answer<RepairUnit>() {
           @Override
           public RepairUnit answer(InvocationOnMock invocation) {

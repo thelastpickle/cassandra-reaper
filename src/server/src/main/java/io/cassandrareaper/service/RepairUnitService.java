@@ -83,7 +83,7 @@ public final class RepairUnitService {
         LOG.warn("unknown version to cluster {}, maybe enabling incremental on 2.0...", cluster.getName(), e);
       }
     }
-    Optional<RepairUnit> repairUnit = context.storage.getRepairUnit(params);
+    Optional<RepairUnit> repairUnit = context.storage.getRepairUnitDao().getRepairUnit(params);
     if (repairUnit.isPresent()) {
       return repairUnit;
     }
@@ -160,7 +160,7 @@ public final class RepairUnitService {
         force || !unitConflicts(cluster, builder),
         "unit conflicts with existing in " + builder.clusterName + ":" + builder.keyspaceName);
 
-    return context.storage.addRepairUnit(builder);
+    return context.storage.getRepairUnitDao().addRepairUnit(builder);
   }
 
   @VisibleForTesting
@@ -170,7 +170,7 @@ public final class RepairUnitService {
         .getRepairSchedulesForClusterAndKeyspace(builder.clusterName, builder.keyspaceName);
 
     for (RepairSchedule sched : repairSchedules) {
-      RepairUnit repairUnitForSched = context.storage.getRepairUnit(sched.getRepairUnitId());
+      RepairUnit repairUnitForSched = context.storage.getRepairUnitDao().getRepairUnit(sched.getRepairUnitId());
       Preconditions.checkState(repairUnitForSched.getClusterName().equals(builder.clusterName));
       Preconditions.checkState(repairUnitForSched.getKeyspaceName().equals(builder.keyspaceName));
 

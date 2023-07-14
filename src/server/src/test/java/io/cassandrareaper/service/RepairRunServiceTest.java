@@ -250,7 +250,7 @@ public final class RepairRunServiceTest {
 
     storage.addCluster(cluster);
 
-    RepairUnit cf = storage.addRepairUnit(
+    RepairUnit cf = storage.getRepairUnitDao().addRepairUnit(
         RepairUnit.builder()
             .clusterName(cluster.getName())
             .keyspaceName(KS_NAME)
@@ -338,7 +338,7 @@ public final class RepairRunServiceTest {
 
     storage.addCluster(cluster);
 
-    RepairUnit cf = storage.addRepairUnit(
+    RepairUnit cf = storage.getRepairUnitDao().addRepairUnit(
         RepairUnit.builder()
             .clusterName(cluster.getName())
             .keyspaceName(KS_NAME)
@@ -840,7 +840,7 @@ public final class RepairRunServiceTest {
 
     storage.addCluster(cluster);
 
-    RepairUnit cf = storage.addRepairUnit(
+    RepairUnit cf = storage.getRepairUnitDao().addRepairUnit(
         RepairUnit.builder()
             .clusterName(cluster.getName())
             .keyspaceName(KS_NAME)
