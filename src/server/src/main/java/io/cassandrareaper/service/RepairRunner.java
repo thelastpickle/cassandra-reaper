@@ -182,6 +182,11 @@ final class RepairRunner implements Runnable {
     return new RepairRunner(context, repairRunId, clusterFacade);
   }
 
+  @VisibleForTesting
+  String getClusterName() {
+    return clusterName;
+  }
+
   private void registerMetric(String metricName, Gauge<?> gauge) {
     if (context.metricRegistry.getMetrics().containsKey(metricName)) {
       context.metricRegistry.remove(metricName);
@@ -205,12 +210,7 @@ final class RepairRunner implements Runnable {
     Thread.currentThread().setName(clusterName + ":" + repairRunId);
     Map<UUID, RepairRunner> currentRunners = context.repairManager.repairRunners;
     // We only want the repair runners that are in RUNNING state for the same cluster
-    List<UUID> repairRunIds
-        = new ArrayList<UUID>(currentRunners.entrySet().stream()
-          .filter(entry -> entry.getValue().isRunning())
-          .filter(entry -> entry.getValue().clusterName == clusterName)
-          .map(Entry::getKey)
-          .collect(Collectors.toList()));
+    List<UUID> repairRunIds = RepairRunner.getRunningRepairRunIds(currentRunners, clusterName);
 
     try {
       Optional<RepairRun> repairRun = context.storage.getRepairRun(repairRunId);
@@ -261,13 +261,25 @@ final class RepairRunner implements Runnable {
   }
 
   @VisibleForTesting
+  static List<UUID> getRunningRepairRunIds(Map<UUID, RepairRunner> currentRunners, String currentClusterName) {
+    return new ArrayList<UUID>(currentRunners.entrySet().stream()
+          .filter(entry -> entry.getValue().isRunning())
+          .filter(entry -> entry.getValue().getClusterName().equals(currentClusterName))
+          .map(Entry::getKey)
+          .collect(Collectors.toList()));
+  }
+
+  @VisibleForTesting
   boolean isAllowedToRun(List<UUID> runningRepairRunIds, UUID currentId) {
     runningRepairRunIds.sort((id1, id2) -> Long.valueOf(UUIDs.unixTimestamp(id1)).compareTo(UUIDs.unixTimestamp(id2)));
     for (int i = 0; i < context.config.getMaxParallelRepairs(); i++) {
+      LOG.debug("Repair run #{} is in the list of running repair runs in position {}", runningRepairRunIds.get(i), i);
       if (runningRepairRunIds.get(i).equals(currentId)) {
+        LOG.debug("Repair run #{} is allowed to run", currentId);
         return true;
       }
     }
+    LOG.debug("Repair run #{} is not allowed to run", currentId);
     return false;
   }
 

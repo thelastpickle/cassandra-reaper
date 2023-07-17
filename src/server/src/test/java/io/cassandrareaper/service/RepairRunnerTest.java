@@ -116,10 +116,24 @@ public final class RepairRunnerTest {
   private Map<String, String> replicas = ImmutableMap.of(
       "127.0.0.1", "dc1"
   );
+  private Map<UUID, RepairRunner> currentRunners;
 
   @Before
   public void setUp() throws Exception {
     SegmentRunner.SEGMENT_RUNNERS.clear();
+    currentRunners = new HashMap<>();
+    // Create 3 runners for cluster1 and 1 for cluster2
+    for (int i = 0; i < 3; i++) {
+      RepairRunner runner = mock(RepairRunner.class);
+      when(runner.getClusterName()).thenReturn("cluster1");
+      when(runner.isRunning()).thenReturn(true);
+      currentRunners.put(UUID.randomUUID(), runner);
+    }
+
+    RepairRunner runner = mock(RepairRunner.class);
+    when(runner.getClusterName()).thenReturn("cluster2");
+    when(runner.isRunning()).thenReturn(true);
+    currentRunners.put(UUID.randomUUID(), runner);
   }
 
   @After
@@ -1788,5 +1802,23 @@ public final class RepairRunnerTest {
         clusterFacade);
 
     assertFalse(repairRunner.isAllowedToRun(runningRepairs, unallowedRun));
+  }
+
+  @Test
+  public void testGetRunningRepairRunIds() {
+    String currentClusterName = "cluster1";
+    List<UUID> actualIds = RepairRunner.getRunningRepairRunIds(currentRunners, currentClusterName);
+    assertEquals("Expected 3 running repair run IDs", 3, actualIds.size());
+
+    String otherCurrentClusterName = "cluster2";
+    actualIds = RepairRunner.getRunningRepairRunIds(currentRunners, otherCurrentClusterName);
+    assertEquals("Expected 1 running repair run IDs", 1, actualIds.size());
+  }
+
+  @Test
+  public void testGetRunningRepairRunIdsEmpty() {
+    String currentClusterName = "cluster3";
+    List<UUID> actualIds = RepairRunner.getRunningRepairRunIds(currentRunners, currentClusterName);
+    assertEquals("Expected no running repair run ID", 0, actualIds.size());
   }
 }
