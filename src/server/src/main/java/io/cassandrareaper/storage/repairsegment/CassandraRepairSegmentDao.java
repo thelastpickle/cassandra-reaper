@@ -207,6 +207,7 @@ public class CassandraRepairSegmentDao implements IRepairSegmentDao {
     return updateRepairSegmentUnsafe(segment);
   }
 
+  @Override
   public boolean updateRepairSegmentUnsafe(RepairSegment segment) {
 
     BatchStatement updateRepairSegmentBatch = new BatchStatement(BatchStatement.Type.UNLOGGED);
@@ -300,8 +301,7 @@ public class CassandraRepairSegmentDao implements IRepairSegmentDao {
     return candidates;
   }
 
-
-  public boolean segmentIsWithinRanges(RepairSegment seg, List<RingRange> ranges) {
+  private boolean segmentIsWithinRanges(RepairSegment seg, List<RingRange> ranges) {
     for (RingRange range : ranges) {
       if (segmentIsWithinRange(seg, range)) {
         return true;
@@ -311,7 +311,7 @@ public class CassandraRepairSegmentDao implements IRepairSegmentDao {
     return false;
   }
 
-  public boolean segmentIsCandidate(RepairSegment seg, Set<String> lockedNodes) {
+  private boolean segmentIsCandidate(RepairSegment seg, Set<String> lockedNodes) {
     return seg.getState().equals(RepairSegment.State.NOT_STARTED)
         && Sets.intersection(lockedNodes, seg.getReplicas().keySet()).isEmpty();
   }
