@@ -246,19 +246,6 @@ public final class CassandraStorageFacade implements IStorageDao, IDistributedSt
     return cassRepairSegmentDao.getNextFreeSegmentsForRanges(runId, ranges);
   }
 
-  private boolean segmentIsWithinRanges(RepairSegment seg, List<RingRange> ranges) {
-
-    return cassRepairSegmentDao.segmentIsWithinRanges(seg, ranges);
-  }
-
-  private boolean segmentIsCandidate(RepairSegment seg, Set<String> lockedNodes) {
-    return cassRepairSegmentDao.segmentIsCandidate(seg, lockedNodes);
-  }
-
-  private RepairRun buildRepairRunFromRow(Row repairRunResult, UUID id) {
-    return cassRepairRunDao.buildRepairRunFromRow(repairRunResult, id);
-  }
-
   @Override
   public boolean takeLead(UUID leaderId) {
     return concurrency.takeLead(leaderId);
