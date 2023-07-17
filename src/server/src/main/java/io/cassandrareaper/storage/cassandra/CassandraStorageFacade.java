@@ -233,12 +233,6 @@ public final class CassandraStorageFacade implements IStorageDao, IDistributedSt
   }
 
   @Override
-  public boolean updateRepairSegmentUnsafe(RepairSegment segment) {
-
-    return cassRepairSegmentDao.updateRepairSegmentUnsafe(segment);
-  }
-
-  @Override
   public List<RepairSegment> getNextFreeSegmentsForRanges(
       UUID runId,
       List<RingRange> ranges) {

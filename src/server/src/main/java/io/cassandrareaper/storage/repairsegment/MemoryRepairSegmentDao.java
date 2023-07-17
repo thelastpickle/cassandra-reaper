@@ -79,6 +79,12 @@ public class MemoryRepairSegmentDao implements IRepairSegmentDao {
   }
 
   @Override
+  public boolean updateRepairSegmentUnsafe(RepairSegment newRepairSegment) {
+    return updateRepairSegment(newRepairSegment);
+  }
+
+
+  @Override
   public Optional<RepairSegment> getRepairSegment(UUID runId, UUID segmentId) {
     return Optional.ofNullable(repairSegments.get(segmentId));
   }

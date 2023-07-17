@@ -100,13 +100,5 @@ public interface IDistributedStorage extends IDistributedMetrics {
    */
   void purgeMetrics();
 
-  /**
-   * Update the repair segment without a lock as it couldn't be grabbed.
-   *
-   * @param newRepairSegment repair segment to update
-   * @return true if the segment was updated, false otherwise
-   */
-  boolean updateRepairSegmentUnsafe(RepairSegment newRepairSegment);
-
   IOperationsDao getOperationsDao();
 }

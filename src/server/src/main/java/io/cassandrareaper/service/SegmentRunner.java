@@ -164,11 +164,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
         .withId(segment.getId())
         .build();
 
-    if (context.storage instanceof IDistributedStorage) {
-      ((IDistributedStorage) context.storage).updateRepairSegmentUnsafe(postponed);
-    } else {
-      context.storage.getRepairSegmentDao().updateRepairSegment(postponed);
-    }
+    context.storage.getRepairSegmentDao().updateRepairSegmentUnsafe(postponed);
   }
 
   private static void postpone(AppContext context, RepairSegment segment, RepairUnit repairUnit) {
