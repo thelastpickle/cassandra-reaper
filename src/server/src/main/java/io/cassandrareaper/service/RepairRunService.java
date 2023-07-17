@@ -72,7 +72,9 @@ public final class RepairRunService {
 
   private final IRepairRunDao repairRunDao;
 
-  private RepairRunService(AppContext context, Supplier<ClusterFacade> clusterFacadeSupplier, IRepairRunDao repairRunDao) {
+  private RepairRunService(AppContext context,
+                           Supplier<ClusterFacade> clusterFacadeSupplier,
+                           IRepairRunDao repairRunDao) {
     this.context = context;
     this.repairUnitService = RepairUnitService.create(context);
     this.clusterFacade = clusterFacadeSupplier.get();

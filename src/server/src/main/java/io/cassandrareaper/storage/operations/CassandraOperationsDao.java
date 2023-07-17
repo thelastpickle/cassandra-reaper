@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package io.cassandrareaper.storage.cassandra;
+package io.cassandrareaper.storage.operations;
 
 import io.cassandrareaper.storage.OpType;
 
@@ -32,7 +32,7 @@ import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 
-public class CassandraOperationsDao {
+public class CassandraOperationsDao implements IOperationsDao {
 
   private static final DateTimeFormatter TIME_BUCKET_FORMATTER = DateTimeFormat.forPattern("yyyyMMddHHmm");
   private PreparedStatement insertOperationsPrepStmt;

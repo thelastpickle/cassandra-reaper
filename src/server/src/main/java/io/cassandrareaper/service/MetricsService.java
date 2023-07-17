@@ -164,7 +164,7 @@ public final class MetricsService {
 
     CompactionStats compactionStats = ClusterFacade.create(context).listCompactionStatsDirect(node);
 
-    ((IDistributedStorage) context.storage)
+    ((IDistributedStorage) context.storage).getOperationsDao()
         .storeOperations(
             node.getClusterName(),
             OpType.OP_COMPACTION,
@@ -183,7 +183,7 @@ public final class MetricsService {
 
     List<StreamSession> activeStreams = ClusterFacade.create(context).listStreamsDirect(node);
 
-    ((IDistributedStorage) context.storage)
+    ((IDistributedStorage) context.storage).getOperationsDao()
         .storeOperations(
             node.getClusterName(),
             OpType.OP_STREAMING,

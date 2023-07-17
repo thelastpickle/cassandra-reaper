@@ -1,4 +1,22 @@
 /*
+ * Copyright 2016-2017 Spotify AB
+ * Copyright 2016-2019 The Last Pickle Ltd
+ * Copyright 2020-2020 DataStax, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+/*
  * Copyright 2017-2017 Spotify AB
  * Copyright 2017-2019 The Last Pickle Ltd
  *
@@ -20,6 +38,7 @@ package io.cassandrareaper.storage;
 import io.cassandrareaper.core.RepairSegment;
 import io.cassandrareaper.service.RingRange;
 import io.cassandrareaper.storage.metrics.IDistributedMetrics;
+import io.cassandrareaper.storage.operations.IOperationsDao;
 
 import java.util.List;
 import java.util.Set;
@@ -76,19 +95,10 @@ public interface IDistributedStorage extends IDistributedMetrics {
   List<RepairSegment> getNextFreeSegmentsForRanges(
       UUID runId, List<RingRange> ranges);
 
-  void storeOperations(String clusterName, OpType operationType, String host, String operationsJson);
-
-  String listOperations(String clusterName, OpType operationType, String host);
-
   /**
    * Purges old metrics from the database (no-op for databases w/ TTL)
    */
   void purgeMetrics();
-
-  /**
-   * Purges old node operation info from the database (no-op for databases w/ TTL)
-   */
-  void purgeNodeOperations();
 
   /**
    * Update the repair segment without a lock as it couldn't be grabbed.
@@ -97,4 +107,6 @@ public interface IDistributedStorage extends IDistributedMetrics {
    * @return true if the segment was updated, false otherwise
    */
   boolean updateRepairSegmentUnsafe(RepairSegment newRepairSegment);
+
+  IOperationsDao getOperationsDao();
 }

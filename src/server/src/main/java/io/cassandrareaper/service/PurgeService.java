@@ -146,7 +146,7 @@ public final class PurgeService {
       IDistributedStorage storage = ((IDistributedStorage) context.storage);
       if (context.config.isInSidecarMode()) {
         storage.purgeMetrics();
-        storage.purgeNodeOperations();
+        storage.getOperationsDao().purgeNodeOperations();
       }
     }
   }

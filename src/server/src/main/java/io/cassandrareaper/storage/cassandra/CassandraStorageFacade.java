@@ -28,13 +28,14 @@ import io.cassandrareaper.core.RepairSegment;
 import io.cassandrareaper.service.RingRange;
 import io.cassandrareaper.storage.IDistributedStorage;
 import io.cassandrareaper.storage.IStorageDao;
-import io.cassandrareaper.storage.OpType;
 import io.cassandrareaper.storage.cassandra.codecs.DateTimeCodec;
 import io.cassandrareaper.storage.cluster.CassandraClusterDao;
 import io.cassandrareaper.storage.cluster.IClusterDao;
 import io.cassandrareaper.storage.events.CassandraEventsDao;
 import io.cassandrareaper.storage.events.IEventsDao;
 import io.cassandrareaper.storage.metrics.CassandraMetricsDao;
+import io.cassandrareaper.storage.operations.CassandraOperationsDao;
+import io.cassandrareaper.storage.operations.IOperationsDao;
 import io.cassandrareaper.storage.repairrun.CassandraRepairRunDao;
 import io.cassandrareaper.storage.repairrun.IRepairRunDao;
 import io.cassandrareaper.storage.repairschedule.CassandraRepairScheduleDao;
@@ -348,22 +349,6 @@ public final class CassandraStorageFacade implements IStorageDao, IDistributedSt
   }
 
   @Override
-  public void storeOperations(String clusterName, OpType operationType, String host, String operationsJson) {
-    operationsDao.storeOperations(clusterName, operationType, host, operationsJson);
-  }
-
-  @Override
-  public String listOperations(String clusterName, OpType operationType, String host) {
-
-    return operationsDao.listOperations(clusterName, operationType, host);
-  }
-
-  @Override
-  public void purgeNodeOperations() {
-    operationsDao.purgeNodeOperations();
-  }
-
-  @Override
   public boolean lockRunningRepairsForNodes(
       UUID repairId,
       UUID segmentId,
@@ -465,6 +450,11 @@ public final class CassandraStorageFacade implements IStorageDao, IDistributedSt
   @Override
   public IClusterDao getClusterDao() {
     return this.cassClusterDao;
+  }
+
+  @Override
+  public IOperationsDao getOperationsDao() {
+    return this.operationsDao;
   }
 
   public enum CassandraMode {

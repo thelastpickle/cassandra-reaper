@@ -477,7 +477,7 @@ public final class ClusterFacade {
       // We don't have access to the node through JMX, so we'll get data from the database
       LOG.debug("Node {} in DC {} is not accessible through JMX", node.getHostname(), nodeDc);
 
-      String compactionsJson = ((IDistributedStorage)context.storage)
+      String compactionsJson = ((IDistributedStorage)context.storage).getOperationsDao()
           .listOperations(node.getClusterName(), OpType.OP_COMPACTION, node.getHostname());
 
       return parseCompactionStats(compactionsJson);
@@ -752,7 +752,7 @@ public final class ClusterFacade {
       // We don't have access to the node through JMX, so we'll get data from the database
       LOG.debug("Node {} in DC {} is not accessible through JMX", node.getHostname(), nodeDc);
 
-      String streamsJson = ((IDistributedStorage) context.storage)
+      String streamsJson = ((IDistributedStorage) context.storage).getOperationsDao()
           .listOperations(node.getClusterName(), OpType.OP_STREAMING, node.getHostname());
       if (streamsJson.length() > 0) {
         return parseStreamSessionJson(streamsJson);
