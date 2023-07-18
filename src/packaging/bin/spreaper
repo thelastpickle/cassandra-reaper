@@ -594,29 +594,29 @@ class ReaperCLI(object):
         if args.keyspace:
             if args.node:
                 print ("# Taking a snapshot on cluster '{0}', node '{1}' and keyspace '{2}', " 
-                        ).format(args.cluster_name, args.node, args.keyspace)
+                        .format(args.cluster_name, args.node, args.keyspace))
                 reply = reaper.post("snapshot/{0}/{1}".format(args.cluster_name, args.node), 
                                     keyspace=args.keyspace, 
                                     owner=args.owner, cause=args.cause,
                                     snapshot_name=args.name)
             else:
                 print ("# Taking a snapshot on cluster '{0}' and keyspace '{1}', " 
-                        ).format(args.cluster_name, args.keyspace)
+                        .format(args.cluster_name, args.keyspace))
                 reply = reaper.post("snapshot/cluster/{0}".format(args.cluster_name), 
                                     keyspace=args.keyspace, 
                                     owner=args.owner, cause=args.cause,
                                     snapshot_name=args.name)
         else:
             if args.node:
-                print ("# Taking a snapshot on cluster '{0}' and node '{1}', " 
-                        ).format(args.cluster_name, args.node)
+                print ("# Taking a snapshot on cluster '{0}' and node '{1}'" 
+                        .format(args.cluster_name, args.node))
                 reply = reaper.post("snapshot/{0}/{1}".format(args.cluster_name, args.node), 
                                     keyspace=args.keyspace, 
                                     owner=args.owner, cause=args.cause,
                                     snapshot_name=args.name)
             else:
                 print ("# Taking a snapshot on cluster '{0}', " 
-                        ).format(args.cluster_name)
+                        .format(args.cluster_name))
                 reply = reaper.post("snapshot/cluster/{0}".format(args.cluster_name), 
                                     keyspace=args.keyspace, 
                                     owner=args.owner, cause=args.cause,
@@ -637,12 +637,12 @@ class ReaperCLI(object):
             exit(1)
         
         if args.node:
-            print ("# Deleting snapshot '{1}' on cluster '{0}' and node '{2}'" 
-                    ).format(args.snapshot_name, args.cluster_name, args.node)
+            print ("# Deleting snapshot '{0}' on cluster '{1}' and node '{2}'" 
+                    .format(args.snapshot_name, args.cluster_name, args.node))
             reply = reaper.delete("snapshot/{0}/{1}/{2}".format(args.cluster_name, args.node, args.snapshot_name))
         else:
             print ("# Deleting snapshot '{1}' on cluster '{0}', " 
-                    ).format(args.cluster_name, args.snapshot_name)
+                    .format(args.cluster_name, args.snapshot_name))
             reply = reaper.delete("snapshot/cluster/{0}/{1}".format(args.cluster_name, args.snapshot_name))
 
         printq("# Snapshot deleted : {0}".format(reply))
@@ -725,8 +725,8 @@ class ReaperCLI(object):
             exit(1)
         if args.tables:
             print ("# Registering repair run for cluster '{0}', and keyspace '{1}', "
-                   "targeting tables: {2}").format(args.cluster_name, args.keyspace_name,
-                                                   ",".join(args.tables.split(',')))
+                   "targeting tables: {2}".format(args.cluster_name, args.keyspace_name,
+                                                  args.tables))
             reply = reaper.post("repair_run", clusterName=args.cluster_name,
                                 keyspace=args.keyspace_name, tables=args.tables,
                                 owner=args.owner, cause=args.cause,
