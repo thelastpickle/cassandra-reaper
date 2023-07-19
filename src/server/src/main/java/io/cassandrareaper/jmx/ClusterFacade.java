@@ -205,8 +205,8 @@ public final class ClusterFacade {
    * @return a JmxProxy object
    * @throws ReaperException any runtime exception we catch
    */
-  public CassandraManagementProxy preHeatJmxConnections(Cluster cluster, Collection<String> endpoints) throws
-      ReaperException {
+  public CassandraManagementProxy connectToManagementMechanism(Cluster cluster,
+      Collection<String> endpoints) throws ReaperException {
     Preconditions.checkArgument(!context.config.isInSidecarMode());
     return connectImpl(cluster, endpoints);
   }
