@@ -28,11 +28,11 @@ import java.util.stream.Collectors;
 
 import com.google.common.collect.Maps;
 
-public class MemMetricsDao implements IMetrics {
+public class MemoryMetricsDao implements IMetricsDao {
   public final ConcurrentMap<String, Map<String, PercentRepairedMetric>> percentRepairedMetrics
         = Maps.newConcurrentMap();
 
-  public MemMetricsDao() {
+  public MemoryMetricsDao() {
   }
 
   @Override
@@ -48,7 +48,7 @@ public class MemMetricsDao implements IMetrics {
 
   @Override
   public void storePercentRepairedMetric(PercentRepairedMetric metric) {
-    synchronized (MemMetricsDao.class) {
+    synchronized (MemoryMetricsDao.class) {
       String metricKey = metric.getCluster() + "-" + metric.getRepairScheduleId();
       Map<String, PercentRepairedMetric> newValue = Maps.newHashMap();
       if (percentRepairedMetrics.containsKey(metricKey)) {

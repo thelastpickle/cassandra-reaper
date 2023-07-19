@@ -38,7 +38,7 @@ import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 
-public class CassMetricsDao implements IMetrics, IDistributedMetrics {
+public class CassandraMetricsDao implements IMetricsDao, IDistributedMetrics {
 
   static final int METRICS_PARTITIONING_TIME_MINS = 10;
   private static final DateTimeFormatter TIME_BUCKET_FORMATTER = DateTimeFormat.forPattern("yyyyMMddHHmm");
@@ -52,7 +52,7 @@ public class CassMetricsDao implements IMetrics, IDistributedMetrics {
   private PreparedStatement storePercentRepairedForSchedulePrepStmt;
   private PreparedStatement getPercentRepairedForSchedulePrepStmt;
 
-  public CassMetricsDao(Session session) {
+  public CassandraMetricsDao(Session session) {
 
     this.session = session;
     prepareMetricStatements();

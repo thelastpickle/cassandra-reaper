@@ -27,7 +27,7 @@ import java.util.Optional;
 import java.util.SortedSet;
 import java.util.UUID;
 
-public interface IRepairRun {
+public interface IRepairRunDao {
   RepairRun addRepairRun(RepairRun.Builder repairRun, Collection<RepairSegment.Builder> newSegments);
 
   boolean updateRepairRun(RepairRun repairRun, Optional<Boolean> updateRepairState);

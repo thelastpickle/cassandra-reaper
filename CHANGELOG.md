@@ -357,7 +357,7 @@ aa833d8cd69e27655155e40bfe971e13a3cc4e47) support use of Postgresql as storage b
 - [f22fe3f](https://github.com/thelastpickle/cassandra-reaper/commit/f22fe3f91a4e389f6c8742722b214c68ef2d8b0b) [maven-release-plugin] prepare for next development iteration (@michaelsembwever)
 
 ### 1.2.2 (2018/07/25 10:50 +00:00)
-- [ae42bab](https://github.com/thelastpickle/cassandra-reaper/commit/ae42babd76956a298ab86cf5ca67fc56aeaf58cb) Fix `IStorage.getRepairUnit(builder)` implementations to include matching on incremental boolean parameter, and deleting (all related) units only when deleting the cluster. (@michaelsembwever)
+- [ae42bab](https://github.com/thelastpickle/cassandra-reaper/commit/ae42babd76956a298ab86cf5ca67fc56aeaf58cb) Fix `Istorage.getRepairUnitDao().getRepairUnit(builder)` implementations to include matching on incremental boolean parameter, and deleting (all related) units only when deleting the cluster. (@michaelsembwever)
 - [b4c3248](https://github.com/thelastpickle/cassandra-reaper/commit/b4c32482e600699c41e90ba8c9f517b81a870bf6) Use executorServices from DropWizard's lifecycle, where possible in various top-level singletons. (@michaelsembwever)
 - [2726931](https://github.com/thelastpickle/cassandra-reaper/commit/27269317e8b6c958b3a606c4ad7859505bbb9656) Set isDev flag correctly for server.js (@spodkowinski)
 - [9a48abf](https://github.com/thelastpickle/cassandra-reaper/commit/9a48abfc5919dd8a0f63dca7ad36847b725a623d) Ignore late "start" notifications in SegmentRunner (@michaelsembwever)
@@ -389,7 +389,7 @@ aa833d8cd69e27655155e40bfe971e13a3cc4e47) support use of Postgresql as storage b
 - [32c779f](https://github.com/thelastpickle/cassandra-reaper/commit/32c779ff2e7a923ed3570c1b206eb0e81ff38c96) Support Cassandra-4.0 for backend storage (@michaelsembwever)
 - [3d62a2c](https://github.com/thelastpickle/cassandra-reaper/commit/3d62a2c89e122255e4c9d5975fe210d959348159) Implement limit in `CassandraStorage.getRepairRunsForCluster(cluster, limit)` (@michaelsembwever)
 - [633c1d4](https://github.com/thelastpickle/cassandra-reaper/commit/633c1d4e7c1dc233c0024b907308c06a30aa80f7) As RepairUnits are immutable, and limited in number, introduce in CasandraStorage a LoadingCache. (@michaelsembwever)
-- [1253f03](https://github.com/thelastpickle/cassandra-reaper/commit/1253f0319f2b9980951f4b1ee09338ad8df46e46) Refactor the `IStorage.getRepairUnit(UUID)` method to return the RepairUnit instead of an Optional. (@michaelsembwever)
+- [1253f03](https://github.com/thelastpickle/cassandra-reaper/commit/1253f0319f2b9980951f4b1ee09338ad8df46e46) Refactor the `Istorage.getRepairUnitDao().getRepairUnit(UUID)` method to return the RepairUnit instead of an Optional. (@michaelsembwever)
 - [a4626dd](https://github.com/thelastpickle/cassandra-reaper/commit/a4626ddfd6a84d1dc47140ef47109c36a5e1b79b) Cleanup the RepairManager.abortSegmentsWithNoLeader() method. (@michaelsembwever)
 - [b27a55f](https://github.com/thelastpickle/cassandra-reaper/commit/b27a55f602a1f45130224507354cc129b750a190) break down the RepairManager.resumeRunningRepairRuns() method for better readability (@michaelsembwever)
 - [17bbf11](https://github.com/thelastpickle/cassandra-reaper/commit/17bbf11b2d18d490242f44d5db4c1f08b81da6e1) Upgrade dependencies. (@michaelsembwever)

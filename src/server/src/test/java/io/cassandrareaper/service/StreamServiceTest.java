@@ -33,7 +33,6 @@ import java.net.URL;
 import java.net.UnknownHostException;
 import java.util.List;
 import java.util.Map;
-
 import javax.management.openmbean.ArrayType;
 import javax.management.openmbean.CompositeData;
 import javax.management.openmbean.CompositeDataSupport;
@@ -279,7 +278,7 @@ public class StreamServiceTest {
     fields.put("description", "Repair");
     fields.put("planId", "185b0440-e059-11e9-8be8-4db088857399");
     fields.put("rxPercentage", 12.0);
-    fields.put("sessions", new CompositeData[] {makeSessions_4_0_0()});
+    fields.put("sessions", new CompositeData[]{makeSessions_4_0_0()});
     fields.put("totalRxBytes", 79807773L);
     fields.put("totalTxBytes", 0L);
     fields.put("txPercentage", 100.0);
@@ -297,7 +296,7 @@ public class StreamServiceTest {
     fields.put("description", "Repair");
     fields.put("planId", "7805a580-8038-11e8-adb7-4751e6155332");
     fields.put("rxPercentage", 100.0);
-    fields.put("sessions", new CompositeData[] {makeSessions_3_11_2()});
+    fields.put("sessions", new CompositeData[]{makeSessions_3_11_2()});
     fields.put("totalRxBytes", 0L);
     fields.put("totalTxBytes", 130972860L);
     fields.put("txPercentage", 8.0);
@@ -316,7 +315,7 @@ public class StreamServiceTest {
     fields.put("description", "Repair");
     fields.put("planId", "636b1490-7d39-11e8-a943-973315b0e477");
     fields.put("rxPercentage", 100.0);
-    fields.put("sessions", new CompositeData[] {makeSessions_2_2_12()});
+    fields.put("sessions", new CompositeData[]{makeSessions_2_2_12()});
     fields.put("totalRxBytes", 0L);
     fields.put("totalTxBytes", 44670289L);
     fields.put("txPercentage", 0.0);
@@ -335,7 +334,7 @@ public class StreamServiceTest {
     fields.put("description", "Repair");
     fields.put("planId", "91ed3651-7d2e-11e8-b38d-812f8df1fba1");
     fields.put("rxPercentage", 0.0);
-    fields.put("sessions", new CompositeData[] {makeSessions_2_1_20()});
+    fields.put("sessions", new CompositeData[]{makeSessions_2_1_20()});
     fields.put("totalRxBytes", 59036414L);
     fields.put("totalTxBytes", 53556352L);
     fields.put("txPercentage", 2.0);
@@ -353,7 +352,7 @@ public class StreamServiceTest {
     fields.put("description", "Repair");
     fields.put("planId", "059686e0-796c-11e8-bd35-f598c5b775dd");
     fields.put("rxPercentage", 2.0);
-    fields.put("sessions", new CompositeData[] {makeSessions_2_0_17()});
+    fields.put("sessions", new CompositeData[]{makeSessions_2_0_17()});
     fields.put("totalRxBytes", 90835388L);
     fields.put("totalTxBytes", 0L);
     fields.put("txPercentage", 100.0);
@@ -508,8 +507,8 @@ public class StreamServiceTest {
         new CompositeDataSupport(makeSummariesType_4_0_0(), receivingSummary)
     };
 
-    CompositeDataSupport[] sendingFiles = new CompositeDataSupport[] {};
-    CompositeDataSupport[] sendingSummaries = new CompositeDataSupport[] {};
+    CompositeDataSupport[] sendingFiles = new CompositeDataSupport[]{};
+    CompositeDataSupport[] sendingSummaries = new CompositeDataSupport[]{};
 
     Map<String, Object> fields = Maps.newTreeMap();
     fields.put("connecting", "127.0.0.1");
@@ -553,8 +552,8 @@ public class StreamServiceTest {
 
     Map<String, Object> fields = Maps.newTreeMap();
 
-    CompositeDataSupport[] receivingFiles = new CompositeDataSupport[] {};
-    CompositeDataSupport[] receivingSummaries = new CompositeDataSupport[] {};
+    CompositeDataSupport[] receivingFiles = new CompositeDataSupport[]{};
+    CompositeDataSupport[] receivingSummaries = new CompositeDataSupport[]{};
     fields.put("receivingFiles", receivingFiles);
     fields.put("receivingSummaries", receivingSummaries);
 
@@ -610,8 +609,8 @@ public class StreamServiceTest {
     };
     fields.put("sendingSummaries", sendingSummaries);
 
-    CompositeDataSupport[] receivingFiles = new CompositeDataSupport[] {};
-    CompositeDataSupport[] receivingSummaries = new CompositeDataSupport[] {};
+    CompositeDataSupport[] receivingFiles = new CompositeDataSupport[]{};
+    CompositeDataSupport[] receivingSummaries = new CompositeDataSupport[]{};
     fields.put("receivingFiles", receivingFiles);
     fields.put("receivingSummaries", receivingSummaries);
 
@@ -714,8 +713,8 @@ public class StreamServiceTest {
     };
     fields.put("receivingSummaries", receivingSummaries);
 
-    CompositeDataSupport[] sendingFiles = new CompositeDataSupport[] {} ;
-    CompositeDataSupport[] sendingSummaries = new CompositeDataSupport[] {} ;
+    CompositeDataSupport[] sendingFiles = new CompositeDataSupport[]{};
+    CompositeDataSupport[] sendingSummaries = new CompositeDataSupport[]{};
     fields.put("sendingFiles", sendingFiles);
     fields.put("sendingSummaries", sendingSummaries);
 

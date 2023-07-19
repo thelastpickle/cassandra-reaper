@@ -38,12 +38,12 @@ import com.google.common.base.Preconditions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class Concurrency {
+public class CassandraConcurrencyDao {
   private static final int LEAD_DURATION = 90;
   /* Simple stmts */
   private static final String SELECT_LEADERS = "SELECT * FROM leader";
   private static final String SELECT_RUNNING_REAPERS = "SELECT reaper_instance_id FROM running_reapers";
-  private static final Logger LOG = LoggerFactory.getLogger(Concurrency.class);
+  private static final Logger LOG = LoggerFactory.getLogger(CassandraConcurrencyDao.class);
   private final VersionNumber version;
   private final UUID reaperInstanceId;
   private final Session session;
@@ -54,7 +54,7 @@ public class Concurrency {
   private PreparedStatement setRunningRepairsPrepStmt;
   private PreparedStatement getRunningRepairsPrepStmt;
 
-  public Concurrency(VersionNumber version, UUID reaperInstanceId, Session session) {
+  public CassandraConcurrencyDao(VersionNumber version, UUID reaperInstanceId, Session session) {
     this.version = version;
     this.reaperInstanceId = reaperInstanceId;
     this.session = session;

@@ -23,7 +23,9 @@ import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairRun.RunState;
-import io.cassandrareaper.storage.IStorage;
+import io.cassandrareaper.storage.IStorageDao;
+import io.cassandrareaper.storage.cluster.IClusterDao;
+import io.cassandrareaper.storage.repairrun.IRepairRunDao;
 
 import java.util.Arrays;
 import java.util.List;
@@ -59,11 +61,12 @@ public final class PurgeServiceTest {
     context.config.setPurgeRecordsAfterInDays(1);
 
     // Create storage mock
-    context.storage = mock(IStorage.class);
+    context.storage = mock(IStorageDao.class);
 
     List<Cluster> clusters = Arrays.asList(Cluster.builder().withName(CLUSTER_NAME).withSeedHosts(SEEDS).build());
-
-    when(context.storage.getClusters()).thenReturn(clusters);
+    IClusterDao mockedClusterDao = mock(IClusterDao.class);
+    when(context.storage.getClusterDao()).thenReturn(mockedClusterDao);
+    when(context.storage.getClusterDao().getClusters()).thenReturn(clusters);
 
     // Add repair runs to the mock
     List<RepairRun> repairRuns = Lists.newArrayList();
@@ -83,11 +86,12 @@ public final class PurgeServiceTest {
               .runState(RunState.DONE)
               .build(UUIDs.timeBased()));
     }
-
-    when(context.storage.getRepairRunsForCluster(anyString(), any())).thenReturn(repairRuns);
+    IRepairRunDao mockedRepairRunDao = mock(IRepairRunDao.class);
+    when(context.storage.getRepairRunDao()).thenReturn(mockedRepairRunDao);
+    when(mockedRepairRunDao.getRepairRunsForCluster(anyString(), any())).thenReturn(repairRuns);
 
     // Invoke the purge manager
-    int purged = PurgeService.create(context).purgeDatabase();
+    int purged = PurgeService.create(context, context.storage.getRepairRunDao()).purgeDatabase();
 
     // Check that runs were removed
     assertEquals(9, purged);
@@ -100,11 +104,12 @@ public final class PurgeServiceTest {
     context.config.setNumberOfRunsToKeepPerUnit(5);
 
     // Create storage mock
-    context.storage = mock(IStorage.class);
+    context.storage = mock(IStorageDao.class);
 
     List<Cluster> clusters = Arrays.asList(Cluster.builder().withName(CLUSTER_NAME).withSeedHosts(SEEDS).build());
-
-    when(context.storage.getClusters()).thenReturn(clusters);
+    IClusterDao mockedClusterDao = mock(IClusterDao.class);
+    when(context.storage.getClusterDao()).thenReturn(mockedClusterDao);
+    when(context.storage.getClusterDao().getClusters()).thenReturn(clusters);
 
     // Add repair runs to the mock
     List<RepairRun> repairRuns = Lists.newArrayList();
@@ -125,10 +130,12 @@ public final class PurgeServiceTest {
               .build(UUIDs.timeBased()));
     }
 
-    when(context.storage.getRepairRunsForCluster(anyString(), any())).thenReturn(repairRuns);
+    IRepairRunDao mockedRepairRunDao = mock(IRepairRunDao.class);
+    when(context.storage.getRepairRunDao()).thenReturn(mockedRepairRunDao);
+    when(mockedRepairRunDao.getRepairRunsForCluster(anyString(), any())).thenReturn(repairRuns);
 
     // Invoke the purge manager
-    int purged = PurgeService.create(context).purgeDatabase();
+    int purged = PurgeService.create(context, context.storage.getRepairRunDao()).purgeDatabase();
 
     // Check that runs were removed
     assertEquals(15, purged);
@@ -141,11 +148,13 @@ public final class PurgeServiceTest {
     context.config.setPurgeRecordsAfterInDays(1);
 
     // Create storage mock
-    context.storage = mock(IStorage.class);
+    context.storage = mock(IStorageDao.class);
 
     List<Cluster> clusters = Arrays.asList(Cluster.builder().withName(CLUSTER_NAME).withSeedHosts(SEEDS).build());
 
-    when(context.storage.getClusters()).thenReturn(clusters);
+    IClusterDao mockedClusterDao = mock(IClusterDao.class);
+    when(context.storage.getClusterDao()).thenReturn(mockedClusterDao);
+    when(mockedClusterDao.getClusters()).thenReturn(clusters);
 
     // Add repair runs to the mock
     List<RepairRun> repairRuns = Lists.newArrayList();
@@ -166,10 +175,12 @@ public final class PurgeServiceTest {
               .build(UUIDs.timeBased()));
     }
 
-    when(context.storage.getRepairRunsForCluster(anyString(), any())).thenReturn(repairRuns);
+    IRepairRunDao mockedRepairRunDao = mock(IRepairRunDao.class);
+    when(context.storage.getRepairRunDao()).thenReturn(mockedRepairRunDao);
+    when(mockedRepairRunDao.getRepairRunsForCluster(anyString(), any())).thenReturn(repairRuns);
 
     // Invoke the purge manager
-    int purged = PurgeService.create(context).purgeDatabase();
+    int purged = PurgeService.create(context, context.storage.getRepairRunDao()).purgeDatabase();
 
     // Check that runs were removed
     assertEquals(0, purged);

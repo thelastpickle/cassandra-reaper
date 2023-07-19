@@ -44,8 +44,8 @@ public final class ReaperHealthCheck extends com.codahale.metrics.health.HealthC
       if (System.currentTimeMillis() > nextCheck) {
         nextCheck = System.currentTimeMillis() + HEALTH_CHECK_INTERVAL;
         try {
-          context.storage.getClusters();
-          context.storage.getAllRepairSchedules();
+          context.storage.getClusterDao().getClusters();
+          context.storage.getRepairScheduleDao().getAllRepairSchedules();
           lastResult = Result.healthy();
         } catch (RuntimeException ex) {
           lastResult = Result.unhealthy(ex);

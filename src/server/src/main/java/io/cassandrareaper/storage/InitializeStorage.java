@@ -52,9 +52,9 @@ public final class InitializeStorage {
     return new InitializeStorage(config, environment, reaperInstanceId);
   }
 
-  public IStorage initializeStorageBackend()
+  public IStorageDao initializeStorageBackend()
       throws ReaperException {
-    IStorage storage;
+    IStorageDao storage;
     LOG.info("Initializing the database and performing schema migrations");
 
     if ("memory".equalsIgnoreCase(config.getStorageType())) {

@@ -164,7 +164,7 @@ public final class MetricsService {
 
     CompactionStats compactionStats = ClusterFacade.create(context).listCompactionStatsDirect(node);
 
-    ((IDistributedStorage) context.storage)
+    ((IDistributedStorage) context.storage).getOperationsDao()
         .storeOperations(
             node.getClusterName(),
             OpType.OP_COMPACTION,
@@ -183,7 +183,7 @@ public final class MetricsService {
 
     List<StreamSession> activeStreams = ClusterFacade.create(context).listStreamsDirect(node);
 
-    ((IDistributedStorage) context.storage)
+    ((IDistributedStorage) context.storage).getOperationsDao()
         .storeOperations(
             node.getClusterName(),
             OpType.OP_STREAMING,
@@ -208,7 +208,7 @@ public final class MetricsService {
   public void grabAndStorePercentRepairedMetrics(Optional<Node> maybeNode, RepairSchedule sched)
       throws ReaperException {
     Node node = getNode(maybeNode);
-    RepairUnit repairUnit = context.storage.getRepairUnit(sched.getRepairUnitId());
+    RepairUnit repairUnit = context.storage.getRepairUnitDao().getRepairUnit(sched.getRepairUnitId());
     Set<String> tables = this.repairUnitService.getTablesToRepair(node.getCluster().get(), repairUnit);
 
     // Collect percent repaired metrics for all tables in the keyspace

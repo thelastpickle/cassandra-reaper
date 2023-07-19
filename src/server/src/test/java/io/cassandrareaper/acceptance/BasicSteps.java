@@ -3089,10 +3089,9 @@ public final class BasicSteps {
                 .withState(io.cassandrareaper.core.Cluster.State.ACTIVE)
                 .withPartitioner("Murmur3Partitioner")
                 .build();
-            runner.getContext().storage.addCluster(clusterToAdd);
+            runner.getContext().storage.getClusterDao().addCluster(clusterToAdd);
           }
       );
     }
   }
 }
-

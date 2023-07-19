@@ -15,22 +15,14 @@
  * limitations under the License.
  */
 
-package io.cassandrareaper.storage.events;
+package io.cassandrareaper.storage.snapshot;
 
-import io.cassandrareaper.core.DiagEventSubscription;
+import io.cassandrareaper.core.Snapshot;
 
-import java.util.Collection;
-import java.util.UUID;
+public interface ISnapshotDao {
+  boolean saveSnapshot(Snapshot snapshot);
 
-public interface IEvents {
-  Collection<DiagEventSubscription> getEventSubscriptions();
+  boolean deleteSnapshot(Snapshot snapshot);
 
-  Collection<DiagEventSubscription> getEventSubscriptions(String clusterName);
-
-  DiagEventSubscription getEventSubscription(UUID id);
-
-  DiagEventSubscription addEventSubscription(DiagEventSubscription subscription);
-
-  boolean deleteEventSubscription(UUID id);
-
+  Snapshot getSnapshot(String clusterName, String snapshotName);
 }

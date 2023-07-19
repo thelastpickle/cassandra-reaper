@@ -56,7 +56,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-
 import javax.servlet.DispatcherType;
 import javax.servlet.FilterRegistration;
 
@@ -104,6 +103,15 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
 
   public static void main(String[] args) throws Exception {
     new ReaperApplication().run(args);
+  }
+
+  private static void setupSse(Environment environment) {
+    // Enabling gzip buffering will prevent flushing of server-side-events, so we disable compression for SSE
+    environment.lifecycle().addServerLifecycleListener(server -> {
+      for (Handler handler : server.getChildHandlersByClass(GzipHandler.class)) {
+        ((GzipHandler) handler).addExcludedMimeTypes("text/event-stream");
+      }
+    });
   }
 
   @Override
@@ -175,7 +183,7 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
     tryInitializeStorage(config, environment);
 
     Cryptograph cryptograph = context.config == null || context.config.getCryptograph() == null
-            ? new NoopCrypotograph() : context.config.getCryptograph().create();
+        ? new NoopCrypotograph() : context.config.getCryptograph().create();
 
     initializeJmx(config, cryptograph);
 
@@ -184,7 +192,8 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
         environment.lifecycle().scheduledExecutorService("RepairRunner").threads(repairThreads).build(),
         config.getRepairManagerSchedulingIntervalSeconds(),
         TimeUnit.SECONDS,
-        maxParallelRepairs);
+        maxParallelRepairs,
+        context.storage.getRepairRunDao());
 
     RequestUtils.setCorsEnabled(config.isEnableCrossOrigin());
     // Enable cross-origin requests for using external GUI applications.
@@ -206,13 +215,18 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
     final PingResource pingResource = new PingResource(healthCheck);
     environment.jersey().register(pingResource);
 
-    final ClusterResource addClusterResource = ClusterResource.create(context, cryptograph);
+    final ClusterResource addClusterResource = ClusterResource.create(context, cryptograph,
+        context.storage.getEventsDao(),
+        context.storage.getRepairRunDao());
     environment.jersey().register(addClusterResource);
-    final RepairRunResource addRepairRunResource = new RepairRunResource(context);
+    final RepairRunResource addRepairRunResource = new RepairRunResource(context,
+        context.storage.getRepairRunDao());
     environment.jersey().register(addRepairRunResource);
-    final RepairScheduleResource addRepairScheduleResource = new RepairScheduleResource(context);
+    final RepairScheduleResource addRepairScheduleResource = new RepairScheduleResource(context,
+        context.storage.getRepairRunDao());
     environment.jersey().register(addRepairScheduleResource);
-    final SnapshotResource snapshotResource = new SnapshotResource(context, environment);
+    final SnapshotResource snapshotResource = new SnapshotResource(context, environment,
+        context.storage.getSnapshotDao());
     environment.jersey().register(snapshotResource);
     final ReaperResource reaperResource = new ReaperResource(context);
     environment.jersey().register(reaperResource);
@@ -225,9 +239,11 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
 
     HttpClient httpClient = createHttpClient(config, environment);
     ScheduledExecutorService ses = environment.lifecycle().scheduledExecutorService("Diagnostics").threads(6).build();
-    final DiagEventSubscriptionResource eventsResource = new DiagEventSubscriptionResource(context, httpClient, ses);
+    final DiagEventSubscriptionResource eventsResource = new DiagEventSubscriptionResource(context, httpClient, ses,
+        context.storage.getEventsDao());
     environment.jersey().register(eventsResource);
-    final DiagEventSseResource diagEvents = new DiagEventSseResource(context, httpClient, ses);
+    final DiagEventSseResource diagEvents = new DiagEventSseResource(context, httpClient, ses,
+        context.storage.getEventsDao());
     environment.jersey().register(diagEvents);
 
     if (config.isAccessControlEnabled()) {
@@ -242,12 +258,13 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
     }
 
     Thread.sleep(1000);
-    context.schedulingManager = SchedulingManager.create(context);
+    context.schedulingManager = SchedulingManager.create(context,
+        context.storage.getRepairRunDao());
     context.schedulingManager.start();
 
     if (config.hasAutoSchedulingEnabled()) {
       LOG.debug("using specified configuration for auto scheduling: {}", config.getAutoScheduling());
-      AutoSchedulingManager.start(context);
+      AutoSchedulingManager.start(context, context.storage.getRepairRunDao());
     }
 
     initializeJmxSeedsForAllClusters();
@@ -265,8 +282,8 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
         "Cassandra backend storage is the only one allowing EACH datacenter availability modes.");
 
     ScheduledExecutorService scheduler = new InstrumentedScheduledExecutorService(
-            environment.lifecycle().scheduledExecutorService("ReaperApplication-scheduler").threads(3).build(),
-            context.metricRegistry);
+        environment.lifecycle().scheduledExecutorService("ReaperApplication-scheduler").threads(3).build(),
+        context.metricRegistry);
 
     // SIDECAR mode must be distributed. ALL|EACH|LOCAL are lazy: we wait until we see multiple reaper instances
     context.isDistributed
@@ -326,8 +343,8 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
 
   /**
    * If Reaper is in sidecar mode, grab the local host id and the associated broadcast address
-   * @param addClusterResource
    *
+   * @param addClusterResource a cluster resource instance
    * @throws ReaperException any caught runtime exception
    */
   private void maybeInitializeSidecarMode(ClusterResource addClusterResource) throws ReaperException {
@@ -336,8 +353,8 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
       Node host = Node.builder().withHostname(context.config.getEnforcedLocalNode().orElse("127.0.0.1")).build();
       try {
         context.localNodeAddress = context.config
-                .getEnforcedLocalNode()
-                .orElse(clusterFacade.getLocalEndpoint(host));
+            .getEnforcedLocalNode()
+            .orElse(clusterFacade.getLocalEndpoint(host));
 
         LOG.info("Sidecar mode. Local node is : {}", context.localNodeAddress);
         selfRegisterClusterForSidecar(addClusterResource, context.config.getEnforcedLocalNode().orElse("127.0.0.1"));
@@ -351,28 +368,20 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
   private boolean selfRegisterClusterForSidecar(ClusterResource addClusterResource, String seedHost)
       throws ReaperException {
     final Optional<Cluster> cluster = addClusterResource.findClusterWithSeedHost(seedHost, Optional.empty(),
-            Optional.empty());
+        Optional.empty());
     if (!cluster.isPresent()) {
       return false;
     }
 
-    if (context.storage.getClusters().stream().noneMatch(c -> c.getName().equals(cluster.get().getName()))) {
+    if (context.storage.getClusterDao().getClusters().stream()
+        .noneMatch(c -> c.getName().equals(cluster.get().getName()))) {
       LOG.info("registering new cluster : {}", cluster.get().getName());
 
       // it is ok for this be called in parallel by different sidecars on the same cluster,
       // so long we're not split-brain
-      context.storage.addCluster(cluster.get());
+      context.storage.getClusterDao().addCluster(cluster.get());
     }
     return true;
-  }
-
-  private static void setupSse(Environment environment) {
-    // Enabling gzip buffering will prevent flushing of server-side-events, so we disable compression for SSE
-    environment.lifecycle().addServerLifecycleListener(server -> {
-      for (Handler handler : server.getChildHandlersByClass(GzipHandler.class)) {
-        ((GzipHandler) handler).addExcludedMimeTypes("text/event-stream");
-      }
-    });
   }
 
   private HttpClient createHttpClient(ReaperApplicationConfiguration config, Environment environment) {
@@ -418,7 +427,8 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
   }
 
   private void schedulePurge(ScheduledExecutorService scheduler) {
-    final PurgeService purgeManager = PurgeService.create(context);
+    final PurgeService purgeManager = PurgeService.create(context,
+        context.storage.getRepairRunDao());
 
     scheduler.scheduleWithFixedDelay(
         () -> {
@@ -447,13 +457,14 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
   private void initializeJmxSeedsForAllClusters() {
     LOG.info("Initializing JMX seed list for all clusters...");
     try (JmxConnectionsInitializer jmxConnectionsIntializer = JmxConnectionsInitializer.create(context);
-        Timer.Context cxt = context
-                .metricRegistry
-                .timer(MetricRegistry.name(JmxConnectionFactory.class, "jmxConnectionsIntializer"))
-                .time()) {
+         Timer.Context cxt = context
+             .metricRegistry
+             .timer(MetricRegistry.name(JmxConnectionFactory.class, "jmxConnectionsIntializer"))
+             .time()) {
 
       context
           .storage
+          .getClusterDao()
           .getClusters()
           .parallelStream()
           .sorted()
@@ -471,7 +482,7 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
       while (true) {
         try {
           context.storage = InitializeStorage.initializeStorage(
-            config, environment, context.reaperInstanceId).initializeStorageBackend();
+              config, environment, context.reaperInstanceId).initializeStorageBackend();
 
           // Allows to execute cleanup queries as shutdown hooks
           environment.lifecycle().manage(context.storage);

@@ -22,6 +22,7 @@ import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairSchedule;
 import io.cassandrareaper.core.RepairUnit;
+import io.cassandrareaper.storage.repairrun.IRepairRunDao;
 
 import java.util.Collection;
 import java.util.Objects;
@@ -43,23 +44,26 @@ public final class RepairScheduleService {
   private final AppContext context;
   private final RepairUnitService repairUnitService;
 
-  private RepairScheduleService(AppContext context) {
+  private final IRepairRunDao repairRunDao;
+
+  private RepairScheduleService(AppContext context, IRepairRunDao repairRunDao) {
     this.context = context;
     this.repairUnitService = RepairUnitService.create(context);
-    registerRepairScheduleMetrics(context.storage.getAllRepairSchedules());
+    registerRepairScheduleMetrics(context.storage.getRepairScheduleDao().getAllRepairSchedules());
+    this.repairRunDao = repairRunDao;
   }
 
-  public static RepairScheduleService create(AppContext context) {
-    return new RepairScheduleService(context);
+  public static RepairScheduleService create(AppContext context, IRepairRunDao repairRunDao) {
+    return new RepairScheduleService(context, repairRunDao);
   }
 
   public Optional<RepairSchedule> conflictingRepairSchedule(Cluster cluster, RepairUnit.Builder repairUnit) {
 
-    Collection<RepairSchedule> repairSchedules = context.storage
+    Collection<RepairSchedule> repairSchedules = context.storage.getRepairScheduleDao()
         .getRepairSchedulesForClusterAndKeyspace(repairUnit.clusterName, repairUnit.keyspaceName);
 
     for (RepairSchedule sched : repairSchedules) {
-      RepairUnit repairUnitForSched = context.storage.getRepairUnit(sched.getRepairUnitId());
+      RepairUnit repairUnitForSched = context.storage.getRepairUnitDao().getRepairUnit(sched.getRepairUnitId());
       Preconditions.checkState(repairUnitForSched.getClusterName().equals(repairUnit.clusterName));
       Preconditions.checkState(repairUnitForSched.getKeyspaceName().equals(repairUnit.keyspaceName));
 
@@ -72,11 +76,11 @@ public final class RepairScheduleService {
 
   public Optional<RepairSchedule> identicalRepairUnit(Cluster cluster, RepairUnit.Builder repairUnit) {
 
-    Collection<RepairSchedule> repairSchedules = context.storage
+    Collection<RepairSchedule> repairSchedules = context.storage.getRepairScheduleDao()
         .getRepairSchedulesForClusterAndKeyspace(repairUnit.clusterName, repairUnit.keyspaceName);
 
     for (RepairSchedule sched : repairSchedules) {
-      RepairUnit repairUnitForSched = context.storage.getRepairUnit(sched.getRepairUnitId());
+      RepairUnit repairUnitForSched = context.storage.getRepairUnitDao().getRepairUnit(sched.getRepairUnitId());
       Preconditions.checkState(repairUnitForSched.getClusterName().equals(repairUnit.clusterName));
       Preconditions.checkState(repairUnitForSched.getKeyspaceName().equals(repairUnit.keyspaceName));
 
@@ -91,7 +95,7 @@ public final class RepairScheduleService {
   /**
    * Instantiates a RepairSchedule and stores it in the storage backend.
    *
-   *<p>
+   * <p>
    * Expected to have called first  conflictingRepairSchedule(Cluster, RepairUnit)
    *
    * @return the new, just stored RepairSchedule instance
@@ -126,14 +130,14 @@ public final class RepairScheduleService {
         .adaptive(adaptive)
         .percentUnrepairedThreshold(percentUnrepairedThreshold);
 
-    RepairSchedule repairSchedule = context.storage.addRepairSchedule(scheduleBuilder);
+    RepairSchedule repairSchedule = context.storage.getRepairScheduleDao().addRepairSchedule(scheduleBuilder);
     registerScheduleMetrics(repairSchedule.getId());
     return repairSchedule;
   }
 
   public void deleteRepairSchedule(UUID repairScheduleId) {
     unregisterScheduleMetrics(repairScheduleId);
-    context.storage.deleteRepairSchedule(repairScheduleId);
+    context.storage.getRepairScheduleDao().deleteRepairSchedule(repairScheduleId);
   }
 
   private void registerRepairScheduleMetrics(Collection<RepairSchedule> allRepairSchedules) {
@@ -142,12 +146,12 @@ public final class RepairScheduleService {
 
 
   private void registerScheduleMetrics(UUID repairScheduleId) {
-    RepairSchedule schedule = context.storage.getRepairSchedule(repairScheduleId).get();
-    RepairUnit repairUnit = context.storage.getRepairUnit(schedule.getRepairUnitId());
+    RepairSchedule schedule = context.storage.getRepairScheduleDao().getRepairSchedule(repairScheduleId).get();
+    RepairUnit repairUnit = context.storage.getRepairUnitDao().getRepairUnit(schedule.getRepairUnitId());
     String metricName = metricName(MILLIS_SINCE_LAST_REPAIR_METRIC_NAME,
-            repairUnit.getClusterName(),
-            repairUnit.getKeyspaceName(),
-            schedule.getId());
+        repairUnit.getClusterName(),
+        repairUnit.getKeyspaceName(),
+        schedule.getId());
 
     if (!context.metricRegistry.getMetrics().containsKey(metricName)) {
       context.metricRegistry.register(metricName, getMillisSinceLastRepairForSchedule(schedule.getId()));
@@ -155,9 +159,9 @@ public final class RepairScheduleService {
   }
 
   private void unregisterScheduleMetrics(UUID repairScheduleId) {
-    Optional<RepairSchedule> schedule = context.storage.getRepairSchedule(repairScheduleId);
+    Optional<RepairSchedule> schedule = context.storage.getRepairScheduleDao().getRepairSchedule(repairScheduleId);
     schedule.ifPresent(sched -> {
-      RepairUnit repairUnit = context.storage.getRepairUnit(sched.getRepairUnitId());
+      RepairUnit repairUnit = context.storage.getRepairUnitDao().getRepairUnit(sched.getRepairUnitId());
       String metricName = metricName(MILLIS_SINCE_LAST_REPAIR_METRIC_NAME,
           repairUnit.getClusterName(),
           repairUnit.getKeyspaceName(),
@@ -171,13 +175,13 @@ public final class RepairScheduleService {
 
   private Gauge<Long> getMillisSinceLastRepairForSchedule(UUID repairSchedule) {
     return () -> {
-      Optional<RepairSchedule> schedule = context.storage.getRepairSchedule(repairSchedule);
+      Optional<RepairSchedule> schedule = context.storage.getRepairScheduleDao().getRepairSchedule(repairSchedule);
 
       Optional<UUID> latestRepairUuid = Optional.ofNullable(schedule.orElseThrow(() ->
               new IllegalArgumentException("Repair schedule not found"))
           .getLastRun());
 
-      Long millisSinceLastRepair = latestRepairUuid.map(uuid -> context.storage.getRepairRun(uuid))
+      Long millisSinceLastRepair = latestRepairUuid.map(uuid -> repairRunDao.getRepairRun(uuid))
           .filter(Optional::isPresent)
           .map(Optional::get)
           .map(RepairRun::getEndTime)
@@ -194,4 +198,3 @@ public final class RepairScheduleService {
 
   }
 }
-

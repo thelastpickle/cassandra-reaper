@@ -27,10 +27,10 @@ import java.util.concurrent.ConcurrentMap;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
 
-public class MemEventsDao implements IEvents {
+public class MemoryEventsDao implements IEventsDao {
   private final ConcurrentMap<UUID, DiagEventSubscription> subscriptionsById = Maps.newConcurrentMap();
 
-  public MemEventsDao() {
+  public MemoryEventsDao() {
 
   }
 

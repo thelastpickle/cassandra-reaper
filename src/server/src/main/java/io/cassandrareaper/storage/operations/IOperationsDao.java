@@ -1,6 +1,7 @@
 /*
- * Copyright 2014-2017 Spotify AB
+ * Copyright 2016-2017 Spotify AB
  * Copyright 2016-2019 The Last Pickle Ltd
+ * Copyright 2020-2020 DataStax, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,19 +16,19 @@
  * limitations under the License.
  */
 
-package io.cassandrareaper.storage.metrics;
+package io.cassandrareaper.storage.operations;
 
-import io.cassandrareaper.core.PercentRepairedMetric;
+import io.cassandrareaper.storage.OpType;
 
-import java.util.List;
-import java.util.UUID;
+public interface IOperationsDao {
 
-public interface IMetrics {
+  void storeOperations(String clusterName, OpType operationType, String host, String operationsJson);
 
-  List<PercentRepairedMetric> getPercentRepairedMetrics(
-        String clusterName,
-        UUID repairScheduleId,
-        Long since);
+  String listOperations(String clusterName, OpType operationType, String host);
 
-  void storePercentRepairedMetric(PercentRepairedMetric metric);
+  /**
+   * Purges old node operation info from the database (no-op for databases w/ TTL)
+   */
+  void purgeNodeOperations();
+
 }

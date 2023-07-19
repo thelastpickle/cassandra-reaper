@@ -24,6 +24,7 @@ import io.cassandrareaper.core.Node;
 import io.cassandrareaper.core.Snapshot;
 import io.cassandrareaper.core.Snapshot.Builder;
 import io.cassandrareaper.jmx.ClusterFacade;
+import io.cassandrareaper.storage.snapshot.ISnapshotDao;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -49,7 +50,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public final class SnapshotService {
-
   public static final String SNAPSHOT_PREFIX = "reaper";
 
   private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd-HH-mm-ss");
@@ -60,20 +60,26 @@ public final class SnapshotService {
   private final ExecutorService executor;
   private final Cache<String, Snapshot> cache = CacheBuilder.newBuilder().weakValues().maximumSize(1000).build();
 
-  private SnapshotService(AppContext context, ExecutorService executor, Supplier<ClusterFacade> clusterFacadeSupplier) {
+  private final ISnapshotDao snapshotDao;
+
+  private SnapshotService(AppContext context, ExecutorService executor,
+                          Supplier<ClusterFacade> clusterFacadeSupplier,
+                          ISnapshotDao snapshotDao) {
     this.context = context;
     this.clusterFacade = clusterFacadeSupplier.get();
     this.executor = new InstrumentedExecutorService(executor, context.metricRegistry);
+    this.snapshotDao = snapshotDao;
   }
 
   @VisibleForTesting
   static SnapshotService create(
-      AppContext context, ExecutorService executor, Supplier<ClusterFacade> clusterFacadeSupplier) {
-    return new SnapshotService(context, executor, clusterFacadeSupplier);
+      AppContext context, ExecutorService executor,
+      Supplier<ClusterFacade> clusterFacadeSupplier, ISnapshotDao snapshotDao) {
+    return new SnapshotService(context, executor, clusterFacadeSupplier, snapshotDao);
   }
 
-  public static SnapshotService create(AppContext context, ExecutorService executor) {
-    return new SnapshotService(context, executor, () -> ClusterFacade.create(context));
+  public static SnapshotService create(AppContext context, ExecutorService executor, ISnapshotDao snapshotDao) {
+    return new SnapshotService(context, executor, () -> ClusterFacade.create(context), snapshotDao);
   }
 
   public Pair<Node, String> takeSnapshot(String snapshotName, Node host, String... keyspaces) throws ReaperException {
@@ -95,7 +101,7 @@ public final class SnapshotService {
 
     try {
       List<Pair<Node, String>> snapshotResults = Lists.newArrayList();
-      Cluster cluster = context.storage.getCluster(clusterName);
+      Cluster cluster = context.storage.getClusterDao().getCluster(clusterName);
 
       Snapshot snapshot = Snapshot.builder()
               .withClusterName(clusterName)
@@ -105,7 +111,7 @@ public final class SnapshotService {
               .withCreationDate(DateTime.now())
               .build();
 
-      context.storage.saveSnapshot(snapshot);
+      snapshotDao.saveSnapshot(snapshot);
       LOG.info("Cluster : {} ; Cluster obj : {}", clusterName, cluster);
       List<String> liveNodes = clusterFacade.getLiveNodes(cluster);
 
@@ -152,7 +158,7 @@ public final class SnapshotService {
   public Map<String, Map<String, List<Snapshot>>> listSnapshotsClusterWide(String clusterName) throws ReaperException {
     try {
       // Map with the snapshot name as key and a map of <host,
-      Cluster cluster = context.storage.getCluster(clusterName);
+      Cluster cluster = context.storage.getClusterDao().getCluster(clusterName);
       List<String> liveNodes = clusterFacade.getLiveNodes(cluster);
 
       List<Callable<List<Snapshot>>> listSnapshotTasks = liveNodes
@@ -212,7 +218,7 @@ public final class SnapshotService {
 
   public void clearSnapshotClusterWide(String snapshotName, String clusterName) throws ReaperException {
     try {
-      Cluster cluster = context.storage.getCluster(clusterName);
+      Cluster cluster = context.storage.getClusterDao().getCluster(clusterName);
       List<String> liveNodes = clusterFacade.getLiveNodes(cluster);
 
       List<Callable<Node>> clearSnapshotTasks = liveNodes
@@ -226,7 +232,7 @@ public final class SnapshotService {
         future.get();
       }
 
-      context.storage.deleteSnapshot(Snapshot.builder().withClusterName(clusterName).withName(snapshotName).build());
+      snapshotDao.deleteSnapshot(Snapshot.builder().withClusterName(clusterName).withName(snapshotName).build());
     } catch (ExecutionException e) {
       LOG.error("Failed clearing {} snapshot for cluster {}", snapshotName, clusterName, e);
     } catch (InterruptedException e) {
@@ -245,7 +251,7 @@ public final class SnapshotService {
 
     if (!snapshotMetadata.isPresent()) {
       snapshotMetadata = Optional.ofNullable(
-          context.storage.getSnapshot(snapshot.getClusterName(), snapshot.getName()));
+          snapshotDao.getSnapshot(snapshot.getClusterName(), snapshot.getName()));
 
       if (snapshotMetadata.isPresent()) {
         cache.put(snapshot.getClusterName() + "-" + snapshot.getName(), snapshotMetadata.get());

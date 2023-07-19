@@ -68,6 +68,24 @@ public final class RepairUnitService {
     return new RepairUnitService(context, () -> ClusterFacade.create(context));
   }
 
+  private static Integer versionCompare(String str1, String str2) {
+    VersionNumber version1 = VersionNumber.parse(str1);
+    VersionNumber version2 = VersionNumber.parse(str2);
+    return version1.compareTo(version2);
+  }
+
+  private static boolean isBlackListedCompactionStrategy(Table table) {
+    return BLACKLISTED_STRATEGEIS.stream()
+        .anyMatch(s -> table.getCompactionStrategy().toLowerCase().contains(s.toLowerCase()));
+  }
+
+  private static Set<String> listRepairTables(RepairUnit.Builder builder, Set<String> allTables) {
+    // subtract blacklisted tables from all tables (or those explicitly listed)
+    Set<String> tables = Sets.newHashSet(builder.columnFamilies.isEmpty() ? allTables : builder.columnFamilies);
+    tables.removeAll(builder.blacklistedTables);
+    return tables;
+  }
+
   public Optional<RepairUnit> getOrCreateRepairUnit(Cluster cluster, RepairUnit.Builder params) {
     return getOrCreateRepairUnit(cluster, params, false);
   }
@@ -83,7 +101,7 @@ public final class RepairUnitService {
         LOG.warn("unknown version to cluster {}, maybe enabling incremental on 2.0...", cluster.getName(), e);
       }
     }
-    Optional<RepairUnit> repairUnit = context.storage.getRepairUnit(params);
+    Optional<RepairUnit> repairUnit = context.storage.getRepairUnitDao().getRepairUnit(params);
     if (repairUnit.isPresent()) {
       return repairUnit;
     }
@@ -101,7 +119,7 @@ public final class RepairUnitService {
    * Applies blacklist filter on tables for the given repair unit.
    *
    * @param proxy : a JMX proxy instance
-   * @param unit : the repair unit for the current run
+   * @param unit  : the repair unit for the current run
    * @return the list of tables to repair for the keyspace without the blacklisted ones
    */
   Set<String> getTablesToRepair(Cluster cluster, RepairUnit repairUnit) throws ReaperException {
@@ -120,8 +138,8 @@ public final class RepairUnitService {
     } else {
       // if tables have been specified then don't apply the twcsBlacklisting
       result = repairUnit.getColumnFamilies().stream()
-            .filter(tableName -> !repairUnit.getBlacklistedTables().contains(tableName))
-            .collect(Collectors.toSet());
+          .filter(tableName -> !repairUnit.getBlacklistedTables().contains(tableName))
+          .collect(Collectors.toSet());
     }
 
     Preconditions.checkState(
@@ -144,33 +162,22 @@ public final class RepairUnitService {
     return Collections.emptySet();
   }
 
-  private static Integer versionCompare(String str1, String str2) {
-    VersionNumber version1 = VersionNumber.parse(str1);
-    VersionNumber version2 = VersionNumber.parse(str2);
-    return version1.compareTo(version2);
-  }
-
-  private static boolean isBlackListedCompactionStrategy(Table table) {
-    return BLACKLISTED_STRATEGEIS.stream()
-        .anyMatch(s -> table.getCompactionStrategy().toLowerCase().contains(s.toLowerCase()));
-  }
-
   private RepairUnit createRepairUnit(Cluster cluster, RepairUnit.Builder builder, boolean force) {
     Preconditions.checkArgument(
         force || !unitConflicts(cluster, builder),
         "unit conflicts with existing in " + builder.clusterName + ":" + builder.keyspaceName);
 
-    return context.storage.addRepairUnit(builder);
+    return context.storage.getRepairUnitDao().addRepairUnit(builder);
   }
 
   @VisibleForTesting
   boolean unitConflicts(Cluster cluster, RepairUnit.Builder builder) {
 
-    Collection<RepairSchedule> repairSchedules = context.storage
+    Collection<RepairSchedule> repairSchedules = context.storage.getRepairScheduleDao()
         .getRepairSchedulesForClusterAndKeyspace(builder.clusterName, builder.keyspaceName);
 
     for (RepairSchedule sched : repairSchedules) {
-      RepairUnit repairUnitForSched = context.storage.getRepairUnit(sched.getRepairUnitId());
+      RepairUnit repairUnitForSched = context.storage.getRepairUnitDao().getRepairUnit(sched.getRepairUnitId());
       Preconditions.checkState(repairUnitForSched.getClusterName().equals(builder.clusterName));
       Preconditions.checkState(repairUnitForSched.getKeyspaceName().equals(builder.keyspaceName));
 
@@ -282,12 +289,5 @@ public final class RepairUnitService {
       LOG.warn("Unable to get the list of datacenters for cluster {}", cluster.getName(), e);
     }
     return datacenters;
-  }
-
-  private static Set<String> listRepairTables(RepairUnit.Builder builder, Set<String> allTables) {
-    // subtract blacklisted tables from all tables (or those explicitly listed)
-    Set<String> tables = Sets.newHashSet(builder.columnFamilies.isEmpty() ? allTables : builder.columnFamilies);
-    tables.removeAll(builder.blacklistedTables);
-    return tables;
   }
 }

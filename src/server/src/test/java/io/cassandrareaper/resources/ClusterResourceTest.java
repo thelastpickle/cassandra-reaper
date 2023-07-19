@@ -35,7 +35,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.UriInfo;
@@ -76,20 +75,22 @@ public final class ClusterResourceTest {
     final MockObjects mocks = initMocks();
 
     ClusterResource clusterResource
-        = ClusterResource.create(mocks.context, mocks.cryptograph);
+        = ClusterResource.create(mocks.context, mocks.cryptograph, mocks.context.storage.getEventsDao(),
+        mocks.context.storage.getRepairRunDao());
 
     Response response = clusterResource
         .addOrUpdateCluster(mocks.uriInfo, Optional.of(SEED_HOST),
-                Optional.of(Cluster.DEFAULT_JMX_PORT),
-                Optional.of(JMX_USERNAME),
-                Optional.of(JMX_PASSWORD));
+            Optional.of(Cluster.DEFAULT_JMX_PORT),
+            Optional.of(JMX_USERNAME),
+            Optional.of(JMX_PASSWORD));
 
     Assertions.assertThat(response.getStatus()).isEqualTo(HttpStatus.CREATED_201);
-    assertEquals(1, mocks.context.storage.getClusters().size());
+    assertEquals(1, mocks.context.storage.getClusterDao().getClusters().size());
 
-    Cluster cluster = mocks.context.storage.getCluster(CLUSTER_NAME);
+    Cluster cluster = mocks.context.storage.getClusterDao().getCluster(CLUSTER_NAME);
     assertNotNull("Did not find expected cluster", cluster);
-    assertEquals(0, mocks.context.storage.getRepairRunsForCluster(cluster.getName(), Optional.of(1)).size());
+    assertEquals(0,
+        mocks.context.storage.getRepairRunDao().getRepairRunsForCluster(cluster.getName(), Optional.of(1)).size());
     assertEquals(CLUSTER_NAME, cluster.getName());
     assertEquals(1, cluster.getSeedHosts().size());
     assertEquals(SEED_HOST, cluster.getSeedHosts().iterator().next());
@@ -110,23 +111,26 @@ public final class ClusterResourceTest {
         .withState(Cluster.State.ACTIVE)
         .build();
 
-    mocks.context.storage.addCluster(cluster);
+    mocks.context.storage.getClusterDao().addCluster(cluster);
 
-    ClusterResource clusterResource = ClusterResource.create(mocks.context, mocks.cryptograph);
+    ClusterResource clusterResource = ClusterResource.create(mocks.context, mocks.cryptograph,
+        mocks.context.storage.getEventsDao(),
+        mocks.context.storage.getRepairRunDao());
 
     Response response = clusterResource
         .addOrUpdateCluster(mocks.uriInfo, Optional.of(SEED_HOST),
-                Optional.of(Cluster.DEFAULT_JMX_PORT),
-                Optional.of(JMX_USERNAME),
-                Optional.of(JMX_PASSWORD));
+            Optional.of(Cluster.DEFAULT_JMX_PORT),
+            Optional.of(JMX_USERNAME),
+            Optional.of(JMX_PASSWORD));
 
     Assertions.assertThat(response.getStatus()).isEqualTo(HttpStatus.NO_CONTENT_204);
     assertTrue(response.getLocation().toString().endsWith("/cluster/" + cluster.getName()));
-    assertEquals(1, mocks.context.storage.getClusters().size());
+    assertEquals(1, mocks.context.storage.getClusterDao().getClusters().size());
 
-    cluster = mocks.context.storage.getCluster(CLUSTER_NAME);
+    cluster = mocks.context.storage.getClusterDao().getCluster(CLUSTER_NAME);
     assertNotNull("Did not find expected cluster", cluster);
-    assertEquals(0, mocks.context.storage.getRepairRunsForCluster(cluster.getName(), Optional.of(1)).size());
+    assertEquals(0,
+        mocks.context.storage.getRepairRunDao().getRepairRunsForCluster(cluster.getName(), Optional.of(1)).size());
     assertEquals(CLUSTER_NAME, cluster.getName());
     assertEquals(1, cluster.getSeedHosts().size());
     assertEquals(SEED_HOST, cluster.getSeedHosts().iterator().next());
@@ -144,25 +148,28 @@ public final class ClusterResourceTest {
         .withState(Cluster.State.ACTIVE)
         .build();
 
-    mocks.context.storage.addCluster(cluster);
+    mocks.context.storage.getClusterDao().addCluster(cluster);
 
-    ClusterResource clusterResource = ClusterResource.create(mocks.context, mocks.cryptograph);
+    ClusterResource clusterResource = ClusterResource.create(mocks.context, mocks.cryptograph,
+        mocks.context.storage.getEventsDao(),
+        mocks.context.storage.getRepairRunDao());
 
     Response response = clusterResource.addOrUpdateCluster(
-            mocks.uriInfo,
-            CLUSTER_NAME,
-            Optional.of(SEED_HOST),
-            Optional.of(Cluster.DEFAULT_JMX_PORT),
-            Optional.of(JMX_USERNAME),
-            Optional.of(JMX_PASSWORD));
+        mocks.uriInfo,
+        CLUSTER_NAME,
+        Optional.of(SEED_HOST),
+        Optional.of(Cluster.DEFAULT_JMX_PORT),
+        Optional.of(JMX_USERNAME),
+        Optional.of(JMX_PASSWORD));
 
     Assertions.assertThat(response.getStatus()).isEqualTo(HttpStatus.NO_CONTENT_204);
     assertTrue(response.getLocation().toString().endsWith("/cluster/" + cluster.getName()));
-    assertEquals(1, mocks.context.storage.getClusters().size());
+    assertEquals(1, mocks.context.storage.getClusterDao().getClusters().size());
 
-    cluster = mocks.context.storage.getCluster(CLUSTER_NAME);
+    cluster = mocks.context.storage.getClusterDao().getCluster(CLUSTER_NAME);
     assertNotNull("Did not find expected cluster", cluster);
-    assertEquals(0, mocks.context.storage.getRepairRunsForCluster(cluster.getName(), Optional.of(1)).size());
+    assertEquals(0,
+        mocks.context.storage.getRepairRunDao().getRepairRunsForCluster(cluster.getName(), Optional.of(1)).size());
     assertEquals(CLUSTER_NAME, cluster.getName());
     assertEquals(1, cluster.getSeedHosts().size());
     assertEquals(SEED_HOST, cluster.getSeedHosts().iterator().next());
@@ -174,13 +181,15 @@ public final class ClusterResourceTest {
     ClusterFacade clusterFacade = mock(ClusterFacade.class);
 
     ClusterResource clusterResource
-        = ClusterResource.create(mocks.context, new NoopCrypotograph(), () -> clusterFacade);
+        = ClusterResource.create(mocks.context, new NoopCrypotograph(), () -> clusterFacade,
+        mocks.context.storage.getEventsDao(),
+        mocks.context.storage.getRepairRunDao());
 
     Response response = clusterResource.addOrUpdateCluster(mocks.uriInfo,
-                    Optional.of(SEED_HOST),
-                    Optional.of(Cluster.DEFAULT_JMX_PORT),
-                    Optional.of(JMX_USERNAME),
-                    Optional.of(JMX_PASSWORD));
+        Optional.of(SEED_HOST),
+        Optional.of(Cluster.DEFAULT_JMX_PORT),
+        Optional.of(JMX_USERNAME),
+        Optional.of(JMX_PASSWORD));
 
     assertEquals(Response.Status.BAD_REQUEST.getStatusCode(), response.getStatus());
   }
@@ -191,7 +200,9 @@ public final class ClusterResourceTest {
     when(mocks.jmxProxy.getLiveNodes()).thenReturn(Arrays.asList(SEED_HOST));
 
     ClusterResource clusterResource
-        = ClusterResource.create(mocks.context, mocks.cryptograph, () -> mocks.clusterFacade);
+        = ClusterResource.create(mocks.context, new NoopCrypotograph(), () -> mocks.clusterFacade,
+        mocks.context.storage.getEventsDao(),
+        mocks.context.storage.getRepairRunDao());
     Response response = clusterResource.getCluster(I_DONT_EXIST, Optional.<Integer>empty());
     Assertions.assertThat(response.getStatus()).isEqualTo(HttpStatus.NOT_FOUND_404);
   }
@@ -208,10 +219,12 @@ public final class ClusterResourceTest {
         .withState(Cluster.State.ACTIVE)
         .build();
 
-    mocks.context.storage.addCluster(cluster);
+    mocks.context.storage.getClusterDao().addCluster(cluster);
 
     ClusterResource clusterResource
-        = ClusterResource.create(mocks.context, mocks.cryptograph, () -> mocks.clusterFacade);
+        = ClusterResource.create(mocks.context, new NoopCrypotograph(), () -> mocks.clusterFacade,
+        mocks.context.storage.getEventsDao(),
+        mocks.context.storage.getRepairRunDao());
     Response response = clusterResource.getCluster(I_DO_EXIST, Optional.<Integer>empty());
     Assertions.assertThat(response.getStatus()).isEqualTo(HttpStatus.OK_200);
   }
@@ -226,10 +239,12 @@ public final class ClusterResourceTest {
         .withState(Cluster.State.ACTIVE)
         .build();
 
-    mocks.context.storage.addCluster(cluster);
+    mocks.context.storage.getClusterDao().addCluster(cluster);
 
     ClusterResource clusterResource
-        = ClusterResource.create(mocks.context, mocks.cryptograph, () -> mocks.clusterFacade);
+        = ClusterResource.create(mocks.context, new NoopCrypotograph(), () -> mocks.clusterFacade,
+        mocks.context.storage.getEventsDao(),
+        mocks.context.storage.getRepairRunDao());
     Response response = clusterResource.getClusterList(Optional.empty());
     Assertions.assertThat(response.getStatus()).isEqualTo(HttpStatus.OK_200);
     List<String> clusterNames = (List<String>) response.getEntity();
@@ -247,10 +262,12 @@ public final class ClusterResourceTest {
         .withState(Cluster.State.ACTIVE)
         .build();
 
-    mocks.context.storage.addCluster(cluster);
+    mocks.context.storage.getClusterDao().addCluster(cluster);
 
     ClusterResource clusterResource
-        = ClusterResource.create(mocks.context, mocks.cryptograph, () -> mocks.clusterFacade);
+        = ClusterResource.create(mocks.context, new NoopCrypotograph(), () -> mocks.clusterFacade,
+        mocks.context.storage.getEventsDao(),
+        mocks.context.storage.getRepairRunDao());
     Response response = clusterResource.getClusterList(Optional.of(SEED_HOST));
     Assertions.assertThat(response.getStatus()).isEqualTo(HttpStatus.OK_200);
     List<String> clusterNames = (List<String>) response.getEntity();
@@ -268,7 +285,7 @@ public final class ClusterResourceTest {
         .withState(Cluster.State.ACTIVE)
         .build();
 
-    mocks.context.storage.addCluster(cluster);
+    mocks.context.storage.getClusterDao().addCluster(cluster);
 
     cluster = Cluster.builder()
         .withName("cluster2")
@@ -276,10 +293,12 @@ public final class ClusterResourceTest {
         .withState(Cluster.State.ACTIVE)
         .build();
 
-    mocks.context.storage.addCluster(cluster);
+    mocks.context.storage.getClusterDao().addCluster(cluster);
 
     ClusterResource clusterResource
-        = ClusterResource.create(mocks.context, mocks.cryptograph, () -> mocks.clusterFacade);
+        = ClusterResource.create(mocks.context, new NoopCrypotograph(), () -> mocks.clusterFacade,
+        mocks.context.storage.getEventsDao(),
+        mocks.context.storage.getRepairRunDao());
     Response response = clusterResource.getClusterList(Optional.of(SEED_HOST));
     Assertions.assertThat(response.getStatus()).isEqualTo(HttpStatus.OK_200);
     List<String> clusterNames = (List<String>) response.getEntity();
@@ -297,7 +316,7 @@ public final class ClusterResourceTest {
         .withState(Cluster.State.ACTIVE)
         .build();
 
-    mocks.context.storage.addCluster(cluster);
+    mocks.context.storage.getClusterDao().addCluster(cluster);
 
     cluster = Cluster.builder()
         .withName("cluster2")
@@ -305,10 +324,12 @@ public final class ClusterResourceTest {
         .withState(Cluster.State.ACTIVE)
         .build();
 
-    mocks.context.storage.addCluster(cluster);
+    mocks.context.storage.getClusterDao().addCluster(cluster);
 
     ClusterResource clusterResource
-        = ClusterResource.create(mocks.context, mocks.cryptograph, () -> mocks.clusterFacade);
+        = ClusterResource.create(mocks.context, new NoopCrypotograph(), () -> mocks.clusterFacade,
+        mocks.context.storage.getEventsDao(),
+        mocks.context.storage.getRepairRunDao());
     Response response = clusterResource.getClusterList(Optional.of("host2"));
     Assertions.assertThat(response.getStatus()).isEqualTo(HttpStatus.OK_200);
     List<String> clusterNames = (List<String>) response.getEntity();
@@ -326,7 +347,7 @@ public final class ClusterResourceTest {
         .withState(Cluster.State.ACTIVE)
         .build();
 
-    mocks.context.storage.addCluster(cluster);
+    mocks.context.storage.getClusterDao().addCluster(cluster);
 
     cluster = Cluster.builder()
         .withName("cluster2")
@@ -334,10 +355,12 @@ public final class ClusterResourceTest {
         .withState(Cluster.State.ACTIVE)
         .build();
 
-    mocks.context.storage.addCluster(cluster);
+    mocks.context.storage.getClusterDao().addCluster(cluster);
 
     ClusterResource clusterResource
-        = ClusterResource.create(mocks.context, mocks.cryptograph, () -> mocks.clusterFacade);
+        = ClusterResource.create(mocks.context, new NoopCrypotograph(), () -> mocks.clusterFacade,
+        mocks.context.storage.getEventsDao(),
+        mocks.context.storage.getRepairRunDao());
     Response response = clusterResource.getClusterList(Optional.empty());
     Assertions.assertThat(response.getStatus()).isEqualTo(HttpStatus.OK_200);
     List<String> clusterNames = (List<String>) response.getEntity();
@@ -355,7 +378,7 @@ public final class ClusterResourceTest {
         .withState(Cluster.State.ACTIVE)
         .build();
 
-    mocks.context.storage.addCluster(cluster);
+    mocks.context.storage.getClusterDao().addCluster(cluster);
 
     cluster = Cluster.builder()
         .withName("abc")
@@ -363,10 +386,12 @@ public final class ClusterResourceTest {
         .withState(Cluster.State.ACTIVE)
         .build();
 
-    mocks.context.storage.addCluster(cluster);
+    mocks.context.storage.getClusterDao().addCluster(cluster);
 
     ClusterResource clusterResource
-        = ClusterResource.create(mocks.context, mocks.cryptograph, () -> mocks.clusterFacade);
+        = ClusterResource.create(mocks.context, new NoopCrypotograph(), () -> mocks.clusterFacade,
+        mocks.context.storage.getEventsDao(),
+        mocks.context.storage.getRepairRunDao());
     Response response = clusterResource.getClusterList(Optional.empty());
     Assertions.assertThat(response.getStatus()).isEqualTo(HttpStatus.OK_200);
     List<String> clusterNames = (List<String>) response.getEntity();
@@ -384,7 +409,7 @@ public final class ClusterResourceTest {
         .withState(Cluster.State.UNREACHABLE)
         .build();
 
-    mocks.context.storage.addCluster(cluster);
+    mocks.context.storage.getClusterDao().addCluster(cluster);
 
     cluster = Cluster.builder()
         .withName("cluster2")
@@ -392,10 +417,12 @@ public final class ClusterResourceTest {
         .withState(Cluster.State.ACTIVE)
         .build();
 
-    mocks.context.storage.addCluster(cluster);
+    mocks.context.storage.getClusterDao().addCluster(cluster);
 
     ClusterResource clusterResource
-        = ClusterResource.create(mocks.context, mocks.cryptograph, () -> mocks.clusterFacade);
+        = ClusterResource.create(mocks.context, new NoopCrypotograph(), () -> mocks.clusterFacade,
+        mocks.context.storage.getEventsDao(),
+        mocks.context.storage.getRepairRunDao());
     Response response = clusterResource.getClusterList(Optional.empty());
     Assertions.assertThat(response.getStatus()).isEqualTo(HttpStatus.OK_200);
     List<String> clusterNames = (List<String>) response.getEntity();
@@ -412,7 +439,7 @@ public final class ClusterResourceTest {
         .withSeedHosts(ImmutableSet.of(SEED_HOST))
         .build();
 
-    mocks.context.storage.addCluster(cluster);
+    mocks.context.storage.getClusterDao().addCluster(cluster);
   }
 
   @Test(expected = IllegalArgumentException.class)
@@ -425,7 +452,7 @@ public final class ClusterResourceTest {
         .withState(Cluster.State.ACTIVE)
         .build();
 
-    mocks.context.storage.addCluster(cluster);
+    mocks.context.storage.getClusterDao().addCluster(cluster);
 
     cluster = Cluster.builder()
         .withName(CLUSTER_NAME)
@@ -433,7 +460,7 @@ public final class ClusterResourceTest {
         .withState(Cluster.State.ACTIVE)
         .build();
 
-    mocks.context.storage.addCluster(cluster);
+    mocks.context.storage.getClusterDao().addCluster(cluster);
   }
 
   @Test
@@ -441,32 +468,33 @@ public final class ClusterResourceTest {
     final MockObjects mocks = initMocks();
 
     ClusterResource clusterResource
-        = ClusterResource.create(mocks.context, mocks.cryptograph);
+        = ClusterResource.create(mocks.context, mocks.cryptograph, mocks.context.storage.getEventsDao(),
+        mocks.context.storage.getRepairRunDao());
     clusterResource.addOrUpdateCluster(mocks.uriInfo, Optional.of(SEED_HOST), Optional.of(Cluster.DEFAULT_JMX_PORT),
-            Optional.of(JMX_USERNAME), Optional.of(JMX_PASSWORD));
+        Optional.of(JMX_USERNAME), Optional.of(JMX_PASSWORD));
     doReturn(Arrays.asList(SEED_HOST + 1, SEED_HOST)).when(mocks.jmxProxy).getLiveNodes();
 
     Response response = clusterResource
         .addOrUpdateCluster(mocks.uriInfo, Optional.of(SEED_HOST + 1),
-                Optional.of(Cluster.DEFAULT_JMX_PORT),
-                Optional.of(JMX_USERNAME),
-                Optional.of(JMX_PASSWORD));
+            Optional.of(Cluster.DEFAULT_JMX_PORT),
+            Optional.of(JMX_USERNAME),
+            Optional.of(JMX_PASSWORD));
 
     assertEquals(HttpStatus.OK_200, response.getStatus());
     assertTrue(response.getLocation().toString().endsWith("/cluster/" + CLUSTER_NAME));
-    assertEquals(1, mocks.context.storage.getClusters().size());
+    assertEquals(1, mocks.context.storage.getClusterDao().getClusters().size());
 
-    Cluster cluster = mocks.context.storage.getCluster(CLUSTER_NAME);
+    Cluster cluster = mocks.context.storage.getClusterDao().getCluster(CLUSTER_NAME);
     Assertions.assertThat(cluster.getSeedHosts()).hasSize(2);
     Assertions.assertThat(cluster.getSeedHosts()).contains(SEED_HOST + 1);
 
     response = clusterResource.addOrUpdateCluster(
-            mocks.uriInfo,
-            CLUSTER_NAME,
-            Optional.of(SEED_HOST + 1),
-            Optional.of(Cluster.DEFAULT_JMX_PORT),
-            Optional.of(JMX_USERNAME),
-            Optional.of(JMX_PASSWORD));
+        mocks.uriInfo,
+        CLUSTER_NAME,
+        Optional.of(SEED_HOST + 1),
+        Optional.of(Cluster.DEFAULT_JMX_PORT),
+        Optional.of(JMX_USERNAME),
+        Optional.of(JMX_PASSWORD));
 
     assertEquals(HttpStatus.NO_CONTENT_204, response.getStatus());
     assertTrue(response.getLocation().toString().endsWith("/cluster/" + cluster.getName()));
@@ -477,34 +505,37 @@ public final class ClusterResourceTest {
     final MockObjects mocks = initMocks();
 
     ClusterResource clusterResource
-        = ClusterResource.create(mocks.context, mocks.cryptograph);
+        = ClusterResource.create(mocks.context, mocks.cryptograph,
+        mocks.context.storage.getEventsDao(),
+        mocks.context.storage.getRepairRunDao());
+    ;
     clusterResource.addOrUpdateCluster(mocks.uriInfo, Optional.of(SEED_HOST), Optional.of(Cluster.DEFAULT_JMX_PORT),
-            Optional.of(JMX_USERNAME), Optional.of(JMX_PASSWORD));
+        Optional.of(JMX_USERNAME), Optional.of(JMX_PASSWORD));
     doReturn(Arrays.asList(SEED_HOST + 1, SEED_HOST)).when(mocks.jmxProxy).getLiveNodes();
 
     Response response = clusterResource.addOrUpdateCluster(
-            mocks.uriInfo,
-            CLUSTER_NAME,
-            Optional.of(SEED_HOST + 1),
-            Optional.of(Cluster.DEFAULT_JMX_PORT),
-            Optional.of(JMX_USERNAME),
-            Optional.of(JMX_PASSWORD));
+        mocks.uriInfo,
+        CLUSTER_NAME,
+        Optional.of(SEED_HOST + 1),
+        Optional.of(Cluster.DEFAULT_JMX_PORT),
+        Optional.of(JMX_USERNAME),
+        Optional.of(JMX_PASSWORD));
 
     assertEquals(HttpStatus.OK_200, response.getStatus());
     assertTrue(response.getLocation().toString().endsWith("/cluster/" + CLUSTER_NAME));
-    assertEquals(1, mocks.context.storage.getClusters().size());
+    assertEquals(1, mocks.context.storage.getClusterDao().getClusters().size());
 
-    Cluster cluster = mocks.context.storage.getCluster(CLUSTER_NAME);
+    Cluster cluster = mocks.context.storage.getClusterDao().getCluster(CLUSTER_NAME);
     Assertions.assertThat(cluster.getSeedHosts()).hasSize(2);
     Assertions.assertThat(cluster.getSeedHosts()).contains(SEED_HOST + 1);
 
     response = clusterResource.addOrUpdateCluster(
-            mocks.uriInfo,
-            CLUSTER_NAME,
-            Optional.of(SEED_HOST + 1),
-            Optional.of(Cluster.DEFAULT_JMX_PORT),
-            Optional.of(JMX_USERNAME),
-            Optional.of(JMX_PASSWORD));
+        mocks.uriInfo,
+        CLUSTER_NAME,
+        Optional.of(SEED_HOST + 1),
+        Optional.of(Cluster.DEFAULT_JMX_PORT),
+        Optional.of(JMX_USERNAME),
+        Optional.of(JMX_PASSWORD));
     assertEquals(HttpStatus.NO_CONTENT_204, response.getStatus());
 
     assertTrue(response.getLocation().toString().endsWith("/cluster/" + cluster.getName()));
@@ -528,15 +559,20 @@ public final class ClusterResourceTest {
         .build();
 
     ClusterResource clusterResource
-        = ClusterResource.create(mocks.context, mocks.cryptograph);
+        = ClusterResource.create(mocks.context, mocks.cryptograph,
+        mocks.context.storage.getEventsDao(),
+        mocks.context.storage.getRepairRunDao());
+    ;
 
     Response response = clusterResource
         .addOrUpdateCluster(mocks.uriInfo, Optional.of(SEED_HOST), Optional.of(Cluster.DEFAULT_JMX_PORT),
-                Optional.of(JMX_USERNAME), Optional.of(JMX_PASSWORD));
+            Optional.of(JMX_USERNAME), Optional.of(JMX_PASSWORD));
 
     assertEquals(HttpStatus.CREATED_201, response.getStatus());
-    assertEquals(1, mocks.context.storage.getAllRepairSchedules().size());
-    assertEquals(1, mocks.context.storage.getRepairSchedulesForClusterAndKeyspace(CLUSTER_NAME, "keyspace1").size());
+    assertEquals(1, mocks.context.storage.getRepairScheduleDao().getAllRepairSchedules().size());
+    assertEquals(1,
+        mocks.context.storage.getRepairScheduleDao().getRepairSchedulesForClusterAndKeyspace(CLUSTER_NAME, "keyspace1")
+            .size());
   }
 
   @Test
@@ -557,15 +593,20 @@ public final class ClusterResourceTest {
         .build();
 
     ClusterResource clusterResource
-        = ClusterResource.create(mocks.context, mocks.cryptograph);
+        = ClusterResource.create(mocks.context, mocks.cryptograph,
+        mocks.context.storage.getEventsDao(),
+        mocks.context.storage.getRepairRunDao());
+    ;
 
     Response response = clusterResource
         .addOrUpdateCluster(mocks.uriInfo, Optional.of(SEED_HOST), Optional.of(Cluster.DEFAULT_JMX_PORT),
-                Optional.of(JMX_USERNAME), Optional.of(JMX_PASSWORD));
+            Optional.of(JMX_USERNAME), Optional.of(JMX_PASSWORD));
 
     assertEquals(HttpStatus.CREATED_201, response.getStatus());
-    assertEquals(1, mocks.context.storage.getAllRepairSchedules().size());
-    assertEquals(1, mocks.context.storage.getRepairSchedulesForClusterAndKeyspace(CLUSTER_NAME, "keyspace1").size());
+    assertEquals(1, mocks.context.storage.getRepairScheduleDao().getAllRepairSchedules().size());
+    assertEquals(1,
+        mocks.context.storage.getRepairScheduleDao().getRepairSchedulesForClusterAndKeyspace(CLUSTER_NAME, "keyspace1")
+            .size());
 
     assertEquals(HttpStatus.CONFLICT_409, clusterResource.deleteCluster(CLUSTER_NAME, Optional.empty()).getStatus());
 

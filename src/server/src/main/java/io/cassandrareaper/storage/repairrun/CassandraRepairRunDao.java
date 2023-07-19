@@ -22,9 +22,9 @@ import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairSegment;
 import io.cassandrareaper.core.RepairUnit;
 import io.cassandrareaper.resources.view.RepairRunStatus;
-import io.cassandrareaper.storage.cluster.CassClusterDao;
-import io.cassandrareaper.storage.repairsegment.CassRepairSegmentDao;
-import io.cassandrareaper.storage.repairunit.CassRepairUnitDao;
+import io.cassandrareaper.storage.cluster.CassandraClusterDao;
+import io.cassandrareaper.storage.repairsegment.CassandraRepairSegmentDao;
+import io.cassandrareaper.storage.repairunit.CassandraRepairUnitDao;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -55,8 +55,8 @@ import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class CassRepairRunDao implements IRepairRun {
-  private static final Logger LOG = LoggerFactory.getLogger(CassRepairRunDao.class);
+public class CassandraRepairRunDao implements IRepairRunDao {
+  private static final Logger LOG = LoggerFactory.getLogger(CassandraRepairRunDao.class);
   private static final int MAX_RETURNED_REPAIR_RUNS = 1000;
 
   ObjectMapper objectMapper;
@@ -72,18 +72,18 @@ public class CassRepairRunDao implements IRepairRun {
   PreparedStatement deleteRepairRunPrepStmt;
   PreparedStatement deleteRepairRunByClusterByIdPrepStmt;
   PreparedStatement deleteRepairRunByUnitPrepStmt;
-  private final CassRepairUnitDao cassRepairUnitDao;
-  private final CassClusterDao cassClusterDao;
+  private final CassandraRepairUnitDao cassRepairUnitDao;
+  private final CassandraClusterDao cassClusterDao;
 
-  private final CassRepairSegmentDao cassRepairSegmentDao;
+  private final CassandraRepairSegmentDao cassRepairSegmentDao;
   private final Session session;
 
 
-  public CassRepairRunDao(CassRepairUnitDao cassRepairUnitDao,
-                          CassClusterDao cassClusterDao,
-                          CassRepairSegmentDao cassRepairSegmentDao,
-                          Session session,
-                          ObjectMapper objectMapper) {
+  public CassandraRepairRunDao(CassandraRepairUnitDao cassRepairUnitDao,
+                               CassandraClusterDao cassClusterDao,
+                               CassandraRepairSegmentDao cassRepairSegmentDao,
+                               Session session,
+                               ObjectMapper objectMapper) {
     this.session = session;
     this.cassRepairSegmentDao = cassRepairSegmentDao;
     this.cassRepairUnitDao = cassRepairUnitDao;

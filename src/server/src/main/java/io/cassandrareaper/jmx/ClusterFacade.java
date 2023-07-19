@@ -477,7 +477,7 @@ public final class ClusterFacade {
       // We don't have access to the node through JMX, so we'll get data from the database
       LOG.debug("Node {} in DC {} is not accessible through JMX", node.getHostname(), nodeDc);
 
-      String compactionsJson = ((IDistributedStorage)context.storage)
+      String compactionsJson = ((IDistributedStorage)context.storage).getOperationsDao()
           .listOperations(node.getClusterName(), OpType.OP_COMPACTION, node.getHostname());
 
       return parseCompactionStats(compactionsJson);
@@ -752,7 +752,7 @@ public final class ClusterFacade {
       // We don't have access to the node through JMX, so we'll get data from the database
       LOG.debug("Node {} in DC {} is not accessible through JMX", node.getHostname(), nodeDc);
 
-      String streamsJson = ((IDistributedStorage) context.storage)
+      String streamsJson = ((IDistributedStorage) context.storage).getOperationsDao()
           .listOperations(node.getClusterName(), OpType.OP_STREAMING, node.getHostname());
       if (streamsJson.length() > 0) {
         return parseStreamSessionJson(streamsJson);
@@ -929,7 +929,7 @@ public final class ClusterFacade {
       // it's ok for this method to be executed in parallel, state converges.
       if (Cluster.State.UNKNOWN != cluster.getState() && !LocalDate.now().equals(cluster.getLastContact())) {
         Cluster.Builder builder = cluster.with().withState(Cluster.State.ACTIVE).withLastContact(LocalDate.now());
-        ASYNC.submit(() -> context.storage.updateCluster(builder.build()));
+        ASYNC.submit(() -> context.storage.getClusterDao().updateCluster(builder.build()));
         return true;
       }
       return false;
@@ -940,7 +940,8 @@ public final class ClusterFacade {
       if (Cluster.State.ACTIVE == cluster.getState()
           && LocalDate.now().minusDays(context.config.getClusterTimeoutInDays()).isAfter(cluster.getLastContact())) {
 
-        ASYNC.submit(() -> context.storage.updateCluster(cluster.with().withState(Cluster.State.UNREACHABLE).build()));
+        ASYNC.submit(() -> context.storage.getClusterDao()
+            .updateCluster(cluster.with().withState(Cluster.State.UNREACHABLE).build()));
         return true;
       }
       return false;

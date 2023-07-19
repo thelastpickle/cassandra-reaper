@@ -20,9 +20,9 @@ package io.cassandrareaper.storage.cluster;
 
 import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.ClusterProperties;
-import io.cassandrareaper.storage.events.CassEventsDao;
-import io.cassandrareaper.storage.repairschedule.CassRepairScheduleDao;
-import io.cassandrareaper.storage.repairunit.CassRepairUnitDao;
+import io.cassandrareaper.storage.events.CassandraEventsDao;
+import io.cassandrareaper.storage.repairschedule.CassandraRepairScheduleDao;
+import io.cassandrareaper.storage.repairunit.CassandraRepairUnitDao;
 
 import java.io.IOException;
 import java.sql.Date;
@@ -50,9 +50,9 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class CassClusterDao implements ICluster {
+public class CassandraClusterDao implements IClusterDao {
   private static final String SELECT_CLUSTER = "SELECT * FROM cluster";
-  private static final Logger LOG = LoggerFactory.getLogger(CassClusterDao.class);
+  private static final Logger LOG = LoggerFactory.getLogger(CassandraClusterDao.class);
   /* prepared stmts */
   PreparedStatement insertClusterPrepStmt;
   PreparedStatement getClusterPrepStmt;
@@ -62,17 +62,17 @@ public class CassClusterDao implements ICluster {
   private final ObjectMapper objectMapper;
   private final AtomicReference<Collection<Cluster>> clustersCache = new AtomicReference(Collections.EMPTY_SET);
   private final AtomicLong clustersCacheAge = new AtomicLong(0);
-  private final CassRepairScheduleDao cassRepairScheduleDao;
-  private final CassRepairUnitDao cassRepairUnitDao;
-  private final CassEventsDao cassEventsDao;
+  private final CassandraRepairScheduleDao cassRepairScheduleDao;
+  private final CassandraRepairUnitDao cassRepairUnitDao;
+  private final CassandraEventsDao cassEventsDao;
 
   private final Session session;
 
-  public CassClusterDao(CassRepairScheduleDao cassRepairScheduleDao,
-                        CassRepairUnitDao cassRepairUnitDao,
-                        CassEventsDao cassEventsDao,
-                        Session session,
-                        ObjectMapper objectMapper) {
+  public CassandraClusterDao(CassandraRepairScheduleDao cassRepairScheduleDao,
+                             CassandraRepairUnitDao cassRepairUnitDao,
+                             CassandraEventsDao cassEventsDao,
+                             Session session,
+                             ObjectMapper objectMapper) {
 
     this.session = session;
     this.objectMapper = objectMapper;
@@ -217,7 +217,7 @@ public class CassClusterDao implements ICluster {
         .filter(subscription -> subscription.getId().isPresent())
         .forEach(subscription -> cassEventsDao.deleteEventSubscription(subscription.getId().get()));
 
-    Statement stmt = new SimpleStatement(CassRepairUnitDao.SELECT_REPAIR_UNIT);
+    Statement stmt = new SimpleStatement(CassandraRepairUnitDao.SELECT_REPAIR_UNIT);
     stmt.setIdempotent(true);
     ResultSet results = session.execute(stmt);
     for (Row row : results) {

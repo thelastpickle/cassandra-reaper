@@ -26,8 +26,16 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-public interface IRepairSegment {
+public interface IRepairSegmentDao {
   boolean updateRepairSegment(RepairSegment newRepairSegment);
+
+  /**
+   * Update the repair segment without a lock as it couldn't be grabbed.
+   *
+   * @param newRepairSegment repair segment to update
+   * @return true if the segment was updated, false otherwise
+   */
+  boolean updateRepairSegmentUnsafe(RepairSegment newRepairSegment);
 
   Optional<RepairSegment> getRepairSegment(UUID runId, UUID segmentId);
 
@@ -44,4 +52,6 @@ public interface IRepairSegment {
   int getSegmentAmountForRepairRun(UUID runId);
 
   int getSegmentAmountForRepairRunWithState(UUID runId, RepairSegment.State state);
+
+
 }

@@ -27,11 +27,11 @@ import com.datastax.driver.core.utils.UUIDs;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
 
-public class MemRepairUnitDao implements IRepairUnit {
+public class MemoryRepairUnitDao implements IRepairUnitDao {
   public final ConcurrentMap<UUID, RepairUnit> repairUnits = Maps.newConcurrentMap();
   public final ConcurrentMap<RepairUnit.Builder, RepairUnit> repairUnitsByKey = Maps.newConcurrentMap();
 
-  public MemRepairUnitDao() {
+  public MemoryRepairUnitDao() {
   }
 
   /**

@@ -35,7 +35,6 @@ import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
-
 import javax.management.JMException;
 
 import com.codahale.metrics.Gauge;
@@ -78,18 +77,21 @@ public final class Heart implements AutoCloseable {
     return new Heart(context, maxBeatFrequencyMillis);
   }
 
+  private static Timer.Context timer(AppContext context, String... names) {
+    return context.metricRegistry.timer(MetricRegistry.name(Heart.class, names)).time();
+  }
+
   /**
    * Performs the following operations as part of regular heartbeats.
    * - Store heart beat with timestamp in the running_reapers table (allows to count live reaper instances)
    * - In distributed modes, stores metrics in the backend such as tpstats, latencies and pending compactions
-   *   as all instances can't reach all nodes through JMX (all dcAvailability modes but ALL).
-   *   This is done for all nodes in all clusters that are managed by the Reaper instance.
+   * as all instances can't reach all nodes through JMX (all dcAvailability modes but ALL).
+   * This is done for all nodes in all clusters that are managed by the Reaper instance.
    * - In sidecar mode, does the same as above but only for the local node
    * - In all cases, stores min(%repaired) for all tables that are part of an incremental repair schedule
-   *
    */
   public synchronized void beat() {
-    if ( context.storage instanceof IDistributedStorage ) {
+    if (context.storage instanceof IDistributedStorage) {
       if (lastBeat.get() + maxBeatFrequencyMillis < System.currentTimeMillis()) {
         lastBeat.set(System.currentTimeMillis());
         ((IDistributedStorage) context.storage).saveHeartbeat();
@@ -110,7 +112,7 @@ public final class Heart implements AutoCloseable {
         forkJoinPool.submit(() -> {
           try (Timer.Context t0 = timer(context, "updatingNodeMetrics")) {
             ClusterFacade clusterFacade = ClusterFacade.create(context);
-            Collection<Cluster> clusters = context.storage.getClusters();
+            Collection<Cluster> clusters = context.storage.getClusterDao().getClusters();
             updateMetricsForClusters(clusterFacade, clusters);
           } finally {
             assert updatingNodeMetrics.get();
@@ -155,7 +157,7 @@ public final class Heart implements AutoCloseable {
             // In distributed modes other than SIDECAR, metrics are grabbed for all accessible nodes
             // in all managed clusters
             ClusterFacade clusterFacade = ClusterFacade.create(context);
-            Collection<Cluster> clusters = context.storage.getClusters();
+            Collection<Cluster> clusters = context.storage.getClusterDao().getClusters();
             forkJoinPool.submit(() -> {
               updateMetricsForClusters(clusterFacade, clusters);
             }).get();
@@ -169,12 +171,14 @@ public final class Heart implements AutoCloseable {
                   lastMetricBeat.get(),
                   System.currentTimeMillis());
             }
-            updatePercentRepairedForNode(Optional.empty(), context.storage.getClusters().stream().findFirst().get());
+            updatePercentRepairedForNode(
+                Optional.empty(),
+                context.storage.getClusterDao().getClusters().stream().findFirst().get());
             metricsService.grabAndStoreCompactionStats(Optional.empty());
             metricsService.grabAndStoreActiveStreams(Optional.empty());
           }
         } catch (ExecutionException | InterruptedException | RuntimeException
-            | ReaperException | JMException | IOException ex) {
+                 | ReaperException | JMException | IOException ex) {
           LOG.warn("Failed metric collection during heartbeat", ex);
         } finally {
           assert updatingNodeMetrics.get();
@@ -189,7 +193,7 @@ public final class Heart implements AutoCloseable {
    * For non collocated modes, only percent repaired metrics will be extracted for existing incr repair schedules.
    *
    * @param clusterFacade A ClusterFacade object used to access the nodes via JMX.
-   * @param clusters Active clusters managed by Reaper
+   * @param clusters      Active clusters managed by Reaper
    */
   private void updateMetricsForClusters(
       ClusterFacade clusterFacade,
@@ -237,7 +241,7 @@ public final class Heart implements AutoCloseable {
    * Retrieve percent repaired metrics for a specific node.
    * Such metrics will only be retrieved if an incremental repair schedule exists.
    *
-   * @param node An optional node to grab the metrics from (the local node if not provided)
+   * @param node                       An optional node to grab the metrics from (the local node if not provided)
    * @param incrementalRepairSchedules a collection of incremental repair schedules
    */
   private void updatePercentRepairedForNode(
@@ -249,7 +253,7 @@ public final class Heart implements AutoCloseable {
         TimeUnit.MINUTES.toMillis(context.config.getPercentRepairedCheckIntervalMinutes()))) {
 
       Collection<RepairSchedule> incrementalRepairSchedules
-          = context.storage.getRepairSchedulesForCluster(cluster.getName(), true);
+          = context.storage.getRepairScheduleDao().getRepairSchedulesForCluster(cluster.getName(), true);
 
       incrementalRepairSchedules.stream().forEach(sched -> {
         try {
@@ -275,10 +279,6 @@ public final class Heart implements AutoCloseable {
       metricsService.grabAndStoreGenericMetrics(Optional.of(node));
       lastMetricBeat.set(System.currentTimeMillis());
     }
-  }
-
-  private static Timer.Context timer(AppContext context, String... names) {
-    return context.metricRegistry.timer(MetricRegistry.name(Heart.class, names)).time();
   }
 
   private void registerGauges() throws IllegalArgumentException {

@@ -25,7 +25,7 @@ import java.util.Collection;
 import java.util.Optional;
 import java.util.UUID;
 
-public interface IRepairSchedule {
+public interface IRepairScheduleDao {
   RepairSchedule addRepairSchedule(RepairSchedule.Builder repairSchedule);
 
   Optional<RepairSchedule> getRepairSchedule(UUID repairScheduleId);

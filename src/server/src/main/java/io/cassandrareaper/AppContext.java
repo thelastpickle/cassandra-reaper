@@ -20,7 +20,7 @@ package io.cassandrareaper;
 import io.cassandrareaper.jmx.JmxConnectionFactory;
 import io.cassandrareaper.service.RepairManager;
 import io.cassandrareaper.service.SchedulingManager;
-import io.cassandrareaper.storage.IStorage;
+import io.cassandrareaper.storage.IStorageDao;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -43,7 +43,7 @@ public final class AppContext {
   public final UUID reaperInstanceId = UUIDs.timeBased();
   public final AtomicBoolean isRunning = new AtomicBoolean(true);
   public final AtomicBoolean isDistributed = new AtomicBoolean(false);
-  public IStorage storage;
+  public IStorageDao storage;
   public RepairManager repairManager;
   public SchedulingManager schedulingManager;
   public JmxConnectionFactory jmxConnectionFactory;

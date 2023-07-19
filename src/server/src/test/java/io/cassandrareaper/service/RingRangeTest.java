@@ -17,8 +17,6 @@
 
 package io.cassandrareaper.service;
 
-import io.cassandrareaper.service.RingRange;
-
 import java.math.BigInteger;
 import java.util.List;
 

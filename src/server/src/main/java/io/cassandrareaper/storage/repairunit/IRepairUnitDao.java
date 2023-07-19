@@ -22,7 +22,7 @@ import io.cassandrareaper.core.RepairUnit;
 import java.util.Optional;
 import java.util.UUID;
 
-public interface IRepairUnit {
+public interface IRepairUnitDao {
   RepairUnit addRepairUnit(RepairUnit.Builder newRepairUnit);
 
   RepairUnit getRepairUnit(UUID id);

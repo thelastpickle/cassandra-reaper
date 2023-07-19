@@ -20,6 +20,7 @@ package io.cassandrareaper.service;
 import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
+import io.cassandrareaper.storage.repairrun.IRepairRunDao;
 
 import java.util.Collection;
 import java.util.Timer;
@@ -36,8 +37,8 @@ public final class AutoSchedulingManager extends TimerTask {
   private final AppContext context;
   private final ClusterRepairScheduler clusterRepairScheduler;
 
-  private AutoSchedulingManager(AppContext context) {
-    this(context, new ClusterRepairScheduler(context));
+  private AutoSchedulingManager(AppContext context, IRepairRunDao repairRunDao) {
+    this(context, new ClusterRepairScheduler(context, repairRunDao));
   }
 
   public AutoSchedulingManager(AppContext context, ClusterRepairScheduler clusterRepairScheduler) {
@@ -45,7 +46,7 @@ public final class AutoSchedulingManager extends TimerTask {
     this.clusterRepairScheduler = clusterRepairScheduler;
   }
 
-  public static synchronized void start(AppContext context) {
+  public static synchronized void start(AppContext context, IRepairRunDao repairRunDao) {
     if (null == repairAutoSchedulingManager) {
       LOG.info(
           "Starting new {} instance. First check in {}ms. Subsequent polls every {}ms",
@@ -53,7 +54,7 @@ public final class AutoSchedulingManager extends TimerTask {
           context.config.getAutoScheduling().getInitialDelayPeriod().toMillis(),
           context.config.getAutoScheduling().getPeriodBetweenPolls().toMillis());
 
-      repairAutoSchedulingManager = new AutoSchedulingManager(context);
+      repairAutoSchedulingManager = new AutoSchedulingManager(context, repairRunDao);
       Timer timer = new Timer("AutoSchedulingManagerTimer");
       timer.schedule(
           repairAutoSchedulingManager,
@@ -69,7 +70,7 @@ public final class AutoSchedulingManager extends TimerTask {
   @Override
   public void run() {
     LOG.debug("Checking cluster keyspaces to identify which ones require repair schedules...");
-    Collection<Cluster> clusters = context.storage.getClusters();
+    Collection<Cluster> clusters = context.storage.getClusterDao().getClusters();
     for (Cluster cluster : clusters) {
       try {
         clusterRepairScheduler.scheduleRepairs(cluster);

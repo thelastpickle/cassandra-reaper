@@ -21,42 +21,35 @@ package io.cassandrareaper.storage.cassandra;
 import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperApplicationConfiguration;
 import io.cassandrareaper.ReaperException;
-import io.cassandrareaper.core.Cluster;
-import io.cassandrareaper.core.DiagEventSubscription;
 import io.cassandrareaper.core.GenericMetric;
 import io.cassandrareaper.core.PercentRepairedMetric;
-import io.cassandrareaper.core.RepairRun;
-import io.cassandrareaper.core.RepairRun.Builder;
-import io.cassandrareaper.core.RepairRun.RunState;
-import io.cassandrareaper.core.RepairSchedule;
 import io.cassandrareaper.core.RepairSegment;
-import io.cassandrareaper.core.RepairSegment.State;
-import io.cassandrareaper.core.RepairUnit;
-import io.cassandrareaper.core.Snapshot;
-import io.cassandrareaper.resources.view.RepairRunStatus;
-import io.cassandrareaper.resources.view.RepairScheduleStatus;
 import io.cassandrareaper.service.RingRange;
 import io.cassandrareaper.storage.IDistributedStorage;
-import io.cassandrareaper.storage.IStorage;
-import io.cassandrareaper.storage.OpType;
+import io.cassandrareaper.storage.IStorageDao;
 import io.cassandrareaper.storage.cassandra.codecs.DateTimeCodec;
-import io.cassandrareaper.storage.cluster.CassClusterDao;
-import io.cassandrareaper.storage.events.CassEventsDao;
-import io.cassandrareaper.storage.metrics.CassMetricsDao;
-import io.cassandrareaper.storage.repairrun.CassRepairRunDao;
-import io.cassandrareaper.storage.repairrun.IRepairRun;
-import io.cassandrareaper.storage.repairschedule.CassRepairScheduleDao;
-import io.cassandrareaper.storage.repairsegment.CassRepairSegmentDao;
-import io.cassandrareaper.storage.repairunit.CassRepairUnitDao;
-import io.cassandrareaper.storage.snapshot.CassSnapshotDao;
+import io.cassandrareaper.storage.cluster.CassandraClusterDao;
+import io.cassandrareaper.storage.cluster.IClusterDao;
+import io.cassandrareaper.storage.events.CassandraEventsDao;
+import io.cassandrareaper.storage.events.IEventsDao;
+import io.cassandrareaper.storage.metrics.CassandraMetricsDao;
+import io.cassandrareaper.storage.operations.CassandraOperationsDao;
+import io.cassandrareaper.storage.operations.IOperationsDao;
+import io.cassandrareaper.storage.repairrun.CassandraRepairRunDao;
+import io.cassandrareaper.storage.repairrun.IRepairRunDao;
+import io.cassandrareaper.storage.repairschedule.CassandraRepairScheduleDao;
+import io.cassandrareaper.storage.repairschedule.IRepairScheduleDao;
+import io.cassandrareaper.storage.repairsegment.CassandraRepairSegmentDao;
+import io.cassandrareaper.storage.repairsegment.IRepairSegmentDao;
+import io.cassandrareaper.storage.repairunit.CassandraRepairUnitDao;
+import io.cassandrareaper.storage.repairunit.IRepairUnitDao;
+import io.cassandrareaper.storage.snapshot.CassandraSnapshotDao;
+import io.cassandrareaper.storage.snapshot.ISnapshotDao;
 
-import java.io.IOException;
-import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.SortedSet;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -67,7 +60,6 @@ import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.QueryLogger;
 import com.datastax.driver.core.QueryOptions;
 import com.datastax.driver.core.ResultSet;
-import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.Statement;
 import com.datastax.driver.core.VersionNumber;
@@ -87,28 +79,27 @@ import systems.composable.dropwizard.cassandra.pooling.PoolingOptionsFactory;
 import systems.composable.dropwizard.cassandra.retry.RetryPolicyFactory;
 
 
-public final class CassandraStorageFacade implements IStorage, IDistributedStorage, IRepairRun {
+public final class CassandraStorageFacade implements IStorageDao, IDistributedStorage {
   private static final Logger LOG = LoggerFactory.getLogger(CassandraStorageFacade.class);
   private static final AtomicBoolean UNINITIALISED = new AtomicBoolean(true);
-  public final CassRepairSegmentDao cassRepairSegmentDao;
+  public final CassandraRepairSegmentDao cassRepairSegmentDao;
   public final int defaultTimeout;
   final VersionNumber version;
   final UUID reaperInstanceId;
   private final com.datastax.driver.core.Cluster cassandra;
   private final Session session;
   private final ObjectMapper objectMapper = new ObjectMapper();
-  private final CassRepairRunDao cassRepairRunDao;
+  private final CassandraRepairRunDao cassRepairRunDao;
+  private final CassandraRepairUnitDao cassRepairUnitDao;
+  private final CassandraRepairScheduleDao cassRepairScheduleDao;
+  private final CassandraClusterDao cassClusterDao;
+  private final CassandraEventsDao cassEventsDao;
+  private final CassandraMetricsDao cassMetricsDao;
+  private final CassandraConcurrencyDao concurrency;
+  private final CassandraSnapshotDao cassSnapshotDao;
+  private final CassandraOperationsDao operationsDao;
   private PreparedStatement saveHeartbeatPrepStmt;
   private PreparedStatement deleteHeartbeatPrepStmt;
-
-  private final CassRepairUnitDao cassRepairUnitDao;
-  private final CassRepairScheduleDao cassRepairScheduleDao;
-  private final CassClusterDao cassClusterDao;
-  private final CassEventsDao cassEventsDao;
-  private final CassMetricsDao cassMetricsDao;
-  private final Concurrency concurrency;
-  private final CassSnapshotDao cassSnapshotDao;
-  private final OperationsDao operationsDao;
 
   public CassandraStorageFacade(
       UUID reaperInstanceId,
@@ -153,25 +144,25 @@ public final class CassandraStorageFacade implements IStorage, IDistributedStora
       MigrationManager.initializeAndUpgradeSchema(cassandra, session, config, version, mode);
     }
 
-    this.cassEventsDao = new CassEventsDao(session);
-    this.cassMetricsDao = new CassMetricsDao(session);
-    this.cassSnapshotDao = new CassSnapshotDao(session);
-    this.operationsDao = new OperationsDao(session);
-    this.concurrency = new Concurrency(version, reaperInstanceId, session);
-    this.cassRepairUnitDao = new CassRepairUnitDao(defaultTimeout, session);
-    this.cassRepairSegmentDao = new CassRepairSegmentDao(concurrency, cassRepairUnitDao, session);
-    this.cassRepairScheduleDao = new CassRepairScheduleDao(cassRepairUnitDao, session);
-    this.cassClusterDao = new CassClusterDao(cassRepairScheduleDao,
-          cassRepairUnitDao,
-          cassEventsDao,
-          session,
-          objectMapper);
-    this.cassRepairRunDao = new CassRepairRunDao(
-          cassRepairUnitDao,
-          cassClusterDao,
-          cassRepairSegmentDao,
-          session,
-          objectMapper);
+    this.cassEventsDao = new CassandraEventsDao(session);
+    this.cassMetricsDao = new CassandraMetricsDao(session);
+    this.cassSnapshotDao = new CassandraSnapshotDao(session);
+    this.operationsDao = new CassandraOperationsDao(session);
+    this.concurrency = new CassandraConcurrencyDao(version, reaperInstanceId, session);
+    this.cassRepairUnitDao = new CassandraRepairUnitDao(defaultTimeout, session);
+    this.cassRepairSegmentDao = new CassandraRepairSegmentDao(concurrency, cassRepairUnitDao, session);
+    this.cassRepairScheduleDao = new CassandraRepairScheduleDao(cassRepairUnitDao, session);
+    this.cassClusterDao = new CassandraClusterDao(cassRepairScheduleDao,
+        cassRepairUnitDao,
+        cassEventsDao,
+        session,
+        objectMapper);
+    this.cassRepairRunDao = new CassandraRepairRunDao(
+        cassRepairUnitDao,
+        cassClusterDao,
+        cassRepairSegmentDao,
+        session,
+        objectMapper);
     prepareStatements();
   }
 
@@ -218,7 +209,7 @@ public final class CassandraStorageFacade implements IStorage, IDistributedStora
   }
 
   private static boolean withinRange(RepairSegment segment, Optional<RingRange> range) {
-    return !range.isPresent() || CassRepairSegmentDao.segmentIsWithinRange(segment, range.get());
+    return !range.isPresent() || CassandraRepairSegmentDao.segmentIsWithinRange(segment, range.get());
   }
 
   private void prepareStatements() {
@@ -240,254 +231,11 @@ public final class CassandraStorageFacade implements IStorage, IDistributedStora
   }
 
   @Override
-  public Collection<Cluster> getClusters() {
-    // cache the clusters list for ten seconds
-    return cassClusterDao.getClusters();
-  }
-
-  @Override
-  public boolean addCluster(Cluster cluster) {
-    return cassClusterDao.addCluster(cluster);
-  }
-
-  @Override
-  public boolean updateCluster(Cluster newCluster) {
-    return cassClusterDao.updateCluster(newCluster);
-  }
-
-  private boolean addClusterAssertions(Cluster cluster) {
-
-    return cassClusterDao.addClusterAssertions(cluster);
-  }
-
-  @Override
-  public Cluster getCluster(String clusterName) {
-    return cassClusterDao.getCluster(clusterName);
-  }
-
-  private Cluster parseCluster(Row row) throws IOException {
-
-    return cassClusterDao.parseCluster(row);
-  }
-
-  @Override
-  public Cluster deleteCluster(String clusterName) {
-
-    return cassClusterDao.deleteCluster(clusterName);
-  }
-
-  @Override
-  public RepairRun addRepairRun(Builder repairRun, Collection<RepairSegment.Builder> newSegments) {
-
-    return cassRepairRunDao.addRepairRun(repairRun, newSegments);
-  }
-
-  @Override
-  public boolean updateRepairRun(RepairRun repairRun) {
-    return cassRepairRunDao.updateRepairRun(repairRun);
-  }
-
-  @Override
-  public boolean updateRepairRun(RepairRun repairRun, Optional<Boolean> updateRepairState) {
-
-    return cassRepairRunDao.updateRepairRun(repairRun, updateRepairState);
-  }
-
-  @Override
-  public Optional<RepairRun> getRepairRun(UUID id) {
-    return cassRepairRunDao.getRepairRun(id);
-  }
-
-  @Override
-  public Collection<RepairRun> getRepairRunsForCluster(String clusterName, Optional<Integer> limit) {
-
-    return cassRepairRunDao.getRepairRunsForCluster(clusterName, limit);
-  }
-
-  @Override
-  public List<RepairRun> getRepairRunsForClusterPrioritiseRunning(String clusterName, Optional<Integer> limit) {
-    return cassRepairRunDao.getRepairRunsForClusterPrioritiseRunning(clusterName, limit);
-  }
-
-  @Override
-  public int getSegmentAmountForRepairRun(UUID runId) {
-    return cassRepairSegmentDao.getSegmentAmountForRepairRun(runId);
-  }
-
-  @Override
-  public int getSegmentAmountForRepairRunWithState(UUID runId, RepairSegment.State state) {
-    return cassRepairSegmentDao.getSegmentAmountForRepairRunWithState(runId, state);
-  }
-
-  @Override
-  public Collection<RepairRun> getRepairRunsForUnit(UUID repairUnitId) {
-
-    return cassRepairRunDao.getRepairRunsForUnit(repairUnitId);
-  }
-
-  /**
-   * Create a collection of RepairRun objects out of a list of ResultSetFuture. Used to handle async queries on the
-   * repair_run table with a list of ids.
-   */
-  @Override
-  public Collection<RepairRun> getRepairRunsWithState(RunState runState) {
-
-    return cassRepairRunDao.getRepairRunsWithState(runState);
-  }
-
-  @Override
-  public Optional<RepairRun> deleteRepairRun(UUID id) {
-    return cassRepairRunDao.deleteRepairRun(id);
-  }
-
-  @Override
-  public RepairUnit addRepairUnit(RepairUnit.Builder newRepairUnit) {
-
-    return cassRepairUnitDao.addRepairUnit(newRepairUnit);
-  }
-
-  @Override
-  public void updateRepairUnit(RepairUnit updatedRepairUnit) {
-    cassRepairUnitDao.updateRepairUnit(updatedRepairUnit);
-  }
-
-  @Override
-  public RepairUnit getRepairUnit(UUID id) {
-    return cassRepairUnitDao.getRepairUnit(id);
-  }
-
-  @Override
-  public Optional<RepairUnit> getRepairUnit(RepairUnit.Builder params) {
-    // brute force again
-
-    return cassRepairUnitDao.getRepairUnit(params);
-  }
-
-  @Override
-  public boolean updateRepairSegment(RepairSegment segment) {
-
-    return cassRepairSegmentDao.updateRepairSegment(segment);
-  }
-
-  @Override
-  public boolean updateRepairSegmentUnsafe(RepairSegment segment) {
-
-    return cassRepairSegmentDao.updateRepairSegmentUnsafe(segment);
-  }
-
-  @Override
-  public Optional<RepairSegment> getRepairSegment(UUID runId, UUID segmentId) {
-
-    return cassRepairSegmentDao.getRepairSegment(runId, segmentId);
-  }
-
-  @Override
-  public Collection<RepairSegment> getRepairSegmentsForRun(UUID runId) {
-    // First gather segments ids
-
-    return cassRepairSegmentDao.getRepairSegmentsForRun(runId);
-  }
-
-  @Override
-  public List<RepairSegment> getNextFreeSegments(UUID runId) {
-
-    return cassRepairSegmentDao.getNextFreeSegments(runId);
-  }
-
-  @Override
   public List<RepairSegment> getNextFreeSegmentsForRanges(
       UUID runId,
       List<RingRange> ranges) {
 
     return cassRepairSegmentDao.getNextFreeSegmentsForRanges(runId, ranges);
-  }
-
-  private boolean segmentIsWithinRanges(RepairSegment seg, List<RingRange> ranges) {
-
-    return cassRepairSegmentDao.segmentIsWithinRanges(seg, ranges);
-  }
-
-  private boolean segmentIsCandidate(RepairSegment seg, Set<String> lockedNodes) {
-    return cassRepairSegmentDao.segmentIsCandidate(seg, lockedNodes);
-  }
-
-  @Override
-  public Collection<RepairSegment> getSegmentsWithState(UUID runId, State segmentState) {
-
-    return cassRepairSegmentDao.getSegmentsWithState(runId, segmentState);
-  }
-
-  @Override
-  public SortedSet<UUID> getRepairRunIdsForCluster(String clusterName, Optional<Integer> limit) {
-
-    return cassRepairRunDao.getRepairRunIdsForCluster(clusterName, limit);
-  }
-
-  @Override
-  public RepairSchedule addRepairSchedule(io.cassandrareaper.core.RepairSchedule.Builder repairSchedule) {
-
-    return cassRepairScheduleDao.addRepairSchedule(repairSchedule);
-  }
-
-  @Override
-  public Optional<RepairSchedule> getRepairSchedule(UUID repairScheduleId) {
-
-    return cassRepairScheduleDao.getRepairSchedule(repairScheduleId);
-  }
-
-  @Override
-  public Collection<RepairSchedule> getRepairSchedulesForCluster(String clusterName) {
-
-    return cassRepairScheduleDao.getRepairSchedulesForCluster(clusterName);
-  }
-
-  @Override
-  public Collection<RepairSchedule> getRepairSchedulesForCluster(String clusterName, boolean incremental) {
-    return cassRepairScheduleDao.getRepairSchedulesForCluster(clusterName, incremental);
-  }
-
-  @Override
-  public Collection<RepairSchedule> getRepairSchedulesForKeyspace(String keyspaceName) {
-
-    return cassRepairScheduleDao.getRepairSchedulesForKeyspace(keyspaceName);
-  }
-
-  @Override
-  public Collection<RepairSchedule> getRepairSchedulesForClusterAndKeyspace(String clusterName, String keyspaceName) {
-
-    return cassRepairScheduleDao.getRepairSchedulesForClusterAndKeyspace(clusterName, keyspaceName);
-  }
-
-  @Override
-  public Collection<RepairSchedule> getAllRepairSchedules() {
-
-    return cassRepairScheduleDao.getAllRepairSchedules();
-  }
-
-  @Override
-  public boolean updateRepairSchedule(RepairSchedule newRepairSchedule) {
-
-    return cassRepairScheduleDao.updateRepairSchedule(newRepairSchedule);
-  }
-
-  @Override
-  public Optional<RepairSchedule> deleteRepairSchedule(UUID id) {
-
-    return cassRepairScheduleDao.deleteRepairSchedule(id);
-  }
-
-  @Override
-  public Collection<RepairRunStatus> getClusterRunStatuses(String clusterName, int limit) {
-    return cassRepairRunDao.getClusterRunStatuses(clusterName, limit);
-  }
-
-  @Override
-  public Collection<RepairScheduleStatus> getClusterScheduleStatuses(String clusterName) {
-    return cassRepairScheduleDao.getClusterScheduleStatuses(clusterName);
-  }
-
-  private RepairRun buildRepairRunFromRow(Row repairRunResult, UUID id) {
-    return cassRepairRunDao.buildRepairRunFromRow(repairRunResult, id);
   }
 
   @Override
@@ -549,50 +297,6 @@ public final class CassandraStorageFacade implements IStorage, IDistributedStora
   }
 
   @Override
-  public Collection<DiagEventSubscription> getEventSubscriptions() {
-    return cassEventsDao.getEventSubscriptions();
-  }
-
-  @Override
-  public Collection<DiagEventSubscription> getEventSubscriptions(String clusterName) {
-
-    return cassEventsDao.getEventSubscriptions(clusterName);
-  }
-
-  @Override
-  public DiagEventSubscription getEventSubscription(UUID id) {
-    return cassEventsDao.getEventSubscription(id);
-  }
-
-  @Override
-  public DiagEventSubscription addEventSubscription(DiagEventSubscription subscription) {
-
-    return cassEventsDao.addEventSubscription(subscription);
-  }
-
-  @Override
-  public boolean deleteEventSubscription(UUID id) {
-    return cassEventsDao.deleteEventSubscription(id);
-  }
-
-  @Override
-  public boolean saveSnapshot(Snapshot snapshot) {
-
-    return cassSnapshotDao.saveSnapshot(snapshot);
-  }
-
-  @Override
-  public boolean deleteSnapshot(Snapshot snapshot) {
-    return cassSnapshotDao.deleteSnapshot(snapshot);
-  }
-
-  @Override
-  public Snapshot getSnapshot(String clusterName, String snapshotName) {
-
-    return cassSnapshotDao.getSnapshot(clusterName, snapshotName);
-  }
-
-  @Override
   public List<GenericMetric> getMetrics(
       String clusterName,
       Optional<String> host,
@@ -621,22 +325,6 @@ public final class CassandraStorageFacade implements IStorage, IDistributedStora
   @Override
   public void purgeMetrics() {
     cassMetricsDao.purgeMetrics();
-  }
-
-  @Override
-  public void storeOperations(String clusterName, OpType operationType, String host, String operationsJson) {
-    operationsDao.storeOperations(clusterName, operationType, host, operationsJson);
-  }
-
-  @Override
-  public String listOperations(String clusterName, OpType operationType, String host) {
-
-    return operationsDao.listOperations(clusterName, operationType, host);
-  }
-
-  @Override
-  public void purgeNodeOperations() {
-    operationsDao.purgeNodeOperations();
   }
 
   @Override
@@ -706,6 +394,46 @@ public final class CassandraStorageFacade implements IStorage, IDistributedStora
     // Statements executed when the server shuts down.
     LOG.info("Reaper is stopping, removing this instance from running reapers...");
     session.execute(deleteHeartbeatPrepStmt.bind(reaperInstanceId));
+  }
+
+  @Override
+  public IEventsDao getEventsDao() {
+    return this.cassEventsDao;
+  }
+
+  @Override
+  public ISnapshotDao getSnapshotDao() {
+    return this.cassSnapshotDao;
+  }
+
+  @Override
+  public IRepairRunDao getRepairRunDao() {
+    return this.cassRepairRunDao;
+  }
+
+  @Override
+  public IRepairSegmentDao getRepairSegmentDao() {
+    return this.cassRepairSegmentDao;
+  }
+
+  @Override
+  public IRepairUnitDao getRepairUnitDao() {
+    return this.cassRepairUnitDao;
+  }
+
+  @Override
+  public IRepairScheduleDao getRepairScheduleDao() {
+    return this.cassRepairScheduleDao;
+  }
+
+  @Override
+  public IClusterDao getClusterDao() {
+    return this.cassClusterDao;
+  }
+
+  @Override
+  public IOperationsDao getOperationsDao() {
+    return this.operationsDao;
   }
 
   public enum CassandraMode {

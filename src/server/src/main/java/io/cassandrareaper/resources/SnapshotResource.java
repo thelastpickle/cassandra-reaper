@@ -22,6 +22,7 @@ import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Node;
 import io.cassandrareaper.core.Snapshot;
 import io.cassandrareaper.service.SnapshotService;
+import io.cassandrareaper.storage.snapshot.ISnapshotDao;
 
 import java.util.List;
 import java.util.Map;
@@ -53,11 +54,12 @@ public final class SnapshotResource {
   private final SnapshotService snapshotManager;
   private final AppContext context;
 
-  public SnapshotResource(AppContext context, Environment environment) {
+  public SnapshotResource(AppContext context, Environment environment, ISnapshotDao snapshotDao) {
     this.context = context;
     snapshotManager = SnapshotService.create(
         context,
-        environment.lifecycle().executorService("SnapshotService").minThreads(5).maxThreads(5).build());
+        environment.lifecycle().executorService("SnapshotService").minThreads(5).maxThreads(5).build(),
+        snapshotDao);
   }
 
   /**
@@ -77,7 +79,7 @@ public final class SnapshotResource {
 
     try {
       Node node = Node.builder()
-              .withCluster(context.storage.getCluster(clusterName))
+              .withCluster(context.storage.getClusterDao().getCluster(clusterName))
               .withHostname(host.get())
               .build();
 
@@ -151,7 +153,7 @@ public final class SnapshotResource {
     try {
       Map<String, List<Snapshot>> snapshots = snapshotManager.listSnapshotsGroupedByName(
               Node.builder()
-                  .withCluster(context.storage.getCluster(clusterName))
+                  .withCluster(context.storage.getClusterDao().getCluster(clusterName))
                   .withHostname(host)
                   .build());
 
@@ -195,7 +197,7 @@ public final class SnapshotResource {
     try {
       if (host.isPresent() && snapshotName.isPresent()) {
         Node node = Node.builder()
-                .withCluster(context.storage.getCluster(clusterName))
+                .withCluster(context.storage.getClusterDao().getCluster(clusterName))
                 .withHostname(host.get())
                 .build();
 
