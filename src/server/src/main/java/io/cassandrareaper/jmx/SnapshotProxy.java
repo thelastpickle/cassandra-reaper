@@ -25,7 +25,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
 import javax.management.openmbean.TabularData;
 
 import com.google.common.base.Preconditions;
@@ -39,21 +38,46 @@ public final class SnapshotProxy {
   private static final long KB_FACTOR = 1000;
   private static final long KIB_FACTOR = 1024;
   private static final long MB_FACTOR = 1000 * KB_FACTOR;
-  private static final long MIB_FACTOR = 1024 * KIB_FACTOR;
   private static final long GB_FACTOR = 1000 * MB_FACTOR;
+  private static final long MIB_FACTOR = 1024 * KIB_FACTOR;
   private static final long GIB_FACTOR = 1024 * MIB_FACTOR;
 
   private static final Logger LOG = LoggerFactory.getLogger(SnapshotProxy.class);
 
-  private final JmxProxyImpl proxy;
+  private final CassandraManagementProxyImpl proxy;
 
-  private SnapshotProxy(JmxProxyImpl proxy) {
+  private SnapshotProxy(CassandraManagementProxyImpl proxy) {
     this.proxy = proxy;
   }
 
-  public static SnapshotProxy create(JmxProxy proxy) {
-    Preconditions.checkArgument(proxy instanceof JmxProxyImpl, "only JmxProxyImpl is supported");
-    return new SnapshotProxy((JmxProxyImpl)proxy);
+  public static SnapshotProxy create(CassandraManagementProxy proxy) {
+    Preconditions.checkArgument(proxy instanceof CassandraManagementProxyImpl, "only JmxProxyImpl is supported");
+    return new SnapshotProxy((CassandraManagementProxyImpl) proxy);
+  }
+
+  public static double parseHumanReadableSize(String readableSize) {
+    int spaceNdx = readableSize.indexOf(" ");
+
+    double ret = readableSize.contains(".")
+        ? Double.parseDouble(readableSize.substring(0, spaceNdx))
+        : Double.parseDouble(readableSize.substring(0, spaceNdx).replace(",", "."));
+
+    switch (readableSize.substring(spaceNdx + 1)) {
+      case "GB":
+        return ret * GB_FACTOR;
+      case "GiB":
+        return ret * GIB_FACTOR;
+      case "MB":
+        return ret * MB_FACTOR;
+      case "MiB":
+        return ret * MIB_FACTOR;
+      case "KB":
+        return ret * KB_FACTOR;
+      case "KiB":
+        return ret * KIB_FACTOR;
+      default:
+        return 0;
+    }
   }
 
   public void clearSnapshot(String repairId, String keyspaceName) {
@@ -84,7 +108,7 @@ public final class SnapshotProxy {
     List<Snapshot> snapshots = Lists.newArrayList();
 
     String cassandraVersion = proxy.getCassandraVersion();
-    if (JmxProxyImpl.versionCompare(cassandraVersion, "2.1.0") < 0) {
+    if (CassandraManagementProxyImpl.versionCompare(cassandraVersion, "2.1.0") < 0) {
       // 2.0 and prior do not allow to list snapshots
       throw new UnsupportedOperationException(
           "Snapshot listing is not supported in Cassandra 2.0 and prior.");
@@ -137,31 +161,6 @@ public final class SnapshotProxy {
       }
     }
     return snapshots;
-  }
-
-  public static double parseHumanReadableSize(String readableSize) {
-    int spaceNdx = readableSize.indexOf(" ");
-
-    double ret = readableSize.contains(".")
-            ? Double.parseDouble(readableSize.substring(0, spaceNdx))
-            : Double.parseDouble(readableSize.substring(0, spaceNdx).replace(",", "."));
-
-    switch (readableSize.substring(spaceNdx + 1)) {
-      case "GB":
-        return ret * GB_FACTOR;
-      case "GiB":
-        return ret * GIB_FACTOR;
-      case "MB":
-        return ret * MB_FACTOR;
-      case "MiB":
-        return ret * MIB_FACTOR;
-      case "KB":
-        return ret * KB_FACTOR;
-      case "KiB":
-        return ret * KIB_FACTOR;
-      default:
-        return 0;
-    }
   }
 
   public String takeSnapshot(String snapshotName, String... keyspaceNames) throws ReaperException {

@@ -26,20 +26,19 @@ import com.google.common.base.Preconditions;
 import org.apache.cassandra.service.StorageServiceMBean;
 
 
-
 public final class StorageServiceProxy {
 
-  private final JmxProxyImpl proxy;
+  private final CassandraManagementProxyImpl proxy;
   private final StorageServiceMBean ssProxy;
 
-  private StorageServiceProxy(JmxProxyImpl proxy) {
+  private StorageServiceProxy(CassandraManagementProxyImpl proxy) {
     this.proxy = proxy;
     this.ssProxy = proxy.getStorageServiceMBean();
   }
 
-  public static StorageServiceProxy create(JmxProxy proxy) {
-    Preconditions.checkArgument(proxy instanceof JmxProxyImpl, "only JmxProxyImpl is supported");
-    return new StorageServiceProxy((JmxProxyImpl)proxy);
+  public static StorageServiceProxy create(CassandraManagementProxy proxy) {
+    Preconditions.checkArgument(proxy instanceof CassandraManagementProxyImpl, "only JmxProxyImpl is supported");
+    return new StorageServiceProxy((CassandraManagementProxyImpl) proxy);
   }
 
   public Map<String, List<String>> getTokensByNode() {

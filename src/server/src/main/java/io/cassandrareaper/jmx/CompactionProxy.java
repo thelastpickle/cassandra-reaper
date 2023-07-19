@@ -26,7 +26,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicReference;
-
 import javax.management.JMException;
 import javax.management.MalformedObjectNameException;
 import javax.management.ReflectionException;
@@ -44,18 +43,18 @@ public final class CompactionProxy {
   private static final AtomicReference<ExecutorService> EXECUTOR = new AtomicReference();
   private static final Logger LOG = LoggerFactory.getLogger(CompactionProxy.class);
 
-  private final JmxProxyImpl proxy;
+  private final CassandraManagementProxyImpl proxy;
 
-  private CompactionProxy(JmxProxyImpl proxy, MetricRegistry metrics) {
+  private CompactionProxy(CassandraManagementProxyImpl proxy, MetricRegistry metrics) {
     this.proxy = proxy;
     if (null == EXECUTOR.get()) {
       EXECUTOR.set(new InstrumentedExecutorService(Executors.newCachedThreadPool(), metrics, "CompactionProxy"));
     }
   }
 
-  public static CompactionProxy create(JmxProxy proxy, MetricRegistry metrics) {
-    Preconditions.checkArgument(proxy instanceof JmxProxyImpl, "only JmxProxyImpl is supported");
-    return new CompactionProxy((JmxProxyImpl)proxy, metrics);
+  public static CompactionProxy create(CassandraManagementProxy proxy, MetricRegistry metrics) {
+    Preconditions.checkArgument(proxy instanceof CassandraManagementProxyImpl, "only JmxProxyImpl is supported");
+    return new CompactionProxy((CassandraManagementProxyImpl) proxy, metrics);
   }
 
   public void forceCompaction(String keyspaceName, String... tableNames) {
@@ -80,14 +79,14 @@ public final class CompactionProxy {
     if (!compactions.isEmpty()) {
       for (Map<String, String> c : compactions) {
         Compaction compaction = Compaction.builder()
-                .withId(c.get("compactionId"))
-                .withKeyspace(c.get("keyspace"))
-                .withTable(c.get("columnfamily"))
-                .withProgress(Long.parseLong(c.get("completed")))
-                .withTotal(Long.parseLong(c.get("total")))
-                .withUnit(c.get("unit"))
-                .withType(c.get("taskType"))
-                .build();
+            .withId(c.get("compactionId"))
+            .withKeyspace(c.get("keyspace"))
+            .withTable(c.get("columnfamily"))
+            .withProgress(Long.parseLong(c.get("completed")))
+            .withTotal(Long.parseLong(c.get("total")))
+            .withUnit(c.get("unit"))
+            .withType(c.get("taskType"))
+            .build();
 
         activeCompactions.add(compaction);
       }

@@ -22,11 +22,11 @@ import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.Node;
 import io.cassandrareaper.core.Snapshot;
+import io.cassandrareaper.jmx.CassandraManagementProxy;
+import io.cassandrareaper.jmx.CassandraManagementProxyTest;
 import io.cassandrareaper.jmx.ClusterFacade;
 import io.cassandrareaper.jmx.HostConnectionCounters;
 import io.cassandrareaper.jmx.JmxConnectionFactory;
-import io.cassandrareaper.jmx.JmxProxy;
-import io.cassandrareaper.jmx.JmxProxyTest;
 import io.cassandrareaper.storage.IStorageDao;
 import io.cassandrareaper.storage.cluster.IClusterDao;
 import io.cassandrareaper.storage.snapshot.ISnapshotDao;
@@ -60,9 +60,10 @@ public final class SnapshotServiceTest {
   @Test
   public void testTakeSnapshot() throws InterruptedException, ReaperException, ClassNotFoundException, IOException {
 
-    JmxProxy proxy = (JmxProxy) mock(Class.forName("io.cassandrareaper.jmx.JmxProxyImpl"));
+    CassandraManagementProxy proxy = (CassandraManagementProxy) mock(
+        Class.forName("io.cassandrareaper.jmx.JmxProxyImpl"));
     StorageServiceMBean storageMBean = Mockito.mock(StorageServiceMBean.class);
-    JmxProxyTest.mockGetStorageServiceMBean(proxy, storageMBean);
+    CassandraManagementProxyTest.mockGetStorageServiceMBean(proxy, storageMBean);
 
     AppContext cxt = new AppContext();
     cxt.config = TestRepairConfiguration.defaultConfig();
@@ -84,9 +85,10 @@ public final class SnapshotServiceTest {
   public void testTakeSnapshotForKeyspaces()
       throws InterruptedException, ReaperException, ClassNotFoundException, IOException {
 
-    JmxProxy proxy = (JmxProxy) mock(Class.forName("io.cassandrareaper.jmx.JmxProxyImpl"));
+    CassandraManagementProxy proxy = (CassandraManagementProxy) mock(
+        Class.forName("io.cassandrareaper.jmx.JmxProxyImpl"));
     StorageServiceMBean storageMBean = Mockito.mock(StorageServiceMBean.class);
-    JmxProxyTest.mockGetStorageServiceMBean(proxy, storageMBean);
+    CassandraManagementProxyTest.mockGetStorageServiceMBean(proxy, storageMBean);
 
     AppContext cxt = new AppContext();
     cxt.config = TestRepairConfiguration.defaultConfig();
@@ -106,10 +108,11 @@ public final class SnapshotServiceTest {
   @Test
   public void testListSnapshot() throws InterruptedException, ReaperException, ClassNotFoundException {
 
-    JmxProxy proxy = (JmxProxy) mock(Class.forName("io.cassandrareaper.jmx.JmxProxyImpl"));
+    CassandraManagementProxy proxy = (CassandraManagementProxy) mock(
+        Class.forName("io.cassandrareaper.jmx.JmxProxyImpl"));
     when(proxy.getCassandraVersion()).thenReturn("2.1.0");
     StorageServiceMBean storageMBean = Mockito.mock(StorageServiceMBean.class);
-    JmxProxyTest.mockGetStorageServiceMBean(proxy, storageMBean);
+    CassandraManagementProxyTest.mockGetStorageServiceMBean(proxy, storageMBean);
     when(storageMBean.getSnapshotDetails()).thenReturn(Collections.emptyMap());
 
     AppContext cxt = new AppContext();
@@ -130,9 +133,10 @@ public final class SnapshotServiceTest {
   @Test
   public void testClearSnapshot() throws InterruptedException, ReaperException, ClassNotFoundException, IOException {
 
-    JmxProxy proxy = (JmxProxy) mock(Class.forName("io.cassandrareaper.jmx.JmxProxyImpl"));
+    CassandraManagementProxy proxy = (CassandraManagementProxy) mock(
+        Class.forName("io.cassandrareaper.jmx.JmxProxyImpl"));
     StorageServiceMBean storageMBean = Mockito.mock(StorageServiceMBean.class);
-    JmxProxyTest.mockGetStorageServiceMBean(proxy, storageMBean);
+    CassandraManagementProxyTest.mockGetStorageServiceMBean(proxy, storageMBean);
 
     AppContext cxt = new AppContext();
     cxt.config = TestRepairConfiguration.defaultConfig();
@@ -150,9 +154,10 @@ public final class SnapshotServiceTest {
   public void testClearSnapshotClusterWide()
       throws InterruptedException, ReaperException, ClassNotFoundException, IOException {
 
-    JmxProxy proxy = (JmxProxy) mock(Class.forName("io.cassandrareaper.jmx.JmxProxyImpl"));
+    CassandraManagementProxy proxy = (CassandraManagementProxy) mock(
+        Class.forName("io.cassandrareaper.jmx.JmxProxyImpl"));
     StorageServiceMBean storageMBean = Mockito.mock(StorageServiceMBean.class);
-    JmxProxyTest.mockGetStorageServiceMBean(proxy, storageMBean);
+    CassandraManagementProxyTest.mockGetStorageServiceMBean(proxy, storageMBean);
 
     AppContext cxt = new AppContext();
     cxt.config = TestRepairConfiguration.defaultConfig();
@@ -188,9 +193,10 @@ public final class SnapshotServiceTest {
   public void testTakeSnapshotClusterWide()
       throws InterruptedException, ReaperException, ClassNotFoundException, IOException {
 
-    JmxProxy proxy = (JmxProxy) mock(Class.forName("io.cassandrareaper.jmx.JmxProxyImpl"));
+    CassandraManagementProxy proxy = (CassandraManagementProxy) mock(
+        Class.forName("io.cassandrareaper.jmx.JmxProxyImpl"));
     StorageServiceMBean storageMBean = Mockito.mock(StorageServiceMBean.class);
-    JmxProxyTest.mockGetStorageServiceMBean(proxy, storageMBean);
+    CassandraManagementProxyTest.mockGetStorageServiceMBean(proxy, storageMBean);
 
     AppContext cxt = new AppContext();
     cxt.config = TestRepairConfiguration.defaultConfig();

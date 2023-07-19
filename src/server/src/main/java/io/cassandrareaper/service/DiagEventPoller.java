@@ -18,8 +18,8 @@
 package io.cassandrareaper.service;
 
 import io.cassandrareaper.core.Node;
+import io.cassandrareaper.jmx.CassandraManagementProxy;
 import io.cassandrareaper.jmx.DiagnosticProxy;
-import io.cassandrareaper.jmx.JmxProxy;
 import io.cassandrareaper.resources.view.DiagnosticEvent;
 
 import java.io.Serializable;
@@ -60,12 +60,12 @@ final class DiagEventPoller {
 
   DiagEventPoller(
       Node node,
-      JmxProxy jmxProxy,
+      CassandraManagementProxy cassandraManagementProxy,
       Consumer<DiagnosticEvent> eventConsumer,
       ScheduledExecutorService scheduledExecutor) {
 
     this.node = node;
-    this.diagnostics = DiagnosticProxy.create(jmxProxy);
+    this.diagnostics = DiagnosticProxy.create(cassandraManagementProxy);
     this.eventConsumer = eventConsumer;
     this.scheduledExecutor = scheduledExecutor;
   }

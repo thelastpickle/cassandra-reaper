@@ -22,11 +22,11 @@ import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.Node;
 import io.cassandrareaper.core.StreamSession;
+import io.cassandrareaper.jmx.CassandraManagementProxy;
+import io.cassandrareaper.jmx.CassandraManagementProxyTest;
 import io.cassandrareaper.jmx.ClusterFacade;
 import io.cassandrareaper.jmx.HostConnectionCounters;
 import io.cassandrareaper.jmx.JmxConnectionFactory;
-import io.cassandrareaper.jmx.JmxProxy;
-import io.cassandrareaper.jmx.JmxProxyTest;
 
 import java.io.IOException;
 import java.net.URL;
@@ -62,9 +62,9 @@ public class StreamServiceTest {
   @Test
   public void testListStreams()
       throws ReaperException, ClassNotFoundException, InterruptedException, UnknownHostException {
-    JmxProxy proxy = JmxProxyTest.mockJmxProxyImpl();
+    CassandraManagementProxy proxy = CassandraManagementProxyTest.mockJmxProxyImpl();
     StreamManagerMBean streamingManagerMBean = Mockito.mock(StreamManagerMBean.class);
-    JmxProxyTest.mockGetStreamManagerMBean(proxy, streamingManagerMBean);
+    CassandraManagementProxyTest.mockGetStreamManagerMBean(proxy, streamingManagerMBean);
 
     AppContext cxt = new AppContext();
     cxt.config = TestRepairConfiguration.defaultConfig();
@@ -95,9 +95,10 @@ public class StreamServiceTest {
     assertEquals(ref.replaceAll("\\s", ""), streamSession.toString().replaceAll("\\s", ""));
 
     // init the stream manager
-    JmxProxy proxy = (JmxProxy) mock(Class.forName("io.cassandrareaper.jmx.JmxProxyImpl"));
+    CassandraManagementProxy proxy = (CassandraManagementProxy) mock(
+        Class.forName("io.cassandrareaper.jmx.JmxProxyImpl"));
     StreamManagerMBean streamingManagerMBean = Mockito.mock(StreamManagerMBean.class);
-    JmxProxyTest.mockGetStreamManagerMBean(proxy, streamingManagerMBean);
+    CassandraManagementProxyTest.mockGetStreamManagerMBean(proxy, streamingManagerMBean);
     when(streamingManagerMBean.getCurrentStreams()).thenReturn(ImmutableSet.of(streamSession));
 
     AppContext cxt = new AppContext();
@@ -133,9 +134,10 @@ public class StreamServiceTest {
     assertEquals(ref.replaceAll("\\s", ""), streamSession.toString().replaceAll("\\s", ""));
 
     // init the stream manager
-    JmxProxy proxy = (JmxProxy) mock(Class.forName("io.cassandrareaper.jmx.JmxProxyImpl"));
+    CassandraManagementProxy proxy = (CassandraManagementProxy) mock(
+        Class.forName("io.cassandrareaper.jmx.JmxProxyImpl"));
     StreamManagerMBean streamingManagerMBean = Mockito.mock(StreamManagerMBean.class);
-    JmxProxyTest.mockGetStreamManagerMBean(proxy, streamingManagerMBean);
+    CassandraManagementProxyTest.mockGetStreamManagerMBean(proxy, streamingManagerMBean);
     when(streamingManagerMBean.getCurrentStreams()).thenReturn(ImmutableSet.of(streamSession));
 
     AppContext cxt = new AppContext();
@@ -171,9 +173,10 @@ public class StreamServiceTest {
     assertEquals(ref.replaceAll("\\s", ""), streamSession.toString().replaceAll("\\s", ""));
 
     // init the stream manager
-    JmxProxy proxy = (JmxProxy) mock(Class.forName("io.cassandrareaper.jmx.JmxProxyImpl"));
+    CassandraManagementProxy proxy = (CassandraManagementProxy) mock(
+        Class.forName("io.cassandrareaper.jmx.JmxProxyImpl"));
     StreamManagerMBean streamingManagerMBean = Mockito.mock(StreamManagerMBean.class);
-    JmxProxyTest.mockGetStreamManagerMBean(proxy, streamingManagerMBean);
+    CassandraManagementProxyTest.mockGetStreamManagerMBean(proxy, streamingManagerMBean);
     when(streamingManagerMBean.getCurrentStreams()).thenReturn(ImmutableSet.of(streamSession));
 
     AppContext cxt = new AppContext();
@@ -209,9 +212,10 @@ public class StreamServiceTest {
     assertEquals(ref.replaceAll("\\s", ""), streamSession.toString().replaceAll("\\s", ""));
 
     // init the stream manager
-    JmxProxy proxy = (JmxProxy) mock(Class.forName("io.cassandrareaper.jmx.JmxProxyImpl"));
+    CassandraManagementProxy proxy = (CassandraManagementProxy) mock(
+        Class.forName("io.cassandrareaper.jmx.JmxProxyImpl"));
     StreamManagerMBean streamingManagerMBean = Mockito.mock(StreamManagerMBean.class);
-    JmxProxyTest.mockGetStreamManagerMBean(proxy, streamingManagerMBean);
+    CassandraManagementProxyTest.mockGetStreamManagerMBean(proxy, streamingManagerMBean);
     when(streamingManagerMBean.getCurrentStreams()).thenReturn(ImmutableSet.of(streamSession));
 
     AppContext cxt = new AppContext();
@@ -244,9 +248,10 @@ public class StreamServiceTest {
     String ref = Resources.toString(url, Charsets.UTF_8);
     assertEquals(ref.replaceAll("\\s", ""), streamSession.toString().replaceAll("\\s", ""));
 
-    JmxProxy proxy = (JmxProxy) mock(Class.forName("io.cassandrareaper.jmx.JmxProxyImpl"));
+    CassandraManagementProxy proxy = (CassandraManagementProxy) mock(
+        Class.forName("io.cassandrareaper.jmx.JmxProxyImpl"));
     StreamManagerMBean streamingManagerMBean = Mockito.mock(StreamManagerMBean.class);
-    JmxProxyTest.mockGetStreamManagerMBean(proxy, streamingManagerMBean);
+    CassandraManagementProxyTest.mockGetStreamManagerMBean(proxy, streamingManagerMBean);
     when(streamingManagerMBean.getCurrentStreams()).thenReturn(ImmutableSet.of(streamSession));
 
     AppContext cxt = new AppContext();

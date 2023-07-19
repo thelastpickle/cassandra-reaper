@@ -22,8 +22,8 @@ import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.DiagEventSubscription;
 import io.cassandrareaper.core.Node;
+import io.cassandrareaper.jmx.CassandraManagementProxy;
 import io.cassandrareaper.jmx.DiagnosticProxy;
-import io.cassandrareaper.jmx.JmxProxy;
 import io.cassandrareaper.resources.view.DiagnosticEvent;
 import io.cassandrareaper.storage.events.IEventsDao;
 
@@ -211,7 +211,7 @@ public final class DiagEventSubscriptionService {
           try {
             Thread.currentThread().setName(node.getHostname());
             LOG.debug("Starting to update event subscriptions for {}", node);
-            JmxProxy jmx = context.jmxConnectionFactory.connectAny(Collections.singleton(node));
+            CassandraManagementProxy jmx = context.jmxConnectionFactory.connectAny(Collections.singleton(node));
 
             // create set of active and inactive events based on all subscriptions for this node
             // active events are all events included in an active subscription
@@ -286,14 +286,15 @@ public final class DiagEventSubscriptionService {
     }
   }
 
-  private void enableEvents(Node node, Set<String> events, boolean enabled, JmxProxy jmxProxy) {
+  private void enableEvents(Node node, Set<String> events, boolean enabled,
+                            CassandraManagementProxy cassandraManagementProxy) {
     for (String event : events) {
       LOG.debug("{} {} for {}", enabled ? "Enabling" : "Disabling", event, node);
       try {
         if (enabled) {
-          DiagnosticProxy.create(jmxProxy).enableEventPersistence(event);
+          DiagnosticProxy.create(cassandraManagementProxy).enableEventPersistence(event);
         } else {
-          DiagnosticProxy.create(jmxProxy).disableEventPersistence(event);
+          DiagnosticProxy.create(cassandraManagementProxy).disableEventPersistence(event);
         }
       } catch (RuntimeException e) {
         if (e.getCause() instanceof ClassNotFoundException) {
@@ -308,9 +309,10 @@ public final class DiagEventSubscriptionService {
     }
   }
 
-  private DiagEventPoller createPoller(Node node, JmxProxy jmxProxy, Set<String> events, boolean enabled) {
+  private DiagEventPoller createPoller(Node node, CassandraManagementProxy cassandraManagementProxy, Set<String> events,
+                                       boolean enabled) {
     DiagEventPoller poller = POLLERS_BY_NODE
-        .computeIfAbsent(node, (key) -> new DiagEventPoller(key, jmxProxy, this::onEvent, scheduler));
+        .computeIfAbsent(node, (key) -> new DiagEventPoller(key, cassandraManagementProxy, this::onEvent, scheduler));
 
     poller.setEnabledEvents(events);
     if (enabled) {
@@ -321,9 +323,11 @@ public final class DiagEventSubscriptionService {
     return poller;
   }
 
-  private void subscribeNotifications(Node node, JmxProxy jmxProxy, DiagEventPoller poller) {
+  private void subscribeNotifications(Node node, CassandraManagementProxy cassandraManagementProxy,
+                                      DiagEventPoller poller) {
     if (!listenerByNode.containsKey(node)) {
-      LOG.debug("Subscribing to notifications on {} ({})", jmxProxy.getHost(), jmxProxy.getClusterName());
+      LOG.debug("Subscribing to notifications on {} ({})", cassandraManagementProxy.getHost(),
+          cassandraManagementProxy.getClusterName());
 
       NotificationListener listener = new NotificationListener(
           node,
@@ -334,16 +338,17 @@ public final class DiagEventSubscriptionService {
           scheduler);
 
       if (null == listenerByNode.putIfAbsent(node, listener)) {
-        DiagnosticProxy.create(jmxProxy).subscribeNotifications(listener);
+        DiagnosticProxy.create(cassandraManagementProxy).subscribeNotifications(listener);
       }
     }
   }
 
-  private void unsubscribeNotifications(Node node, JmxProxy jmxProxy) {
-    LOG.debug("Unsubscribing from notifications on {} ({})", jmxProxy.getHost(), jmxProxy.getClusterName());
+  private void unsubscribeNotifications(Node node, CassandraManagementProxy cassandraManagementProxy) {
+    LOG.debug("Unsubscribing from notifications on {} ({})", cassandraManagementProxy.getHost(),
+        cassandraManagementProxy.getClusterName());
     NotificationListener listener = listenerByNode.remove(node);
     Preconditions.checkState(null != listener, "Notification listener not found for %s", node);
-    DiagnosticProxy.create(jmxProxy).unsubscribeNotifications(listener);
+    DiagnosticProxy.create(cassandraManagementProxy).unsubscribeNotifications(listener);
   }
 
   // as provided by DiagEventPoller

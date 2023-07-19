@@ -36,15 +36,15 @@ public final class DiagnosticProxy {
 
   private static final Logger LOG = LoggerFactory.getLogger(DiagEventSubscriptionService.class);
 
-  private final JmxProxyImpl proxy;
+  private final CassandraManagementProxyImpl proxy;
 
-  private DiagnosticProxy(JmxProxyImpl proxy) {
+  private DiagnosticProxy(CassandraManagementProxyImpl proxy) {
     this.proxy = proxy;
   }
 
-  public static DiagnosticProxy create(JmxProxy proxy) {
-    Preconditions.checkArgument(proxy instanceof JmxProxyImpl, "only JmxProxyImpl is supported");
-    return new DiagnosticProxy((JmxProxyImpl)proxy);
+  public static DiagnosticProxy create(CassandraManagementProxy proxy) {
+    Preconditions.checkArgument(proxy instanceof CassandraManagementProxyImpl, "only JmxProxyImpl is supported");
+    return new DiagnosticProxy((CassandraManagementProxyImpl) proxy);
   }
 
   public void enableEventPersistence(String eventClazz) {

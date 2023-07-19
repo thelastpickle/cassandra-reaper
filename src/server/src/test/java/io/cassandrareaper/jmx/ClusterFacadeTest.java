@@ -83,7 +83,7 @@ public class ClusterFacadeTest {
         .thenReturn(new HashSet<>(Arrays.asList("dc1")));
 
     context.config.setDatacenterAvailability(DatacenterAvailability.ALL);
-    assertTrue( ClusterFacade.create(context).nodeIsAccessibleThroughJmx("dc1", "127.0.0.1"));
+    assertTrue(ClusterFacade.create(context).nodeIsAccessibleThroughJmx("dc1", "127.0.0.1"));
     assertTrue(ClusterFacade.create(context).nodeIsAccessibleThroughJmx("dc2", "127.0.0.2"));
   }
 
@@ -184,16 +184,16 @@ public class ClusterFacadeTest {
   public void endpointCleanupCassandra() {
     Map<List<String>, List<String>> endpoints = ClusterFacade.maybeCleanupEndpointFromScylla(threeNodeClusterWithIps());
     for (Map.Entry<List<String>, List<String>> entry : endpoints.entrySet()) {
-      assertEquals(endpoints,threeNodeClusterWithIps());
+      assertEquals(endpoints, threeNodeClusterWithIps());
     }
   }
 
   @Test
   public void endpointCleanupScylla() {
     Map<List<String>, List<String>> endpoints
-            = ClusterFacade.maybeCleanupEndpointFromScylla(scyllaThreeNodeClusterWithIps());
+        = ClusterFacade.maybeCleanupEndpointFromScylla(scyllaThreeNodeClusterWithIps());
     for (Map.Entry<List<String>, List<String>> entry : endpoints.entrySet()) {
-      assertEquals(endpoints,threeNodeClusterWithIps());
+      assertEquals(endpoints, threeNodeClusterWithIps());
     }
   }
 
@@ -206,7 +206,7 @@ public class ClusterFacadeTest {
 
     contextSpy.config.setDatacenterAvailability(DatacenterAvailability.SIDECAR);
     JmxConnectionFactory jmxConnectionFactory = mock(JmxConnectionFactory.class);
-    JmxProxy mockProxy = mock(JmxProxy.class);
+    CassandraManagementProxy mockProxy = mock(CassandraManagementProxy.class);
     when(jmxConnectionFactory.connectAny(any(Collection.class))).thenReturn(mockProxy);
     contextSpy.jmxConnectionFactory = jmxConnectionFactory;
     final ClusterFacade cf = ClusterFacade.create(contextSpy);

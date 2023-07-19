@@ -26,7 +26,6 @@ import java.time.Duration;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-
 import java.util.Set;
 import javax.management.JMException;
 import javax.management.NotificationListener;
@@ -35,7 +34,7 @@ import javax.validation.constraints.NotNull;
 import org.apache.cassandra.repair.RepairParallelism;
 
 
-public interface JmxProxy extends NotificationListener {
+public interface CassandraManagementProxy extends NotificationListener {
 
   Duration DEFAULT_JMX_CONNECTION_TIMEOUT = Duration.ofSeconds(5);
 
@@ -94,7 +93,9 @@ public interface JmxProxy extends NotificationListener {
    */
   boolean isRepairRunning() throws JMException;
 
-  /** Checks if table exists in the cluster by instantiating a MBean for that table. */
+  /**
+   * Checks if table exists in the cluster by instantiating a MBean for that table.
+   */
   Map<String, List<String>> listTablesByKeyspace();
 
 

@@ -29,10 +29,10 @@ import io.cassandrareaper.core.RepairSegment;
 import io.cassandrareaper.core.RepairUnit;
 import io.cassandrareaper.core.Segment;
 import io.cassandrareaper.crypto.NoopCrypotograph;
+import io.cassandrareaper.jmx.CassandraManagementProxy;
+import io.cassandrareaper.jmx.CassandraManagementProxyTest;
 import io.cassandrareaper.jmx.ClusterFacade;
 import io.cassandrareaper.jmx.JmxConnectionFactory;
-import io.cassandrareaper.jmx.JmxProxy;
-import io.cassandrareaper.jmx.JmxProxyTest;
 import io.cassandrareaper.jmx.RepairStatusHandler;
 import io.cassandrareaper.storage.IStorageDao;
 import io.cassandrareaper.storage.MemoryStorageFacade;
@@ -141,7 +141,7 @@ public final class SegmentRunnerTest {
     final ExecutorService executor = Executors.newSingleThreadExecutor();
     final MutableObject<Future<?>> future = new MutableObject<>();
 
-    final JmxProxy jmx = JmxProxyTest.mockJmxProxyImpl();
+    final CassandraManagementProxy jmx = CassandraManagementProxyTest.mockJmxProxyImpl();
     when(jmx.getClusterName()).thenReturn("reaper");
     when(jmx.isConnectionAlive()).thenReturn(true);
 
@@ -152,7 +152,7 @@ public final class SegmentRunnerTest {
     } catch (UnknownHostException ex) {
       throw new AssertionError(ex);
     }
-    JmxProxyTest.mockGetEndpointSnitchInfoMBean(jmx, endpointSnitchInfoMBean);
+    CassandraManagementProxyTest.mockGetEndpointSnitchInfoMBean(jmx, endpointSnitchInfoMBean);
 
     when(jmx.triggerRepair(any(), any(), any(), any(), any(), anyBoolean(), any(), any(), any(), anyInt()))
         .then(
@@ -185,7 +185,7 @@ public final class SegmentRunnerTest {
 
     context.jmxConnectionFactory = new JmxConnectionFactory(context, new NoopCrypotograph()) {
       @Override
-      public JmxProxy connectImpl(Node host) throws ReaperException {
+      public CassandraManagementProxy connectImpl(Node host) throws ReaperException {
         return jmx;
       }
     };
@@ -266,7 +266,7 @@ public final class SegmentRunnerTest {
     context.config = Mockito.mock(ReaperApplicationConfiguration.class);
     when(context.config.getJmxConnectionTimeoutInSeconds()).thenReturn(30);
     when(context.config.getDatacenterAvailability()).thenReturn(DatacenterAvailability.ALL);
-    final JmxProxy jmx = JmxProxyTest.mockJmxProxyImpl();
+    final CassandraManagementProxy jmx = CassandraManagementProxyTest.mockJmxProxyImpl();
     when(jmx.getClusterName()).thenReturn("reaper");
     when(jmx.isConnectionAlive()).thenReturn(true);
     EndpointSnitchInfoMBean endpointSnitchInfoMBean = mock(EndpointSnitchInfoMBean.class);
@@ -276,7 +276,7 @@ public final class SegmentRunnerTest {
     } catch (UnknownHostException ex) {
       throw new AssertionError(ex);
     }
-    JmxProxyTest.mockGetEndpointSnitchInfoMBean(jmx, endpointSnitchInfoMBean);
+    CassandraManagementProxyTest.mockGetEndpointSnitchInfoMBean(jmx, endpointSnitchInfoMBean);
     when(jmx.triggerRepair(any(), any(), any(), any(), any(), anyBoolean(), any(), any(), any(), anyInt()))
         .then(
             (invocation) -> {
@@ -340,7 +340,7 @@ public final class SegmentRunnerTest {
             });
     context.jmxConnectionFactory = new JmxConnectionFactory(context, new NoopCrypotograph()) {
       @Override
-      protected JmxProxy connectImpl(Node host) throws ReaperException {
+      protected CassandraManagementProxy connectImpl(Node host) throws ReaperException {
         return jmx;
       }
     };
@@ -423,7 +423,7 @@ public final class SegmentRunnerTest {
     when(context.config.getJmxConnectionTimeoutInSeconds()).thenReturn(30);
     when(context.config.getDatacenterAvailability()).thenReturn(DatacenterAvailability.ALL);
 
-    final JmxProxy jmx = JmxProxyTest.mockJmxProxyImpl();
+    final CassandraManagementProxy jmx = CassandraManagementProxyTest.mockJmxProxyImpl();
     when(jmx.getClusterName()).thenReturn("reaper");
     when(jmx.isConnectionAlive()).thenReturn(true);
 
@@ -434,7 +434,7 @@ public final class SegmentRunnerTest {
     } catch (UnknownHostException ex) {
       throw new AssertionError(ex);
     }
-    JmxProxyTest.mockGetEndpointSnitchInfoMBean(jmx, endpointSnitchInfoMBean);
+    CassandraManagementProxyTest.mockGetEndpointSnitchInfoMBean(jmx, endpointSnitchInfoMBean);
 
     when(jmx.triggerRepair(any(), any(), any(), any(), any(), anyBoolean(), any(), any(), any(), anyInt()))
         .then(
@@ -488,7 +488,7 @@ public final class SegmentRunnerTest {
 
     context.jmxConnectionFactory = new JmxConnectionFactory(context, new NoopCrypotograph()) {
       @Override
-      protected JmxProxy connectImpl(Node host) throws ReaperException {
+      protected CassandraManagementProxy connectImpl(Node host) throws ReaperException {
         return jmx;
       }
     };
@@ -571,7 +571,7 @@ public final class SegmentRunnerTest {
     when(context.config.getJmxConnectionTimeoutInSeconds()).thenReturn(30);
     when(context.config.getDatacenterAvailability()).thenReturn(DatacenterAvailability.ALL);
 
-    final JmxProxy jmx = JmxProxyTest.mockJmxProxyImpl();
+    final CassandraManagementProxy jmx = CassandraManagementProxyTest.mockJmxProxyImpl();
     when(jmx.getClusterName()).thenReturn("reaper");
     when(jmx.isConnectionAlive()).thenReturn(true);
 
@@ -582,7 +582,7 @@ public final class SegmentRunnerTest {
     } catch (UnknownHostException ex) {
       throw new AssertionError(ex);
     }
-    JmxProxyTest.mockGetEndpointSnitchInfoMBean(jmx, endpointSnitchInfoMBean);
+    CassandraManagementProxyTest.mockGetEndpointSnitchInfoMBean(jmx, endpointSnitchInfoMBean);
 
     when(jmx.triggerRepair(any(), any(), any(), any(), any(), anyBoolean(), any(), any(), any(), anyInt()))
         .then(
@@ -631,7 +631,7 @@ public final class SegmentRunnerTest {
 
     context.jmxConnectionFactory = new JmxConnectionFactory(context, new NoopCrypotograph()) {
       @Override
-      protected JmxProxy connectImpl(Node host) throws ReaperException {
+      protected CassandraManagementProxy connectImpl(Node host) throws ReaperException {
         return jmx;
       }
     };
@@ -714,7 +714,7 @@ public final class SegmentRunnerTest {
     when(context.config.getJmxConnectionTimeoutInSeconds()).thenReturn(30);
     when(context.config.getDatacenterAvailability()).thenReturn(DatacenterAvailability.ALL);
 
-    final JmxProxy jmx = JmxProxyTest.mockJmxProxyImpl();
+    final CassandraManagementProxy jmx = CassandraManagementProxyTest.mockJmxProxyImpl();
     when(jmx.getClusterName()).thenReturn("reaper");
     when(jmx.isConnectionAlive()).thenReturn(true);
 
@@ -725,7 +725,7 @@ public final class SegmentRunnerTest {
     } catch (UnknownHostException ex) {
       throw new AssertionError(ex);
     }
-    JmxProxyTest.mockGetEndpointSnitchInfoMBean(jmx, endpointSnitchInfoMBean);
+    CassandraManagementProxyTest.mockGetEndpointSnitchInfoMBean(jmx, endpointSnitchInfoMBean);
 
     when(jmx.triggerRepair(any(), any(), any(), any(), any(), anyBoolean(), any(), any(), any(), anyInt()))
         .then(
@@ -774,7 +774,7 @@ public final class SegmentRunnerTest {
 
     context.jmxConnectionFactory = new JmxConnectionFactory(context, new NoopCrypotograph()) {
       @Override
-      protected JmxProxy connectImpl(Node host) throws ReaperException {
+      protected CassandraManagementProxy connectImpl(Node host) throws ReaperException {
         return jmx;
       }
     };
@@ -859,7 +859,7 @@ public final class SegmentRunnerTest {
     when(context.config.getJmxConnectionTimeoutInSeconds()).thenReturn(30);
     when(context.config.getDatacenterAvailability()).thenReturn(DatacenterAvailability.ALL);
 
-    final JmxProxy jmx = JmxProxyTest.mockJmxProxyImpl();
+    final CassandraManagementProxy jmx = CassandraManagementProxyTest.mockJmxProxyImpl();
     when(jmx.getClusterName()).thenReturn("reaper");
     when(jmx.isConnectionAlive()).thenReturn(true);
 
@@ -870,7 +870,7 @@ public final class SegmentRunnerTest {
     } catch (UnknownHostException ex) {
       throw new AssertionError(ex);
     }
-    JmxProxyTest.mockGetEndpointSnitchInfoMBean(jmx, endpointSnitchInfoMBean);
+    CassandraManagementProxyTest.mockGetEndpointSnitchInfoMBean(jmx, endpointSnitchInfoMBean);
 
     when(jmx.triggerRepair(any(), any(), any(), any(), any(), anyBoolean(), any(), any(), any(), anyInt()))
         .then(
@@ -919,7 +919,7 @@ public final class SegmentRunnerTest {
 
     context.jmxConnectionFactory = new JmxConnectionFactory(context, new NoopCrypotograph()) {
       @Override
-      protected JmxProxy connectImpl(Node host) throws ReaperException {
+      protected CassandraManagementProxy connectImpl(Node host) throws ReaperException {
         return jmx;
       }
     };
@@ -1005,7 +1005,7 @@ public final class SegmentRunnerTest {
     when(context.config.getJmxConnectionTimeoutInSeconds()).thenReturn(30);
     when(context.config.getDatacenterAvailability()).thenReturn(DatacenterAvailability.ALL);
 
-    final JmxProxy jmx = JmxProxyTest.mockJmxProxyImpl();
+    final CassandraManagementProxy jmx = CassandraManagementProxyTest.mockJmxProxyImpl();
     when(jmx.getClusterName()).thenReturn("reaper");
     when(jmx.isConnectionAlive()).thenReturn(true);
 
@@ -1016,7 +1016,7 @@ public final class SegmentRunnerTest {
     } catch (UnknownHostException ex) {
       throw new AssertionError(ex);
     }
-    JmxProxyTest.mockGetEndpointSnitchInfoMBean(jmx, endpointSnitchInfoMBean);
+    CassandraManagementProxyTest.mockGetEndpointSnitchInfoMBean(jmx, endpointSnitchInfoMBean);
 
     when(jmx.triggerRepair(any(), any(), any(), any(), any(), anyBoolean(), any(), any(), any(), anyInt()))
         .then(
@@ -1065,7 +1065,7 @@ public final class SegmentRunnerTest {
 
     context.jmxConnectionFactory = new JmxConnectionFactory(context, new NoopCrypotograph()) {
       @Override
-      protected JmxProxy connectImpl(Node host) throws ReaperException {
+      protected CassandraManagementProxy connectImpl(Node host) throws ReaperException {
         return jmx;
       }
     };
@@ -1179,7 +1179,7 @@ public final class SegmentRunnerTest {
     when(context.config.getJmxConnectionTimeoutInSeconds()).thenReturn(30);
     when(context.config.getDatacenterAvailability()).thenReturn(DatacenterAvailability.ALL);
 
-    final JmxProxy jmx = JmxProxyTest.mockJmxProxyImpl();
+    final CassandraManagementProxy jmx = CassandraManagementProxyTest.mockJmxProxyImpl();
     when(jmx.getClusterName()).thenReturn("reaper");
     when(jmx.isConnectionAlive()).thenReturn(true);
 
@@ -1190,14 +1190,14 @@ public final class SegmentRunnerTest {
     } catch (UnknownHostException ex) {
       throw new AssertionError(ex);
     }
-    JmxProxyTest.mockGetEndpointSnitchInfoMBean(jmx, endpointSnitchInfoMBean);
+    CassandraManagementProxyTest.mockGetEndpointSnitchInfoMBean(jmx, endpointSnitchInfoMBean);
 
     when(jmx.triggerRepair(any(), any(), any(), any(), any(), anyBoolean(), any(), any(), any(), anyInt()))
         .thenThrow(new ReaperException("failure"));
 
     context.jmxConnectionFactory = new JmxConnectionFactory(context, new NoopCrypotograph()) {
       @Override
-      protected JmxProxy connectImpl(Node host) throws ReaperException {
+      protected CassandraManagementProxy connectImpl(Node host) throws ReaperException {
         return jmx;
       }
     };
@@ -1274,7 +1274,7 @@ public final class SegmentRunnerTest {
     when(context.config.getJmxConnectionTimeoutInSeconds()).thenReturn(30);
     when(context.config.getDatacenterAvailability()).thenReturn(DatacenterAvailability.ALL);
 
-    final JmxProxy jmx = JmxProxyTest.mockJmxProxyImpl();
+    final CassandraManagementProxy jmx = CassandraManagementProxyTest.mockJmxProxyImpl();
     when(jmx.getClusterName()).thenReturn("reaper");
     when(jmx.isConnectionAlive()).thenReturn(true);
 
@@ -1285,14 +1285,14 @@ public final class SegmentRunnerTest {
     } catch (UnknownHostException ex) {
       throw new AssertionError(ex);
     }
-    JmxProxyTest.mockGetEndpointSnitchInfoMBean(jmx, endpointSnitchInfoMBean);
+    CassandraManagementProxyTest.mockGetEndpointSnitchInfoMBean(jmx, endpointSnitchInfoMBean);
 
     when(jmx.triggerRepair(any(), any(), any(), any(), any(), anyBoolean(), any(), any(), any(), anyInt()))
         .thenReturn(0);
 
     context.jmxConnectionFactory = new JmxConnectionFactory(context, new NoopCrypotograph()) {
       @Override
-      protected JmxProxy connectImpl(Node host) throws ReaperException {
+      protected CassandraManagementProxy connectImpl(Node host) throws ReaperException {
         return jmx;
       }
     };
@@ -1393,7 +1393,7 @@ public final class SegmentRunnerTest {
     context.config = Mockito.mock(ReaperApplicationConfiguration.class);
     when(context.config.getJmxConnectionTimeoutInSeconds()).thenReturn(30);
     when(context.config.getDatacenterAvailability()).thenReturn(DatacenterAvailability.ALL);
-    final JmxProxy jmx = JmxProxyTest.mockJmxProxyImpl();
+    final CassandraManagementProxy jmx = CassandraManagementProxyTest.mockJmxProxyImpl();
     when(jmx.getClusterName()).thenReturn("reaper");
     when(jmx.isConnectionAlive()).thenReturn(true);
     EndpointSnitchInfoMBean endpointSnitchInfoMBean = mock(EndpointSnitchInfoMBean.class);
@@ -1403,10 +1403,10 @@ public final class SegmentRunnerTest {
     } catch (UnknownHostException ex) {
       throw new AssertionError(ex);
     }
-    JmxProxyTest.mockGetEndpointSnitchInfoMBean(jmx, endpointSnitchInfoMBean);
+    CassandraManagementProxyTest.mockGetEndpointSnitchInfoMBean(jmx, endpointSnitchInfoMBean);
 
     StorageServiceMBean storageServiceMbeanMock = mock(StorageServiceMBean.class);
-    JmxProxyTest.mockGetStorageServiceMBean(jmx, storageServiceMbeanMock);
+    CassandraManagementProxyTest.mockGetStorageServiceMBean(jmx, storageServiceMbeanMock);
     doThrow(new IOException("failure"))
         .when(storageServiceMbeanMock).clearSnapshot(any(), any());
 
@@ -1480,8 +1480,8 @@ public final class SegmentRunnerTest {
     ClusterFacade clusterFacade = mock(ClusterFacade.class);
     when(clusterFacade.connect(any(Cluster.class), any())).thenThrow(new ReaperException("failure"));
     StorageServiceMBean storageServiceMbeanMock = mock(StorageServiceMBean.class);
-    final JmxProxy jmx = JmxProxyTest.mockJmxProxyImpl();
-    JmxProxyTest.mockGetStorageServiceMBean(jmx, storageServiceMbeanMock);
+    final CassandraManagementProxy jmx = CassandraManagementProxyTest.mockJmxProxyImpl();
+    CassandraManagementProxyTest.mockGetStorageServiceMBean(jmx, storageServiceMbeanMock);
     doThrow(new IOException("failure"))
         .when(storageServiceMbeanMock).clearSnapshot(any(), any());
 

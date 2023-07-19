@@ -49,7 +49,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
-
 import javax.management.InstanceNotFoundException;
 import javax.management.JMException;
 import javax.management.JMX;
@@ -96,9 +95,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 
-final class JmxProxyImpl implements JmxProxy {
+final class CassandraManagementProxyImpl implements CassandraManagementProxy {
 
-  private static final Logger LOG = LoggerFactory.getLogger(JmxProxy.class);
+  private static final Logger LOG = LoggerFactory.getLogger(CassandraManagementProxy.class);
 
   private static final String VALUE_ATTRIBUTE = "Value";
   private static final String FAILED_TO_CONNECT_TO_USING_JMX = "Failed to connect to {} using JMX";
@@ -124,7 +123,7 @@ final class JmxProxyImpl implements JmxProxy {
   private final LastEventIdBroadcasterMBean lastEventIdProxy;
   private final Jmxmp jmxmp;
 
-  private JmxProxyImpl(
+  private CassandraManagementProxyImpl(
       String host,
       String hostBeforeTranslation,
       JMXConnector jmxConnector,
@@ -159,7 +158,7 @@ final class JmxProxyImpl implements JmxProxy {
   /**
    * @see #connect(String, int, Optional, AddressTranslator, int, MetricRegistry, Cryptograph)
    */
-  static JmxProxy connect(
+  static CassandraManagementProxy connect(
       String host,
       Optional<JmxCredentials> jmxCredentials,
       final AddressTranslator addressTranslator,
@@ -189,13 +188,13 @@ final class JmxProxyImpl implements JmxProxy {
   /**
    * Connect to JMX interface on the given host and port.
    *
-   * @param originalHost hostname or ip address of Cassandra node
-   * @param port port number to use for JMX connection
-   * @param jmxCredentials credentials to use for JMX authentication
+   * @param originalHost      hostname or ip address of Cassandra node
+   * @param port              port number to use for JMX connection
+   * @param jmxCredentials    credentials to use for JMX authentication
    * @param addressTranslator if EC2MultiRegionAddressTranslator isn't null it will be used to
-   *     translate addresses
+   *                          translate addresses
    */
-  private static JmxProxy connect(
+  private static CassandraManagementProxy connect(
       String originalHost,
       int port,
       Optional<JmxCredentials> jmxCredentials,
@@ -223,7 +222,7 @@ final class JmxProxyImpl implements JmxProxy {
     try {
       final Map<String, Object> env = new HashMap<>();
       if (jmxmp.useSsl() && jmxCredentials.isPresent()) {
-        String[] creds = { jmxCredentials.get().getUsername(), jmxCredentials.get().getPassword() };
+        String[] creds = {jmxCredentials.get().getUsername(), jmxCredentials.get().getPassword()};
         env.put(JMXConnector.CREDENTIALS, creds);
         LOG.debug("Use SSL with profile 'TLS SASL/PLAIN' with JMXMP");
         env.put("jmx.remote.profiles", "TLS SASL/PLAIN");
@@ -256,21 +255,21 @@ final class JmxProxyImpl implements JmxProxy {
         smProxy = Optional.of(JMX.newMBeanProxy(mbeanServerConn, ObjectNames.STREAM_MANAGER, StreamManagerMBean.class));
       }
 
-      JmxProxy proxy
-          = new JmxProxyImpl(
-              host,
-              originalHost,
-              jmxConn,
-              ssProxy,
-              mbeanServerConn,
-              JMX.newMBeanProxy(mbeanServerConn, ObjectNames.COMPACTION_MANAGER, CompactionManagerMBean.class),
-              JMX.newMBeanProxy(mbeanServerConn, ObjectNames.ENDPOINT_SNITCH_INFO, EndpointSnitchInfoMBean.class),
-              JMX.newMBeanProxy(mbeanServerConn, ObjectNames.FAILURE_DETECTOR, FailureDetectorMBean.class),
-              metricRegistry,
-              smProxy,
-              JMX.newMBeanProxy(mbeanServerConn, ObjectNames.DIAGNOSTICS_EVENTS, DiagnosticEventPersistenceMBean.class),
-              JMX.newMBeanProxy(mbeanServerConn, ObjectNames.LAST_EVENT_ID, LastEventIdBroadcasterMBean.class),
-              jmxmp);
+      CassandraManagementProxy proxy
+          = new CassandraManagementProxyImpl(
+          host,
+          originalHost,
+          jmxConn,
+          ssProxy,
+          mbeanServerConn,
+          JMX.newMBeanProxy(mbeanServerConn, ObjectNames.COMPACTION_MANAGER, CompactionManagerMBean.class),
+          JMX.newMBeanProxy(mbeanServerConn, ObjectNames.ENDPOINT_SNITCH_INFO, EndpointSnitchInfoMBean.class),
+          JMX.newMBeanProxy(mbeanServerConn, ObjectNames.FAILURE_DETECTOR, FailureDetectorMBean.class),
+          metricRegistry,
+          smProxy,
+          JMX.newMBeanProxy(mbeanServerConn, ObjectNames.DIAGNOSTICS_EVENTS, DiagnosticEventPersistenceMBean.class),
+          JMX.newMBeanProxy(mbeanServerConn, ObjectNames.LAST_EVENT_ID, LastEventIdBroadcasterMBean.class),
+          jmxmp);
 
       // registering listeners throws bunch of exceptions, so do it here rather than in the constructor
       mbeanServerConn.addNotificationListener(ObjectNames.STORAGE_SERVICE, proxy, null, null);
@@ -300,6 +299,29 @@ final class JmxProxyImpl implements JmxProxy {
 
     Future<JMXConnector> future = EXECUTOR.submit(() -> JMXConnectorFactory.connect(url, env));
     return future.get(timeout, unit);
+  }
+
+  /**
+   * Compares two Cassandra versions using classes provided by the Datastax Java Driver.
+   *
+   * @param str1 a string of ordinal numbers separated by decimal points.
+   * @param str2 a string of ordinal numbers separated by decimal points.
+   * @return The result is a negative integer if str1 is _numerically_ less than str2. The result is
+   *     a positive integer if str1 is _numerically_ greater than str2. The result is zero if the
+   *     strings are _numerically_ equal. It does not work if "1.10" is supposed to be equal to
+   *     "1.10.0".
+   */
+  static Integer versionCompare(String str1, String str2) {
+    VersionNumber version1 = VersionNumber.parse(str1);
+    VersionNumber version2 = VersionNumber.parse(str2);
+
+    return version1.compareTo(version2);
+  }
+
+  private static RMIClientSocketFactory getRmiClientSocketFactory() {
+    return Boolean.parseBoolean(System.getProperty("ssl.enable"))
+        ? new SslRMIClientSocketFactory()
+        : RMISocketFactory.getDefaultSocketFactory();
   }
 
   @Override
@@ -386,7 +408,7 @@ final class JmxProxyImpl implements JmxProxy {
         ColumnFamilyStoreMBean columnFamilyMBean = proxyEntry.getValue();
 
         Table.Builder tableBuilder = Table.builder()
-              .withName(columnFamilyMBean.getColumnFamilyName());
+            .withName(columnFamilyMBean.getColumnFamilyName());
 
         if (canUseCompactionStrategy) {
           tableBuilder.withCompactionStrategy(columnFamilyMBean.getCompactionParameters().get("class"));
@@ -531,12 +553,12 @@ final class JmxProxyImpl implements JmxProxy {
       Set<ObjectName> beanSet = mbeanServer.queryNames(ObjectNames.COLUMN_FAMILIES, null);
 
       tablesByKeyspace = beanSet.stream()
-              .map(bean ->
-                      new JmxColumnFamily(bean.getKeyProperty("keyspace"), bean.getKeyProperty("columnfamily")))
-              .collect(
-                  Collectors.groupingBy(
-                      JmxColumnFamily::getKeyspace,
-                      Collectors.mapping(JmxColumnFamily::getColumnFamily, Collectors.toList())));
+          .map(bean ->
+              new JmxColumnFamily(bean.getKeyProperty("keyspace"), bean.getKeyProperty("columnfamily")))
+          .collect(
+              Collectors.groupingBy(
+                  JmxColumnFamily::getKeyspace,
+                  Collectors.mapping(JmxColumnFamily::getColumnFamily, Collectors.toList())));
 
     } catch (IOException e) {
       LOG.warn("Couldn't get a list of tables through JMX", e);
@@ -549,7 +571,6 @@ final class JmxProxyImpl implements JmxProxy {
   public String getCassandraVersion() {
     return ssProxy.getReleaseVersion();
   }
-
 
   @Override
   public int triggerRepair(
@@ -571,9 +592,9 @@ final class JmxProxyImpl implements JmxProxy {
 
     String msg = String.format(
         "Triggering repair of range (%s,%s] for keyspace \"%s\" on "
-        + "host %s, with repair parallelism %s, in cluster with Cassandra "
-        + "version '%s' (can use DATACENTER_AWARE '%s'), "
-        + "for column families: %s",
+            + "host %s, with repair parallelism %s, in cluster with Cassandra "
+            + "version '%s' (can use DATACENTER_AWARE '%s'), "
+            + "for column families: %s",
         beginToken.toString(),
         endToken.toString(),
         keyspace,
@@ -586,7 +607,7 @@ final class JmxProxyImpl implements JmxProxy {
     if (repairParallelism.equals(RepairParallelism.DATACENTER_AWARE) && !canUseDatacenterAware) {
       LOG.info(
           "Cannot use DATACENTER_AWARE repair policy for Cassandra cluster with version {},"
-          + " falling back to SEQUENTIAL repair.",
+              + " falling back to SEQUENTIAL repair.",
           cassandraVersion);
       repairParallelism = RepairParallelism.SEQUENTIAL;
     }
@@ -680,41 +701,41 @@ final class JmxProxyImpl implements JmxProxy {
       // full repair
       if (repairParallelism.equals(RepairParallelism.DATACENTER_AWARE)) {
         return ssProxy
-                .forceRepairRangeAsync(
-                    beginToken.toString(),
-                    endToken.toString(),
-                    keyspace,
-                    repairParallelism.ordinal(),
-                    datacenters,
-                    cassandraVersion.startsWith("2.2") ? new HashSet<>() : null,
-                    fullRepair,
-                    columnFamilies.toArray(new String[columnFamilies.size()]));
+            .forceRepairRangeAsync(
+                beginToken.toString(),
+                endToken.toString(),
+                keyspace,
+                repairParallelism.ordinal(),
+                datacenters,
+                cassandraVersion.startsWith("2.2") ? new HashSet<>() : null,
+                fullRepair,
+                columnFamilies.toArray(new String[columnFamilies.size()]));
       }
       boolean snapshotRepair = repairParallelism.equals(RepairParallelism.SEQUENTIAL);
 
       return ssProxy
-              .forceRepairRangeAsync(
-                  beginToken.toString(),
-                  endToken.toString(),
-                  keyspace,
-                  snapshotRepair
-                      ? RepairParallelism.SEQUENTIAL.ordinal()
-                      : RepairParallelism.PARALLEL.ordinal(),
-                  datacenters,
-                  cassandraVersion.startsWith("2.2") ? new HashSet<>() : null,
-                  fullRepair,
-                  columnFamilies.toArray(new String[columnFamilies.size()]));
+          .forceRepairRangeAsync(
+              beginToken.toString(),
+              endToken.toString(),
+              keyspace,
+              snapshotRepair
+                  ? RepairParallelism.SEQUENTIAL.ordinal()
+                  : RepairParallelism.PARALLEL.ordinal(),
+              datacenters,
+              cassandraVersion.startsWith("2.2") ? new HashSet<>() : null,
+              fullRepair,
+              columnFamilies.toArray(new String[columnFamilies.size()]));
     }
 
     // incremental repair
     return ssProxy
-            .forceRepairAsync(
-                keyspace,
-                Boolean.FALSE,
-                Boolean.FALSE,
-                Boolean.FALSE,
-                fullRepair,
-                columnFamilies.toArray(new String[columnFamilies.size()]));
+        .forceRepairAsync(
+            keyspace,
+            Boolean.FALSE,
+            Boolean.FALSE,
+            Boolean.FALSE,
+            fullRepair,
+            columnFamilies.toArray(new String[columnFamilies.size()]));
   }
 
   private int triggerRepairPre2dot1(
@@ -728,25 +749,25 @@ final class JmxProxyImpl implements JmxProxy {
     // Cassandra 1.2 and 2.0 compatibility
     if (repairParallelism.equals(RepairParallelism.DATACENTER_AWARE)) {
       return ((StorageServiceMBean20) ssProxy)
-              .forceRepairRangeAsync(
-                  beginToken.toString(),
-                  endToken.toString(),
-                  keyspace,
-                  repairParallelism.ordinal(),
-                  datacenters,
-                  null,
-                  columnFamilies.toArray(new String[columnFamilies.size()]));
+          .forceRepairRangeAsync(
+              beginToken.toString(),
+              endToken.toString(),
+              keyspace,
+              repairParallelism.ordinal(),
+              datacenters,
+              null,
+              columnFamilies.toArray(new String[columnFamilies.size()]));
     }
     boolean snapshotRepair = repairParallelism.equals(RepairParallelism.SEQUENTIAL);
 
     return ((StorageServiceMBean20) ssProxy)
-            .forceRepairRangeAsync(
-                beginToken.toString(),
-                endToken.toString(),
-                keyspace,
-                snapshotRepair,
-                false,
-                columnFamilies.toArray(new String[columnFamilies.size()]));
+        .forceRepairRangeAsync(
+            beginToken.toString(),
+            endToken.toString(),
+            keyspace,
+            snapshotRepair,
+            false,
+            columnFamilies.toArray(new String[columnFamilies.size()]));
   }
 
   /**
@@ -754,11 +775,10 @@ final class JmxProxyImpl implements JmxProxy {
    *
    * <p>We're interested in repair-related events. Their format is explained at
    * {@link org.apache.cassandra.service.StorageServiceMBean#forceRepairAsync}. The format is:
-   *    notification type: "repair"
-   *    notification userData: int array of length 2 where
-   *      [0] = command number
-   *      [1] = ordinal of AntiEntropyService.Status
-   *
+   * notification type: "repair"
+   * notification userData: int array of length 2 where
+   * [0] = command number
+   * [1] = ordinal of AntiEntropyService.Status
    */
   @Override
   public void handleNotification(final Notification notification, Object handback) {
@@ -859,7 +879,9 @@ final class JmxProxyImpl implements JmxProxy {
     }
   }
 
-  /** Cleanly shut down by un-registering the listener and closing the JMX connection. */
+  /**
+   * Cleanly shut down by un-registering the listener and closing the JMX connection.
+   */
   @Override
   public void close() {
     try {
@@ -876,23 +898,6 @@ final class JmxProxyImpl implements JmxProxy {
     }
   }
 
-  /**
-   * Compares two Cassandra versions using classes provided by the Datastax Java Driver.
-   *
-   * @param str1 a string of ordinal numbers separated by decimal points.
-   * @param str2 a string of ordinal numbers separated by decimal points.
-   * @return The result is a negative integer if str1 is _numerically_ less than str2. The result is
-   *     a positive integer if str1 is _numerically_ greater than str2. The result is zero if the
-   *     strings are _numerically_ equal. It does not work if "1.10" is supposed to be equal to
-   *     "1.10.0".
-   */
-  static Integer versionCompare(String str1, String str2) {
-    VersionNumber version1 = VersionNumber.parse(str1);
-    VersionNumber version2 = VersionNumber.parse(str2);
-
-    return version1.compareTo(version2);
-  }
-
   @Override
   public List<String> getLiveNodes() throws ReaperException {
     Preconditions.checkNotNull(ssProxy, "Looks like the proxy is not connected");
@@ -904,45 +909,20 @@ final class JmxProxyImpl implements JmxProxy {
     }
   }
 
-  private static RMIClientSocketFactory getRmiClientSocketFactory() {
-    return Boolean.parseBoolean(System.getProperty("ssl.enable"))
-        ? new SslRMIClientSocketFactory()
-        : RMISocketFactory.getDefaultSocketFactory();
-  }
-
-  private static final class JmxColumnFamily {
-    private final String keyspace;
-    private final String columnFamily;
-
-    JmxColumnFamily(String keyspace, String columnFamily) {
-      super();
-      this.keyspace = keyspace;
-      this.columnFamily = columnFamily;
-    }
-
-    public String getKeyspace() {
-      return keyspace;
-    }
-
-    public String getColumnFamily() {
-      return columnFamily;
-    }
-  }
-
   private void registerConnectionsGauge() {
     try {
       if (!metricRegistry
           .getGauges()
           .containsKey(
               MetricRegistry.name(
-                  JmxProxyImpl.class,
+                  CassandraManagementProxyImpl.class,
                   clusterName.replaceAll("[^A-Za-z0-9]", ""),
                   host.replace('.', 'x').replaceAll("[^A-Za-z0-9]", ""),
                   "repairStatusHandlers"))) {
 
         metricRegistry.register(
             MetricRegistry.name(
-                JmxProxyImpl.class,
+                CassandraManagementProxyImpl.class,
                 clusterName.replaceAll("[^A-Za-z0-9]", ""),
                 host.replace('.', 'x').replaceAll("[^A-Za-z0-9]", ""),
                 "repairStatusHandlers"),
@@ -1008,6 +988,25 @@ final class JmxProxyImpl implements JmxProxy {
     jmxConnector.getMBeanServerConnection().removeNotificationListener(ObjectNames.LAST_EVENT_ID, listener);
   }
 
+  private static final class JmxColumnFamily {
+    private final String keyspace;
+    private final String columnFamily;
+
+    JmxColumnFamily(String keyspace, String columnFamily) {
+      super();
+      this.keyspace = keyspace;
+      this.columnFamily = columnFamily;
+    }
+
+    public String getKeyspace() {
+      return keyspace;
+    }
+
+    public String getColumnFamily() {
+      return columnFamily;
+    }
+  }
+
   // Initialization-on-demand holder for jmx ObjectNames
   private static final class ObjectNames {
 
@@ -1061,7 +1060,7 @@ final class JmxProxyImpl implements JmxProxy {
     }
 
     public void handle(javax.security.auth.callback.Callback[] callbacks)
-            throws IOException, javax.security.auth.callback.UnsupportedCallbackException {
+        throws IOException, javax.security.auth.callback.UnsupportedCallbackException {
       for (int i = 0; i < callbacks.length; i++) {
         if (callbacks[i] instanceof PasswordCallback) {
           PasswordCallback pcb = (PasswordCallback) callbacks[i];

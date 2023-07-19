@@ -24,21 +24,20 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 
 
-
 public final class EndpointSnitchInfoProxy {
 
   // `EndpointSnitchInfoMBean().getDatacenter(host)` is static info regardless of what node is answering
   private static final Cache<String, String> DATACENTERS_BY_HOST = CacheBuilder.newBuilder().build();
 
-  private final JmxProxyImpl proxy;
+  private final CassandraManagementProxyImpl proxy;
 
-  private EndpointSnitchInfoProxy(JmxProxyImpl proxy) {
+  private EndpointSnitchInfoProxy(CassandraManagementProxyImpl proxy) {
     this.proxy = proxy;
   }
 
-  public static EndpointSnitchInfoProxy create(JmxProxy proxy) {
-    Preconditions.checkArgument(proxy instanceof JmxProxyImpl, "only JmxProxyImpl is supported");
-    return new EndpointSnitchInfoProxy((JmxProxyImpl)proxy);
+  public static EndpointSnitchInfoProxy create(CassandraManagementProxy proxy) {
+    Preconditions.checkArgument(proxy instanceof CassandraManagementProxyImpl, "only JmxProxyImpl is supported");
+    return new EndpointSnitchInfoProxy((CassandraManagementProxyImpl) proxy);
   }
 
 

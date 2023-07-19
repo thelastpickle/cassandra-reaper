@@ -25,10 +25,10 @@ import io.cassandrareaper.core.Node;
 import io.cassandrareaper.core.RepairSchedule;
 import io.cassandrareaper.core.RepairUnit;
 import io.cassandrareaper.core.Table;
+import io.cassandrareaper.jmx.CassandraManagementProxy;
+import io.cassandrareaper.jmx.CassandraManagementProxyTest;
 import io.cassandrareaper.jmx.ClusterFacade;
 import io.cassandrareaper.jmx.JmxConnectionFactory;
-import io.cassandrareaper.jmx.JmxProxy;
-import io.cassandrareaper.jmx.JmxProxyTest;
 import io.cassandrareaper.storage.IStorageDao;
 import io.cassandrareaper.storage.repairschedule.IRepairScheduleDao;
 import io.cassandrareaper.storage.repairunit.IRepairUnitDao;
@@ -91,7 +91,7 @@ public final class RepairUnitServiceTest {
 
   @Test
   public void getTablesToRepairRemoveOneTableTest() throws ReaperException, UnknownHostException {
-    JmxProxy proxy = JmxProxyTest.mockJmxProxyImpl();
+    CassandraManagementProxy proxy = CassandraManagementProxyTest.mockJmxProxyImpl();
     when(proxy.getCassandraVersion()).thenReturn("3.11.4");
     when(context.jmxConnectionFactory.connectAny(Mockito.any(Collection.class))).thenReturn(proxy);
 
@@ -115,7 +115,7 @@ public final class RepairUnitServiceTest {
 
   @Test
   public void getTablesToRepairDefaultCompactionStrategyTable() throws ReaperException, UnknownHostException {
-    JmxProxy proxy = JmxProxyTest.mockJmxProxyImpl();
+    CassandraManagementProxy proxy = CassandraManagementProxyTest.mockJmxProxyImpl();
     when(proxy.getCassandraVersion()).thenReturn("3.11.4");
     when(context.jmxConnectionFactory.connectAny(Mockito.any(Collection.class))).thenReturn(proxy);
 
@@ -139,7 +139,7 @@ public final class RepairUnitServiceTest {
 
   @Test
   public void getTablesToRepairRemoveOneTableWithTwcsTest() throws ReaperException, UnknownHostException {
-    JmxProxy proxy = JmxProxyTest.mockJmxProxyImpl();
+    CassandraManagementProxy proxy = CassandraManagementProxyTest.mockJmxProxyImpl();
     when(proxy.getCassandraVersion()).thenReturn("3.11.4");
     when(context.jmxConnectionFactory.connectAny(Mockito.any(Collection.class))).thenReturn(proxy);
 
@@ -162,7 +162,7 @@ public final class RepairUnitServiceTest {
 
   @Test
   public void getTablesToRepairRemoveTwoTablesTest() throws ReaperException, UnknownHostException {
-    JmxProxy proxy = JmxProxyTest.mockJmxProxyImpl();
+    CassandraManagementProxy proxy = CassandraManagementProxyTest.mockJmxProxyImpl();
     when(proxy.getCassandraVersion()).thenReturn("3.11.4");
     when(context.jmxConnectionFactory.connectAny(Mockito.any(Collection.class))).thenReturn(proxy);
 
@@ -186,7 +186,7 @@ public final class RepairUnitServiceTest {
 
   @Test
   public void getTablesToRepairRemoveTwoTablesOneWithTwcsTest() throws ReaperException, UnknownHostException {
-    JmxProxy proxy = JmxProxyTest.mockJmxProxyImpl();
+    CassandraManagementProxy proxy = CassandraManagementProxyTest.mockJmxProxyImpl();
     when(proxy.getCassandraVersion()).thenReturn("3.11.4");
     when(context.jmxConnectionFactory.connectAny(Mockito.any(Collection.class))).thenReturn(proxy);
 
@@ -210,7 +210,7 @@ public final class RepairUnitServiceTest {
 
   @Test
   public void getTablesToRepairRemoveOneTableFromListTest() throws ReaperException, UnknownHostException {
-    JmxProxy proxy = JmxProxyTest.mockJmxProxyImpl();
+    CassandraManagementProxy proxy = CassandraManagementProxyTest.mockJmxProxyImpl();
     when(proxy.getCassandraVersion()).thenReturn("3.11.4");
     when(context.jmxConnectionFactory.connectAny(Mockito.any(Collection.class))).thenReturn(proxy);
 
@@ -235,7 +235,7 @@ public final class RepairUnitServiceTest {
 
   @Test
   public void getTablesToRepairRemoveOneTableFromListOneWithTwcsTest() throws ReaperException, UnknownHostException {
-    JmxProxy proxy = JmxProxyTest.mockJmxProxyImpl();
+    CassandraManagementProxy proxy = CassandraManagementProxyTest.mockJmxProxyImpl();
     when(proxy.getCassandraVersion()).thenReturn("3.11.4");
     when(context.jmxConnectionFactory.connectAny(Mockito.any(Collection.class))).thenReturn(proxy);
 
@@ -260,7 +260,7 @@ public final class RepairUnitServiceTest {
 
   @Test(expected = IllegalStateException.class)
   public void getTablesToRepairRemoveAllFailingTest() throws ReaperException, UnknownHostException {
-    JmxProxy proxy = JmxProxyTest.mockJmxProxyImpl();
+    CassandraManagementProxy proxy = CassandraManagementProxyTest.mockJmxProxyImpl();
     when(proxy.getCassandraVersion()).thenReturn("3.11.4");
     when(context.jmxConnectionFactory.connectAny(Mockito.any(Collection.class))).thenReturn(proxy);
 
@@ -284,7 +284,7 @@ public final class RepairUnitServiceTest {
 
   @Test(expected = IllegalStateException.class)
   public void getTablesToRepairRemoveAllFromListFailingTest() throws ReaperException, UnknownHostException {
-    JmxProxy proxy = JmxProxyTest.mockJmxProxyImpl();
+    CassandraManagementProxy proxy = CassandraManagementProxyTest.mockJmxProxyImpl();
     when(proxy.getCassandraVersion()).thenReturn("3.11.4");
     when(context.jmxConnectionFactory.connectAny(Mockito.any(Collection.class))).thenReturn(proxy);
 
@@ -310,7 +310,7 @@ public final class RepairUnitServiceTest {
 
   @Test
   public void conflictingRepairUnitsTest() throws ReaperException, UnknownHostException {
-    JmxProxy proxy = JmxProxyTest.mockJmxProxyImpl();
+    CassandraManagementProxy proxy = CassandraManagementProxyTest.mockJmxProxyImpl();
     when(proxy.getCassandraVersion()).thenReturn("3.11.4");
     when(context.jmxConnectionFactory.connectAny(Mockito.any(Collection.class))).thenReturn(proxy);
 
@@ -345,7 +345,7 @@ public final class RepairUnitServiceTest {
 
   @Test(expected = IllegalStateException.class)
   public void conflictingRepairUnitsDiffKSTest() throws ReaperException, UnknownHostException {
-    JmxProxy proxy = JmxProxyTest.mockJmxProxyImpl();
+    CassandraManagementProxy proxy = CassandraManagementProxyTest.mockJmxProxyImpl();
     when(proxy.getCassandraVersion()).thenReturn("3.11.4");
     when(context.jmxConnectionFactory.connectAny(Mockito.any(Collection.class))).thenReturn(proxy);
 
@@ -380,7 +380,7 @@ public final class RepairUnitServiceTest {
 
   @Test
   public void conflictingRepairUnitsNoTablesTest() throws ReaperException, UnknownHostException {
-    JmxProxy proxy = JmxProxyTest.mockJmxProxyImpl();
+    CassandraManagementProxy proxy = CassandraManagementProxyTest.mockJmxProxyImpl();
     when(proxy.getCassandraVersion()).thenReturn("3.11.4");
     when(context.jmxConnectionFactory.connectAny(Mockito.any(Collection.class))).thenReturn(proxy);
 
@@ -411,7 +411,7 @@ public final class RepairUnitServiceTest {
 
   @Test
   public void notConflictingRepairUnitsTest() throws ReaperException, UnknownHostException {
-    JmxProxy proxy = JmxProxyTest.mockJmxProxyImpl();
+    CassandraManagementProxy proxy = CassandraManagementProxyTest.mockJmxProxyImpl();
     when(proxy.getCassandraVersion()).thenReturn("3.11.4");
     when(context.jmxConnectionFactory.connectAny(Mockito.any(Collection.class))).thenReturn(proxy);
 
@@ -442,7 +442,7 @@ public final class RepairUnitServiceTest {
 
   @Test
   public void identicalRepairUnitsIncrFullTest() throws ReaperException, UnknownHostException {
-    JmxProxy proxy = JmxProxyTest.mockJmxProxyImpl();
+    CassandraManagementProxy proxy = CassandraManagementProxyTest.mockJmxProxyImpl();
     when(proxy.getCassandraVersion()).thenReturn("3.11.4");
     when(context.jmxConnectionFactory.connectAny(Mockito.any(Collection.class))).thenReturn(proxy);
 
@@ -477,7 +477,7 @@ public final class RepairUnitServiceTest {
 
   @Test
   public void identicalRepairUnitsDiffTablesTest() throws ReaperException, UnknownHostException {
-    JmxProxy proxy = JmxProxyTest.mockJmxProxyImpl();
+    CassandraManagementProxy proxy = CassandraManagementProxyTest.mockJmxProxyImpl();
     when(proxy.getCassandraVersion()).thenReturn("3.11.4");
     when(context.jmxConnectionFactory.connectAny(Mockito.any(Collection.class))).thenReturn(proxy);
 
@@ -522,7 +522,7 @@ public final class RepairUnitServiceTest {
 
   @Test
   public void identicalRepairUnitsDiffNodesTest() throws ReaperException, UnknownHostException {
-    JmxProxy proxy = JmxProxyTest.mockJmxProxyImpl();
+    CassandraManagementProxy proxy = CassandraManagementProxyTest.mockJmxProxyImpl();
     when(proxy.getCassandraVersion()).thenReturn("3.11.4");
     when(context.jmxConnectionFactory.connectAny(Mockito.any(Collection.class))).thenReturn(proxy);
 
@@ -561,7 +561,7 @@ public final class RepairUnitServiceTest {
 
   @Test
   public void conflictingRepairUnitsSameDcsTest() throws ReaperException, UnknownHostException, InterruptedException {
-    JmxProxy proxy = JmxProxyTest.mockJmxProxyImpl();
+    CassandraManagementProxy proxy = CassandraManagementProxyTest.mockJmxProxyImpl();
     ClusterFacade clusterFacade = mock(ClusterFacade.class);
     when(proxy.getCassandraVersion()).thenReturn("3.11.4");
     when(context.jmxConnectionFactory.connectAny(Mockito.any(Collection.class))).thenReturn(proxy);
@@ -598,7 +598,7 @@ public final class RepairUnitServiceTest {
   @Test
   public void identicalRepairUnitsDifferentDcsTest()
       throws ReaperException, UnknownHostException, InterruptedException {
-    JmxProxy proxy = JmxProxyTest.mockJmxProxyImpl();
+    CassandraManagementProxy proxy = CassandraManagementProxyTest.mockJmxProxyImpl();
     ClusterFacade clusterFacade = mock(ClusterFacade.class);
     when(proxy.getCassandraVersion()).thenReturn("3.11.4");
     when(context.jmxConnectionFactory.connectAny(Mockito.any(Collection.class))).thenReturn(proxy);
@@ -642,7 +642,7 @@ public final class RepairUnitServiceTest {
   @Test
   public void identicalRepairUnitsNonExistentNodesTest()
       throws ReaperException, UnknownHostException, InterruptedException {
-    JmxProxy proxy = JmxProxyTest.mockJmxProxyImpl();
+    CassandraManagementProxy proxy = CassandraManagementProxyTest.mockJmxProxyImpl();
     ClusterFacade clusterFacade = mock(ClusterFacade.class);
     when(proxy.getCassandraVersion()).thenReturn("3.11.4");
     when(context.jmxConnectionFactory.connectAny(Mockito.any(Collection.class))).thenReturn(proxy);
@@ -681,7 +681,7 @@ public final class RepairUnitServiceTest {
 
   @Test()
   public void identicalRepairUnitsFailGetDcsTest() throws ReaperException, UnknownHostException {
-    JmxProxy proxy = JmxProxyTest.mockJmxProxyImpl();
+    CassandraManagementProxy proxy = CassandraManagementProxyTest.mockJmxProxyImpl();
     when(proxy.getCassandraVersion()).thenReturn("3.11.4");
     when(context.jmxConnectionFactory.connectAny(Mockito.any(Collection.class))).thenReturn(proxy);
 
@@ -720,7 +720,7 @@ public final class RepairUnitServiceTest {
 
   @Test
   public void unknownTablesTest() throws ReaperException, UnknownHostException {
-    JmxProxy proxy = JmxProxyTest.mockJmxProxyImpl();
+    CassandraManagementProxy proxy = CassandraManagementProxyTest.mockJmxProxyImpl();
     when(proxy.getCassandraVersion()).thenReturn("3.11.4");
     when(context.jmxConnectionFactory.connectAny(Mockito.any(Collection.class))).thenReturn(proxy);
 
@@ -750,7 +750,7 @@ public final class RepairUnitServiceTest {
   @Test
   public void missingLiveNodesTest()
       throws ReaperException, UnknownHostException, InterruptedException {
-    JmxProxy proxy = JmxProxyTest.mockJmxProxyImpl();
+    CassandraManagementProxy proxy = CassandraManagementProxyTest.mockJmxProxyImpl();
     ClusterFacade clusterFacade = mock(ClusterFacade.class);
     when(proxy.getCassandraVersion()).thenReturn("3.11.4");
     when(context.jmxConnectionFactory.connectAny(Mockito.any(Collection.class))).thenReturn(proxy);

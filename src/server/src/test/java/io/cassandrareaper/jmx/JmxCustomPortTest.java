@@ -48,35 +48,35 @@ public final class JmxCustomPortTest {
   public void customJmxPortTest() throws ReaperException, InterruptedException, UnknownHostException {
     AppContext context = new AppContext();
     final Cryptograph cryptographMock = mock(Cryptograph.class);
-    final JmxProxy jmxProxyMock = JmxProxyTest.mockJmxProxyImpl();
+    final CassandraManagementProxy cassandraManagementProxyMock = CassandraManagementProxyTest.mockJmxProxyImpl();
     final AtomicInteger port = new AtomicInteger(0);
     HostConnectionCounters hostConnectionCounters = mock(HostConnectionCounters.class);
     when(hostConnectionCounters.getSuccessfulConnections(any())).thenReturn(1);
 
 
     context.jmxConnectionFactory = new JmxConnectionFactory(context, cryptographMock) {
-          @Override
-          protected JmxProxy connectImpl(Node node) throws ReaperException {
-            final JmxProxy jmx = jmxProxyMock;
-            port.set(node.getJmxPort());
-            return jmx;
-          }
+      @Override
+      protected CassandraManagementProxy connectImpl(Node node) throws ReaperException {
+        final CassandraManagementProxy jmx = cassandraManagementProxyMock;
+        port.set(node.getJmxPort());
+        return jmx;
+      }
 
-          @Override
-          public HostConnectionCounters getHostConnectionCounters() {
-            return hostConnectionCounters;
-          }
-        };
+      @Override
+      public HostConnectionCounters getHostConnectionCounters() {
+        return hostConnectionCounters;
+      }
+    };
 
     context.config = new ReaperApplicationConfiguration();
     context.storage = mock(CassandraStorageFacade.class);
 
     Cluster cluster = Cluster.builder()
-            .withName("test")
-            .withPartitioner("murmur3partitioner")
-            .withSeedHosts(ImmutableSet.of("127.0.0.1", "127.0.0.2"))
-            .withJmxPort(7188)
-            .build();
+        .withName("test")
+        .withPartitioner("murmur3partitioner")
+        .withSeedHosts(ImmutableSet.of("127.0.0.1", "127.0.0.2"))
+        .withJmxPort(7188)
+        .build();
 
     context.jmxConnectionFactory
         .connectAny(Collections.singleton(Node.builder().withCluster(cluster).withHostname("127.0.0.1").build()));
@@ -84,11 +84,11 @@ public final class JmxCustomPortTest {
     assertEquals(7188, port.get());
 
     Cluster cluster2 = Cluster.builder()
-            .withName("test")
-            .withPartitioner("murmur3partitioner")
-            .withSeedHosts(ImmutableSet.of("127.0.0.1", "127.0.0.2"))
-            .withJmxPort(7198)
-            .build();
+        .withName("test")
+        .withPartitioner("murmur3partitioner")
+        .withSeedHosts(ImmutableSet.of("127.0.0.1", "127.0.0.2"))
+        .withJmxPort(7198)
+        .build();
 
     context.jmxConnectionFactory
         .connectAny(Collections.singleton(Node.builder().withCluster(cluster2).withHostname("127.0.0.3").build()));

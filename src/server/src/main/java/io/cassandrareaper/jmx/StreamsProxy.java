@@ -28,7 +28,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
-
 import javax.management.openmbean.CompositeData;
 import javax.management.openmbean.InvalidKeyException;
 
@@ -50,15 +49,15 @@ public final class StreamsProxy {
 
   private static final Logger LOG = LoggerFactory.getLogger(StreamsProxy.class);
 
-  private final JmxProxyImpl proxy;
+  private final CassandraManagementProxyImpl proxy;
 
-  private StreamsProxy(JmxProxyImpl proxy) {
+  private StreamsProxy(CassandraManagementProxyImpl proxy) {
     this.proxy = proxy;
   }
 
-  public static StreamsProxy create(JmxProxy proxy) {
-    Preconditions.checkArgument(proxy instanceof JmxProxyImpl, "only JmxProxyImpl is supported");
-    return new StreamsProxy((JmxProxyImpl)proxy);
+  public static StreamsProxy create(CassandraManagementProxy proxy) {
+    Preconditions.checkArgument(proxy instanceof CassandraManagementProxyImpl, "only JmxProxyImpl is supported");
+    return new StreamsProxy((CassandraManagementProxyImpl) proxy);
   }
 
   public List<StreamSession> listStreams(Node node) {
@@ -104,7 +103,7 @@ public final class StreamsProxy {
   }
 
   private StreamState parseStreamStatePre2_1(CompositeData compositeData) {
-    UUID planId = UUID.fromString((String)compositeData.get("planId"));
+    UUID planId = UUID.fromString((String) compositeData.get("planId"));
     String description = (String) compositeData.get("description");
 
     CompositeData[] sessionCompositeData = (CompositeData[]) compositeData.get("sessions");
@@ -119,10 +118,10 @@ public final class StreamsProxy {
   private SessionInfo parseSessionInfoPre2_1(CompositeData compositeData) {
     try {
       // these fields can be directly parsed
-      InetAddress peer = InetAddress.getByName((String)compositeData.get("peer"));
-      InetAddress connecting = InetAddress.getByName((String)compositeData.get("connecting"));
+      InetAddress peer = InetAddress.getByName((String) compositeData.get("peer"));
+      InetAddress connecting = InetAddress.getByName((String) compositeData.get("connecting"));
       org.apache.cassandra.streaming.StreamSession.State state
-          = org.apache.cassandra.streaming.StreamSession.State.valueOf((String)compositeData.get("state"));
+          = org.apache.cassandra.streaming.StreamSession.State.valueOf((String) compositeData.get("state"));
 
       // sending and receiving summaries parsing can be delegated to their composite data classes
       CompositeData[] receivingSummariesData = (CompositeData[]) compositeData.get("receivingSummaries");
@@ -181,7 +180,7 @@ public final class StreamsProxy {
   }
 
   private StreamState parseStreamState4_0_0(CompositeData compositeData) {
-    UUID planId = UUID.fromString((String)compositeData.get("planId"));
+    UUID planId = UUID.fromString((String) compositeData.get("planId"));
     String description = (String) compositeData.get("description");
 
     CompositeData[] sessionCompositeData = (CompositeData[]) compositeData.get("sessions");

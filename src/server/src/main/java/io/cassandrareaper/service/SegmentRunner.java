@@ -23,8 +23,8 @@ import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.RepairSegment;
 import io.cassandrareaper.core.RepairUnit;
+import io.cassandrareaper.jmx.CassandraManagementProxy;
 import io.cassandrareaper.jmx.ClusterFacade;
-import io.cassandrareaper.jmx.JmxProxy;
 import io.cassandrareaper.jmx.RepairStatusHandler;
 import io.cassandrareaper.jmx.SnapshotProxy;
 import io.cassandrareaper.storage.IDistributedStorage;
@@ -184,7 +184,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
     }
   }
 
-  static void abort(AppContext context, RepairSegment segment, JmxProxy jmxConnection) {
+  static void abort(AppContext context, RepairSegment segment, CassandraManagementProxy jmxConnection) {
     postpone(context, segment, context.storage.getRepairUnitDao().getRepairUnit(segment.getRepairUnitId()));
     LOG.info("Aborting repair on segment with id {} on coordinator {}", segment.getId(), segment.getCoordinatorHost());
 
@@ -197,9 +197,10 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
     jmxConnection.cancelAllRepairs();
   }
 
-  private void abort(RepairSegment segment, JmxProxy jmxConnection) {
+  private void abort(RepairSegment segment, CassandraManagementProxy jmxConnection) {
     abort(context, segment, jmxConnection);
   }
+
 
   /**
    * This method is intended to be temporary, until we find the root issue of too many open files issue.
@@ -230,6 +231,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
       return null;
     }
   }
+
 
   @Override
   public void run() {
@@ -294,7 +296,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
       }
 
       Cluster cluster = context.storage.getClusterDao().getCluster(clusterName);
-      JmxProxy coordinator = clusterFacade.connect(cluster, potentialCoordinators);
+      CassandraManagementProxy coordinator = clusterFacade.connect(cluster, potentialCoordinators);
       String keyspace = repairUnit.getKeyspaceName();
       boolean fullRepair = !repairUnit.getIncrementalRepair();
 
@@ -363,7 +365,8 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
     return true;
   }
 
-  private void processTriggeredSegment(final RepairSegment segment, final JmxProxy coordinator, int repairNo) {
+  private void processTriggeredSegment(final RepairSegment segment, final CassandraManagementProxy coordinator,
+                                       int repairNo) {
 
     repairRunner.updateLastEvent(
         String.format("Triggered repair of segment %s via host %s", segment.getId(), coordinator.getHost()));
@@ -468,7 +471,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
       Optional<ActiveRepairService.Status> status,
       Optional<ProgressEventType> progress,
       String message,
-      JmxProxy jmxProxy) {
+      CassandraManagementProxy cassandraManagementProxy) {
 
     final RepairSegment segment = context.storage.getRepairSegmentDao().getRepairSegment(repairRunner.getRepairRunId(),
         segmentId).get();
@@ -504,7 +507,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
             repairNo,
             failOutsideSynchronizedBlock,
             progress,
-            jmxProxy);
+            cassandraManagementProxy);
       }
 
       // New repair API – Cassandra-2.2 onwards
@@ -514,7 +517,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
             currentSegment,
             repairNo,
             failOutsideSynchronizedBlock,
-            jmxProxy);
+            cassandraManagementProxy);
       }
     }
 
@@ -540,7 +543,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
       RepairSegment currentSegment,
       int repairNumber,
       boolean failOutsideSynchronizedBlock,
-      JmxProxy jmxProxy) {
+      CassandraManagementProxy cassandraManagementProxy) {
 
     switch (progress.get()) {
       case START:
@@ -597,7 +600,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
             if (completeNotified.get()) {
               LOG.debug("Complete was already notified for segment {}. Signaling the condition object...", segmentId);
               condition.signalAll();
-              jmxProxy.removeRepairStatusHandler(repairNumber);
+              cassandraManagementProxy.removeRepairStatusHandler(repairNumber);
             }
             break;
           }
@@ -624,7 +627,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
         // we need to exit if we already got the COMPLETE notification.
         if (completeNotified.get()) {
           condition.signalAll();
-          jmxProxy.removeRepairStatusHandler(repairNumber);
+          cassandraManagementProxy.removeRepairStatusHandler(repairNumber);
         }
         break;
 
@@ -647,7 +650,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
         if (successOrFailedNotified.get()) {
           LOG.debug("Success was already notified for segment {}. Signaling the condition object...", segmentId);
           condition.signalAll();
-          jmxProxy.removeRepairStatusHandler(repairNumber);
+          cassandraManagementProxy.removeRepairStatusHandler(repairNumber);
         }
         break;
       default:
@@ -666,7 +669,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
       int repairNumber,
       boolean failOutsideSynchronizedBlock,
       Optional<ProgressEventType> progress,
-      JmxProxy jmxProxy) {
+      CassandraManagementProxy cassandraManagementProxy) {
 
     switch (status.get()) {
       case STARTED:
@@ -726,7 +729,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
               // we need to exit if we already got the COMPLETE notification.
               if (completeNotified.get()) {
                 condition.signalAll();
-                jmxProxy.removeRepairStatusHandler(repairNumber);
+                cassandraManagementProxy.removeRepairStatusHandler(repairNumber);
               }
 
               break;
@@ -758,7 +761,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
           successOrFailedNotified.set(true);
           if (completeNotified.get()) {
             condition.signalAll();
-            jmxProxy.removeRepairStatusHandler(repairNumber);
+            cassandraManagementProxy.removeRepairStatusHandler(repairNumber);
           }
           break;
         }
@@ -781,7 +784,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
             repairNumber);
         if (successOrFailedNotified.get()) {
           condition.signalAll();
-          jmxProxy.removeRepairStatusHandler(repairNumber);
+          cassandraManagementProxy.removeRepairStatusHandler(repairNumber);
         }
         break;
       default:
@@ -803,7 +806,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
     if (repairId != null) {
       for (String involvedNode : potentialCoordinators) {
         try {
-          JmxProxy jmx = clusterFacade.connect(
+          CassandraManagementProxy jmx = clusterFacade.connect(
               context.storage.getClusterDao().getCluster(clusterName),
               Arrays.asList(involvedNode));
           // there is no way of telling if the snapshot was cleared or not :(

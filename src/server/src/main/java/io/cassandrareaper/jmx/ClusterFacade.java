@@ -55,7 +55,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-
 import javax.management.JMException;
 import javax.management.MalformedObjectNameException;
 import javax.management.ReflectionException;
@@ -97,13 +96,13 @@ public final class ClusterFacade {
   private static final long TOKEN_RANGES_IN_KEYSPACE_TTL_SECONDS
       = Long.getLong(ClusterFacade.class.getPackage().getName() + ".token_ranges_in_keyspace_ttl_seconds", 60);
 
-  private static final Cache<Pair<Cluster,String>,String> CLUSTER_VERSIONS
+  private static final Cache<Pair<Cluster, String>, String> CLUSTER_VERSIONS
       = CacheBuilder.newBuilder().expireAfterWrite(CLUSTER_VERSIONS_TTL_SECONDS, TimeUnit.SECONDS).build();
 
-  private static final Cache<Pair<Cluster,String>,Set<Table>> TABLES_IN_KEYSPACE
+  private static final Cache<Pair<Cluster, String>, Set<Table>> TABLES_IN_KEYSPACE
       = CacheBuilder.newBuilder().expireAfterWrite(TABLES_IN_KEYSPACE_TTL_SECONDS, TimeUnit.SECONDS).build();
 
-  private static final Cache<Pair<Cluster,String>,Map<List<String>, List<String>>> TOKEN_RANGES_IN_KEYSPACE
+  private static final Cache<Pair<Cluster, String>, Map<List<String>, List<String>>> TOKEN_RANGES_IN_KEYSPACE
       = CacheBuilder.newBuilder().expireAfterWrite(TOKEN_RANGES_IN_KEYSPACE_TTL_SECONDS, TimeUnit.SECONDS).build();
 
   private static final String LOCALHOST = "127.0.0.1";
@@ -118,16 +117,96 @@ public final class ClusterFacade {
   }
 
   /**
+   * The method makes the Scylla endpoint map compatible with the Cassandra ones
+   *
+   * @param endpointMap map of endpoint returned by jmx client
+   * @return a map of endpoints compatible with cassandra format
+   */
+  protected static Map<List<String>, List<String>>
+      maybeCleanupEndpointFromScylla(Map<List<String>, List<String>> endpointMap) {
+    Map<List<String>, List<String>> resultEndpointMap = Maps.newHashMap();
+
+    String firstToken = "";
+    String lastToken = "";
+    List<String> lastNode = Lists.newArrayList();
+    for (Entry<List<String>, List<String>> entry : endpointMap.entrySet()) {
+      String nodeStartToken = entry.getKey().get(0);
+      String nodeEndToken = entry.getKey().get(1);
+
+      if ("".equals(nodeStartToken)) {
+        lastToken = nodeEndToken;
+        lastNode = entry.getValue();
+      } else if ("".equals(nodeEndToken)) {
+        firstToken = nodeStartToken;
+      } else {
+        resultEndpointMap.put(entry.getKey(), entry.getValue());
+      }
+    }
+    if (!"".equals(firstToken) && !"".equals(lastToken)) {
+      resultEndpointMap.put(Lists.newArrayList(firstToken, lastToken), lastNode);
+    }
+    return resultEndpointMap;
+  }
+
+  public static List<StreamSession> parseStreamSessionJson(String json) throws IOException {
+    return parseJson(json, new TypeReference<List<StreamSession>>() {
+    });
+  }
+
+  /**
+   * Parse the a JSON payload describing compactions.
+   * First we try to parse the more recent CompactionStats object.
+   * If that doesn't work, we try to parse the older List[Compaction] object. We do this because the storage
+   * might still have this payload, for example during Repaer version upgrade.
+   *
+   * @param json the payload to parse
+   * @return CompactionStats in both cases, possibly with pending compactions of -1 if storage had just the older list
+   * @throws IOException if parsing the JSON breaks
+   */
+  public static CompactionStats parseCompactionStats(String json) throws IOException {
+    if (json.isEmpty()) {
+      return CompactionStats.builder()
+          .withPendingCompactions(Optional.empty())
+          .withActiveCompactions(Collections.emptyList())
+          .build();
+    }
+    try {
+      return parseJson(json, new TypeReference<CompactionStats>() {
+      });
+    } catch (IOException e) {
+      // it can be that the storage had old format of compaction info, so we try to parse that
+      List<Compaction> compactions = parseJson(json, new TypeReference<List<Compaction>>() {
+      });
+      return CompactionStats.builder()
+          .withPendingCompactions(Optional.empty())
+          .withActiveCompactions(compactions)
+          .build();
+    }
+  }
+
+  private static <T> T parseJson(String json, TypeReference<T> ref) throws IOException {
+    try {
+      ObjectMapper mapper = new ObjectMapper();
+      mapper.registerModule(new Jdk8Module());
+      return mapper.readValue(json, ref);
+    } catch (IOException e) {
+      LOG.error("Error parsing json", e);
+      throw e;
+    }
+  }
+
+  /**
    * Pre-heats JMX connections to all provided endpoints.
    * In EACH, LOCAL and ALL : connect directly to any available node
    * In SIDECAR : We skip that code path as we don’t need to pre-heat connections
    *
-   * @param cluster the cluster to connect to
+   * @param cluster   the cluster to connect to
    * @param endpoints the list of endpoints to connect to
    * @return a JmxProxy object
    * @throws ReaperException any runtime exception we catch
    */
-  public JmxProxy preHeatJmxConnections(Cluster cluster, Collection<String> endpoints) throws ReaperException {
+  public CassandraManagementProxy preHeatJmxConnections(Cluster cluster, Collection<String> endpoints) throws
+      ReaperException {
     Preconditions.checkArgument(!context.config.isInSidecarMode());
     return connectImpl(cluster, endpoints);
   }
@@ -137,7 +216,7 @@ public final class ClusterFacade {
    * In EACH, LOCAL and ALL : connect directly to any available node to get the information
    * In SIDECAR : Enforce connecting to the local node to get the information
    *
-   * @param cluster the cluster object contains additional connection info like jmx port and jmx credentials
+   * @param cluster   the cluster object contains additional connection info like jmx port and jmx credentials
    * @param endpoints the list of endpoints to connect to
    * @return the cluster name
    * @throws ReaperException any runtime exception we catch
@@ -151,7 +230,7 @@ public final class ClusterFacade {
    *
    * @param node the node to connect to
    * @return the cluster name
-   * @throws ReaperException any runtime exception we catch in the process
+   * @throws ReaperException      any runtime exception we catch in the process
    * @throws InterruptedException if the JMX connection gets interrupted
    */
   public String getClusterName(Node node) throws ReaperException {
@@ -163,7 +242,7 @@ public final class ClusterFacade {
    * In EACH, LOCAL and ALL : connect directly to any available node to get the information
    * In SIDECAR : Enforce connecting to the local node to get the information
    *
-   * @param cluster the cluster object contains additional connection info like jmx port and jmx credentials
+   * @param cluster   the cluster object contains additional connection info like jmx port and jmx credentials
    * @param endpoints the list of endpoints to connect to
    * @return the partitioner in use on the cluster
    * @throws ReaperException any runtime exception we catch
@@ -190,7 +269,7 @@ public final class ClusterFacade {
    * In EACH, LOCAL and ALL : connect directly to any available node to get the information
    * In SIDECAR : Enforce connecting to the local node to get the information
    *
-   * @param cluster the cluster to connect to
+   * @param cluster   the cluster to connect to
    * @param endpoints the list of endpoints to connect to
    * @return the list of live endpoints in the cluster
    * @throws ReaperException any runtime exception we catch
@@ -209,9 +288,9 @@ public final class ClusterFacade {
    * @throws ReaperException any runtime exception we catch
    */
   public NodesStatus getNodesStatus(Cluster cluster) throws ReaperException {
-    JmxProxy jmxProxy = connect(cluster);
-    FailureDetectorProxy proxy = FailureDetectorProxy.create(jmxProxy);
-    return new NodesStatus(jmxProxy.getHost(), proxy.getAllEndpointsState(), proxy.getSimpleStates());
+    CassandraManagementProxy cassandraManagementProxy = connect(cluster);
+    FailureDetectorProxy proxy = FailureDetectorProxy.create(cassandraManagementProxy);
+    return new NodesStatus(cassandraManagementProxy.getHost(), proxy.getAllEndpointsState(), proxy.getSimpleStates());
   }
 
   /**
@@ -232,7 +311,7 @@ public final class ClusterFacade {
    * In EACH, LOCAL and ALL : connect directly to any provided node to get the information
    * In SIDECAR : Enforce connecting to the local node to get the information
    *
-   * @param cluster the cluster to connect to
+   * @param cluster   the cluster to connect to
    * @param endpoints the list of endpoints to connect to
    * @return the version of Cassandra used
    * @throws ReaperException any runtime exception we catch
@@ -244,9 +323,9 @@ public final class ClusterFacade {
         return version;
       }
     }
-    JmxProxy jmxProxy = connect(cluster, endpoints);
-    String version = jmxProxy.getCassandraVersion();
-    CLUSTER_VERSIONS.put(Pair.of(cluster, jmxProxy.getHost()), version);
+    CassandraManagementProxy cassandraManagementProxy = connect(cluster, endpoints);
+    String version = cassandraManagementProxy.getCassandraVersion();
+    CLUSTER_VERSIONS.put(Pair.of(cluster, cassandraManagementProxy.getHost()), version);
     return version;
   }
 
@@ -268,7 +347,7 @@ public final class ClusterFacade {
    * directly to any provided node to get the information In SIDECAR : Enforce connecting to the
    * local node to get the information
    *
-   * @param cluster the cluster to connect to
+   * @param cluster  the cluster to connect to
    * @param keyspace the ks to get a map of token ranges for
    * @return a map of token ranges with endpoints as items
    * @throws ReaperException any runtime exception we catch
@@ -297,7 +376,7 @@ public final class ClusterFacade {
    * In EACH, LOCAL and ALL : connect directly to any provided node to get the information
    * In SIDECAR : Enforce connecting to the local node to get the information
    *
-   * @param cluster the cluster to connect to
+   * @param cluster      the cluster to connect to
    * @param keyspaceName a keyspace name
    * @return a list of table names
    * @throws ReaperException any runtime exception we catch
@@ -353,9 +432,9 @@ public final class ClusterFacade {
   /**
    * Get the list of replicas for a token range.
    *
-   * @param cluster the cluster to connect to
+   * @param cluster  the cluster to connect to
    * @param keyspace the keyspace to get the replicas for
-   * @param segment the token range for which we want the list of replicas
+   * @param segment  the token range for which we want the list of replicas
    * @return a list of endpoints
    */
   public List<String> tokenRangeToEndpoint(Cluster cluster, String keyspace, Segment segment) {
@@ -382,7 +461,7 @@ public final class ClusterFacade {
   /**
    * Get the ranges for the local node (only for sidecar mode).
    *
-   * @param cluster the cluster to connect to
+   * @param cluster  the cluster to connect to
    * @param keyspace the keyspace we're getting the ranges for.
    * @return the list of local token ranges
    * @throws ReaperException any runtime exception we catch in the process
@@ -409,7 +488,7 @@ public final class ClusterFacade {
   /**
    * Get the datacenter of a specific endpoint.
    *
-   * @param cluster the cluster to connect to
+   * @param cluster  the cluster to connect to
    * @param endpoint the node which we're trying to locate in the topology
    * @return the datacenter this endpoint belongs to
    * @throws ReaperException any runtime exception we catch in the process
@@ -423,7 +502,7 @@ public final class ClusterFacade {
    *
    * @param node the node to connect to
    * @return the datacenter this endpoint belongs to
-   * @throws ReaperException any runtime exception we catch in the process
+   * @throws ReaperException      any runtime exception we catch in the process
    * @throws InterruptedException in case the JMX connection gets interrupted
    */
   public String getDatacenter(Node node) throws ReaperException, InterruptedException {
@@ -435,7 +514,7 @@ public final class ClusterFacade {
    *
    * @param node the node to connect to
    * @return the endpoint as a string
-   * @throws ReaperException any runtime exception we catch in the process
+   * @throws ReaperException      any runtime exception we catch in the process
    * @throws InterruptedException if the JMX connection gets interrupted
    */
   public String getLocalEndpoint(Node node) throws ReaperException, InterruptedException {
@@ -459,10 +538,10 @@ public final class ClusterFacade {
    * @param node the node to get the compactions from.
    * @return a number of pending compactions and a list of compactions
    * @throws MalformedObjectNameException ¯\_(ツ)_/¯
-   * @throws ReflectionException ¯\_(ツ)_/¯
-   * @throws ReaperException any runtime exception we catch in the process
-   * @throws InterruptedException in case the JMX connection gets interrupted
-   * @throws IOException errors in parsing JSON encoded compaction objects
+   * @throws ReflectionException          ¯\_(ツ)_/¯
+   * @throws ReaperException              any runtime exception we catch in the process
+   * @throws InterruptedException         in case the JMX connection gets interrupted
+   * @throws IOException                  errors in parsing JSON encoded compaction objects
    */
   public CompactionStats listActiveCompactions(Node node)
       throws MalformedObjectNameException, ReflectionException, ReaperException, InterruptedException, IOException {
@@ -477,7 +556,7 @@ public final class ClusterFacade {
       // We don't have access to the node through JMX, so we'll get data from the database
       LOG.debug("Node {} in DC {} is not accessible through JMX", node.getHostname(), nodeDc);
 
-      String compactionsJson = ((IDistributedStorage)context.storage).getOperationsDao()
+      String compactionsJson = ((IDistributedStorage) context.storage).getOperationsDao()
           .listOperations(node.getClusterName(), OpType.OP_COMPACTION, node.getHostname());
 
       return parseCompactionStats(compactionsJson);
@@ -490,9 +569,9 @@ public final class ClusterFacade {
    * @param node the node to get the compactions from.
    * @return number of pending compactions and a list of active compactions
    * @throws MalformedObjectNameException ¯\_(ツ)_/¯
-   * @throws ReflectionException ¯\_(ツ)_/¯
-   * @throws ReaperException any runtime exception we catch in the process
-   * @throws InterruptedException in case the JMX connection gets interrupted
+   * @throws ReflectionException          ¯\_(ツ)_/¯
+   * @throws ReaperException              any runtime exception we catch in the process
+   * @throws InterruptedException         in case the JMX connection gets interrupted
    */
   public CompactionStats listCompactionStatsDirect(Node node)
       throws ReaperException, MalformedObjectNameException, ReflectionException {
@@ -509,22 +588,22 @@ public final class ClusterFacade {
    * The result will depend on the chosen datacenterAvailability setting and the datacenter the node belongs to.
    *
    * @param nodeDc datacenter of the target node
-   * @param node the target node
+   * @param node   the target node
    * @return true if the node is supposedly accessible through JMX, otherwise false
    */
   public boolean nodeIsAccessibleThroughJmx(String nodeDc, String node) {
     return DatacenterAvailability.ALL == context.config.getDatacenterAvailability()
         || (Arrays.asList(DatacenterAvailability.EACH, DatacenterAvailability.LOCAL)
-            .contains(context.config.getDatacenterAvailability())
-            && context.jmxConnectionFactory.getAccessibleDatacenters().contains(nodeDc))
+        .contains(context.config.getDatacenterAvailability())
+        && context.jmxConnectionFactory.getAccessibleDatacenters().contains(nodeDc))
         || (DatacenterAvailability.SIDECAR == context.config.getDatacenterAvailability()
-            && node.equals(context.getLocalNodeAddress()));
+        && node.equals(context.getLocalNodeAddress()));
   }
 
   /**
    * Collect a set of metrics through JMX on a specific node.
    *
-   * @param node the node to collect metrics on
+   * @param node             the node to collect metrics on
    * @param collectedMetrics the list of metrics to collect
    * @return the list of collected metrics
    * @throws ReaperException any runtime exception we catch in the process
@@ -554,7 +633,7 @@ public final class ClusterFacade {
             convertToGenericMetrics(metricsProxy.collectLatencyMetrics(), node));
       } else {
         // We look for metrics in the last two time based partitions to make sure we get a result
-        return convertToMetricsHistogram(((IDistributedStorage)context.storage)
+        return convertToMetricsHistogram(((IDistributedStorage) context.storage)
             .getMetrics(
                 node.getClusterName(),
                 Optional.of(node.getHostname()),
@@ -582,7 +661,7 @@ public final class ClusterFacade {
         MetricsProxy proxy = MetricsProxy.create(connect(node));
         return convertToDroppedMessages(convertToGenericMetrics(proxy.collectDroppedMessages(), node));
       } else {
-        return convertToDroppedMessages(((IDistributedStorage)context.storage)
+        return convertToDroppedMessages(((IDistributedStorage) context.storage)
             .getMetrics(
                 node.getClusterName(),
                 Optional.of(node.getHostname()),
@@ -625,7 +704,7 @@ public final class ClusterFacade {
         MetricsProxy proxy = MetricsProxy.create(connect(node));
         return convertToThreadPoolStats(convertToGenericMetrics(proxy.collectTpStats(), node));
       } else {
-        return convertToThreadPoolStats(((IDistributedStorage)context.storage)
+        return convertToThreadPoolStats(((IDistributedStorage) context.storage)
             .getMetrics(
                 node.getClusterName(),
                 Optional.of(node.getHostname()),
@@ -665,14 +744,14 @@ public final class ClusterFacade {
     for (Entry<String, List<GenericMetric>> metricByScope : metricsByScope.entrySet()) {
       Map<String, List<GenericMetric>> metricsByName
           = metricByScope
-              .getValue()
-              .stream()
-              .collect(Collectors.groupingBy(GenericMetric::getMetricName));
+          .getValue()
+          .stream()
+          .collect(Collectors.groupingBy(GenericMetric::getMetricName));
       for (Entry<String, List<GenericMetric>> metricByName : metricsByName.entrySet()) {
         MetricsHistogram.Builder builder
             = MetricsHistogram.builder()
-                .withName(metricByScope.getKey())
-                .withType(metricByName.getKey());
+            .withName(metricByScope.getKey())
+            .withType(metricByName.getKey());
         for (GenericMetric stat : metricByName.getValue()) {
           builder = updateGenericMetricAttribute(stat, builder);
         }
@@ -686,10 +765,10 @@ public final class ClusterFacade {
    * Take a snapshot on one node.
    *
    * @param snapshotName the name of the snapshot
-   * @param host the node to take the snapshot on
-   * @param keyspaces the list of keyspaces to snapshot
+   * @param host         the node to take the snapshot on
+   * @param keyspaces    the list of keyspaces to snapshot
    * @return a tuple of the node object and the snapshot name
-   * @throws ReaperException  any runtime exception we can catch in the process
+   * @throws ReaperException any runtime exception we can catch in the process
    */
   public Pair<Node, String> takeSnapshot(String snapshotName, Node host, String... keyspaces) throws ReaperException {
     Preconditions.checkArgument(!context.config.isInSidecarMode(), "Snapshots aren't yet supported in sidecar mode");
@@ -707,7 +786,7 @@ public final class ClusterFacade {
   public List<Snapshot> listSnapshots(Node host) throws ReaperException {
     try {
       if (context.jmxConnectionFactory.getHostConnectionCounters().getSuccessfulConnections(
-              host.getHostname()) >= 0) {
+          host.getHostname()) >= 0) {
         return SnapshotProxy.create(connect(host)).listSnapshots();
       }
     } catch (UnsupportedOperationException unsupported) {
@@ -721,7 +800,7 @@ public final class ClusterFacade {
    * Delete a given snapshot from a node.
    *
    * @param snapshotName the name of the snapshot to clear
-   * @param host the node to delete the snapshot from
+   * @param host         the node to delete the snapshot from
    * @throws ReaperException any runtime exception we can catch in the process
    */
   public void clearSnapshot(String snapshotName, Node host) throws ReaperException {
@@ -738,9 +817,9 @@ public final class ClusterFacade {
    *
    * @param node the node to get the streams from.
    * @return a set of streams
-   * @throws ReaperException any runtime exception we catch in the process
+   * @throws ReaperException      any runtime exception we catch in the process
    * @throws InterruptedException in case the JMX connection gets interrupted
-   * @throws IOException errors in parsing JSON encoded compaction objects
+   * @throws IOException          errors in parsing JSON encoded compaction objects
    */
   public List<StreamSession> listActiveStreams(Node node)
       throws ReaperException, InterruptedException, IOException {
@@ -780,84 +859,9 @@ public final class ClusterFacade {
   private Map<List<String>, List<String>> getRangeToEndpointMapImpl(
       Cluster cluster,
       String keyspace) throws ReaperException {
-    JmxProxy jmxConnection = connect(cluster);
+    CassandraManagementProxy jmxConnection = connect(cluster);
     Map<List<String>, List<String>> endpointMap = jmxConnection.getRangeToEndpointMap(keyspace);
     return maybeCleanupEndpointFromScylla(endpointMap);
-  }
-
-  /**
-   * The method makes the Scylla endpoint map compatible with the Cassandra ones
-   *
-   * @param endpointMap map of endpoint returned by jmx client
-   * @return a map of endpoints compatible with cassandra format
-   */
-  protected static Map<List<String>, List<String>>
-      maybeCleanupEndpointFromScylla(Map<List<String>, List<String>> endpointMap) {
-    Map<List<String>, List<String>> resultEndpointMap = Maps.newHashMap();
-
-    String firstToken = "";
-    String lastToken = "";
-    List<String> lastNode = Lists.newArrayList();
-    for (Entry<List<String>, List<String>> entry : endpointMap.entrySet()) {
-      String nodeStartToken = entry.getKey().get(0);
-      String nodeEndToken = entry.getKey().get(1);
-
-      if ("".equals(nodeStartToken)) {
-        lastToken = nodeEndToken;
-        lastNode = entry.getValue();
-      } else if ("".equals(nodeEndToken)) {
-        firstToken = nodeStartToken;
-      } else {
-        resultEndpointMap.put(entry.getKey(), entry.getValue());
-      }
-    }
-    if (!"".equals(firstToken) && !"".equals(lastToken)) {
-      resultEndpointMap.put(Lists.newArrayList(firstToken, lastToken), lastNode);
-    }
-    return resultEndpointMap;
-  }
-
-  public static List<StreamSession> parseStreamSessionJson(String json) throws IOException {
-    return parseJson(json, new TypeReference<List<StreamSession>>(){});
-  }
-
-  /**
-   * Parse the a JSON payload describing compactions.
-   * First we try to parse the more recent CompactionStats object.
-   * If that doesn't work, we try to parse the older List[Compaction] object. We do this because the storage
-   * might still have this payload, for example during Repaer version upgrade.
-   * @param json the payload to parse
-   * @return CompactionStats in both cases, possibly with pending compactions of -1 if storage had just the older list
-   * @throws IOException if parsing the JSON breaks
-   */
-  public static CompactionStats parseCompactionStats(String json) throws IOException {
-    if (json.isEmpty()) {
-      return CompactionStats.builder()
-          .withPendingCompactions(Optional.empty())
-          .withActiveCompactions(Collections.emptyList())
-          .build();
-    }
-    try {
-      return parseJson(json, new TypeReference<CompactionStats>(){});
-    } catch (IOException e) {
-      // it can be that the storage had old format of compaction info, so we try to parse that
-      List<Compaction> compactions = parseJson(json, new TypeReference<List<Compaction>>() {});
-      return CompactionStats.builder()
-          .withPendingCompactions(Optional.empty())
-          .withActiveCompactions(compactions)
-          .build();
-    }
-  }
-
-  private static <T> T parseJson(String json, TypeReference<T> ref) throws IOException {
-    try {
-      ObjectMapper mapper = new ObjectMapper();
-      mapper.registerModule(new Jdk8Module());
-      return mapper.readValue(json, ref);
-    } catch (IOException e) {
-      LOG.error("Error parsing json", e);
-      throw e;
-    }
   }
 
   ////  public connection methods ////
@@ -871,28 +875,28 @@ public final class ClusterFacade {
    * @return a JmxProxy object
    * @throws ReaperException any runtime exception we catch
    */
-  public JmxProxy connect(Cluster cluster) throws ReaperException {
+  public CassandraManagementProxy connect(Cluster cluster) throws ReaperException {
     return connectImpl(cluster, enforceLocalNodeForSidecar(cluster.getSeedHosts()));
   }
 
-  public JmxProxy connect(Cluster cluster, Collection<String> endpoints) throws ReaperException {
+  public CassandraManagementProxy connect(Cluster cluster, Collection<String> endpoints) throws ReaperException {
     return connectImpl(cluster, enforceLocalNodeForSidecar(endpoints));
   }
 
-  public JmxProxy connect(Node node) throws ReaperException {
+  public CassandraManagementProxy connect(Node node) throws ReaperException {
     return connectImpl(node, enforceLocalNodeForSidecar(Collections.singletonList(node.getHostname())));
   }
 
-  public JmxProxy connect(Node node, Collection<String> endpoints) throws ReaperException {
+  public CassandraManagementProxy connect(Node node, Collection<String> endpoints) throws ReaperException {
     return connectImpl(node, enforceLocalNodeForSidecar(endpoints));
   }
 
   ////  private connection methods ////
 
   // cluster object contains additional connection info like jmx port and jmx credentials
-  private JmxProxy connectImpl(Cluster cluster, Collection<String> endpoints) throws ReaperException {
+  private CassandraManagementProxy connectImpl(Cluster cluster, Collection<String> endpoints) throws ReaperException {
     try {
-      JmxProxy proxy = context.jmxConnectionFactory.connectAny(
+      CassandraManagementProxy proxy = context.jmxConnectionFactory.connectAny(
           endpoints
               .stream()
               .map(host -> Node.builder().withCluster(cluster).withHostname(host).build())
@@ -907,7 +911,7 @@ public final class ClusterFacade {
   }
 
   // node object contains additional connection info like jmx port and jmx credentials
-  private JmxProxy connectImpl(Node node, Collection<String> endpoints) throws ReaperException {
+  private CassandraManagementProxy connectImpl(Node node, Collection<String> endpoints) throws ReaperException {
     return context.jmxConnectionFactory.connectAny(
         endpoints
             .stream()

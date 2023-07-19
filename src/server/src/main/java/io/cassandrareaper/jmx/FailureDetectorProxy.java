@@ -22,18 +22,17 @@ import java.util.Map;
 import com.google.common.base.Preconditions;
 
 
-
 public final class FailureDetectorProxy {
 
-  private final JmxProxyImpl proxy;
+  private final CassandraManagementProxyImpl proxy;
 
-  private FailureDetectorProxy(JmxProxyImpl proxy) {
+  private FailureDetectorProxy(CassandraManagementProxyImpl proxy) {
     this.proxy = proxy;
   }
 
-  public static FailureDetectorProxy create(JmxProxy proxy) {
-    Preconditions.checkArgument(proxy instanceof JmxProxyImpl, "only JmxProxyImpl is supported");
-    return new FailureDetectorProxy((JmxProxyImpl)proxy);
+  public static FailureDetectorProxy create(CassandraManagementProxy proxy) {
+    Preconditions.checkArgument(proxy instanceof CassandraManagementProxyImpl, "only JmxProxyImpl is supported");
+    return new FailureDetectorProxy((CassandraManagementProxyImpl) proxy);
   }
 
 

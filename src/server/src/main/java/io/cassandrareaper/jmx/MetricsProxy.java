@@ -31,7 +31,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.stream.Collectors;
-
 import javax.management.JMException;
 import javax.management.MBeanAttributeInfo;
 import javax.management.MBeanInfo;
@@ -45,20 +44,115 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 
-
 public final class MetricsProxy {
 
   private static final Logger LOG = LoggerFactory.getLogger(MetricsProxy.class);
 
-  private final JmxProxyImpl proxy;
+  private final CassandraManagementProxyImpl proxy;
 
-  private MetricsProxy(JmxProxyImpl proxy) {
+  private MetricsProxy(CassandraManagementProxyImpl proxy) {
     this.proxy = proxy;
   }
 
-  public static MetricsProxy create(JmxProxy proxy) {
-    Preconditions.checkArgument(proxy instanceof JmxProxyImpl, "only JmxProxyImpl is supported");
-    return new MetricsProxy((JmxProxyImpl)proxy);
+  public static MetricsProxy create(CassandraManagementProxy proxy) {
+    Preconditions.checkArgument(proxy instanceof CassandraManagementProxyImpl, "only JmxProxyImpl is supported");
+    return new MetricsProxy((CassandraManagementProxyImpl) proxy);
+  }
+
+  static ThreadPoolStat.Builder updateGenericMetricAttribute(GenericMetric stat, ThreadPoolStat.Builder builder) {
+    switch (stat.getMetricName()) {
+      case "MaxPoolSize":
+        return builder.withMaxPoolSize((int) stat.getValue());
+      case "TotalBlockedTasks":
+        return builder.withTotalBlockedTasks((int) stat.getValue());
+      case "PendingTasks":
+        return builder.withPendingTasks((int) stat.getValue());
+      case "CurrentlyBlockedTasks":
+        return builder.withCurrentlyBlockedTasks((int) stat.getValue());
+      case "CompletedTasks":
+        return builder.withCompletedTasks((int) stat.getValue());
+      case "ActiveTasks":
+        return builder.withActiveTasks((int) stat.getValue());
+      default:
+        return builder;
+    }
+  }
+
+  static DroppedMessages.Builder updateGenericMetricAttribute(GenericMetric stat, DroppedMessages.Builder builder) {
+    switch (stat.getMetricAttribute()) {
+      case "Count":
+        return builder.withCount((int) stat.getValue());
+      case "OneMinuteRate":
+        return builder.withOneMinuteRate(stat.getValue());
+      case "FiveMinuteRate":
+        return builder.withFiveMinuteRate(stat.getValue());
+      case "FifteenMinuteRate":
+        return builder.withFifteenMinuteRate(stat.getValue());
+      case "MeanRate":
+        return builder.withMeanRate(stat.getValue());
+      default:
+        return builder;
+    }
+  }
+
+  static MetricsHistogram.Builder updateGenericMetricAttribute(GenericMetric stat, MetricsHistogram.Builder builder) {
+    switch (stat.getMetricAttribute()) {
+      case "Count":
+        return builder.withCount((int) stat.getValue());
+      case "OneMinuteRate":
+        return builder.withOneMinuteRate(stat.getValue());
+      case "FiveMinuteRate":
+        return builder.withFiveMinuteRate(stat.getValue());
+      case "FifteenMinuteRate":
+        return builder.withFifteenMinuteRate(stat.getValue());
+      case "MeanRate":
+        return builder.withMeanRate(stat.getValue());
+      case "StdDev":
+        return builder.withStdDev(stat.getValue());
+      case "Min":
+        return builder.withMin(stat.getValue());
+      case "Max":
+        return builder.withMax(stat.getValue());
+      case "Mean":
+        return builder.withMean(stat.getValue());
+      case "50thPercentile":
+        return builder.withP50(stat.getValue());
+      case "75thPercentile":
+        return builder.withP75(stat.getValue());
+      case "95thPercentile":
+        return builder.withP95(stat.getValue());
+      case "98thPercentile":
+        return builder.withP98(stat.getValue());
+      case "99thPercentile":
+        return builder.withP99(stat.getValue());
+      case "999thPercentile":
+        return builder.withP999(stat.getValue());
+      default:
+        return builder;
+    }
+  }
+
+  public static List<GenericMetric> convertToGenericMetrics(Map<String, List<JmxStat>> jmxStats, Node node) {
+    List<GenericMetric> metrics = Lists.newArrayList();
+    DateTime now = DateTime.now();
+    for (Entry<String, List<JmxStat>> jmxStatEntry : jmxStats.entrySet()) {
+      for (JmxStat jmxStat : jmxStatEntry.getValue()) {
+        GenericMetric metric = GenericMetric.builder()
+            .withClusterName(node.getClusterName())
+            .withHost(node.getHostname())
+            .withMetricDomain(jmxStat.getDomain())
+            .withMetricType(jmxStat.getType())
+            .withMetricScope(jmxStat.getScope())
+            .withMetricName(jmxStat.getName())
+            .withMetricAttribute(jmxStat.getAttribute())
+            .withValue(jmxStat.getValue())
+            .withTs(now)
+            .build();
+        metrics.add(metric);
+      }
+    }
+
+    return metrics;
   }
 
   public Map<String, List<JmxStat>> collectTpStats() throws JMException, IOException {
@@ -74,7 +168,6 @@ public final class MetricsProxy {
   public Map<String, List<JmxStat>> collectLatencyMetrics() throws JMException, IOException {
     return collectMetrics("org.apache.cassandra.metrics:type=ClientRequest,*");
   }
-
 
   /**
    * Collects all attributes for a given set of JMX beans.
@@ -138,103 +231,6 @@ public final class MetricsProxy {
     }
     return attributeList;
   }
-
-  static ThreadPoolStat.Builder updateGenericMetricAttribute(GenericMetric stat, ThreadPoolStat.Builder builder) {
-    switch (stat.getMetricName()) {
-      case "MaxPoolSize":
-        return builder.withMaxPoolSize((int)stat.getValue());
-      case "TotalBlockedTasks":
-        return builder.withTotalBlockedTasks((int)stat.getValue());
-      case "PendingTasks":
-        return builder.withPendingTasks((int)stat.getValue());
-      case "CurrentlyBlockedTasks":
-        return builder.withCurrentlyBlockedTasks((int)stat.getValue());
-      case "CompletedTasks":
-        return builder.withCompletedTasks((int)stat.getValue());
-      case "ActiveTasks":
-        return builder.withActiveTasks((int)stat.getValue());
-      default:
-        return builder;
-    }
-  }
-
-  static DroppedMessages.Builder updateGenericMetricAttribute(GenericMetric stat, DroppedMessages.Builder builder) {
-    switch (stat.getMetricAttribute()) {
-      case "Count":
-        return builder.withCount((int)stat.getValue());
-      case "OneMinuteRate":
-        return builder.withOneMinuteRate(stat.getValue());
-      case "FiveMinuteRate":
-        return builder.withFiveMinuteRate(stat.getValue());
-      case "FifteenMinuteRate":
-        return builder.withFifteenMinuteRate(stat.getValue());
-      case "MeanRate":
-        return builder.withMeanRate(stat.getValue());
-      default:
-        return builder;
-    }
-  }
-
-  static MetricsHistogram.Builder updateGenericMetricAttribute(GenericMetric stat, MetricsHistogram.Builder builder) {
-    switch (stat.getMetricAttribute()) {
-      case "Count":
-        return builder.withCount((int)stat.getValue());
-      case "OneMinuteRate":
-        return builder.withOneMinuteRate(stat.getValue());
-      case "FiveMinuteRate":
-        return builder.withFiveMinuteRate(stat.getValue());
-      case "FifteenMinuteRate":
-        return builder.withFifteenMinuteRate(stat.getValue());
-      case "MeanRate":
-        return builder.withMeanRate(stat.getValue());
-      case "StdDev":
-        return builder.withStdDev(stat.getValue());
-      case "Min":
-        return builder.withMin(stat.getValue());
-      case "Max":
-        return builder.withMax(stat.getValue());
-      case "Mean":
-        return builder.withMean(stat.getValue());
-      case "50thPercentile":
-        return builder.withP50(stat.getValue());
-      case "75thPercentile":
-        return builder.withP75(stat.getValue());
-      case "95thPercentile":
-        return builder.withP95(stat.getValue());
-      case "98thPercentile":
-        return builder.withP98(stat.getValue());
-      case "99thPercentile":
-        return builder.withP99(stat.getValue());
-      case "999thPercentile":
-        return builder.withP999(stat.getValue());
-      default:
-        return builder;
-    }
-  }
-
-  public static List<GenericMetric> convertToGenericMetrics(Map<String, List<JmxStat>> jmxStats, Node node) {
-    List<GenericMetric> metrics = Lists.newArrayList();
-    DateTime now = DateTime.now();
-    for (Entry<String, List<JmxStat>> jmxStatEntry:jmxStats.entrySet()) {
-      for (JmxStat jmxStat:jmxStatEntry.getValue()) {
-        GenericMetric metric = GenericMetric.builder()
-            .withClusterName(node.getClusterName())
-            .withHost(node.getHostname())
-            .withMetricDomain(jmxStat.getDomain())
-            .withMetricType(jmxStat.getType())
-            .withMetricScope(jmxStat.getScope())
-            .withMetricName(jmxStat.getName())
-            .withMetricAttribute(jmxStat.getAttribute())
-            .withValue(jmxStat.getValue())
-            .withTs(now)
-            .build();
-        metrics.add(metric);
-      }
-    }
-
-    return metrics;
-  }
-
 
 
 }

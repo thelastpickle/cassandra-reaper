@@ -28,9 +28,9 @@ import io.cassandrareaper.core.RepairSchedule;
 import io.cassandrareaper.core.RepairSegment;
 import io.cassandrareaper.core.RepairUnit;
 import io.cassandrareaper.core.Segment;
+import io.cassandrareaper.jmx.CassandraManagementProxy;
 import io.cassandrareaper.jmx.ClusterFacade;
 import io.cassandrareaper.jmx.EndpointSnitchInfoProxy;
-import io.cassandrareaper.jmx.JmxProxy;
 import io.cassandrareaper.metrics.PrometheusMetricsFilter;
 import io.cassandrareaper.storage.IDistributedStorage;
 import io.cassandrareaper.storage.repairrun.IRepairRunDao;
@@ -496,7 +496,7 @@ final class RepairRunner implements Runnable {
         potentialReplicas.addAll(potentialReplicaMap.keySet());
       }
       LOG.debug("Potential replicas for segment {}: {}", segment.getId(), potentialReplicas);
-      JmxProxy coordinator = clusterFacade.connect(cluster, potentialReplicas);
+      CassandraManagementProxy coordinator = clusterFacade.connect(cluster, potentialReplicas);
       if (nodesReadyForNewRepair(coordinator, segment, potentialReplicaMap, repairRunId)) {
         nextRepairSegment = Optional.of(segment);
         break;
@@ -555,7 +555,7 @@ final class RepairRunner implements Runnable {
   }
 
   private boolean nodesReadyForNewRepair(
-      JmxProxy coordinator,
+      CassandraManagementProxy coordinator,
       RepairSegment segment,
       Map<String, String> dcByNode,
       UUID segmentId) {
