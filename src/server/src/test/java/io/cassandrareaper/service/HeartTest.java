@@ -23,8 +23,8 @@ import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.Cluster.State;
 import io.cassandrareaper.crypto.NoopCrypotograph;
-import io.cassandrareaper.jmx.CassandraManagementProxy;
-import io.cassandrareaper.jmx.JmxConnectionFactory;
+import io.cassandrareaper.management.ICassandraManagementProxy;
+import io.cassandrareaper.management.jmx.JmxConnectionFactory;
 import io.cassandrareaper.storage.IStorageDao;
 import io.cassandrareaper.storage.MemoryStorageFacade;
 import io.cassandrareaper.storage.cassandra.CassandraStorageFacade;
@@ -262,7 +262,7 @@ public final class HeartTest {
     context.storage = Mockito.mock(CassandraStorageFacade.class);
     context.jmxConnectionFactory = Mockito.mock(JmxConnectionFactory.class);
 
-    CassandraManagementProxy nodeProxy = Mockito.mock(CassandraManagementProxy.class);
+    ICassandraManagementProxy nodeProxy = Mockito.mock(ICassandraManagementProxy.class);
 
     Mockito.when(context.jmxConnectionFactory.connectAny(any(Collection.class))).thenReturn(nodeProxy);
 
@@ -310,7 +310,7 @@ public final class HeartTest {
                 .withJmxPort(7199)
                 .build());
 
-    CassandraManagementProxy nodeProxy = Mockito.mock(CassandraManagementProxy.class);
+    ICassandraManagementProxy nodeProxy = Mockito.mock(ICassandraManagementProxy.class);
 
     Mockito.when(context.jmxConnectionFactory.connectAny(any(Collection.class))).thenReturn(nodeProxy);
 

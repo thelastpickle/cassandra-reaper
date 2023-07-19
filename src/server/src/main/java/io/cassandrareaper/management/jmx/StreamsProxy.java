@@ -15,10 +15,11 @@
  * limitations under the License.
  */
 
-package io.cassandrareaper.jmx;
+package io.cassandrareaper.management.jmx;
 
 import io.cassandrareaper.core.Node;
 import io.cassandrareaper.core.StreamSession;
+import io.cassandrareaper.management.ICassandraManagementProxy;
 import io.cassandrareaper.service.StreamSessionFactory;
 
 import java.net.InetAddress;
@@ -49,15 +50,15 @@ public final class StreamsProxy {
 
   private static final Logger LOG = LoggerFactory.getLogger(StreamsProxy.class);
 
-  private final CassandraManagementProxyImpl proxy;
+  private final JmxCassandraManagementProxy proxy;
 
-  private StreamsProxy(CassandraManagementProxyImpl proxy) {
+  private StreamsProxy(JmxCassandraManagementProxy proxy) {
     this.proxy = proxy;
   }
 
-  public static StreamsProxy create(CassandraManagementProxy proxy) {
-    Preconditions.checkArgument(proxy instanceof CassandraManagementProxyImpl, "only JmxProxyImpl is supported");
-    return new StreamsProxy((CassandraManagementProxyImpl) proxy);
+  public static StreamsProxy create(ICassandraManagementProxy proxy) {
+    Preconditions.checkArgument(proxy instanceof JmxCassandraManagementProxy, "only JmxProxyImpl is supported");
+    return new StreamsProxy((JmxCassandraManagementProxy) proxy);
   }
 
   public List<StreamSession> listStreams(Node node) {

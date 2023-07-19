@@ -15,10 +15,11 @@
  * limitations under the License.
  */
 
-package io.cassandrareaper.jmx;
+package io.cassandrareaper.management;
 
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Table;
+import io.cassandrareaper.management.jmx.RepairStatusHandler;
 import io.cassandrareaper.service.RingRange;
 
 import java.math.BigInteger;
@@ -34,7 +35,7 @@ import javax.validation.constraints.NotNull;
 import org.apache.cassandra.repair.RepairParallelism;
 
 
-public interface CassandraManagementProxy extends NotificationListener {
+public interface ICassandraManagementProxy extends NotificationListener {
 
   Duration DEFAULT_JMX_CONNECTION_TIMEOUT = Duration.ofSeconds(5);
 

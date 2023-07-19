@@ -15,9 +15,10 @@
  * limitations under the License.
  */
 
-package io.cassandrareaper.jmx;
+package io.cassandrareaper.management.jmx;
 
 import io.cassandrareaper.core.Compaction;
+import io.cassandrareaper.management.ICassandraManagementProxy;
 
 import java.io.IOException;
 import java.util.List;
@@ -43,18 +44,18 @@ public final class CompactionProxy {
   private static final AtomicReference<ExecutorService> EXECUTOR = new AtomicReference();
   private static final Logger LOG = LoggerFactory.getLogger(CompactionProxy.class);
 
-  private final CassandraManagementProxyImpl proxy;
+  private final JmxCassandraManagementProxy proxy;
 
-  private CompactionProxy(CassandraManagementProxyImpl proxy, MetricRegistry metrics) {
+  private CompactionProxy(JmxCassandraManagementProxy proxy, MetricRegistry metrics) {
     this.proxy = proxy;
     if (null == EXECUTOR.get()) {
       EXECUTOR.set(new InstrumentedExecutorService(Executors.newCachedThreadPool(), metrics, "CompactionProxy"));
     }
   }
 
-  public static CompactionProxy create(CassandraManagementProxy proxy, MetricRegistry metrics) {
-    Preconditions.checkArgument(proxy instanceof CassandraManagementProxyImpl, "only JmxProxyImpl is supported");
-    return new CompactionProxy((CassandraManagementProxyImpl) proxy, metrics);
+  public static CompactionProxy create(ICassandraManagementProxy proxy, MetricRegistry metrics) {
+    Preconditions.checkArgument(proxy instanceof JmxCassandraManagementProxy, "only JmxProxyImpl is supported");
+    return new CompactionProxy((JmxCassandraManagementProxy) proxy, metrics);
   }
 
   public void forceCompaction(String keyspaceName, String... tableNames) {

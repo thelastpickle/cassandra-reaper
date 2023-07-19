@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package io.cassandrareaper.jmx;
+package io.cassandrareaper.management.jmx;
 
 import java.util.concurrent.Future;
 import javax.management.openmbean.CompositeData;

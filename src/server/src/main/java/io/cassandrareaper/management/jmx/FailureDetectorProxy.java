@@ -15,7 +15,9 @@
  * limitations under the License.
  */
 
-package io.cassandrareaper.jmx;
+package io.cassandrareaper.management.jmx;
+
+import io.cassandrareaper.management.ICassandraManagementProxy;
 
 import java.util.Map;
 
@@ -24,15 +26,15 @@ import com.google.common.base.Preconditions;
 
 public final class FailureDetectorProxy {
 
-  private final CassandraManagementProxyImpl proxy;
+  private final JmxCassandraManagementProxy proxy;
 
-  private FailureDetectorProxy(CassandraManagementProxyImpl proxy) {
+  private FailureDetectorProxy(JmxCassandraManagementProxy proxy) {
     this.proxy = proxy;
   }
 
-  public static FailureDetectorProxy create(CassandraManagementProxy proxy) {
-    Preconditions.checkArgument(proxy instanceof CassandraManagementProxyImpl, "only JmxProxyImpl is supported");
-    return new FailureDetectorProxy((CassandraManagementProxyImpl) proxy);
+  public static FailureDetectorProxy create(ICassandraManagementProxy proxy) {
+    Preconditions.checkArgument(proxy instanceof JmxCassandraManagementProxy, "only JmxProxyImpl is supported");
+    return new FailureDetectorProxy((JmxCassandraManagementProxy) proxy);
   }
 
 

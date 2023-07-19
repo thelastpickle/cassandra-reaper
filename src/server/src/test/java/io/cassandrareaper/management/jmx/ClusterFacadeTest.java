@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package io.cassandrareaper.jmx;
+package io.cassandrareaper.management.jmx;
 
 import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperApplicationConfiguration;
@@ -26,6 +26,7 @@ import io.cassandrareaper.core.Compaction;
 import io.cassandrareaper.core.CompactionStats;
 import io.cassandrareaper.core.JmxCredentials;
 import io.cassandrareaper.core.StreamSession;
+import io.cassandrareaper.management.ICassandraManagementProxy;
 
 import java.io.IOException;
 import java.net.URL;
@@ -206,7 +207,7 @@ public class ClusterFacadeTest {
 
     contextSpy.config.setDatacenterAvailability(DatacenterAvailability.SIDECAR);
     JmxConnectionFactory jmxConnectionFactory = mock(JmxConnectionFactory.class);
-    CassandraManagementProxy mockProxy = mock(CassandraManagementProxy.class);
+    ICassandraManagementProxy mockProxy = mock(ICassandraManagementProxy.class);
     when(jmxConnectionFactory.connectAny(any(Collection.class))).thenReturn(mockProxy);
     contextSpy.jmxConnectionFactory = jmxConnectionFactory;
     final ClusterFacade cf = ClusterFacade.create(contextSpy);

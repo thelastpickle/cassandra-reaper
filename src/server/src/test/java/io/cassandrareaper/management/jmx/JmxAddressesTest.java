@@ -15,12 +15,12 @@
  * limitations under the License.
  */
 
-package io.cassandrareaper.jmx;
+package io.cassandrareaper.management.jmx;
 
 import org.junit.Test;
 
-import static io.cassandrareaper.jmx.JmxAddresses.getJmxServiceUrl;
-import static io.cassandrareaper.jmx.JmxAddresses.isNumericIPv6Address;
+import static io.cassandrareaper.management.jmx.JmxAddresses.getJmxServiceUrl;
+import static io.cassandrareaper.management.jmx.JmxAddresses.isNumericIPv6Address;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;

@@ -15,11 +15,12 @@
  * limitations under the License.
  */
 
-package io.cassandrareaper.jmx;
+package io.cassandrareaper.management.jmx;
 
 import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperApplicationConfiguration.DatacenterAvailability;
 import io.cassandrareaper.core.Cluster;
+import io.cassandrareaper.management.ICassandraManagementProxy;
 import io.cassandrareaper.storage.IDistributedStorage;
 
 import java.util.Arrays;
@@ -87,12 +88,12 @@ public final class JmxConnectionsInitializer implements AutoCloseable {
   private void tryConnectingToJmxSeeds(List<Callable<Optional<String>>> jmxTasks) {
     try {
       List<Future<Optional<String>>> endpointFutures
-          = executor.invokeAll(jmxTasks, (int) CassandraManagementProxy.DEFAULT_JMX_CONNECTION_TIMEOUT.getSeconds(),
+          = executor.invokeAll(jmxTasks, (int) ICassandraManagementProxy.DEFAULT_JMX_CONNECTION_TIMEOUT.getSeconds(),
           TimeUnit.SECONDS);
 
       for (Future<Optional<String>> endpointFuture : endpointFutures) {
         try {
-          endpointFuture.get((int) CassandraManagementProxy.DEFAULT_JMX_CONNECTION_TIMEOUT.getSeconds(),
+          endpointFuture.get((int) ICassandraManagementProxy.DEFAULT_JMX_CONNECTION_TIMEOUT.getSeconds(),
               TimeUnit.SECONDS);
         } catch (RuntimeException | ExecutionException | TimeoutException expected) {
           LOG.trace("Failed accessing one node through JMX", expected);

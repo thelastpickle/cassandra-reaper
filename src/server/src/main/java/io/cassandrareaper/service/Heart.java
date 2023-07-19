@@ -24,7 +24,7 @@ import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.Node;
 import io.cassandrareaper.core.RepairSchedule;
-import io.cassandrareaper.jmx.ClusterFacade;
+import io.cassandrareaper.management.jmx.ClusterFacade;
 import io.cassandrareaper.storage.IDistributedStorage;
 
 import java.io.IOException;

@@ -25,9 +25,9 @@ import io.cassandrareaper.core.RepairSegment;
 import io.cassandrareaper.core.RepairUnit;
 import io.cassandrareaper.core.Segment;
 import io.cassandrareaper.core.Table;
-import io.cassandrareaper.jmx.CassandraManagementProxy;
-import io.cassandrareaper.jmx.ClusterFacade;
-import io.cassandrareaper.jmx.EndpointSnitchInfoProxy;
+import io.cassandrareaper.management.ICassandraManagementProxy;
+import io.cassandrareaper.management.jmx.ClusterFacade;
+import io.cassandrareaper.management.jmx.EndpointSnitchInfoProxy;
 import io.cassandrareaper.storage.repairrun.IRepairRunDao;
 
 import java.math.BigInteger;
@@ -366,7 +366,7 @@ public final class RepairRunService {
     final int maxAttempts = 2;
     for (int attempt = 0; attempt < maxAttempts; attempt++) {
       try {
-        CassandraManagementProxy jmxConnection = clusterFacade.connect(cluster);
+        ICassandraManagementProxy jmxConnection = clusterFacade.connect(cluster);
         // when hosts are coming up or going down, this method can throw an UndeclaredThrowableException
         Collection<String> nodes = clusterFacade.tokenRangeToEndpoint(cluster, keyspace, segment);
         Map<String, String> dcByNode = Maps.newHashMap();

@@ -17,7 +17,7 @@
 
 package io.cassandrareaper;
 
-import io.cassandrareaper.jmx.JmxConnectionFactory;
+import io.cassandrareaper.management.jmx.JmxConnectionFactory;
 import io.cassandrareaper.service.RepairManager;
 import io.cassandrareaper.service.SchedulingManager;
 import io.cassandrareaper.storage.IStorageDao;

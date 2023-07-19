@@ -15,10 +15,11 @@
  * limitations under the License.
  */
 
-package io.cassandrareaper.jmx;
+package io.cassandrareaper.management.jmx;
 
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Snapshot;
+import io.cassandrareaper.management.ICassandraManagementProxy;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -44,15 +45,15 @@ public final class SnapshotProxy {
 
   private static final Logger LOG = LoggerFactory.getLogger(SnapshotProxy.class);
 
-  private final CassandraManagementProxyImpl proxy;
+  private final JmxCassandraManagementProxy proxy;
 
-  private SnapshotProxy(CassandraManagementProxyImpl proxy) {
+  private SnapshotProxy(JmxCassandraManagementProxy proxy) {
     this.proxy = proxy;
   }
 
-  public static SnapshotProxy create(CassandraManagementProxy proxy) {
-    Preconditions.checkArgument(proxy instanceof CassandraManagementProxyImpl, "only JmxProxyImpl is supported");
-    return new SnapshotProxy((CassandraManagementProxyImpl) proxy);
+  public static SnapshotProxy create(ICassandraManagementProxy proxy) {
+    Preconditions.checkArgument(proxy instanceof JmxCassandraManagementProxy, "only JmxProxyImpl is supported");
+    return new SnapshotProxy((JmxCassandraManagementProxy) proxy);
   }
 
   public static double parseHumanReadableSize(String readableSize) {
@@ -108,7 +109,7 @@ public final class SnapshotProxy {
     List<Snapshot> snapshots = Lists.newArrayList();
 
     String cassandraVersion = proxy.getCassandraVersion();
-    if (CassandraManagementProxyImpl.versionCompare(cassandraVersion, "2.1.0") < 0) {
+    if (JmxCassandraManagementProxy.versionCompare(cassandraVersion, "2.1.0") < 0) {
       // 2.0 and prior do not allow to list snapshots
       throw new UnsupportedOperationException(
           "Snapshot listing is not supported in Cassandra 2.0 and prior.");

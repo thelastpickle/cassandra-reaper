@@ -15,20 +15,17 @@
  * limitations under the License.
  */
 
-package io.cassandrareaper.jmx;
+package io.cassandrareaper.management.jmx;
 
+import java.io.Serializable;
 import java.util.Map;
+import java.util.SortedMap;
 
-public interface LastEventIdBroadcasterMBean {
+public interface DiagnosticEventPersistenceMBean {
 
-  /**
-   * Retrieves a list of all event types and their highest IDs.
-   */
-  Map<String, Comparable> getLastEventIds();
+  SortedMap<Long, Map<String, Serializable>> readEvents(String eventClazz, Long lastKey, int limit);
 
-  /**
-   * Retrieves a list of all event types and their highest IDs, if updated since specified timestamp, or null.
-   * @param lastUpdate timestamp to use to determine if IDs have been updated
-   */
-  Map<String, Comparable> getLastEventIdsIfModified(long lastUpdate);
+  void enableEventPersistence(String eventClazz);
+
+  void disableEventPersistence(String eventClazz);
 }

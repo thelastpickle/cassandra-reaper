@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package io.cassandrareaper.jmx;
+package io.cassandrareaper.management.jmx;
 
 import io.cassandrareaper.ReaperApplicationConfiguration.Jmxmp;
 import io.cassandrareaper.ReaperException;
@@ -23,6 +23,7 @@ import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.JmxCredentials;
 import io.cassandrareaper.core.Table;
 import io.cassandrareaper.crypto.Cryptograph;
+import io.cassandrareaper.management.ICassandraManagementProxy;
 import io.cassandrareaper.service.RingRange;
 
 import java.io.IOException;
@@ -95,9 +96,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 
-final class CassandraManagementProxyImpl implements CassandraManagementProxy {
+final class JmxCassandraManagementProxy implements ICassandraManagementProxy {
 
-  private static final Logger LOG = LoggerFactory.getLogger(CassandraManagementProxy.class);
+  private static final Logger LOG = LoggerFactory.getLogger(ICassandraManagementProxy.class);
 
   private static final String VALUE_ATTRIBUTE = "Value";
   private static final String FAILED_TO_CONNECT_TO_USING_JMX = "Failed to connect to {} using JMX";
@@ -123,7 +124,7 @@ final class CassandraManagementProxyImpl implements CassandraManagementProxy {
   private final LastEventIdBroadcasterMBean lastEventIdProxy;
   private final Jmxmp jmxmp;
 
-  private CassandraManagementProxyImpl(
+  private JmxCassandraManagementProxy(
       String host,
       String hostBeforeTranslation,
       JMXConnector jmxConnector,
@@ -158,7 +159,7 @@ final class CassandraManagementProxyImpl implements CassandraManagementProxy {
   /**
    * @see #connect(String, int, Optional, AddressTranslator, int, MetricRegistry, Cryptograph)
    */
-  static CassandraManagementProxy connect(
+  static ICassandraManagementProxy connect(
       String host,
       Optional<JmxCredentials> jmxCredentials,
       final AddressTranslator addressTranslator,
@@ -194,7 +195,7 @@ final class CassandraManagementProxyImpl implements CassandraManagementProxy {
    * @param addressTranslator if EC2MultiRegionAddressTranslator isn't null it will be used to
    *                          translate addresses
    */
-  private static CassandraManagementProxy connect(
+  private static ICassandraManagementProxy connect(
       String originalHost,
       int port,
       Optional<JmxCredentials> jmxCredentials,
@@ -255,8 +256,8 @@ final class CassandraManagementProxyImpl implements CassandraManagementProxy {
         smProxy = Optional.of(JMX.newMBeanProxy(mbeanServerConn, ObjectNames.STREAM_MANAGER, StreamManagerMBean.class));
       }
 
-      CassandraManagementProxy proxy
-          = new CassandraManagementProxyImpl(
+      ICassandraManagementProxy proxy
+          = new JmxCassandraManagementProxy(
           host,
           originalHost,
           jmxConn,
@@ -915,14 +916,14 @@ final class CassandraManagementProxyImpl implements CassandraManagementProxy {
           .getGauges()
           .containsKey(
               MetricRegistry.name(
-                  CassandraManagementProxyImpl.class,
+                  JmxCassandraManagementProxy.class,
                   clusterName.replaceAll("[^A-Za-z0-9]", ""),
                   host.replace('.', 'x').replaceAll("[^A-Za-z0-9]", ""),
                   "repairStatusHandlers"))) {
 
         metricRegistry.register(
             MetricRegistry.name(
-                CassandraManagementProxyImpl.class,
+                JmxCassandraManagementProxy.class,
                 clusterName.replaceAll("[^A-Za-z0-9]", ""),
                 host.replace('.', 'x').replaceAll("[^A-Za-z0-9]", ""),
                 "repairStatusHandlers"),

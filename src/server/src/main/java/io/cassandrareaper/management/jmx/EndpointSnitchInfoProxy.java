@@ -15,7 +15,9 @@
  * limitations under the License.
  */
 
-package io.cassandrareaper.jmx;
+package io.cassandrareaper.management.jmx;
+
+import io.cassandrareaper.management.ICassandraManagementProxy;
 
 import java.util.concurrent.ExecutionException;
 
@@ -29,15 +31,15 @@ public final class EndpointSnitchInfoProxy {
   // `EndpointSnitchInfoMBean().getDatacenter(host)` is static info regardless of what node is answering
   private static final Cache<String, String> DATACENTERS_BY_HOST = CacheBuilder.newBuilder().build();
 
-  private final CassandraManagementProxyImpl proxy;
+  private final JmxCassandraManagementProxy proxy;
 
-  private EndpointSnitchInfoProxy(CassandraManagementProxyImpl proxy) {
+  private EndpointSnitchInfoProxy(JmxCassandraManagementProxy proxy) {
     this.proxy = proxy;
   }
 
-  public static EndpointSnitchInfoProxy create(CassandraManagementProxy proxy) {
-    Preconditions.checkArgument(proxy instanceof CassandraManagementProxyImpl, "only JmxProxyImpl is supported");
-    return new EndpointSnitchInfoProxy((CassandraManagementProxyImpl) proxy);
+  public static EndpointSnitchInfoProxy create(ICassandraManagementProxy proxy) {
+    Preconditions.checkArgument(proxy instanceof JmxCassandraManagementProxy, "only JmxProxyImpl is supported");
+    return new EndpointSnitchInfoProxy((JmxCassandraManagementProxy) proxy);
   }
 
 

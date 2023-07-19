@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package io.cassandrareaper.jmx;
+package io.cassandrareaper.management.jmx;
 
 import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperApplicationConfiguration.DatacenterAvailability;
@@ -33,6 +33,7 @@ import io.cassandrareaper.core.Snapshot;
 import io.cassandrareaper.core.StreamSession;
 import io.cassandrareaper.core.Table;
 import io.cassandrareaper.core.ThreadPoolStat;
+import io.cassandrareaper.management.ICassandraManagementProxy;
 import io.cassandrareaper.resources.view.NodesStatus;
 import io.cassandrareaper.service.RingRange;
 import io.cassandrareaper.storage.IDistributedStorage;
@@ -74,8 +75,8 @@ import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static io.cassandrareaper.jmx.MetricsProxy.convertToGenericMetrics;
-import static io.cassandrareaper.jmx.MetricsProxy.updateGenericMetricAttribute;
+import static io.cassandrareaper.management.jmx.MetricsProxy.convertToGenericMetrics;
+import static io.cassandrareaper.management.jmx.MetricsProxy.updateGenericMetricAttribute;
 
 
 public final class ClusterFacade {
@@ -205,8 +206,8 @@ public final class ClusterFacade {
    * @return a JmxProxy object
    * @throws ReaperException any runtime exception we catch
    */
-  public CassandraManagementProxy connectToManagementMechanism(Cluster cluster,
-      Collection<String> endpoints) throws ReaperException {
+  public ICassandraManagementProxy connectToManagementMechanism(Cluster cluster,
+                                                                Collection<String> endpoints) throws ReaperException {
     Preconditions.checkArgument(!context.config.isInSidecarMode());
     return connectImpl(cluster, endpoints);
   }
@@ -288,7 +289,7 @@ public final class ClusterFacade {
    * @throws ReaperException any runtime exception we catch
    */
   public NodesStatus getNodesStatus(Cluster cluster) throws ReaperException {
-    CassandraManagementProxy cassandraManagementProxy = connect(cluster);
+    ICassandraManagementProxy cassandraManagementProxy = connect(cluster);
     FailureDetectorProxy proxy = FailureDetectorProxy.create(cassandraManagementProxy);
     return new NodesStatus(cassandraManagementProxy.getHost(), proxy.getAllEndpointsState(), proxy.getSimpleStates());
   }
@@ -323,7 +324,7 @@ public final class ClusterFacade {
         return version;
       }
     }
-    CassandraManagementProxy cassandraManagementProxy = connect(cluster, endpoints);
+    ICassandraManagementProxy cassandraManagementProxy = connect(cluster, endpoints);
     String version = cassandraManagementProxy.getCassandraVersion();
     CLUSTER_VERSIONS.put(Pair.of(cluster, cassandraManagementProxy.getHost()), version);
     return version;
@@ -859,7 +860,7 @@ public final class ClusterFacade {
   private Map<List<String>, List<String>> getRangeToEndpointMapImpl(
       Cluster cluster,
       String keyspace) throws ReaperException {
-    CassandraManagementProxy jmxConnection = connect(cluster);
+    ICassandraManagementProxy jmxConnection = connect(cluster);
     Map<List<String>, List<String>> endpointMap = jmxConnection.getRangeToEndpointMap(keyspace);
     return maybeCleanupEndpointFromScylla(endpointMap);
   }
@@ -875,28 +876,28 @@ public final class ClusterFacade {
    * @return a JmxProxy object
    * @throws ReaperException any runtime exception we catch
    */
-  public CassandraManagementProxy connect(Cluster cluster) throws ReaperException {
+  public ICassandraManagementProxy connect(Cluster cluster) throws ReaperException {
     return connectImpl(cluster, enforceLocalNodeForSidecar(cluster.getSeedHosts()));
   }
 
-  public CassandraManagementProxy connect(Cluster cluster, Collection<String> endpoints) throws ReaperException {
+  public ICassandraManagementProxy connect(Cluster cluster, Collection<String> endpoints) throws ReaperException {
     return connectImpl(cluster, enforceLocalNodeForSidecar(endpoints));
   }
 
-  public CassandraManagementProxy connect(Node node) throws ReaperException {
+  public ICassandraManagementProxy connect(Node node) throws ReaperException {
     return connectImpl(node, enforceLocalNodeForSidecar(Collections.singletonList(node.getHostname())));
   }
 
-  public CassandraManagementProxy connect(Node node, Collection<String> endpoints) throws ReaperException {
+  public ICassandraManagementProxy connect(Node node, Collection<String> endpoints) throws ReaperException {
     return connectImpl(node, enforceLocalNodeForSidecar(endpoints));
   }
 
   ////  private connection methods ////
 
   // cluster object contains additional connection info like jmx port and jmx credentials
-  private CassandraManagementProxy connectImpl(Cluster cluster, Collection<String> endpoints) throws ReaperException {
+  private ICassandraManagementProxy connectImpl(Cluster cluster, Collection<String> endpoints) throws ReaperException {
     try {
-      CassandraManagementProxy proxy = context.jmxConnectionFactory.connectAny(
+      ICassandraManagementProxy proxy = context.jmxConnectionFactory.connectAny(
           endpoints
               .stream()
               .map(host -> Node.builder().withCluster(cluster).withHostname(host).build())
@@ -911,7 +912,7 @@ public final class ClusterFacade {
   }
 
   // node object contains additional connection info like jmx port and jmx credentials
-  private CassandraManagementProxy connectImpl(Node node, Collection<String> endpoints) throws ReaperException {
+  private ICassandraManagementProxy connectImpl(Node node, Collection<String> endpoints) throws ReaperException {
     return context.jmxConnectionFactory.connectAny(
         endpoints
             .stream()

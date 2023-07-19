@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package io.cassandrareaper.jmx;
+package io.cassandrareaper.management.jmx;
 
 import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperApplicationConfiguration;
@@ -23,6 +23,7 @@ import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.Node;
 import io.cassandrareaper.crypto.Cryptograph;
+import io.cassandrareaper.management.ICassandraManagementProxy;
 import io.cassandrareaper.storage.cassandra.CassandraStorageFacade;
 
 import java.net.UnknownHostException;
@@ -48,7 +49,7 @@ public final class JmxCustomPortTest {
   public void customJmxPortTest() throws ReaperException, InterruptedException, UnknownHostException {
     AppContext context = new AppContext();
     final Cryptograph cryptographMock = mock(Cryptograph.class);
-    final CassandraManagementProxy cassandraManagementProxyMock = CassandraManagementProxyTest.mockJmxProxyImpl();
+    final ICassandraManagementProxy cassandraManagementProxyMock = CassandraManagementProxyTest.mockJmxProxyImpl();
     final AtomicInteger port = new AtomicInteger(0);
     HostConnectionCounters hostConnectionCounters = mock(HostConnectionCounters.class);
     when(hostConnectionCounters.getSuccessfulConnections(any())).thenReturn(1);
@@ -56,8 +57,8 @@ public final class JmxCustomPortTest {
 
     context.jmxConnectionFactory = new JmxConnectionFactory(context, cryptographMock) {
       @Override
-      protected CassandraManagementProxy connectImpl(Node node) throws ReaperException {
-        final CassandraManagementProxy jmx = cassandraManagementProxyMock;
+      protected ICassandraManagementProxy connectImpl(Node node) throws ReaperException {
+        final ICassandraManagementProxy jmx = cassandraManagementProxyMock;
         port.set(node.getJmxPort());
         return jmx;
       }

@@ -25,9 +25,9 @@ import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairSegment;
 import io.cassandrareaper.core.RepairUnit;
 import io.cassandrareaper.core.Table;
-import io.cassandrareaper.jmx.CassandraManagementProxy;
-import io.cassandrareaper.jmx.CassandraManagementProxyTest;
-import io.cassandrareaper.jmx.JmxConnectionFactory;
+import io.cassandrareaper.management.ICassandraManagementProxy;
+import io.cassandrareaper.management.jmx.CassandraManagementProxyTest;
+import io.cassandrareaper.management.jmx.JmxConnectionFactory;
 import io.cassandrareaper.resources.view.RepairRunStatus;
 import io.cassandrareaper.service.RepairManager;
 import io.cassandrareaper.service.RepairRunnerTest;
@@ -110,7 +110,7 @@ public final class RepairRunResourceTest {
   private final String keyspace = "testkeyspace_" + RandomStringUtils.randomAlphabetic(6);
   private AppContext context;
   private UriInfo uriInfo;
-  private CassandraManagementProxy proxy;
+  private ICassandraManagementProxy proxy;
 
   @Before
   public void setUp() throws Exception {

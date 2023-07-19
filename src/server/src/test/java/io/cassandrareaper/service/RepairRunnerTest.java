@@ -30,11 +30,11 @@ import io.cassandrareaper.core.RepairSegment;
 import io.cassandrareaper.core.RepairUnit;
 import io.cassandrareaper.core.Segment;
 import io.cassandrareaper.crypto.NoopCrypotograph;
-import io.cassandrareaper.jmx.CassandraManagementProxy;
-import io.cassandrareaper.jmx.CassandraManagementProxyTest;
-import io.cassandrareaper.jmx.ClusterFacade;
-import io.cassandrareaper.jmx.JmxConnectionFactory;
-import io.cassandrareaper.jmx.RepairStatusHandler;
+import io.cassandrareaper.management.ICassandraManagementProxy;
+import io.cassandrareaper.management.jmx.CassandraManagementProxyTest;
+import io.cassandrareaper.management.jmx.ClusterFacade;
+import io.cassandrareaper.management.jmx.JmxConnectionFactory;
+import io.cassandrareaper.management.jmx.RepairStatusHandler;
 import io.cassandrareaper.storage.IDistributedStorage;
 import io.cassandrareaper.storage.IStorageDao;
 import io.cassandrareaper.storage.MemoryStorageFacade;
@@ -247,7 +247,7 @@ public final class RepairRunnerTest {
     context.storage = storage;
     context.config = new ReaperApplicationConfiguration();
     final Semaphore mutex = new Semaphore(0);
-    final CassandraManagementProxy jmx = CassandraManagementProxyTest.mockJmxProxyImpl();
+    final ICassandraManagementProxy jmx = CassandraManagementProxyTest.mockJmxProxyImpl();
     Map<String, String> endpointToHostIDMap = endpointToHostIDMap();
     when(jmx.getEndpointToHostId()).thenReturn(endpointToHostIDMap);
     when(jmx.getClusterName()).thenReturn(cluster.getName());
@@ -338,7 +338,7 @@ public final class RepairRunnerTest {
         context.storage.getRepairRunDao());
     context.jmxConnectionFactory = new JmxConnectionFactory(context, new NoopCrypotograph()) {
       @Override
-      protected CassandraManagementProxy connectImpl(Node host) throws ReaperException {
+      protected ICassandraManagementProxy connectImpl(Node host) throws ReaperException {
         return jmx;
       }
     };
@@ -403,7 +403,7 @@ public final class RepairRunnerTest {
     context.storage = storage;
     context.config = new ReaperApplicationConfiguration();
     final Semaphore mutex = new Semaphore(0);
-    final CassandraManagementProxy jmx = CassandraManagementProxyTest.mockJmxProxyImpl();
+    final ICassandraManagementProxy jmx = CassandraManagementProxyTest.mockJmxProxyImpl();
     when(jmx.getClusterName()).thenReturn(cluster.getName());
     when(jmx.isConnectionAlive()).thenReturn(true);
     when(jmx.getRangeToEndpointMap(anyString())).thenReturn(RepairRunnerTest.sixNodeCluster());
@@ -490,7 +490,7 @@ public final class RepairRunnerTest {
         context.storage.getRepairRunDao());
     context.jmxConnectionFactory = new JmxConnectionFactory(context, new NoopCrypotograph()) {
       @Override
-      protected CassandraManagementProxy connectImpl(Node host) throws ReaperException {
+      protected ICassandraManagementProxy connectImpl(Node host) throws ReaperException {
         return jmx;
       }
     };
@@ -549,7 +549,7 @@ public final class RepairRunnerTest {
     final UUID segmentId = storage.getRepairSegmentDao().getNextFreeSegments(run.getId()).get(0).getId();
     assertEquals(storage.getRepairSegmentDao().getRepairSegment(runId, segmentId).get().getState(),
         RepairSegment.State.NOT_STARTED);
-    final CassandraManagementProxy jmx = CassandraManagementProxyTest.mockJmxProxyImpl();
+    final ICassandraManagementProxy jmx = CassandraManagementProxyTest.mockJmxProxyImpl();
     when(jmx.getClusterName()).thenReturn(cluster.getName());
     when(jmx.isConnectionAlive()).thenReturn(true);
     when(jmx.getRangeToEndpointMap(anyString())).thenReturn(RepairRunnerTest.threeNodeClusterWithIps());
@@ -621,7 +621,7 @@ public final class RepairRunnerTest {
             });
     context.jmxConnectionFactory = new JmxConnectionFactory(context, new NoopCrypotograph()) {
       @Override
-      protected CassandraManagementProxy connectImpl(Node host) throws ReaperException {
+      protected ICassandraManagementProxy connectImpl(Node host) throws ReaperException {
         return jmx;
       }
     };
@@ -680,7 +680,7 @@ public final class RepairRunnerTest {
     final UUID segmentId = storage.getRepairSegmentDao().getNextFreeSegments(run.getId()).get(0).getId();
     assertEquals(storage.getRepairSegmentDao().getRepairSegment(runId, segmentId).get().getState(),
         RepairSegment.State.NOT_STARTED);
-    final CassandraManagementProxy jmx = CassandraManagementProxyTest.mockJmxProxyImpl();
+    final ICassandraManagementProxy jmx = CassandraManagementProxyTest.mockJmxProxyImpl();
     when(jmx.getClusterName()).thenReturn(cluster.getName());
     when(jmx.isConnectionAlive()).thenReturn(true);
     when(jmx.getRangeToEndpointMap(anyString())).thenReturn(RepairRunnerTest.threeNodeClusterWithIps());
@@ -750,7 +750,7 @@ public final class RepairRunnerTest {
             });
     context.jmxConnectionFactory = new JmxConnectionFactory(context, new NoopCrypotograph()) {
       @Override
-      protected CassandraManagementProxy connectImpl(Node host) throws ReaperException {
+      protected ICassandraManagementProxy connectImpl(Node host) throws ReaperException {
         return jmx;
       }
     };
@@ -878,7 +878,7 @@ public final class RepairRunnerTest {
     final UUID segmentId = storage.getRepairSegmentDao().getNextFreeSegments(run.getId()).get(0).getId();
     assertEquals(storage.getRepairSegmentDao().getRepairSegment(runId, segmentId).get().getState(),
         RepairSegment.State.NOT_STARTED);
-    final CassandraManagementProxy jmx = CassandraManagementProxyTest.mockJmxProxyImpl();
+    final ICassandraManagementProxy jmx = CassandraManagementProxyTest.mockJmxProxyImpl();
     when(jmx.getClusterName()).thenReturn(cluster.getName());
     when(jmx.isConnectionAlive()).thenReturn(true);
     when(jmx.getRangeToEndpointMap(anyString())).thenReturn(RepairRunnerTest.threeNodeClusterWithIps());
@@ -951,7 +951,7 @@ public final class RepairRunnerTest {
             });
     context.jmxConnectionFactory = new JmxConnectionFactory(context, new NoopCrypotograph()) {
       @Override
-      protected CassandraManagementProxy connectImpl(Node host) throws ReaperException {
+      protected ICassandraManagementProxy connectImpl(Node host) throws ReaperException {
         return jmx;
       }
     };
@@ -1078,7 +1078,7 @@ public final class RepairRunnerTest {
     final UUID segmentId = storage.getRepairSegmentDao().getNextFreeSegments(run.getId()).get(0).getId();
     assertEquals(storage.getRepairSegmentDao().getRepairSegment(runId, segmentId).get().getState(),
         RepairSegment.State.NOT_STARTED);
-    final CassandraManagementProxy jmx = CassandraManagementProxyTest.mockJmxProxyImpl();
+    final ICassandraManagementProxy jmx = CassandraManagementProxyTest.mockJmxProxyImpl();
     when(jmx.getClusterName()).thenReturn(cluster.getName());
     when(jmx.isConnectionAlive()).thenReturn(true);
     when(jmx.getRangeToEndpointMap(anyString())).thenReturn(RepairRunnerTest.threeNodeClusterWithIps());
@@ -1150,7 +1150,7 @@ public final class RepairRunnerTest {
             });
     context.jmxConnectionFactory = new JmxConnectionFactory(context, new NoopCrypotograph()) {
       @Override
-      protected CassandraManagementProxy connectImpl(Node host) throws ReaperException {
+      protected ICassandraManagementProxy connectImpl(Node host) throws ReaperException {
         return jmx;
       }
     };
@@ -1228,7 +1228,7 @@ public final class RepairRunnerTest {
     Mockito.when(context.storage.getClusterDao()).thenReturn(mockedClusterDao);
     Mockito.when(mockedClusterDao.getCluster(any())).thenReturn(cluster);
     JmxConnectionFactory jmxConnectionFactory = mock(JmxConnectionFactory.class);
-    CassandraManagementProxy jmx = mock(CassandraManagementProxy.class);
+    ICassandraManagementProxy jmx = mock(ICassandraManagementProxy.class);
     when(jmxConnectionFactory.connectAny(any(Collection.class))).thenReturn(jmx);
     when(jmx.getClusterName()).thenReturn(cluster.getName());
     when(jmx.isConnectionAlive()).thenReturn(true);
@@ -1303,7 +1303,7 @@ public final class RepairRunnerTest {
     final UUID segmentId = storage.getRepairSegmentDao().getNextFreeSegments(run.getId()).get(0).getId();
     assertEquals(storage.getRepairSegmentDao().getRepairSegment(runId, segmentId).get().getState(),
         RepairSegment.State.NOT_STARTED);
-    final CassandraManagementProxy proxy = CassandraManagementProxyTest.mockJmxProxyImpl();
+    final ICassandraManagementProxy proxy = CassandraManagementProxyTest.mockJmxProxyImpl();
     when(proxy.getClusterName()).thenReturn(cluster.getName());
     when(proxy.isConnectionAlive()).thenReturn(true);
     when(proxy.getRangeToEndpointMap(anyString())).thenReturn(RepairRunnerTest.threeNodeClusterWithIps());
@@ -1414,7 +1414,7 @@ public final class RepairRunnerTest {
     Mockito.when(context.storage.getClusterDao()).thenReturn(mockedClusterDao);
     Mockito.when(mockedClusterDao.getCluster(any())).thenReturn(cluster);
     JmxConnectionFactory jmxConnectionFactory = mock(JmxConnectionFactory.class);
-    CassandraManagementProxy jmx = mock(CassandraManagementProxy.class);
+    ICassandraManagementProxy jmx = mock(ICassandraManagementProxy.class);
     when(jmxConnectionFactory.connectAny(any(Collection.class))).thenReturn(jmx);
     when(jmx.getClusterName()).thenReturn(cluster.getName());
     when(jmx.isConnectionAlive()).thenReturn(true);
@@ -1511,7 +1511,7 @@ public final class RepairRunnerTest {
     Mockito.when(context.storage.getClusterDao()).thenReturn(mockedClusterDao);
     Mockito.when(mockedClusterDao.getCluster(any())).thenReturn(cluster);
     JmxConnectionFactory jmxConnectionFactory = mock(JmxConnectionFactory.class);
-    CassandraManagementProxy jmx = mock(CassandraManagementProxy.class);
+    ICassandraManagementProxy jmx = mock(ICassandraManagementProxy.class);
     when(jmxConnectionFactory.connectAny(any(Collection.class))).thenReturn(jmx);
     when(jmx.getClusterName()).thenReturn(cluster.getName());
     when(jmx.isConnectionAlive()).thenReturn(true);
@@ -1613,7 +1613,7 @@ public final class RepairRunnerTest {
 
     Mockito.when(mockedClusterDao.getCluster(any())).thenReturn(cluster);
     JmxConnectionFactory jmxConnectionFactory = mock(JmxConnectionFactory.class);
-    CassandraManagementProxy jmx = mock(CassandraManagementProxy.class);
+    ICassandraManagementProxy jmx = mock(ICassandraManagementProxy.class);
     when(jmxConnectionFactory.connectAny(any(Collection.class))).thenReturn(jmx);
     when(jmx.getClusterName()).thenReturn(cluster.getName());
     when(jmx.isConnectionAlive()).thenReturn(true);
@@ -1696,7 +1696,7 @@ public final class RepairRunnerTest {
     Mockito.when(context.storage.getClusterDao()).thenReturn(mockedClusterDao);
     Mockito.when(mockedClusterDao.getCluster(any())).thenReturn(cluster);
     JmxConnectionFactory jmxConnectionFactory = mock(JmxConnectionFactory.class);
-    CassandraManagementProxy jmx = mock(CassandraManagementProxy.class);
+    ICassandraManagementProxy jmx = mock(ICassandraManagementProxy.class);
     when(jmxConnectionFactory.connectAny(any(Collection.class))).thenReturn(jmx);
     when(jmx.getClusterName()).thenReturn(cluster.getName());
     when(jmx.isConnectionAlive()).thenReturn(true);

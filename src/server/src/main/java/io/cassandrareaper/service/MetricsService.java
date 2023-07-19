@@ -31,7 +31,7 @@ import io.cassandrareaper.core.RepairSchedule;
 import io.cassandrareaper.core.RepairUnit;
 import io.cassandrareaper.core.StreamSession;
 import io.cassandrareaper.core.ThreadPoolStat;
-import io.cassandrareaper.jmx.ClusterFacade;
+import io.cassandrareaper.management.jmx.ClusterFacade;
 import io.cassandrareaper.storage.IDistributedStorage;
 import io.cassandrareaper.storage.OpType;
 

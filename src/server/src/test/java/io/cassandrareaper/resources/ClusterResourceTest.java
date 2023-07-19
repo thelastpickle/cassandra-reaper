@@ -23,9 +23,9 @@ import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.Table;
 import io.cassandrareaper.crypto.Cryptograph;
 import io.cassandrareaper.crypto.NoopCrypotograph;
-import io.cassandrareaper.jmx.CassandraManagementProxy;
-import io.cassandrareaper.jmx.ClusterFacade;
-import io.cassandrareaper.jmx.JmxConnectionFactory;
+import io.cassandrareaper.management.ICassandraManagementProxy;
+import io.cassandrareaper.management.jmx.ClusterFacade;
+import io.cassandrareaper.management.jmx.JmxConnectionFactory;
 import io.cassandrareaper.service.TestRepairConfiguration;
 import io.cassandrareaper.storage.MemoryStorageFacade;
 
@@ -654,7 +654,7 @@ public final class ClusterResourceTest {
     UriInfo uriInfo = mock(UriInfo.class);
     when(uriInfo.getBaseUriBuilder()).thenReturn(UriBuilder.fromUri(SAMPLE_URI));
 
-    CassandraManagementProxy cassandraManagementProxy = mock(CassandraManagementProxy.class);
+    ICassandraManagementProxy cassandraManagementProxy = mock(ICassandraManagementProxy.class);
     when(cassandraManagementProxy.getClusterName()).thenReturn(CLUSTER_NAME);
     when(cassandraManagementProxy.getPartitioner()).thenReturn(PARTITIONER);
 
@@ -675,14 +675,14 @@ public final class ClusterResourceTest {
     final AppContext context;
     final Cryptograph cryptograph;
     final UriInfo uriInfo;
-    final CassandraManagementProxy cassandraManagementProxy;
+    final ICassandraManagementProxy cassandraManagementProxy;
     final ClusterFacade clusterFacade;
 
     MockObjects(
         AppContext context,
         Cryptograph cryptograph,
         UriInfo uriInfo,
-        CassandraManagementProxy cassandraManagementProxy,
+        ICassandraManagementProxy cassandraManagementProxy,
         ClusterFacade clusterFacade) {
       super();
       this.context = context;

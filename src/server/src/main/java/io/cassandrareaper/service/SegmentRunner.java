@@ -23,10 +23,10 @@ import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.RepairSegment;
 import io.cassandrareaper.core.RepairUnit;
-import io.cassandrareaper.jmx.CassandraManagementProxy;
-import io.cassandrareaper.jmx.ClusterFacade;
-import io.cassandrareaper.jmx.RepairStatusHandler;
-import io.cassandrareaper.jmx.SnapshotProxy;
+import io.cassandrareaper.management.ICassandraManagementProxy;
+import io.cassandrareaper.management.jmx.ClusterFacade;
+import io.cassandrareaper.management.jmx.RepairStatusHandler;
+import io.cassandrareaper.management.jmx.SnapshotProxy;
 import io.cassandrareaper.storage.IDistributedStorage;
 
 import java.lang.management.ManagementFactory;
@@ -184,7 +184,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
     }
   }
 
-  static void abort(AppContext context, RepairSegment segment, CassandraManagementProxy jmxConnection) {
+  static void abort(AppContext context, RepairSegment segment, ICassandraManagementProxy jmxConnection) {
     postpone(context, segment, context.storage.getRepairUnitDao().getRepairUnit(segment.getRepairUnitId()));
     LOG.info("Aborting repair on segment with id {} on coordinator {}", segment.getId(), segment.getCoordinatorHost());
 
@@ -197,7 +197,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
     jmxConnection.cancelAllRepairs();
   }
 
-  private void abort(RepairSegment segment, CassandraManagementProxy jmxConnection) {
+  private void abort(RepairSegment segment, ICassandraManagementProxy jmxConnection) {
     abort(context, segment, jmxConnection);
   }
 
@@ -296,7 +296,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
       }
 
       Cluster cluster = context.storage.getClusterDao().getCluster(clusterName);
-      CassandraManagementProxy coordinator = clusterFacade.connect(cluster, potentialCoordinators);
+      ICassandraManagementProxy coordinator = clusterFacade.connect(cluster, potentialCoordinators);
       String keyspace = repairUnit.getKeyspaceName();
       boolean fullRepair = !repairUnit.getIncrementalRepair();
 
@@ -365,7 +365,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
     return true;
   }
 
-  private void processTriggeredSegment(final RepairSegment segment, final CassandraManagementProxy coordinator,
+  private void processTriggeredSegment(final RepairSegment segment, final ICassandraManagementProxy coordinator,
                                        int repairNo) {
 
     repairRunner.updateLastEvent(
@@ -471,7 +471,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
       Optional<ActiveRepairService.Status> status,
       Optional<ProgressEventType> progress,
       String message,
-      CassandraManagementProxy cassandraManagementProxy) {
+      ICassandraManagementProxy cassandraManagementProxy) {
 
     final RepairSegment segment = context.storage.getRepairSegmentDao().getRepairSegment(repairRunner.getRepairRunId(),
         segmentId).get();
@@ -543,7 +543,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
       RepairSegment currentSegment,
       int repairNumber,
       boolean failOutsideSynchronizedBlock,
-      CassandraManagementProxy cassandraManagementProxy) {
+      ICassandraManagementProxy cassandraManagementProxy) {
 
     switch (progress.get()) {
       case START:
@@ -669,7 +669,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
       int repairNumber,
       boolean failOutsideSynchronizedBlock,
       Optional<ProgressEventType> progress,
-      CassandraManagementProxy cassandraManagementProxy) {
+      ICassandraManagementProxy cassandraManagementProxy) {
 
     switch (status.get()) {
       case STARTED:
@@ -806,7 +806,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
     if (repairId != null) {
       for (String involvedNode : potentialCoordinators) {
         try {
-          CassandraManagementProxy jmx = clusterFacade.connect(
+          ICassandraManagementProxy jmx = clusterFacade.connect(
               context.storage.getClusterDao().getCluster(clusterName),
               Arrays.asList(involvedNode));
           // there is no way of telling if the snapshot was cleared or not :(

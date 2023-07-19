@@ -24,7 +24,7 @@ import io.cassandrareaper.core.Node;
 import io.cassandrareaper.core.RepairSchedule;
 import io.cassandrareaper.core.RepairUnit;
 import io.cassandrareaper.core.Table;
-import io.cassandrareaper.jmx.ClusterFacade;
+import io.cassandrareaper.management.jmx.ClusterFacade;
 
 import java.util.Collection;
 import java.util.Collections;

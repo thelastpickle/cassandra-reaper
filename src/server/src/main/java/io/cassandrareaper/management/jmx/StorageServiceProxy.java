@@ -15,7 +15,9 @@
  * limitations under the License.
  */
 
-package io.cassandrareaper.jmx;
+package io.cassandrareaper.management.jmx;
+
+import io.cassandrareaper.management.ICassandraManagementProxy;
 
 import java.util.List;
 import java.util.Map;
@@ -28,17 +30,17 @@ import org.apache.cassandra.service.StorageServiceMBean;
 
 public final class StorageServiceProxy {
 
-  private final CassandraManagementProxyImpl proxy;
+  private final JmxCassandraManagementProxy proxy;
   private final StorageServiceMBean ssProxy;
 
-  private StorageServiceProxy(CassandraManagementProxyImpl proxy) {
+  private StorageServiceProxy(JmxCassandraManagementProxy proxy) {
     this.proxy = proxy;
     this.ssProxy = proxy.getStorageServiceMBean();
   }
 
-  public static StorageServiceProxy create(CassandraManagementProxy proxy) {
-    Preconditions.checkArgument(proxy instanceof CassandraManagementProxyImpl, "only JmxProxyImpl is supported");
-    return new StorageServiceProxy((CassandraManagementProxyImpl) proxy);
+  public static StorageServiceProxy create(ICassandraManagementProxy proxy) {
+    Preconditions.checkArgument(proxy instanceof JmxCassandraManagementProxy, "only JmxProxyImpl is supported");
+    return new StorageServiceProxy((JmxCassandraManagementProxy) proxy);
   }
 
   public Map<String, List<String>> getTokensByNode() {

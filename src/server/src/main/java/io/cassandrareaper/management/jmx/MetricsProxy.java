@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package io.cassandrareaper.jmx;
+package io.cassandrareaper.management.jmx;
 
 import io.cassandrareaper.core.DroppedMessages;
 import io.cassandrareaper.core.GenericMetric;
@@ -23,6 +23,7 @@ import io.cassandrareaper.core.JmxStat;
 import io.cassandrareaper.core.MetricsHistogram;
 import io.cassandrareaper.core.Node;
 import io.cassandrareaper.core.ThreadPoolStat;
+import io.cassandrareaper.management.ICassandraManagementProxy;
 
 import java.io.IOException;
 import java.util.LinkedHashMap;
@@ -48,15 +49,15 @@ public final class MetricsProxy {
 
   private static final Logger LOG = LoggerFactory.getLogger(MetricsProxy.class);
 
-  private final CassandraManagementProxyImpl proxy;
+  private final JmxCassandraManagementProxy proxy;
 
-  private MetricsProxy(CassandraManagementProxyImpl proxy) {
+  private MetricsProxy(JmxCassandraManagementProxy proxy) {
     this.proxy = proxy;
   }
 
-  public static MetricsProxy create(CassandraManagementProxy proxy) {
-    Preconditions.checkArgument(proxy instanceof CassandraManagementProxyImpl, "only JmxProxyImpl is supported");
-    return new MetricsProxy((CassandraManagementProxyImpl) proxy);
+  public static MetricsProxy create(ICassandraManagementProxy proxy) {
+    Preconditions.checkArgument(proxy instanceof JmxCassandraManagementProxy, "only JmxProxyImpl is supported");
+    return new MetricsProxy((JmxCassandraManagementProxy) proxy);
   }
 
   static ThreadPoolStat.Builder updateGenericMetricAttribute(GenericMetric stat, ThreadPoolStat.Builder builder) {

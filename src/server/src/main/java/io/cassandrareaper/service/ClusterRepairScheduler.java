@@ -22,7 +22,7 @@ import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.RepairSchedule;
 import io.cassandrareaper.core.RepairUnit;
-import io.cassandrareaper.jmx.ClusterFacade;
+import io.cassandrareaper.management.jmx.ClusterFacade;
 import io.cassandrareaper.storage.repairrun.IRepairRunDao;
 
 import java.util.Collection;

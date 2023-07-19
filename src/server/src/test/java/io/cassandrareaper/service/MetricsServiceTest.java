@@ -24,11 +24,11 @@ import io.cassandrareaper.core.DroppedMessages;
 import io.cassandrareaper.core.JmxStat;
 import io.cassandrareaper.core.Node;
 import io.cassandrareaper.core.ThreadPoolStat;
-import io.cassandrareaper.jmx.CassandraManagementProxy;
-import io.cassandrareaper.jmx.CassandraManagementProxyTest;
-import io.cassandrareaper.jmx.ClusterFacade;
-import io.cassandrareaper.jmx.JmxConnectionFactory;
-import io.cassandrareaper.jmx.MetricsProxy;
+import io.cassandrareaper.management.ICassandraManagementProxy;
+import io.cassandrareaper.management.jmx.CassandraManagementProxyTest;
+import io.cassandrareaper.management.jmx.ClusterFacade;
+import io.cassandrareaper.management.jmx.JmxConnectionFactory;
+import io.cassandrareaper.management.jmx.MetricsProxy;
 
 import java.io.IOException;
 import java.util.Collection;
@@ -61,8 +61,8 @@ public class MetricsServiceTest {
     cxt.config = new ReaperApplicationConfiguration();
     cxt.config.setJmxConnectionTimeoutInSeconds(10);
     cxt.jmxConnectionFactory = mock(JmxConnectionFactory.class);
-    CassandraManagementProxy jmx = (CassandraManagementProxy) mock(
-        Class.forName("io.cassandrareaper.jmx.JmxProxyImpl"));
+    ICassandraManagementProxy jmx = (ICassandraManagementProxy) mock(
+        Class.forName("io.cassandrareaper.management.jmx.JmxCassandraManagementProxy"));
     when(cxt.jmxConnectionFactory.connectAny(any(Collection.class))).thenReturn(jmx);
     MBeanServerConnection serverConn = mock(MBeanServerConnection.class);
     CassandraManagementProxyTest.mockGetMBeanServerConnection(jmx, serverConn);
@@ -149,8 +149,8 @@ public class MetricsServiceTest {
     cxt.config = new ReaperApplicationConfiguration();
     cxt.config.setJmxConnectionTimeoutInSeconds(10);
     cxt.jmxConnectionFactory = mock(JmxConnectionFactory.class);
-    CassandraManagementProxy jmx = (CassandraManagementProxy) mock(
-        Class.forName("io.cassandrareaper.jmx.JmxProxyImpl"));
+    ICassandraManagementProxy jmx = (ICassandraManagementProxy) mock(
+        Class.forName("io.cassandrareaper.management.jmx.JmxCassandraManagementProxy"));
     when(cxt.jmxConnectionFactory.connectAny(any(Collection.class))).thenReturn(jmx);
     MBeanServerConnection serverConn = mock(MBeanServerConnection.class);
     CassandraManagementProxyTest.mockGetMBeanServerConnection(jmx, serverConn);
@@ -234,8 +234,8 @@ public class MetricsServiceTest {
     cxt.config = new ReaperApplicationConfiguration();
     cxt.config.setJmxConnectionTimeoutInSeconds(10);
     cxt.jmxConnectionFactory = mock(JmxConnectionFactory.class);
-    CassandraManagementProxy jmx = (CassandraManagementProxy) mock(
-        Class.forName("io.cassandrareaper.jmx.JmxProxyImpl"));
+    ICassandraManagementProxy jmx = (ICassandraManagementProxy) mock(
+        Class.forName("io.cassandrareaper.management.jmx.JmxCassandraManagementProxy"));
     when(cxt.jmxConnectionFactory.connectAny(any(Collection.class))).thenReturn(jmx);
     MBeanServerConnection serverConn = mock(MBeanServerConnection.class);
     CassandraManagementProxyTest.mockGetMBeanServerConnection(jmx, serverConn);

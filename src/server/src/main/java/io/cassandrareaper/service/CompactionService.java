@@ -21,7 +21,7 @@ import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.CompactionStats;
 import io.cassandrareaper.core.Node;
-import io.cassandrareaper.jmx.ClusterFacade;
+import io.cassandrareaper.management.jmx.ClusterFacade;
 
 import java.io.IOException;
 import javax.management.JMException;

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package io.cassandrareaper.jmx;
+package io.cassandrareaper.management.jmx;
 
 import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperApplicationConfiguration;
@@ -24,6 +24,7 @@ import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.Node;
 import io.cassandrareaper.crypto.Cryptograph;
+import io.cassandrareaper.management.ICassandraManagementProxy;
 import io.cassandrareaper.storage.cassandra.CassandraStorageFacade;
 
 import java.net.UnknownHostException;
@@ -48,13 +49,13 @@ public class JmxConnectionsInitializerTest {
   public void initializerDatacenterAvailabilityEachTest() throws ReaperException, UnknownHostException {
     AppContext context = new AppContext();
     final Cryptograph cryptographMock = mock(Cryptograph.class);
-    final CassandraManagementProxy cassandraManagementProxyMock = CassandraManagementProxyTest.mockJmxProxyImpl();
+    final ICassandraManagementProxy cassandraManagementProxyMock = CassandraManagementProxyTest.mockJmxProxyImpl();
     final AtomicInteger connectionAttempts = new AtomicInteger(0);
 
     context.jmxConnectionFactory = new JmxConnectionFactory(context, cryptographMock) {
       @Override
-      protected CassandraManagementProxy connectImpl(Node node) throws ReaperException {
-        final CassandraManagementProxy jmx = cassandraManagementProxyMock;
+      protected ICassandraManagementProxy connectImpl(Node node) throws ReaperException {
+        final ICassandraManagementProxy jmx = cassandraManagementProxyMock;
         connectionAttempts.incrementAndGet();
         return jmx;
       }
@@ -86,13 +87,13 @@ public class JmxConnectionsInitializerTest {
   public void initializerDatacenterAvailabilityLocalTest() throws ReaperException, UnknownHostException {
     AppContext context = new AppContext();
     final Cryptograph cryptographMock = mock(Cryptograph.class);
-    final CassandraManagementProxy cassandraManagementProxyMock = CassandraManagementProxyTest.mockJmxProxyImpl();
+    final ICassandraManagementProxy cassandraManagementProxyMock = CassandraManagementProxyTest.mockJmxProxyImpl();
     final AtomicInteger connectionAttempts = new AtomicInteger(0);
 
     context.jmxConnectionFactory = new JmxConnectionFactory(context, cryptographMock) {
       @Override
-      protected CassandraManagementProxy connectImpl(Node node) throws ReaperException {
-        final CassandraManagementProxy jmx = cassandraManagementProxyMock;
+      protected ICassandraManagementProxy connectImpl(Node node) throws ReaperException {
+        final ICassandraManagementProxy jmx = cassandraManagementProxyMock;
         connectionAttempts.incrementAndGet();
         return jmx;
       }
@@ -124,13 +125,13 @@ public class JmxConnectionsInitializerTest {
   public void initializerDatacenterAvailabilityAllTest() throws ReaperException {
     AppContext context = new AppContext();
     final Cryptograph cryptographMock = mock(Cryptograph.class);
-    final CassandraManagementProxy cassandraManagementProxyMock = mock(CassandraManagementProxy.class);
+    final ICassandraManagementProxy cassandraManagementProxyMock = mock(ICassandraManagementProxy.class);
     final AtomicInteger connectionAttempts = new AtomicInteger(0);
 
     context.jmxConnectionFactory = new JmxConnectionFactory(context, cryptographMock) {
       @Override
-      protected CassandraManagementProxy connectImpl(Node node) throws ReaperException {
-        final CassandraManagementProxy jmx = cassandraManagementProxyMock;
+      protected ICassandraManagementProxy connectImpl(Node node) throws ReaperException {
+        final ICassandraManagementProxy jmx = cassandraManagementProxyMock;
         connectionAttempts.incrementAndGet();
         return jmx;
       }

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package io.cassandrareaper.jmx;
+package io.cassandrareaper.management.jmx;
 
 import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperApplicationConfiguration.Jmxmp;
@@ -24,6 +24,7 @@ import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.JmxCredentials;
 import io.cassandrareaper.core.Node;
 import io.cassandrareaper.crypto.Cryptograph;
+import io.cassandrareaper.management.ICassandraManagementProxy;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -48,7 +49,7 @@ import org.slf4j.LoggerFactory;
 public class JmxConnectionFactory {
 
   private static final Logger LOG = LoggerFactory.getLogger(JmxConnectionFactory.class);
-  private static final ConcurrentMap<String, CassandraManagementProxy> JMX_CONNECTIONS = Maps.newConcurrentMap();
+  private static final ConcurrentMap<String, ICassandraManagementProxy> JMX_CONNECTIONS = Maps.newConcurrentMap();
   private final MetricRegistry metricRegistry;
   private final HostConnectionCounters hostConnectionCounters;
   private final AppContext context;
@@ -98,7 +99,7 @@ public class JmxConnectionFactory {
     return host;
   }
 
-  protected CassandraManagementProxy connectImpl(Node node) throws ReaperException, InterruptedException {
+  protected ICassandraManagementProxy connectImpl(Node node) throws ReaperException, InterruptedException {
     // use configured jmx port for host if provided
     String host = determineHost(node);
 
@@ -109,7 +110,7 @@ public class JmxConnectionFactory {
           host, jmxCredentials, context.config.getJmxConnectionTimeoutInSeconds(),
           this.metricRegistry, cryptograph, this.jmxmp);
       JMX_CONNECTIONS.computeIfAbsent(host, provider::apply);
-      CassandraManagementProxy proxy = JMX_CONNECTIONS.get(host);
+      ICassandraManagementProxy proxy = JMX_CONNECTIONS.get(host);
       if (!proxy.isConnectionAlive()) {
         LOG.info("Adding new JMX Proxy for host {}", host);
         JMX_CONNECTIONS.put(host, provider.apply(host)).close();
@@ -130,7 +131,7 @@ public class JmxConnectionFactory {
   }
 
   @VisibleForTesting
-  public final CassandraManagementProxy connectAny(Collection<Node> nodes) throws ReaperException {
+  public final ICassandraManagementProxy connectAny(Collection<Node> nodes) throws ReaperException {
 
     Preconditions.checkArgument(
         null != nodes && !nodes.isEmpty(), "no hosts provided to connectAny");
@@ -145,7 +146,7 @@ public class JmxConnectionFactory {
           try {
             LOG.debug("Trying to connect to node {} with {} successful connections with i = {}",
                 node.getHostname(), getHostConnectionCounters().getSuccessfulConnections(node.getHostname()), i);
-            CassandraManagementProxy cassandraManagementProxy = connectImpl(node);
+            ICassandraManagementProxy cassandraManagementProxy = connectImpl(node);
             getHostConnectionCounters().incrementSuccessfulConnections(node.getHostname());
             if (getHostConnectionCounters().getSuccessfulConnections(node.getHostname()) > 0) {
               accessibleDatacenters.add(EndpointSnitchInfoProxy.create(cassandraManagementProxy).getDataCenter());
@@ -215,7 +216,7 @@ public class JmxConnectionFactory {
     return Optional.ofNullable(credentials);
   }
 
-  private class JmxConnectionProvider implements Function<String, CassandraManagementProxy> {
+  private class JmxConnectionProvider implements Function<String, ICassandraManagementProxy> {
 
     private final String host;
     private final Optional<JmxCredentials> jmxCredentials;
@@ -240,10 +241,10 @@ public class JmxConnectionFactory {
     }
 
     @Override
-    public CassandraManagementProxy apply(String host) {
+    public ICassandraManagementProxy apply(String host) {
       Preconditions.checkArgument(host.equals(this.host));
       try {
-        CassandraManagementProxy proxy = CassandraManagementProxyImpl.connect(
+        ICassandraManagementProxy proxy = JmxCassandraManagementProxy.connect(
             host, jmxCredentials, addressTranslator, connectionTimeout, metricRegistry, cryptograph, jmxmp);
         return proxy;
       } catch (ReaperException | InterruptedException ex) {

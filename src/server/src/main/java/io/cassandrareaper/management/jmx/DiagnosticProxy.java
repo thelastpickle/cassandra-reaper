@@ -15,8 +15,9 @@
  * limitations under the License.
  */
 
-package io.cassandrareaper.jmx;
+package io.cassandrareaper.management.jmx;
 
+import io.cassandrareaper.management.ICassandraManagementProxy;
 import io.cassandrareaper.service.DiagEventSubscriptionService;
 
 import java.io.IOException;
@@ -36,15 +37,15 @@ public final class DiagnosticProxy {
 
   private static final Logger LOG = LoggerFactory.getLogger(DiagEventSubscriptionService.class);
 
-  private final CassandraManagementProxyImpl proxy;
+  private final JmxCassandraManagementProxy proxy;
 
-  private DiagnosticProxy(CassandraManagementProxyImpl proxy) {
+  private DiagnosticProxy(JmxCassandraManagementProxy proxy) {
     this.proxy = proxy;
   }
 
-  public static DiagnosticProxy create(CassandraManagementProxy proxy) {
-    Preconditions.checkArgument(proxy instanceof CassandraManagementProxyImpl, "only JmxProxyImpl is supported");
-    return new DiagnosticProxy((CassandraManagementProxyImpl) proxy);
+  public static DiagnosticProxy create(ICassandraManagementProxy proxy) {
+    Preconditions.checkArgument(proxy instanceof JmxCassandraManagementProxy, "only JmxProxyImpl is supported");
+    return new DiagnosticProxy((JmxCassandraManagementProxy) proxy);
   }
 
   public void enableEventPersistence(String eventClazz) {

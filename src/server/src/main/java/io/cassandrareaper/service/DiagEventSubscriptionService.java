@@ -22,8 +22,8 @@ import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.DiagEventSubscription;
 import io.cassandrareaper.core.Node;
-import io.cassandrareaper.jmx.CassandraManagementProxy;
-import io.cassandrareaper.jmx.DiagnosticProxy;
+import io.cassandrareaper.management.ICassandraManagementProxy;
+import io.cassandrareaper.management.jmx.DiagnosticProxy;
 import io.cassandrareaper.resources.view.DiagnosticEvent;
 import io.cassandrareaper.storage.events.IEventsDao;
 
@@ -211,7 +211,7 @@ public final class DiagEventSubscriptionService {
           try {
             Thread.currentThread().setName(node.getHostname());
             LOG.debug("Starting to update event subscriptions for {}", node);
-            CassandraManagementProxy jmx = context.jmxConnectionFactory.connectAny(Collections.singleton(node));
+            ICassandraManagementProxy jmx = context.jmxConnectionFactory.connectAny(Collections.singleton(node));
 
             // create set of active and inactive events based on all subscriptions for this node
             // active events are all events included in an active subscription
@@ -287,7 +287,7 @@ public final class DiagEventSubscriptionService {
   }
 
   private void enableEvents(Node node, Set<String> events, boolean enabled,
-                            CassandraManagementProxy cassandraManagementProxy) {
+                            ICassandraManagementProxy cassandraManagementProxy) {
     for (String event : events) {
       LOG.debug("{} {} for {}", enabled ? "Enabling" : "Disabling", event, node);
       try {
@@ -309,7 +309,9 @@ public final class DiagEventSubscriptionService {
     }
   }
 
-  private DiagEventPoller createPoller(Node node, CassandraManagementProxy cassandraManagementProxy, Set<String> events,
+  private DiagEventPoller createPoller(Node node,
+                                       ICassandraManagementProxy cassandraManagementProxy,
+                                       Set<String> events,
                                        boolean enabled) {
     DiagEventPoller poller = POLLERS_BY_NODE
         .computeIfAbsent(node, (key) -> new DiagEventPoller(key, cassandraManagementProxy, this::onEvent, scheduler));
@@ -323,7 +325,7 @@ public final class DiagEventSubscriptionService {
     return poller;
   }
 
-  private void subscribeNotifications(Node node, CassandraManagementProxy cassandraManagementProxy,
+  private void subscribeNotifications(Node node, ICassandraManagementProxy cassandraManagementProxy,
                                       DiagEventPoller poller) {
     if (!listenerByNode.containsKey(node)) {
       LOG.debug("Subscribing to notifications on {} ({})", cassandraManagementProxy.getHost(),
@@ -343,7 +345,7 @@ public final class DiagEventSubscriptionService {
     }
   }
 
-  private void unsubscribeNotifications(Node node, CassandraManagementProxy cassandraManagementProxy) {
+  private void unsubscribeNotifications(Node node, ICassandraManagementProxy cassandraManagementProxy) {
     LOG.debug("Unsubscribing from notifications on {} ({})", cassandraManagementProxy.getHost(),
         cassandraManagementProxy.getClusterName());
     NotificationListener listener = listenerByNode.remove(node);

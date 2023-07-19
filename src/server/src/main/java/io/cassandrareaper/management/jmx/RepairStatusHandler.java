@@ -15,7 +15,9 @@
  * limitations under the License.
  */
 
-package io.cassandrareaper.jmx;
+package io.cassandrareaper.management.jmx;
+
+import io.cassandrareaper.management.ICassandraManagementProxy;
 
 import java.util.Optional;
 
@@ -41,5 +43,5 @@ public interface RepairStatusHandler {
       Optional<ActiveRepairService.Status> status,
       Optional<ProgressEventType> progress,
       String message,
-      CassandraManagementProxy cassandraManagementProxy);
+      ICassandraManagementProxy cassandraManagementProxy);
 }
