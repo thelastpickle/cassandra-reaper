@@ -1,5 +1,8 @@
 ## Change Log
 
+### 3.3.3 (2023/07/20 07:30 +00:00)
+- [#1320](https://github.com/thelastpickle/cassandra-reaper/pull/1320) Fix cluster name check in repair concurrency control (#1320) (@adejanovski)
+
 ### 3.3.2 (2023/06/22 06:31 +00:00)
 - [#1310](https://github.com/thelastpickle/cassandra-reaper/pull/1310) Add missing Astra migrations (#1310) (@adejanovski)
 - [#1306](https://github.com/thelastpickle/cassandra-reaper/pull/1306) Further storage refactoring (#1306) (@Miles-Garnsey)
