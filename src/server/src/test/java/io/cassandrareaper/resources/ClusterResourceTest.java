@@ -658,9 +658,9 @@ public final class ClusterResourceTest {
     when(cassandraManagementProxy.getClusterName()).thenReturn(CLUSTER_NAME);
     when(cassandraManagementProxy.getPartitioner()).thenReturn(PARTITIONER);
 
-    context.jmxManagementConnectionFactory = mock(JmxManagementConnectionFactory.class);
+    context.managementConnectionFactory = mock(JmxManagementConnectionFactory.class);
 
-    when(context.jmxManagementConnectionFactory.connectAny(Mockito.anyCollection())).thenReturn(cassandraManagementProxy);
+    when(context.managementConnectionFactory.connectAny(Mockito.anyCollection())).thenReturn(cassandraManagementProxy);
 
     Cryptograph cryptograph = mock(Cryptograph.class);
     when(cryptograph.encrypt(any(String.class))).thenReturn(RandomStringUtils.randomNumeric(10));

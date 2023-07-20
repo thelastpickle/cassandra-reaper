@@ -18,6 +18,7 @@
 package io.cassandrareaper.management.jmx;
 
 import io.cassandrareaper.AppContext;
+import io.cassandrareaper.ReaperApplicationConfiguration;
 import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.JmxCredentials;
 import io.cassandrareaper.core.Node;
@@ -25,7 +26,6 @@ import io.cassandrareaper.crypto.Cryptograph;
 
 import java.util.HashMap;
 import java.util.Map;
-
 import java.util.Optional;
 
 import com.google.common.collect.ImmutableMap;
@@ -42,15 +42,19 @@ public class JmxManagementConnectionFactoryTest {
   @Test
   public void fetchingJmxCredentialsPrioritizesThoseInStorageFirst() {
     JmxCredentials globalYamlJmxAuth = JmxCredentials.builder()
-            .withUsername("global").withPassword("foo1").build();
+        .withUsername("global").withPassword("foo1").build();
     JmxCredentials clusterYamlJmxAuth = JmxCredentials.builder()
-            .withUsername("cluster").withPassword("foo2").build();
+        .withUsername("cluster").withPassword("foo2").build();
     JmxCredentials clusterStorageJmxAuth = JmxCredentials.builder()
-            .withUsername("storage").withPassword("foo3").build();
+        .withUsername("storage").withPassword("foo3").build();
     Cluster cluster = Cluster.builder().withName("FooCluster")
-            .withSeedHosts(ImmutableSet.of("127.0.0.1")).withJmxCredentials(clusterStorageJmxAuth).build();
+        .withSeedHosts(ImmutableSet.of("127.0.0.1")).withJmxCredentials(clusterStorageJmxAuth).build();
 
-    JmxManagementConnectionFactory connectionFactory = new JmxManagementConnectionFactory(mock(AppContext.class), mock(Cryptograph.class));
+    AppContext context = mock(AppContext.class);
+    context.config = new ReaperApplicationConfiguration();
+
+    JmxManagementConnectionFactory connectionFactory = new JmxManagementConnectionFactory(context,
+        mock(Cryptograph.class));
     connectionFactory.setJmxAuth(globalYamlJmxAuth);
     connectionFactory.setJmxCredentials(ImmutableMap.of(cluster.getName(), clusterYamlJmxAuth));
 
@@ -64,13 +68,15 @@ public class JmxManagementConnectionFactoryTest {
   @Test
   public void fetchingJmxCredentialsPrioritizesClusterSpecificWhenMissingInStorage() {
     JmxCredentials globalYamlJmxAuth = JmxCredentials.builder()
-            .withUsername("global").withPassword("foo1").build();
+        .withUsername("global").withPassword("foo1").build();
     JmxCredentials clusterYamlJmxAuth = JmxCredentials.builder()
-            .withUsername("cluster").withPassword("foo2").build();
+        .withUsername("cluster").withPassword("foo2").build();
     Cluster cluster = Cluster.builder().withName("FooCluster")
-            .withSeedHosts(ImmutableSet.of("127.0.0.1")).build();
-
-    JmxManagementConnectionFactory connectionFactory = new JmxManagementConnectionFactory(mock(AppContext.class), mock(Cryptograph.class));
+        .withSeedHosts(ImmutableSet.of("127.0.0.1")).build();
+    AppContext context = mock(AppContext.class);
+    context.config = new ReaperApplicationConfiguration();
+    JmxManagementConnectionFactory connectionFactory = new JmxManagementConnectionFactory(context,
+        mock(Cryptograph.class));
     connectionFactory.setJmxAuth(globalYamlJmxAuth);
     connectionFactory.setJmxCredentials(ImmutableMap.of(cluster.getName(), clusterYamlJmxAuth));
 
@@ -84,11 +90,14 @@ public class JmxManagementConnectionFactoryTest {
   @Test
   public void fetchingJmxCredentialsDefaultsToGlobalWhenMissingEverywhereElse() {
     JmxCredentials globalYamlJmxAuth = JmxCredentials.builder()
-            .withUsername("global").withPassword("foo1").build();
+        .withUsername("global").withPassword("foo1").build();
     Cluster cluster = Cluster.builder().withName("FooCluster")
-            .withSeedHosts(ImmutableSet.of("127.0.0.1")).build();
+        .withSeedHosts(ImmutableSet.of("127.0.0.1")).build();
 
-    JmxManagementConnectionFactory connectionFactory = new JmxManagementConnectionFactory(mock(AppContext.class), mock(Cryptograph.class));
+    AppContext context = mock(AppContext.class);
+    context.config = new ReaperApplicationConfiguration();
+    JmxManagementConnectionFactory connectionFactory = new JmxManagementConnectionFactory(context,
+        mock(Cryptograph.class));
     connectionFactory.setJmxAuth(globalYamlJmxAuth);
 
     Optional<JmxCredentials> jmxCredentials = connectionFactory.getJmxCredentialsForCluster(Optional.of(cluster));
@@ -101,9 +110,12 @@ public class JmxManagementConnectionFactoryTest {
   @Test
   public void fetchingJmxCredentialsIsntPresentWhenNotDefinedAnywhere() {
     Cluster cluster = Cluster.builder().withName("FooCluster")
-            .withSeedHosts(ImmutableSet.of("127.0.0.1")).build();
+        .withSeedHosts(ImmutableSet.of("127.0.0.1")).build();
+    AppContext context = mock(AppContext.class);
+    context.config = new ReaperApplicationConfiguration();
 
-    JmxManagementConnectionFactory connectionFactory = new JmxManagementConnectionFactory(mock(AppContext.class), mock(Cryptograph.class));
+    JmxManagementConnectionFactory connectionFactory = new JmxManagementConnectionFactory(context,
+        mock(Cryptograph.class));
 
     Optional<JmxCredentials> jmxCredentials = connectionFactory.getJmxCredentialsForCluster(Optional.of(cluster));
 
@@ -112,21 +124,26 @@ public class JmxManagementConnectionFactoryTest {
 
   @Test
   public void ensureIPv6HostCanBeUsed() {
-    JmxManagementConnectionFactory connectionFactory = new JmxManagementConnectionFactory(mock(AppContext.class), mock(Cryptograph.class));
+    AppContext context = mock(AppContext.class);
+    context.config = new ReaperApplicationConfiguration();
+    JmxManagementConnectionFactory connectionFactory = new JmxManagementConnectionFactory(context,
+        mock(Cryptograph.class));
     String host = connectionFactory.determineHost(Node.builder()
-            .withHostname("cc43:a32a:604:20b8:8201:ef29:3c20:c1d2")
-            .build());
+        .withHostname("cc43:a32a:604:20b8:8201:ef29:3c20:c1d2")
+        .build());
     assertEquals("[cc43:a32a:604:20b8:8201:ef29:3c20:c1d2]:7199", host);
   }
 
   @Test
   public void ensureJMXPortsHostCanBeUsed() {
-    Map<String, Integer> jmxPorts = new HashMap<String,Integer>();
+    Map<String, Integer> jmxPorts = new HashMap<String, Integer>();
     jmxPorts.put("127.0.0.1", 7100);
     jmxPorts.put("127.0.0.2", 7200);
     jmxPorts.put("127.0.0.3", 7300);
-
-    JmxManagementConnectionFactory connectionFactory = new JmxManagementConnectionFactory(mock(AppContext.class), mock(Cryptograph.class));
+    AppContext context = mock(AppContext.class);
+    context.config = new ReaperApplicationConfiguration();
+    JmxManagementConnectionFactory connectionFactory = new JmxManagementConnectionFactory(context,
+        mock(Cryptograph.class));
     connectionFactory.setJmxPorts(jmxPorts);
     String host = connectionFactory.determineHost(Node.builder().withHostname("127.0.0.2").build());
     assertEquals("127.0.0.2:7200", host);
@@ -134,7 +151,10 @@ public class JmxManagementConnectionFactoryTest {
 
   @Test
   public void ensureIPv4HostCanBeUsed() {
-    JmxManagementConnectionFactory connectionFactory = new JmxManagementConnectionFactory(mock(AppContext.class), mock(Cryptograph.class));
+    AppContext context = mock(AppContext.class);
+    context.config = new ReaperApplicationConfiguration();
+    JmxManagementConnectionFactory connectionFactory = new JmxManagementConnectionFactory(context,
+        mock(Cryptograph.class));
     String host = connectionFactory.determineHost(Node.builder().withHostname("127.0.0.1").build());
     assertEquals("127.0.0.1:7199", host);
   }

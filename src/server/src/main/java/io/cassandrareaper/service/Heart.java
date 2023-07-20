@@ -207,7 +207,7 @@ public final class Heart implements AutoCloseable {
             clusterFacade.getLiveNodes(cluster)
                 .parallelStream()
                 .filter(hostname -> {
-                  return context.jmxManagementConnectionFactory
+                  return context.managementConnectionFactory
                       .getHostConnectionCounters()
                       .getSuccessfulConnections(hostname) >= 0;
                 })

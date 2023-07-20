@@ -289,7 +289,7 @@ public final class RepairRunServiceTest {
     when(clusterFacade.getTokens(any())).thenReturn(TOKENS);
 
 
-    context.jmxManagementConnectionFactory = new JmxManagementConnectionFactory(context, new NoopCrypotograph()) {
+    context.managementConnectionFactory = new JmxManagementConnectionFactory(context, new NoopCrypotograph()) {
       @Override
       protected ICassandraManagementProxy connectImpl(Node host) throws ReaperException {
         return jmx;
@@ -378,7 +378,7 @@ public final class RepairRunServiceTest {
     when(clusterFacade.getTokens(any())).thenReturn(TOKENS);
 
 
-    context.jmxManagementConnectionFactory = new JmxManagementConnectionFactory(context, new NoopCrypotograph()) {
+    context.managementConnectionFactory = new JmxManagementConnectionFactory(context, new NoopCrypotograph()) {
       @Override
       protected ICassandraManagementProxy connectImpl(Node host) throws ReaperException {
         return jmx;
@@ -547,7 +547,7 @@ public final class RepairRunServiceTest {
     context.storage = storage;
     context.config = new ReaperApplicationConfiguration();
     final ICassandraManagementProxy jmx = CassandraManagementProxyTest.mockJmxProxyImpl();
-    context.jmxManagementConnectionFactory = new JmxManagementConnectionFactory(context, new NoopCrypotograph()) {
+    context.managementConnectionFactory = new JmxManagementConnectionFactory(context, new NoopCrypotograph()) {
       @Override
       public ICassandraManagementProxy connectImpl(Node host) throws ReaperException {
         return jmx;
@@ -609,7 +609,7 @@ public final class RepairRunServiceTest {
     context.storage = storage;
     context.config = new ReaperApplicationConfiguration();
     final ICassandraManagementProxy jmx = CassandraManagementProxyTest.mockJmxProxyImpl();
-    context.jmxManagementConnectionFactory = new JmxManagementConnectionFactory(context, new NoopCrypotograph()) {
+    context.managementConnectionFactory = new JmxManagementConnectionFactory(context, new NoopCrypotograph()) {
       @Override
       public ICassandraManagementProxy connectImpl(Node host) throws ReaperException {
         return jmx;
@@ -880,7 +880,7 @@ public final class RepairRunServiceTest {
     when(clusterFacade.getTokens(any())).thenReturn(TOKENS);
 
 
-    context.jmxManagementConnectionFactory = new JmxManagementConnectionFactory(context, new NoopCrypotograph()) {
+    context.managementConnectionFactory = new JmxManagementConnectionFactory(context, new NoopCrypotograph()) {
       @Override
       protected ICassandraManagementProxy connectImpl(Node host) throws ReaperException {
         return jmx;

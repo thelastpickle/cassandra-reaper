@@ -49,7 +49,12 @@ public final class HostConnectionCounters {
         metricRegistry
             .counter(
                 MetricRegistry.name(
-                    ICassandraManagementProxy.class, "connections", host.replace('.', 'x').replaceAll("[^A-Za-z0-9]", "")))
+                    ICassandraManagementProxy.class,
+                    "connections",
+                    host.replace(
+                        '.',
+                        'x')
+                        .replaceAll("[^A-Za-z0-9]", "")))
             .inc();
       }
     } catch (RuntimeException e) {
@@ -68,7 +73,10 @@ public final class HostConnectionCounters {
         metricRegistry
             .counter(
                 MetricRegistry.name(
-                    ICassandraManagementProxy.class, "connections", host.replace('.', 'x').replaceAll("[^A-Za-z0-9]", "")))
+                    ICassandraManagementProxy.class,
+                    "connections",
+                    host.replace('.', 'x')
+                        .replaceAll("[^A-Za-z0-9]", "")))
             .dec();
       }
     } catch (RuntimeException e) {

@@ -336,7 +336,7 @@ public final class RepairRunnerTest {
         TimeUnit.MILLISECONDS,
         1,
         context.storage.getRepairRunDao());
-    context.jmxManagementConnectionFactory = new JmxManagementConnectionFactory(context, new NoopCrypotograph()) {
+    context.managementConnectionFactory = new JmxManagementConnectionFactory(context, new NoopCrypotograph()) {
       @Override
       protected ICassandraManagementProxy connectImpl(Node host) throws ReaperException {
         return jmx;
@@ -488,7 +488,7 @@ public final class RepairRunnerTest {
         TimeUnit.MILLISECONDS,
         1,
         context.storage.getRepairRunDao());
-    context.jmxManagementConnectionFactory = new JmxManagementConnectionFactory(context, new NoopCrypotograph()) {
+    context.managementConnectionFactory = new JmxManagementConnectionFactory(context, new NoopCrypotograph()) {
       @Override
       protected ICassandraManagementProxy connectImpl(Node host) throws ReaperException {
         return jmx;
@@ -619,7 +619,7 @@ public final class RepairRunnerTest {
               }.start();
               return repairNumber;
             });
-    context.jmxManagementConnectionFactory = new JmxManagementConnectionFactory(context, new NoopCrypotograph()) {
+    context.managementConnectionFactory = new JmxManagementConnectionFactory(context, new NoopCrypotograph()) {
       @Override
       protected ICassandraManagementProxy connectImpl(Node host) throws ReaperException {
         return jmx;
@@ -748,7 +748,7 @@ public final class RepairRunnerTest {
               }.start();
               return repairNumber;
             });
-    context.jmxManagementConnectionFactory = new JmxManagementConnectionFactory(context, new NoopCrypotograph()) {
+    context.managementConnectionFactory = new JmxManagementConnectionFactory(context, new NoopCrypotograph()) {
       @Override
       protected ICassandraManagementProxy connectImpl(Node host) throws ReaperException {
         return jmx;
@@ -949,7 +949,7 @@ public final class RepairRunnerTest {
               }.start();
               return repairNumber;
             });
-    context.jmxManagementConnectionFactory = new JmxManagementConnectionFactory(context, new NoopCrypotograph()) {
+    context.managementConnectionFactory = new JmxManagementConnectionFactory(context, new NoopCrypotograph()) {
       @Override
       protected ICassandraManagementProxy connectImpl(Node host) throws ReaperException {
         return jmx;
@@ -1148,7 +1148,7 @@ public final class RepairRunnerTest {
               }.start();
               return repairNumber;
             });
-    context.jmxManagementConnectionFactory = new JmxManagementConnectionFactory(context, new NoopCrypotograph()) {
+    context.managementConnectionFactory = new JmxManagementConnectionFactory(context, new NoopCrypotograph()) {
       @Override
       protected ICassandraManagementProxy connectImpl(Node host) throws ReaperException {
         return jmx;
@@ -1237,7 +1237,7 @@ public final class RepairRunnerTest {
     when(jmx.getTokens()).thenReturn(tokens);
     when(jmx.isRepairRunning()).thenReturn(true);
     when(jmx.getPendingCompactions()).thenReturn(3);
-    context.jmxManagementConnectionFactory = jmxManagementConnectionFactory;
+    context.managementConnectionFactory = jmxManagementConnectionFactory;
     context.config = new ReaperApplicationConfiguration();
     context.config.setDatacenterAvailability(DatacenterAvailability.LOCAL);
 
@@ -1319,7 +1319,7 @@ public final class RepairRunnerTest {
     JmxManagementConnectionFactory jmxManagementConnectionFactory = mock(JmxManagementConnectionFactory.class);
     when(jmxManagementConnectionFactory.connectAny(any(Collection.class))).thenReturn(proxy);
     when(jmxManagementConnectionFactory.getAccessibleDatacenters()).thenReturn(Sets.newHashSet("dc1"));
-    context.jmxManagementConnectionFactory = jmxManagementConnectionFactory;
+    context.managementConnectionFactory = jmxManagementConnectionFactory;
     context.config = new ReaperApplicationConfiguration();
     context.config.setDatacenterAvailability(DatacenterAvailability.LOCAL);
 
@@ -1423,7 +1423,7 @@ public final class RepairRunnerTest {
     when(jmx.getTokens()).thenReturn(tokens);
     when(jmx.isRepairRunning()).thenReturn(true);
     when(jmx.getPendingCompactions()).thenReturn(3);
-    context.jmxManagementConnectionFactory = jmxManagementConnectionFactory;
+    context.managementConnectionFactory = jmxManagementConnectionFactory;
     context.config = new ReaperApplicationConfiguration();
     context.config.setDatacenterAvailability(DatacenterAvailability.LOCAL);
 
@@ -1520,7 +1520,7 @@ public final class RepairRunnerTest {
     when(jmx.getTokens()).thenReturn(tokens);
     when(jmx.isRepairRunning()).thenReturn(true);
     when(jmx.getPendingCompactions()).thenReturn(3);
-    context.jmxManagementConnectionFactory = jmxManagementConnectionFactory;
+    context.managementConnectionFactory = jmxManagementConnectionFactory;
     context.config = new ReaperApplicationConfiguration();
     context.config.setDatacenterAvailability(DatacenterAvailability.LOCAL);
 
@@ -1622,7 +1622,7 @@ public final class RepairRunnerTest {
     when(jmx.getTokens()).thenReturn(tokens);
     when(jmx.isRepairRunning()).thenReturn(true);
     when(jmx.getPendingCompactions()).thenReturn(3);
-    context.jmxManagementConnectionFactory = jmxManagementConnectionFactory;
+    context.managementConnectionFactory = jmxManagementConnectionFactory;
     context.config = new ReaperApplicationConfiguration();
     context.config.setDatacenterAvailability(DatacenterAvailability.LOCAL);
 
@@ -1705,7 +1705,7 @@ public final class RepairRunnerTest {
     when(jmx.getTokens()).thenReturn(tokens);
     when(jmx.isRepairRunning()).thenReturn(true);
     when(jmx.getPendingCompactions()).thenReturn(3);
-    context.jmxManagementConnectionFactory = jmxManagementConnectionFactory;
+    context.managementConnectionFactory = jmxManagementConnectionFactory;
     context.config = new ReaperApplicationConfiguration();
     context.config.setDatacenterAvailability(DatacenterAvailability.LOCAL);
 

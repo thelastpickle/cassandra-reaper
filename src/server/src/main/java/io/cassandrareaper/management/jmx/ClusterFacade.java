@@ -596,7 +596,7 @@ public final class ClusterFacade {
     return DatacenterAvailability.ALL == context.config.getDatacenterAvailability()
         || (Arrays.asList(DatacenterAvailability.EACH, DatacenterAvailability.LOCAL)
         .contains(context.config.getDatacenterAvailability())
-        && context.jmxManagementConnectionFactory.getAccessibleDatacenters().contains(nodeDc))
+        && context.managementConnectionFactory.getAccessibleDatacenters().contains(nodeDc))
         || (DatacenterAvailability.SIDECAR == context.config.getDatacenterAvailability()
         && node.equals(context.getLocalNodeAddress()));
   }
@@ -786,7 +786,7 @@ public final class ClusterFacade {
    */
   public List<Snapshot> listSnapshots(Node host) throws ReaperException {
     try {
-      if (context.jmxManagementConnectionFactory.getHostConnectionCounters().getSuccessfulConnections(
+      if (context.managementConnectionFactory.getHostConnectionCounters().getSuccessfulConnections(
           host.getHostname()) >= 0) {
         return SnapshotProxy.create(connect(host)).listSnapshots();
       }
@@ -897,7 +897,7 @@ public final class ClusterFacade {
   // cluster object contains additional connection info like jmx port and jmx credentials
   private ICassandraManagementProxy connectImpl(Cluster cluster, Collection<String> endpoints) throws ReaperException {
     try {
-      ICassandraManagementProxy proxy = context.jmxManagementConnectionFactory.connectAny(
+      ICassandraManagementProxy proxy = context.managementConnectionFactory.connectAny(
           endpoints
               .stream()
               .map(host -> Node.builder().withCluster(cluster).withHostname(host).build())
@@ -913,7 +913,7 @@ public final class ClusterFacade {
 
   // node object contains additional connection info like jmx port and jmx credentials
   private ICassandraManagementProxy connectImpl(Node node, Collection<String> endpoints) throws ReaperException {
-    return context.jmxManagementConnectionFactory.connectAny(
+    return context.managementConnectionFactory.connectAny(
         endpoints
             .stream()
             .map(host -> node.with().withHostname(host).build())

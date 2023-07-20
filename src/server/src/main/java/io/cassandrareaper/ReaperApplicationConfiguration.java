@@ -25,7 +25,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-
 import javax.annotation.Nullable;
 import javax.validation.Valid;
 import javax.validation.constraints.DecimalMin;
@@ -54,7 +53,8 @@ public final class ReaperApplicationConfiguration extends Configuration {
   @JsonProperty
   private Integer segmentCount;
 
-  @JsonProperty private Integer segmentCountPerNode;
+  @JsonProperty
+  private Integer segmentCountPerNode;
 
   @JsonProperty
   @NotNull
@@ -114,67 +114,65 @@ public final class ReaperApplicationConfiguration extends Configuration {
   private JmxCredentials jmxAuth;
 
   @JsonProperty
+  private HttpManagement httpManagement = new HttpManagement();
+  @JsonProperty
   private AutoSchedulingConfiguration autoScheduling;
-
   @JsonProperty
   @DefaultValue("true")
   private Boolean enableDynamicSeedList;
-
   @JsonProperty
   private Integer repairManagerSchedulingIntervalSeconds;
-
   @JsonProperty
   @DefaultValue("false")
   private Boolean activateQueryLogger;
-
   @JsonProperty
   @DefaultValue("5")
   private Integer jmxConnectionTimeoutInSeconds;
-
   @JsonProperty
   @DefaultValue("7")
   private Integer clusterTimeoutInDays;
-
   @JsonProperty
   private DatacenterAvailability datacenterAvailability;
-
-  @JsonProperty private AccessControlConfiguration accessControl;
-
+  @JsonProperty
+  private AccessControlConfiguration accessControl;
   @JsonProperty
   private Integer repairThreadCount;
-  /** If set to more than 0, defines how many days of run history should be kept. */
+  /**
+   * If set to more than 0, defines how many days of run history should be kept.
+   */
   @Nullable
   @JsonProperty
   private Integer purgeRecordsAfterInDays;
-
-  /** If set to more than 0, defines how many runs to keep per repair unit. */
+  /**
+   * If set to more than 0, defines how many runs to keep per repair unit.
+   */
   @Nullable
   @JsonProperty
   private Integer numberOfRunsToKeepPerUnit;
-
   private CassandraFactory cassandra = new CassandraFactory();
-
   @JsonProperty
   private Optional<String> enforcedLocalNode = Optional.empty();
-
   @JsonProperty
   private Optional<String> enforcedLocalClusterName = Optional.empty();
-
   @JsonProperty
   private Optional<String> enforcedLocalDatacenter = Optional.empty();
-
   @JsonProperty
   @DefaultValue("true")
   private Boolean enableConcurrentMigrations;
-
   @JsonProperty
   private Integer percentRepairedCheckIntervalMinutes;
-
   private HttpClientConfiguration httpClient = new HttpClientConfiguration();
-
   @JsonProperty
   @Nullable
   private CryptographFactory cryptograph;
+
+  public HttpManagement getHttpManagement() {
+    return httpManagement;
+  }
+
+  public void setHttpManagement(HttpManagement httpManagement) {
+    this.httpManagement = httpManagement;
+  }
 
   public Jmxmp getJmxmp() {
     return jmxmp;
@@ -270,8 +268,8 @@ public final class ReaperApplicationConfiguration extends Configuration {
     return storageType;
   }
 
-  public void setEnableCrossOrigin(String enableCrossOrigin) {
-    this.enableCrossOrigin = enableCrossOrigin;
+  public void setStorageType(String storageType) {
+    this.storageType = storageType;
   }
 
   public String getEnableCrossOrigin() {
@@ -282,8 +280,8 @@ public final class ReaperApplicationConfiguration extends Configuration {
     return this.enableCrossOrigin != null && "true".equalsIgnoreCase(this.enableCrossOrigin);
   }
 
-  public void setStorageType(String storageType) {
-    this.storageType = storageType;
+  public void setEnableCrossOrigin(String enableCrossOrigin) {
+    this.enableCrossOrigin = enableCrossOrigin;
   }
 
   public int getRepairManagerSchedulingIntervalSeconds() {
@@ -331,20 +329,20 @@ public final class ReaperApplicationConfiguration extends Configuration {
     this.autoScheduling = autoRepairScheduling;
   }
 
-  public void setEnableDynamicSeedList(boolean enableDynamicSeedList) {
-    this.enableDynamicSeedList = enableDynamicSeedList;
-  }
-
   public boolean getEnableDynamicSeedList() {
     return this.enableDynamicSeedList == null ? true : this.enableDynamicSeedList;
   }
 
-  public void setActivateQueryLogger(boolean activateQueryLogger) {
-    this.activateQueryLogger = activateQueryLogger;
+  public void setEnableDynamicSeedList(boolean enableDynamicSeedList) {
+    this.enableDynamicSeedList = enableDynamicSeedList;
   }
 
   public boolean getActivateQueryLogger() {
     return this.activateQueryLogger == null ? false : this.activateQueryLogger;
+  }
+
+  public void setActivateQueryLogger(boolean activateQueryLogger) {
+    this.activateQueryLogger = activateQueryLogger;
   }
 
   public void setUseAddressTranslator(boolean useAddressTranslator) {
@@ -370,8 +368,8 @@ public final class ReaperApplicationConfiguration extends Configuration {
   }
 
   @JsonProperty
-  public void setJmxConnectionTimeoutInSeconds(int jmxConnectionTimeoutInSeconds) {
-    this.jmxConnectionTimeoutInSeconds = jmxConnectionTimeoutInSeconds;
+  public void setHangingRepairTimeoutMins(int hangingRepairTimeoutMins) {
+    this.hangingRepairTimeoutMins = hangingRepairTimeoutMins;
   }
 
   public int getJmxConnectionTimeoutInSeconds() {
@@ -379,8 +377,8 @@ public final class ReaperApplicationConfiguration extends Configuration {
   }
 
   @JsonProperty
-  public void setClusterTimeoutInDays(int clusterTimeoutInDays) {
-    this.clusterTimeoutInDays = clusterTimeoutInDays;
+  public void setJmxConnectionTimeoutInSeconds(int jmxConnectionTimeoutInSeconds) {
+    this.jmxConnectionTimeoutInSeconds = jmxConnectionTimeoutInSeconds;
   }
 
   public int getClusterTimeoutInDays() {
@@ -388,8 +386,8 @@ public final class ReaperApplicationConfiguration extends Configuration {
   }
 
   @JsonProperty
-  public void setHangingRepairTimeoutMins(int hangingRepairTimeoutMins) {
-    this.hangingRepairTimeoutMins = hangingRepairTimeoutMins;
+  public void setClusterTimeoutInDays(int clusterTimeoutInDays) {
+    this.clusterTimeoutInDays = clusterTimeoutInDays;
   }
 
   public DatacenterAvailability getDatacenterAvailability() {
@@ -443,20 +441,20 @@ public final class ReaperApplicationConfiguration extends Configuration {
     return enforcedLocalNode;
   }
 
-  public Optional<String> getEnforcedLocalClusterName() {
-    return enforcedLocalClusterName;
-  }
-
-  public Optional<String> getEnforcedLocalDatacenter() {
-    return enforcedLocalDatacenter;
-  }
-
   public void setEnforcedLocalNode(Optional<String> enforcedLocalNode) {
     this.enforcedLocalNode = enforcedLocalNode;
   }
 
+  public Optional<String> getEnforcedLocalClusterName() {
+    return enforcedLocalClusterName;
+  }
+
   public void setEnforcedLocalClusterName(Optional<String> enforcedLocalClusterName) {
     this.enforcedLocalClusterName = enforcedLocalClusterName;
+  }
+
+  public Optional<String> getEnforcedLocalDatacenter() {
+    return enforcedLocalDatacenter;
   }
 
   public void setEnforcedLocalDatacenter(Optional<String> enforcedLocalDatacenter) {
@@ -505,6 +503,34 @@ public final class ReaperApplicationConfiguration extends Configuration {
 
   public void setCryptograph(@Nullable CryptographFactory cryptograph) {
     this.cryptograph = cryptograph;
+  }
+
+  public enum DatacenterAvailability {
+    /* We require direct JMX access to all nodes across all datacenters */
+    ALL,
+    /* We require jmx access to all nodes in the local datacenter */
+    LOCAL,
+    /* Each datacenter requires at minimum one reaper instance that has jmx access to all nodes in that datacenter */
+    EACH,
+    /* Sets Reaper in sidecar mode where each Cassandra node has a collocated Reaper instance */
+    SIDECAR;
+
+
+    /**
+     * Check if the current datacenter availability mode is to have collocation between Reaper and a DC/node.
+     *
+     * @return true if we're in a collocated mode, false otherwise
+     */
+    public boolean isInCollocatedMode() {
+      switch (this) {
+        case LOCAL:
+        case SIDECAR:
+        case EACH:
+          return true;
+        default:
+          return false;
+      }
+    }
   }
 
   public static final class AutoSchedulingConfiguration {
@@ -584,20 +610,20 @@ public final class ReaperApplicationConfiguration extends Configuration {
       return scheduleSpreadPeriod != null;
     }
 
-    public void setExcludedKeyspaces(List<String> excludedKeyspaces) {
-      this.excludedKeyspaces = null != excludedKeyspaces ? excludedKeyspaces : Collections.emptyList();
-    }
-
     public List<String> getExcludedKeyspaces() {
       return excludedKeyspaces;
     }
 
-    public void setExcludedClusters(List<String> excludedClusters) {
-      this.excludedClusters = null != excludedClusters ? excludedClusters : Collections.emptyList();
+    public void setExcludedKeyspaces(List<String> excludedKeyspaces) {
+      this.excludedKeyspaces = null != excludedKeyspaces ? excludedKeyspaces : Collections.emptyList();
     }
 
     public List<String> getExcludedClusters() {
       return excludedClusters;
+    }
+
+    public void setExcludedClusters(List<String> excludedClusters) {
+      this.excludedClusters = null != excludedClusters ? excludedClusters : Collections.emptyList();
     }
 
     public Boolean isAdaptive() {
@@ -643,37 +669,12 @@ public final class ReaperApplicationConfiguration extends Configuration {
     }
   }
 
-  public enum DatacenterAvailability {
-    /* We require direct JMX access to all nodes across all datacenters */
-    ALL,
-    /* We require jmx access to all nodes in the local datacenter */
-    LOCAL,
-    /* Each datacenter requires at minimum one reaper instance that has jmx access to all nodes in that datacenter */
-    EACH,
-    /* Sets Reaper in sidecar mode where each Cassandra node has a collocated Reaper instance */
-    SIDECAR;
-
-
-    /**
-     * Check if the current datacenter availability mode is to have collocation between Reaper and a DC/node.
-     * @return true if we're in a collocated mode, false otherwise
-     */
-    public boolean isInCollocatedMode() {
-      switch (this) {
-        case LOCAL:
-        case SIDECAR:
-        case EACH:
-          return true;
-        default:
-          return false;
-      }
-    }
-  }
-
   public static final class AccessControlConfiguration {
 
-    @JsonProperty private ShiroConfiguration shiro;
-    @JsonProperty private Duration sessionTimeout;
+    @JsonProperty
+    private ShiroConfiguration shiro;
+    @JsonProperty
+    private Duration sessionTimeout;
 
     public ShiroConfiguration getShiroConfiguration() {
       return shiro;
@@ -699,6 +700,15 @@ public final class ReaperApplicationConfiguration extends Configuration {
     }
 
     public Boolean isEnabled() {
+      return enabled;
+    }
+  }
+
+  public static final class HttpManagement {
+    @JsonProperty
+    private Boolean enabled = false;
+
+    public Boolean getEnabled() {
       return enabled;
     }
   }

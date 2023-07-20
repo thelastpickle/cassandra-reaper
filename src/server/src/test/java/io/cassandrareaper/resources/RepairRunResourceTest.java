@@ -177,10 +177,10 @@ public final class RepairRunResourceTest {
     }
     CassandraManagementProxyTest.mockGetEndpointSnitchInfoMBean(proxy, endpointSnitchInfoMBean);
 
-    context.jmxManagementConnectionFactory = mock(JmxManagementConnectionFactory.class);
-    when(context.jmxManagementConnectionFactory.connectAny(Mockito.anyCollection())).thenReturn(proxy);
+    context.managementConnectionFactory = mock(JmxManagementConnectionFactory.class);
+    when(context.managementConnectionFactory.connectAny(Mockito.anyCollection())).thenReturn(proxy);
 
-    when(context.jmxManagementConnectionFactory.connectAny(Mockito.anyCollection()))
+    when(context.managementConnectionFactory.connectAny(Mockito.anyCollection()))
         .thenReturn(proxy);
 
     RepairUnit.Builder repairUnitBuilder = RepairUnit.builder()

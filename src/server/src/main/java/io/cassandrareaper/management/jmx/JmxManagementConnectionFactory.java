@@ -26,6 +26,7 @@ import io.cassandrareaper.core.Node;
 import io.cassandrareaper.crypto.Cryptograph;
 import io.cassandrareaper.management.HostConnectionCounters;
 import io.cassandrareaper.management.ICassandraManagementProxy;
+import io.cassandrareaper.management.IManagementConnectionFactory;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -39,6 +40,7 @@ import java.util.concurrent.ConcurrentMap;
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.MetricRegistry;
 import com.datastax.driver.core.policies.AddressTranslator;
+import com.datastax.driver.core.policies.EC2MultiRegionAddressTranslator;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
@@ -47,7 +49,7 @@ import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class JmxManagementConnectionFactory {
+public class JmxManagementConnectionFactory implements IManagementConnectionFactory {
 
   private static final Logger LOG = LoggerFactory.getLogger(JmxManagementConnectionFactory.class);
   private static final ConcurrentMap<String, ICassandraManagementProxy> JMX_CONNECTIONS = Maps.newConcurrentMap();
@@ -69,6 +71,8 @@ public class JmxManagementConnectionFactory {
     registerConnectionsGauge();
     this.context = context;
     this.cryptograph = cryptograph;
+    // Originally came from initialize in ReaperApplication. But we may as well initialize it here.
+    initialize(context, cryptograph);
   }
 
   private void registerConnectionsGauge() {
@@ -99,6 +103,40 @@ public class JmxManagementConnectionFactory {
     }
     return host;
   }
+
+  public void initialize(AppContext context, Cryptograph cryptograph) {
+    Map<String, Integer> jmxPorts = context.config.getJmxPorts();
+    if (jmxPorts != null) {
+      LOG.debug("using JMX ports mapping: {}", jmxPorts);
+      setJmxPorts(jmxPorts);
+    }
+    if (context.config.useAddressTranslator()) {
+      setAddressTranslator(new EC2MultiRegionAddressTranslator());
+    }
+    if (context.config.getJmxAddressTranslator().isPresent()) {
+      AddressTranslator addressTranslator = context.config.getJmxAddressTranslator().get().build();
+      setAddressTranslator(addressTranslator);
+    }
+    if (context.config.getJmxmp() != null) {
+      if (context.config.getJmxmp().isEnabled()) {
+        LOG.info("JMXMP enabled");
+      }
+      setJmxmp(context.config.getJmxmp());
+    }
+
+    JmxCredentials jmxAuth = context.config.getJmxAuth();
+    if (jmxAuth != null) {
+      LOG.debug("using specified JMX credentials for authentication");
+      setJmxAuth(jmxAuth);
+    }
+
+    Map<String, JmxCredentials> jmxCredentials = context.config.getJmxCredentials();
+    if (jmxCredentials != null) {
+      LOG.debug("using specified JMX credentials per cluster for authentication");
+      setJmxCredentials(jmxCredentials);
+    }
+  }
+
 
   protected ICassandraManagementProxy connectImpl(Node node) throws ReaperException, InterruptedException {
     // use configured jmx port for host if provided

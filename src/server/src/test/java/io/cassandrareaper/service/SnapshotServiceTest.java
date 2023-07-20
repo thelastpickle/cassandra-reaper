@@ -22,10 +22,10 @@ import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.Node;
 import io.cassandrareaper.core.Snapshot;
+import io.cassandrareaper.management.HostConnectionCounters;
 import io.cassandrareaper.management.ICassandraManagementProxy;
 import io.cassandrareaper.management.jmx.CassandraManagementProxyTest;
 import io.cassandrareaper.management.jmx.ClusterFacade;
-import io.cassandrareaper.management.HostConnectionCounters;
 import io.cassandrareaper.management.jmx.JmxManagementConnectionFactory;
 import io.cassandrareaper.storage.IStorageDao;
 import io.cassandrareaper.storage.cluster.IClusterDao;
@@ -67,8 +67,8 @@ public final class SnapshotServiceTest {
 
     AppContext cxt = new AppContext();
     cxt.config = TestRepairConfiguration.defaultConfig();
-    cxt.jmxManagementConnectionFactory = mock(JmxManagementConnectionFactory.class);
-    when(cxt.jmxManagementConnectionFactory.connectAny(any(Collection.class))).thenReturn(proxy);
+    cxt.managementConnectionFactory = mock(JmxManagementConnectionFactory.class);
+    when(cxt.managementConnectionFactory.connectAny(any(Collection.class))).thenReturn(proxy);
 
     ISnapshotDao mockSnapshotDao = mock(ISnapshotDao.class);
 
@@ -92,8 +92,8 @@ public final class SnapshotServiceTest {
 
     AppContext cxt = new AppContext();
     cxt.config = TestRepairConfiguration.defaultConfig();
-    cxt.jmxManagementConnectionFactory = mock(JmxManagementConnectionFactory.class);
-    when(cxt.jmxManagementConnectionFactory.connectAny(any(Collection.class))).thenReturn(proxy);
+    cxt.managementConnectionFactory = mock(JmxManagementConnectionFactory.class);
+    when(cxt.managementConnectionFactory.connectAny(any(Collection.class))).thenReturn(proxy);
     Node host = Node.builder().withHostname("127.0.0.1").build();
     ISnapshotDao mockSnapshotDao = mock(ISnapshotDao.class);
     Pair<Node, String> result = SnapshotService
@@ -117,10 +117,10 @@ public final class SnapshotServiceTest {
 
     AppContext cxt = new AppContext();
     cxt.config = TestRepairConfiguration.defaultConfig();
-    cxt.jmxManagementConnectionFactory = mock(JmxManagementConnectionFactory.class);
+    cxt.managementConnectionFactory = mock(JmxManagementConnectionFactory.class);
     HostConnectionCounters connectionCounters = mock(HostConnectionCounters.class);
-    when(cxt.jmxManagementConnectionFactory.connectAny(any(Collection.class))).thenReturn(proxy);
-    when(cxt.jmxManagementConnectionFactory.getHostConnectionCounters()).thenReturn(connectionCounters);
+    when(cxt.managementConnectionFactory.connectAny(any(Collection.class))).thenReturn(proxy);
+    when(cxt.managementConnectionFactory.getHostConnectionCounters()).thenReturn(connectionCounters);
     ISnapshotDao mockSnapshotDao = mock(ISnapshotDao.class);
     List<Snapshot> result = SnapshotService
         .create(cxt, SNAPSHOT_MANAGER_EXECUTOR, mockSnapshotDao)
@@ -140,8 +140,8 @@ public final class SnapshotServiceTest {
 
     AppContext cxt = new AppContext();
     cxt.config = TestRepairConfiguration.defaultConfig();
-    cxt.jmxManagementConnectionFactory = mock(JmxManagementConnectionFactory.class);
-    when(cxt.jmxManagementConnectionFactory.connectAny(any(Collection.class))).thenReturn(proxy);
+    cxt.managementConnectionFactory = mock(JmxManagementConnectionFactory.class);
+    when(cxt.managementConnectionFactory.connectAny(any(Collection.class))).thenReturn(proxy);
     ISnapshotDao mockSnapshotDao = mock(ISnapshotDao.class);
     SnapshotService
         .create(cxt, SNAPSHOT_MANAGER_EXECUTOR, mockSnapshotDao)
@@ -161,8 +161,8 @@ public final class SnapshotServiceTest {
 
     AppContext cxt = new AppContext();
     cxt.config = TestRepairConfiguration.defaultConfig();
-    cxt.jmxManagementConnectionFactory = mock(JmxManagementConnectionFactory.class);
-    when(cxt.jmxManagementConnectionFactory.connectAny(any(Collection.class))).thenReturn(proxy);
+    cxt.managementConnectionFactory = mock(JmxManagementConnectionFactory.class);
+    when(cxt.managementConnectionFactory.connectAny(any(Collection.class))).thenReturn(proxy);
     ClusterFacade clusterFacadeSpy = Mockito.spy(ClusterFacade.create(cxt));
     Mockito.doReturn(Arrays.asList("127.0.0.1", "127.0.0.2")).when(clusterFacadeSpy).getLiveNodes(any());
     Mockito.doReturn(Arrays.asList("127.0.0.1", "127.0.0.2"))
@@ -200,8 +200,8 @@ public final class SnapshotServiceTest {
 
     AppContext cxt = new AppContext();
     cxt.config = TestRepairConfiguration.defaultConfig();
-    cxt.jmxManagementConnectionFactory = mock(JmxManagementConnectionFactory.class);
-    when(cxt.jmxManagementConnectionFactory.connectAny(any(Collection.class))).thenReturn(proxy);
+    cxt.managementConnectionFactory = mock(JmxManagementConnectionFactory.class);
+    when(cxt.managementConnectionFactory.connectAny(any(Collection.class))).thenReturn(proxy);
     ClusterFacade clusterFacadeSpy = Mockito.spy(ClusterFacade.create(cxt));
     Mockito.doReturn(Arrays.asList("127.0.0.1", "127.0.0.2", "127.0.0.3")).when(clusterFacadeSpy).getLiveNodes(any());
     Mockito.doReturn(Arrays.asList("127.0.0.1", "127.0.0.2", "127.0.0.3"))

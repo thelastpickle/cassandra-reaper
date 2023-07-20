@@ -85,7 +85,7 @@ public final class RepairUnitServiceTest {
 
     when(storage.getRepairUnitDao().addRepairUnit(any(RepairUnit.Builder.class))).thenReturn(mock(RepairUnit.class));
     context.storage = storage;
-    context.jmxManagementConnectionFactory = mock(JmxManagementConnectionFactory.class);
+    context.managementConnectionFactory = mock(JmxManagementConnectionFactory.class);
     service = RepairUnitService.create(context);
   }
 
@@ -93,7 +93,7 @@ public final class RepairUnitServiceTest {
   public void getTablesToRepairRemoveOneTableTest() throws ReaperException, UnknownHostException {
     ICassandraManagementProxy proxy = CassandraManagementProxyTest.mockJmxProxyImpl();
     when(proxy.getCassandraVersion()).thenReturn("3.11.4");
-    when(context.jmxManagementConnectionFactory.connectAny(Mockito.any(Collection.class))).thenReturn(proxy);
+    when(context.managementConnectionFactory.connectAny(Mockito.any(Collection.class))).thenReturn(proxy);
 
     when(proxy.getTablesForKeyspace(Mockito.anyString()))
         .thenReturn(Sets.newHashSet(
@@ -117,7 +117,7 @@ public final class RepairUnitServiceTest {
   public void getTablesToRepairDefaultCompactionStrategyTable() throws ReaperException, UnknownHostException {
     ICassandraManagementProxy proxy = CassandraManagementProxyTest.mockJmxProxyImpl();
     when(proxy.getCassandraVersion()).thenReturn("3.11.4");
-    when(context.jmxManagementConnectionFactory.connectAny(Mockito.any(Collection.class))).thenReturn(proxy);
+    when(context.managementConnectionFactory.connectAny(Mockito.any(Collection.class))).thenReturn(proxy);
 
     when(proxy.getTablesForKeyspace(Mockito.anyString()))
         .thenReturn(Sets.newHashSet(
@@ -141,7 +141,7 @@ public final class RepairUnitServiceTest {
   public void getTablesToRepairRemoveOneTableWithTwcsTest() throws ReaperException, UnknownHostException {
     ICassandraManagementProxy proxy = CassandraManagementProxyTest.mockJmxProxyImpl();
     when(proxy.getCassandraVersion()).thenReturn("3.11.4");
-    when(context.jmxManagementConnectionFactory.connectAny(Mockito.any(Collection.class))).thenReturn(proxy);
+    when(context.managementConnectionFactory.connectAny(Mockito.any(Collection.class))).thenReturn(proxy);
 
     when(proxy.getTablesForKeyspace(Mockito.anyString()))
         .thenReturn(Sets.newHashSet(
@@ -164,7 +164,7 @@ public final class RepairUnitServiceTest {
   public void getTablesToRepairRemoveTwoTablesTest() throws ReaperException, UnknownHostException {
     ICassandraManagementProxy proxy = CassandraManagementProxyTest.mockJmxProxyImpl();
     when(proxy.getCassandraVersion()).thenReturn("3.11.4");
-    when(context.jmxManagementConnectionFactory.connectAny(Mockito.any(Collection.class))).thenReturn(proxy);
+    when(context.managementConnectionFactory.connectAny(Mockito.any(Collection.class))).thenReturn(proxy);
 
     when(proxy.getTablesForKeyspace(Mockito.anyString()))
         .thenReturn(Sets.newHashSet(
@@ -188,7 +188,7 @@ public final class RepairUnitServiceTest {
   public void getTablesToRepairRemoveTwoTablesOneWithTwcsTest() throws ReaperException, UnknownHostException {
     ICassandraManagementProxy proxy = CassandraManagementProxyTest.mockJmxProxyImpl();
     when(proxy.getCassandraVersion()).thenReturn("3.11.4");
-    when(context.jmxManagementConnectionFactory.connectAny(Mockito.any(Collection.class))).thenReturn(proxy);
+    when(context.managementConnectionFactory.connectAny(Mockito.any(Collection.class))).thenReturn(proxy);
 
     when(proxy.getTablesForKeyspace(Mockito.anyString()))
         .thenReturn(Sets.newHashSet(
@@ -212,7 +212,7 @@ public final class RepairUnitServiceTest {
   public void getTablesToRepairRemoveOneTableFromListTest() throws ReaperException, UnknownHostException {
     ICassandraManagementProxy proxy = CassandraManagementProxyTest.mockJmxProxyImpl();
     when(proxy.getCassandraVersion()).thenReturn("3.11.4");
-    when(context.jmxManagementConnectionFactory.connectAny(Mockito.any(Collection.class))).thenReturn(proxy);
+    when(context.managementConnectionFactory.connectAny(Mockito.any(Collection.class))).thenReturn(proxy);
 
     when(proxy.getTablesForKeyspace(Mockito.anyString()))
         .thenReturn(Sets.newHashSet(
@@ -237,7 +237,7 @@ public final class RepairUnitServiceTest {
   public void getTablesToRepairRemoveOneTableFromListOneWithTwcsTest() throws ReaperException, UnknownHostException {
     ICassandraManagementProxy proxy = CassandraManagementProxyTest.mockJmxProxyImpl();
     when(proxy.getCassandraVersion()).thenReturn("3.11.4");
-    when(context.jmxManagementConnectionFactory.connectAny(Mockito.any(Collection.class))).thenReturn(proxy);
+    when(context.managementConnectionFactory.connectAny(Mockito.any(Collection.class))).thenReturn(proxy);
 
     when(proxy.getTablesForKeyspace(Mockito.anyString()))
         .thenReturn(Sets.newHashSet(
@@ -262,7 +262,7 @@ public final class RepairUnitServiceTest {
   public void getTablesToRepairRemoveAllFailingTest() throws ReaperException, UnknownHostException {
     ICassandraManagementProxy proxy = CassandraManagementProxyTest.mockJmxProxyImpl();
     when(proxy.getCassandraVersion()).thenReturn("3.11.4");
-    when(context.jmxManagementConnectionFactory.connectAny(Mockito.any(Collection.class))).thenReturn(proxy);
+    when(context.managementConnectionFactory.connectAny(Mockito.any(Collection.class))).thenReturn(proxy);
 
     when(proxy.getTablesForKeyspace(Mockito.anyString()))
         .thenReturn(Sets.newHashSet(
@@ -286,7 +286,7 @@ public final class RepairUnitServiceTest {
   public void getTablesToRepairRemoveAllFromListFailingTest() throws ReaperException, UnknownHostException {
     ICassandraManagementProxy proxy = CassandraManagementProxyTest.mockJmxProxyImpl();
     when(proxy.getCassandraVersion()).thenReturn("3.11.4");
-    when(context.jmxManagementConnectionFactory.connectAny(Mockito.any(Collection.class))).thenReturn(proxy);
+    when(context.managementConnectionFactory.connectAny(Mockito.any(Collection.class))).thenReturn(proxy);
 
     when(proxy.getTablesForKeyspace(Mockito.anyString()))
         .thenReturn(Sets.newHashSet(
@@ -312,7 +312,7 @@ public final class RepairUnitServiceTest {
   public void conflictingRepairUnitsTest() throws ReaperException, UnknownHostException {
     ICassandraManagementProxy proxy = CassandraManagementProxyTest.mockJmxProxyImpl();
     when(proxy.getCassandraVersion()).thenReturn("3.11.4");
-    when(context.jmxManagementConnectionFactory.connectAny(Mockito.any(Collection.class))).thenReturn(proxy);
+    when(context.managementConnectionFactory.connectAny(Mockito.any(Collection.class))).thenReturn(proxy);
 
     when(proxy.getTablesForKeyspace(Mockito.anyString()))
         .thenReturn(Sets.newHashSet(
@@ -347,7 +347,7 @@ public final class RepairUnitServiceTest {
   public void conflictingRepairUnitsDiffKSTest() throws ReaperException, UnknownHostException {
     ICassandraManagementProxy proxy = CassandraManagementProxyTest.mockJmxProxyImpl();
     when(proxy.getCassandraVersion()).thenReturn("3.11.4");
-    when(context.jmxManagementConnectionFactory.connectAny(Mockito.any(Collection.class))).thenReturn(proxy);
+    when(context.managementConnectionFactory.connectAny(Mockito.any(Collection.class))).thenReturn(proxy);
 
     when(proxy.getTablesForKeyspace(Mockito.anyString()))
         .thenReturn(Sets.newHashSet(
@@ -382,7 +382,7 @@ public final class RepairUnitServiceTest {
   public void conflictingRepairUnitsNoTablesTest() throws ReaperException, UnknownHostException {
     ICassandraManagementProxy proxy = CassandraManagementProxyTest.mockJmxProxyImpl();
     when(proxy.getCassandraVersion()).thenReturn("3.11.4");
-    when(context.jmxManagementConnectionFactory.connectAny(Mockito.any(Collection.class))).thenReturn(proxy);
+    when(context.managementConnectionFactory.connectAny(Mockito.any(Collection.class))).thenReturn(proxy);
 
     when(proxy.getTablesForKeyspace(Mockito.anyString()))
         .thenReturn(Sets.newHashSet(
@@ -413,7 +413,7 @@ public final class RepairUnitServiceTest {
   public void notConflictingRepairUnitsTest() throws ReaperException, UnknownHostException {
     ICassandraManagementProxy proxy = CassandraManagementProxyTest.mockJmxProxyImpl();
     when(proxy.getCassandraVersion()).thenReturn("3.11.4");
-    when(context.jmxManagementConnectionFactory.connectAny(Mockito.any(Collection.class))).thenReturn(proxy);
+    when(context.managementConnectionFactory.connectAny(Mockito.any(Collection.class))).thenReturn(proxy);
 
     when(proxy.getTablesForKeyspace(Mockito.anyString()))
         .thenReturn(Sets.newHashSet(
@@ -444,7 +444,7 @@ public final class RepairUnitServiceTest {
   public void identicalRepairUnitsIncrFullTest() throws ReaperException, UnknownHostException {
     ICassandraManagementProxy proxy = CassandraManagementProxyTest.mockJmxProxyImpl();
     when(proxy.getCassandraVersion()).thenReturn("3.11.4");
-    when(context.jmxManagementConnectionFactory.connectAny(Mockito.any(Collection.class))).thenReturn(proxy);
+    when(context.managementConnectionFactory.connectAny(Mockito.any(Collection.class))).thenReturn(proxy);
 
     when(proxy.getTablesForKeyspace(Mockito.anyString()))
         .thenReturn(Sets.newHashSet(
@@ -479,7 +479,7 @@ public final class RepairUnitServiceTest {
   public void identicalRepairUnitsDiffTablesTest() throws ReaperException, UnknownHostException {
     ICassandraManagementProxy proxy = CassandraManagementProxyTest.mockJmxProxyImpl();
     when(proxy.getCassandraVersion()).thenReturn("3.11.4");
-    when(context.jmxManagementConnectionFactory.connectAny(Mockito.any(Collection.class))).thenReturn(proxy);
+    when(context.managementConnectionFactory.connectAny(Mockito.any(Collection.class))).thenReturn(proxy);
 
     when(proxy.getTablesForKeyspace(Mockito.anyString()))
         .thenReturn(Sets.newHashSet(
@@ -524,7 +524,7 @@ public final class RepairUnitServiceTest {
   public void identicalRepairUnitsDiffNodesTest() throws ReaperException, UnknownHostException {
     ICassandraManagementProxy proxy = CassandraManagementProxyTest.mockJmxProxyImpl();
     when(proxy.getCassandraVersion()).thenReturn("3.11.4");
-    when(context.jmxManagementConnectionFactory.connectAny(Mockito.any(Collection.class))).thenReturn(proxy);
+    when(context.managementConnectionFactory.connectAny(Mockito.any(Collection.class))).thenReturn(proxy);
 
     when(proxy.getTablesForKeyspace(Mockito.anyString()))
         .thenReturn(Sets.newHashSet(
@@ -564,7 +564,7 @@ public final class RepairUnitServiceTest {
     ICassandraManagementProxy proxy = CassandraManagementProxyTest.mockJmxProxyImpl();
     ClusterFacade clusterFacade = mock(ClusterFacade.class);
     when(proxy.getCassandraVersion()).thenReturn("3.11.4");
-    when(context.jmxManagementConnectionFactory.connectAny(Mockito.any(Collection.class))).thenReturn(proxy);
+    when(context.managementConnectionFactory.connectAny(Mockito.any(Collection.class))).thenReturn(proxy);
     when(clusterFacade.getDatacenter(any())).thenReturn("dc1");
     RepairUnitService repairUnitService = RepairUnitService.create(context, () -> clusterFacade);
 
@@ -601,7 +601,7 @@ public final class RepairUnitServiceTest {
     ICassandraManagementProxy proxy = CassandraManagementProxyTest.mockJmxProxyImpl();
     ClusterFacade clusterFacade = mock(ClusterFacade.class);
     when(proxy.getCassandraVersion()).thenReturn("3.11.4");
-    when(context.jmxManagementConnectionFactory.connectAny(Mockito.any(Collection.class))).thenReturn(proxy);
+    when(context.managementConnectionFactory.connectAny(Mockito.any(Collection.class))).thenReturn(proxy);
     when(clusterFacade.getDatacenter(any())).thenReturn("dc1");
 
     when(proxy.getTablesForKeyspace(Mockito.anyString()))
@@ -645,7 +645,7 @@ public final class RepairUnitServiceTest {
     ICassandraManagementProxy proxy = CassandraManagementProxyTest.mockJmxProxyImpl();
     ClusterFacade clusterFacade = mock(ClusterFacade.class);
     when(proxy.getCassandraVersion()).thenReturn("3.11.4");
-    when(context.jmxManagementConnectionFactory.connectAny(Mockito.any(Collection.class))).thenReturn(proxy);
+    when(context.managementConnectionFactory.connectAny(Mockito.any(Collection.class))).thenReturn(proxy);
     when(clusterFacade.getDatacenter(any(Node.class))).thenThrow(new ReaperException("fake exception"));
     when(clusterFacade.getLiveNodes(any())).thenReturn(Arrays.asList("node1", "node2"));
     RepairUnitService repairUnitService = RepairUnitService.create(context, () -> clusterFacade);
@@ -683,7 +683,7 @@ public final class RepairUnitServiceTest {
   public void identicalRepairUnitsFailGetDcsTest() throws ReaperException, UnknownHostException {
     ICassandraManagementProxy proxy = CassandraManagementProxyTest.mockJmxProxyImpl();
     when(proxy.getCassandraVersion()).thenReturn("3.11.4");
-    when(context.jmxManagementConnectionFactory.connectAny(Mockito.any(Collection.class))).thenReturn(proxy);
+    when(context.managementConnectionFactory.connectAny(Mockito.any(Collection.class))).thenReturn(proxy);
 
     when(proxy.getTablesForKeyspace(Mockito.anyString()))
         .thenReturn(Sets.newHashSet(
@@ -722,7 +722,7 @@ public final class RepairUnitServiceTest {
   public void unknownTablesTest() throws ReaperException, UnknownHostException {
     ICassandraManagementProxy proxy = CassandraManagementProxyTest.mockJmxProxyImpl();
     when(proxy.getCassandraVersion()).thenReturn("3.11.4");
-    when(context.jmxManagementConnectionFactory.connectAny(Mockito.any(Collection.class))).thenReturn(proxy);
+    when(context.managementConnectionFactory.connectAny(Mockito.any(Collection.class))).thenReturn(proxy);
 
     when(proxy.getTablesForKeyspace(Mockito.anyString()))
         .thenThrow(new ReaperException("Fake failure"));
@@ -753,7 +753,7 @@ public final class RepairUnitServiceTest {
     ICassandraManagementProxy proxy = CassandraManagementProxyTest.mockJmxProxyImpl();
     ClusterFacade clusterFacade = mock(ClusterFacade.class);
     when(proxy.getCassandraVersion()).thenReturn("3.11.4");
-    when(context.jmxManagementConnectionFactory.connectAny(Mockito.any(Collection.class))).thenReturn(proxy);
+    when(context.managementConnectionFactory.connectAny(Mockito.any(Collection.class))).thenReturn(proxy);
     when(clusterFacade.getDatacenter(any(Node.class))).thenThrow(new ReaperException("fake exception"));
     when(clusterFacade.getLiveNodes(any())).thenThrow(new ReaperException("ouch"));
     RepairUnitService repairUnitService = RepairUnitService.create(context, () -> clusterFacade);
@@ -835,7 +835,7 @@ public final class RepairUnitServiceTest {
 
 
     localContext.storage = storage;
-    localContext.jmxManagementConnectionFactory = mock(JmxManagementConnectionFactory.class);
+    localContext.managementConnectionFactory = mock(JmxManagementConnectionFactory.class);
     ClusterFacade clusterFacade = mock(ClusterFacade.class);
     when(clusterFacade.getCassandraVersion(any())).thenThrow(new ReaperException("ouch"));
 
