@@ -85,7 +85,7 @@ public class JmxConnectionFactory {
     }
   }
 
-  private String determineHost(Node node) {
+  protected String determineHost(Node node) {
     String host = node.getHostname();
     if (jmxPorts != null && jmxPorts.containsKey(host) && !host.contains(":")) {
       host = host + ":" + jmxPorts.get(host);
@@ -100,7 +100,7 @@ public class JmxConnectionFactory {
     return host;
   }
 
-  private ICassandraManagementProxy connectImpl(Node node) throws ReaperException, InterruptedException {
+  protected ICassandraManagementProxy connectImpl(Node node) throws ReaperException, InterruptedException {
     // use configured jmx port for host if provided
     String host = determineHost(node);
 
