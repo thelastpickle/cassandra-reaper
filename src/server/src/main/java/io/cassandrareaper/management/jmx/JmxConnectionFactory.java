@@ -24,6 +24,7 @@ import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.JmxCredentials;
 import io.cassandrareaper.core.Node;
 import io.cassandrareaper.crypto.Cryptograph;
+import io.cassandrareaper.management.HostConnectionCounters;
 import io.cassandrareaper.management.ICassandraManagementProxy;
 
 import java.util.ArrayList;
@@ -84,7 +85,7 @@ public class JmxConnectionFactory {
     }
   }
 
-  protected String determineHost(Node node) {
+  private String determineHost(Node node) {
     String host = node.getHostname();
     if (jmxPorts != null && jmxPorts.containsKey(host) && !host.contains(":")) {
       host = host + ":" + jmxPorts.get(host);
@@ -99,7 +100,7 @@ public class JmxConnectionFactory {
     return host;
   }
 
-  protected ICassandraManagementProxy connectImpl(Node node) throws ReaperException, InterruptedException {
+  private ICassandraManagementProxy connectImpl(Node node) throws ReaperException, InterruptedException {
     // use configured jmx port for host if provided
     String host = determineHost(node);
 

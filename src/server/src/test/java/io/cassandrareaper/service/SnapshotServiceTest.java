@@ -25,7 +25,7 @@ import io.cassandrareaper.core.Snapshot;
 import io.cassandrareaper.management.ICassandraManagementProxy;
 import io.cassandrareaper.management.jmx.CassandraManagementProxyTest;
 import io.cassandrareaper.management.jmx.ClusterFacade;
-import io.cassandrareaper.management.jmx.HostConnectionCounters;
+import io.cassandrareaper.management.HostConnectionCounters;
 import io.cassandrareaper.management.jmx.JmxConnectionFactory;
 import io.cassandrareaper.storage.IStorageDao;
 import io.cassandrareaper.storage.cluster.IClusterDao;

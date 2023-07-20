@@ -25,7 +25,7 @@ import io.cassandrareaper.core.StreamSession;
 import io.cassandrareaper.management.ICassandraManagementProxy;
 import io.cassandrareaper.management.jmx.CassandraManagementProxyTest;
 import io.cassandrareaper.management.jmx.ClusterFacade;
-import io.cassandrareaper.management.jmx.HostConnectionCounters;
+import io.cassandrareaper.management.HostConnectionCounters;
 import io.cassandrareaper.management.jmx.JmxConnectionFactory;
 
 import java.io.IOException;
