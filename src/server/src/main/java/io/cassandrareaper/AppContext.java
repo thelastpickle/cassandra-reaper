@@ -17,7 +17,7 @@
 
 package io.cassandrareaper;
 
-import io.cassandrareaper.management.jmx.JmxConnectionFactory;
+import io.cassandrareaper.management.jmx.JmxManagementConnectionFactory;
 import io.cassandrareaper.service.RepairManager;
 import io.cassandrareaper.service.SchedulingManager;
 import io.cassandrareaper.storage.IStorageDao;
@@ -46,7 +46,7 @@ public final class AppContext {
   public IStorageDao storage;
   public RepairManager repairManager;
   public SchedulingManager schedulingManager;
-  public JmxConnectionFactory jmxConnectionFactory;
+  public JmxManagementConnectionFactory jmxManagementConnectionFactory;
   public ReaperApplicationConfiguration config;
   public MetricRegistry metricRegistry = new MetricRegistry();
   volatile String localNodeAddress = null;

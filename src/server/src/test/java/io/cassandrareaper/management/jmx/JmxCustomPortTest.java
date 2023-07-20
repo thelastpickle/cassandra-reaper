@@ -56,7 +56,7 @@ public final class JmxCustomPortTest {
     when(hostConnectionCounters.getSuccessfulConnections(any())).thenReturn(1);
 
 
-    context.jmxConnectionFactory = new JmxConnectionFactory(context, cryptographMock) {
+    context.jmxManagementConnectionFactory = new JmxManagementConnectionFactory(context, cryptographMock) {
       @Override
       protected ICassandraManagementProxy connectImpl(Node node) throws ReaperException {
         final ICassandraManagementProxy jmx = cassandraManagementProxyMock;
@@ -80,7 +80,7 @@ public final class JmxCustomPortTest {
         .withJmxPort(7188)
         .build();
 
-    context.jmxConnectionFactory
+    context.jmxManagementConnectionFactory
         .connectAny(Collections.singleton(Node.builder().withCluster(cluster).withHostname("127.0.0.1").build()));
 
     assertEquals(7188, port.get());
@@ -92,7 +92,7 @@ public final class JmxCustomPortTest {
         .withJmxPort(7198)
         .build();
 
-    context.jmxConnectionFactory
+    context.jmxManagementConnectionFactory
         .connectAny(Collections.singleton(Node.builder().withCluster(cluster2).withHostname("127.0.0.3").build()));
 
     assertEquals(7198, port.get());

@@ -169,7 +169,7 @@ public final class ClusterResource {
       String jmxUsername = "";
       boolean jmxPasswordIsSet = false;
 
-      Optional<JmxCredentials> jmxCredentials = context.jmxConnectionFactory
+      Optional<JmxCredentials> jmxCredentials = context.jmxManagementConnectionFactory
           .getJmxCredentialsForCluster(Optional.ofNullable(cluster));
       if (jmxCredentials.isPresent()) {
         jmxUsername = StringUtils.trimToEmpty(jmxCredentials.get().getUsername());

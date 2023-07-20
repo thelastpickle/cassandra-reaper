@@ -66,9 +66,9 @@ public class ClusterFacadeTest {
     Mockito.doReturn("127.0.0.1").when(contextSpy).getLocalNodeAddress();
 
     contextSpy.config.setDatacenterAvailability(DatacenterAvailability.SIDECAR);
-    JmxConnectionFactory jmxConnectionFactory = mock(JmxConnectionFactory.class);
-    when(jmxConnectionFactory.getAccessibleDatacenters()).thenReturn(new HashSet<String>(Arrays.asList("dc1")));
-    contextSpy.jmxConnectionFactory = jmxConnectionFactory;
+    JmxManagementConnectionFactory jmxManagementConnectionFactory = mock(JmxManagementConnectionFactory.class);
+    when(jmxManagementConnectionFactory.getAccessibleDatacenters()).thenReturn(new HashSet<String>(Arrays.asList("dc1")));
+    contextSpy.jmxManagementConnectionFactory = jmxManagementConnectionFactory;
     ClusterFacade clusterFacade = ClusterFacade.create(contextSpy);
     assertTrue(clusterFacade.nodeIsAccessibleThroughJmx("dc1", contextSpy.getLocalNodeAddress()));
     assertFalse(clusterFacade.nodeIsAccessibleThroughJmx("dc1", "127.0.0.2"));
@@ -78,9 +78,9 @@ public class ClusterFacadeTest {
   public void nodeIsAccessibleThroughJmxAllTest() throws ReaperException {
     final AppContext context = new AppContext();
     context.config = new ReaperApplicationConfiguration();
-    context.jmxConnectionFactory = Mockito.mock(JmxConnectionFactory.class);
+    context.jmxManagementConnectionFactory = Mockito.mock(JmxManagementConnectionFactory.class);
 
-    Mockito.when(context.jmxConnectionFactory.getAccessibleDatacenters())
+    Mockito.when(context.jmxManagementConnectionFactory.getAccessibleDatacenters())
         .thenReturn(new HashSet<>(Arrays.asList("dc1")));
 
     context.config.setDatacenterAvailability(DatacenterAvailability.ALL);
@@ -92,9 +92,9 @@ public class ClusterFacadeTest {
   public void nodeIsAccessibleThroughJmxLocalTest() throws ReaperException {
     final AppContext context = new AppContext();
     context.config = new ReaperApplicationConfiguration();
-    context.jmxConnectionFactory = Mockito.mock(JmxConnectionFactory.class);
+    context.jmxManagementConnectionFactory = Mockito.mock(JmxManagementConnectionFactory.class);
 
-    Mockito.when(context.jmxConnectionFactory.getAccessibleDatacenters())
+    Mockito.when(context.jmxManagementConnectionFactory.getAccessibleDatacenters())
         .thenReturn(new HashSet<>(Arrays.asList("dc1")));
 
     context.config.setDatacenterAvailability(DatacenterAvailability.LOCAL);
@@ -108,9 +108,9 @@ public class ClusterFacadeTest {
   public void nodeIsAccessibleThroughJmxEachTest() throws ReaperException {
     final AppContext context = new AppContext();
     context.config = new ReaperApplicationConfiguration();
-    context.jmxConnectionFactory = Mockito.mock(JmxConnectionFactory.class);
+    context.jmxManagementConnectionFactory = Mockito.mock(JmxManagementConnectionFactory.class);
 
-    Mockito.when(context.jmxConnectionFactory.getAccessibleDatacenters())
+    Mockito.when(context.jmxManagementConnectionFactory.getAccessibleDatacenters())
         .thenReturn(new HashSet<>(Arrays.asList("dc1")));
 
     context.config.setDatacenterAvailability(DatacenterAvailability.EACH);
@@ -206,10 +206,10 @@ public class ClusterFacadeTest {
     Mockito.doReturn("127.0.0.1").when(contextSpy).getLocalNodeAddress();
 
     contextSpy.config.setDatacenterAvailability(DatacenterAvailability.SIDECAR);
-    JmxConnectionFactory jmxConnectionFactory = mock(JmxConnectionFactory.class);
+    JmxManagementConnectionFactory jmxManagementConnectionFactory = mock(JmxManagementConnectionFactory.class);
     ICassandraManagementProxy mockProxy = mock(ICassandraManagementProxy.class);
-    when(jmxConnectionFactory.connectAny(any(Collection.class))).thenReturn(mockProxy);
-    contextSpy.jmxConnectionFactory = jmxConnectionFactory;
+    when(jmxManagementConnectionFactory.connectAny(any(Collection.class))).thenReturn(mockProxy);
+    contextSpy.jmxManagementConnectionFactory = jmxManagementConnectionFactory;
     final ClusterFacade cf = ClusterFacade.create(contextSpy);
     JmxCredentials jmxCredentials = JmxCredentials.builder().withUsername("test").withPassword("testPwd").build();
     Set<String> seedHosts = new HashSet<>();

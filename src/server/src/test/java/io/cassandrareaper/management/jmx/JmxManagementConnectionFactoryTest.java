@@ -22,7 +22,6 @@ import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.JmxCredentials;
 import io.cassandrareaper.core.Node;
 import io.cassandrareaper.crypto.Cryptograph;
-import io.cassandrareaper.management.jmx.JmxConnectionFactory;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -38,7 +37,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 
-public class JmxConnectionFactoryTest {
+public class JmxManagementConnectionFactoryTest {
 
   @Test
   public void fetchingJmxCredentialsPrioritizesThoseInStorageFirst() {
@@ -51,7 +50,7 @@ public class JmxConnectionFactoryTest {
     Cluster cluster = Cluster.builder().withName("FooCluster")
             .withSeedHosts(ImmutableSet.of("127.0.0.1")).withJmxCredentials(clusterStorageJmxAuth).build();
 
-    JmxConnectionFactory connectionFactory = new JmxConnectionFactory(mock(AppContext.class), mock(Cryptograph.class));
+    JmxManagementConnectionFactory connectionFactory = new JmxManagementConnectionFactory(mock(AppContext.class), mock(Cryptograph.class));
     connectionFactory.setJmxAuth(globalYamlJmxAuth);
     connectionFactory.setJmxCredentials(ImmutableMap.of(cluster.getName(), clusterYamlJmxAuth));
 
@@ -71,7 +70,7 @@ public class JmxConnectionFactoryTest {
     Cluster cluster = Cluster.builder().withName("FooCluster")
             .withSeedHosts(ImmutableSet.of("127.0.0.1")).build();
 
-    JmxConnectionFactory connectionFactory = new JmxConnectionFactory(mock(AppContext.class), mock(Cryptograph.class));
+    JmxManagementConnectionFactory connectionFactory = new JmxManagementConnectionFactory(mock(AppContext.class), mock(Cryptograph.class));
     connectionFactory.setJmxAuth(globalYamlJmxAuth);
     connectionFactory.setJmxCredentials(ImmutableMap.of(cluster.getName(), clusterYamlJmxAuth));
 
@@ -89,7 +88,7 @@ public class JmxConnectionFactoryTest {
     Cluster cluster = Cluster.builder().withName("FooCluster")
             .withSeedHosts(ImmutableSet.of("127.0.0.1")).build();
 
-    JmxConnectionFactory connectionFactory = new JmxConnectionFactory(mock(AppContext.class), mock(Cryptograph.class));
+    JmxManagementConnectionFactory connectionFactory = new JmxManagementConnectionFactory(mock(AppContext.class), mock(Cryptograph.class));
     connectionFactory.setJmxAuth(globalYamlJmxAuth);
 
     Optional<JmxCredentials> jmxCredentials = connectionFactory.getJmxCredentialsForCluster(Optional.of(cluster));
@@ -104,7 +103,7 @@ public class JmxConnectionFactoryTest {
     Cluster cluster = Cluster.builder().withName("FooCluster")
             .withSeedHosts(ImmutableSet.of("127.0.0.1")).build();
 
-    JmxConnectionFactory connectionFactory = new JmxConnectionFactory(mock(AppContext.class), mock(Cryptograph.class));
+    JmxManagementConnectionFactory connectionFactory = new JmxManagementConnectionFactory(mock(AppContext.class), mock(Cryptograph.class));
 
     Optional<JmxCredentials> jmxCredentials = connectionFactory.getJmxCredentialsForCluster(Optional.of(cluster));
 
@@ -113,7 +112,7 @@ public class JmxConnectionFactoryTest {
 
   @Test
   public void ensureIPv6HostCanBeUsed() {
-    JmxConnectionFactory connectionFactory = new JmxConnectionFactory(mock(AppContext.class), mock(Cryptograph.class));
+    JmxManagementConnectionFactory connectionFactory = new JmxManagementConnectionFactory(mock(AppContext.class), mock(Cryptograph.class));
     String host = connectionFactory.determineHost(Node.builder()
             .withHostname("cc43:a32a:604:20b8:8201:ef29:3c20:c1d2")
             .build());
@@ -127,7 +126,7 @@ public class JmxConnectionFactoryTest {
     jmxPorts.put("127.0.0.2", 7200);
     jmxPorts.put("127.0.0.3", 7300);
 
-    JmxConnectionFactory connectionFactory = new JmxConnectionFactory(mock(AppContext.class), mock(Cryptograph.class));
+    JmxManagementConnectionFactory connectionFactory = new JmxManagementConnectionFactory(mock(AppContext.class), mock(Cryptograph.class));
     connectionFactory.setJmxPorts(jmxPorts);
     String host = connectionFactory.determineHost(Node.builder().withHostname("127.0.0.2").build());
     assertEquals("127.0.0.2:7200", host);
@@ -135,7 +134,7 @@ public class JmxConnectionFactoryTest {
 
   @Test
   public void ensureIPv4HostCanBeUsed() {
-    JmxConnectionFactory connectionFactory = new JmxConnectionFactory(mock(AppContext.class), mock(Cryptograph.class));
+    JmxManagementConnectionFactory connectionFactory = new JmxManagementConnectionFactory(mock(AppContext.class), mock(Cryptograph.class));
     String host = connectionFactory.determineHost(Node.builder().withHostname("127.0.0.1").build());
     assertEquals("127.0.0.1:7199", host);
   }

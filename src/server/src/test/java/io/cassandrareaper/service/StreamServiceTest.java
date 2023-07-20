@@ -26,7 +26,7 @@ import io.cassandrareaper.management.ICassandraManagementProxy;
 import io.cassandrareaper.management.jmx.CassandraManagementProxyTest;
 import io.cassandrareaper.management.jmx.ClusterFacade;
 import io.cassandrareaper.management.HostConnectionCounters;
-import io.cassandrareaper.management.jmx.JmxConnectionFactory;
+import io.cassandrareaper.management.jmx.JmxManagementConnectionFactory;
 
 import java.io.IOException;
 import java.net.URL;
@@ -68,8 +68,8 @@ public class StreamServiceTest {
 
     AppContext cxt = new AppContext();
     cxt.config = TestRepairConfiguration.defaultConfig();
-    cxt.jmxConnectionFactory = mock(JmxConnectionFactory.class);
-    when(cxt.jmxConnectionFactory.connectAny(Mockito.anyList())).thenReturn(proxy);
+    cxt.jmxManagementConnectionFactory = mock(JmxManagementConnectionFactory.class);
+    when(cxt.jmxManagementConnectionFactory.connectAny(Mockito.anyList())).thenReturn(proxy);
     ClusterFacade clusterFacadeSpy = Mockito.spy(ClusterFacade.create(cxt));
     Mockito.doReturn("dc1").when(clusterFacadeSpy).getDatacenter(any(), any());
 
@@ -103,10 +103,10 @@ public class StreamServiceTest {
 
     AppContext cxt = new AppContext();
     cxt.config = TestRepairConfiguration.defaultConfig();
-    cxt.jmxConnectionFactory = mock(JmxConnectionFactory.class);
-    when(cxt.jmxConnectionFactory.connectAny(Mockito.anyList())).thenReturn(proxy);
+    cxt.jmxManagementConnectionFactory = mock(JmxManagementConnectionFactory.class);
+    when(cxt.jmxManagementConnectionFactory.connectAny(Mockito.anyList())).thenReturn(proxy);
     HostConnectionCounters connectionCounters = mock(HostConnectionCounters.class);
-    when(cxt.jmxConnectionFactory.getHostConnectionCounters()).thenReturn(connectionCounters);
+    when(cxt.jmxManagementConnectionFactory.getHostConnectionCounters()).thenReturn(connectionCounters);
     when(connectionCounters.getSuccessfulConnections(any())).thenReturn(1);
     ClusterFacade clusterFacadeSpy = Mockito.spy(ClusterFacade.create(cxt));
     Mockito.doReturn("dc1").when(clusterFacadeSpy).getDatacenter(any(), any());
@@ -142,10 +142,10 @@ public class StreamServiceTest {
 
     AppContext cxt = new AppContext();
     cxt.config = TestRepairConfiguration.defaultConfig();
-    cxt.jmxConnectionFactory = mock(JmxConnectionFactory.class);
-    when(cxt.jmxConnectionFactory.connectAny(Mockito.anyList())).thenReturn(proxy);
+    cxt.jmxManagementConnectionFactory = mock(JmxManagementConnectionFactory.class);
+    when(cxt.jmxManagementConnectionFactory.connectAny(Mockito.anyList())).thenReturn(proxy);
     HostConnectionCounters connectionCounters = mock(HostConnectionCounters.class);
-    when(cxt.jmxConnectionFactory.getHostConnectionCounters()).thenReturn(connectionCounters);
+    when(cxt.jmxManagementConnectionFactory.getHostConnectionCounters()).thenReturn(connectionCounters);
     when(connectionCounters.getSuccessfulConnections(any())).thenReturn(1);
     ClusterFacade clusterFacadeSpy = Mockito.spy(ClusterFacade.create(cxt));
     Mockito.doReturn("dc1").when(clusterFacadeSpy).getDatacenter(any(), any());
@@ -181,10 +181,10 @@ public class StreamServiceTest {
 
     AppContext cxt = new AppContext();
     cxt.config = TestRepairConfiguration.defaultConfig();
-    cxt.jmxConnectionFactory = mock(JmxConnectionFactory.class);
-    when(cxt.jmxConnectionFactory.connectAny(Mockito.anyList())).thenReturn(proxy);
+    cxt.jmxManagementConnectionFactory = mock(JmxManagementConnectionFactory.class);
+    when(cxt.jmxManagementConnectionFactory.connectAny(Mockito.anyList())).thenReturn(proxy);
     HostConnectionCounters connectionCounters = mock(HostConnectionCounters.class);
-    when(cxt.jmxConnectionFactory.getHostConnectionCounters()).thenReturn(connectionCounters);
+    when(cxt.jmxManagementConnectionFactory.getHostConnectionCounters()).thenReturn(connectionCounters);
     when(connectionCounters.getSuccessfulConnections(any())).thenReturn(1);
     ClusterFacade clusterFacadeSpy = Mockito.spy(ClusterFacade.create(cxt));
     Mockito.doReturn("dc1").when(clusterFacadeSpy).getDatacenter(any(), any());
@@ -220,10 +220,10 @@ public class StreamServiceTest {
 
     AppContext cxt = new AppContext();
     cxt.config = TestRepairConfiguration.defaultConfig();
-    cxt.jmxConnectionFactory = mock(JmxConnectionFactory.class);
-    when(cxt.jmxConnectionFactory.connectAny(Mockito.anyList())).thenReturn(proxy);
+    cxt.jmxManagementConnectionFactory = mock(JmxManagementConnectionFactory.class);
+    when(cxt.jmxManagementConnectionFactory.connectAny(Mockito.anyList())).thenReturn(proxy);
     HostConnectionCounters connectionCounters = mock(HostConnectionCounters.class);
-    when(cxt.jmxConnectionFactory.getHostConnectionCounters()).thenReturn(connectionCounters);
+    when(cxt.jmxManagementConnectionFactory.getHostConnectionCounters()).thenReturn(connectionCounters);
     when(connectionCounters.getSuccessfulConnections(any())).thenReturn(1);
     ClusterFacade clusterFacadeSpy = Mockito.spy(ClusterFacade.create(cxt));
     Mockito.doReturn("dc1").when(clusterFacadeSpy).getDatacenter(any(), any());
@@ -256,10 +256,10 @@ public class StreamServiceTest {
 
     AppContext cxt = new AppContext();
     cxt.config = TestRepairConfiguration.defaultConfig();
-    cxt.jmxConnectionFactory = mock(JmxConnectionFactory.class);
-    when(cxt.jmxConnectionFactory.connectAny(Mockito.anyList())).thenReturn(proxy);
+    cxt.jmxManagementConnectionFactory = mock(JmxManagementConnectionFactory.class);
+    when(cxt.jmxManagementConnectionFactory.connectAny(Mockito.anyList())).thenReturn(proxy);
     HostConnectionCounters connectionCounters = mock(HostConnectionCounters.class);
-    when(cxt.jmxConnectionFactory.getHostConnectionCounters()).thenReturn(connectionCounters);
+    when(cxt.jmxManagementConnectionFactory.getHostConnectionCounters()).thenReturn(connectionCounters);
     when(connectionCounters.getSuccessfulConnections(any())).thenReturn(1);
     ClusterFacade clusterFacadeSpy = Mockito.spy(ClusterFacade.create(cxt));
     Mockito.doReturn("dc1").when(clusterFacadeSpy).getDatacenter(any(), any());

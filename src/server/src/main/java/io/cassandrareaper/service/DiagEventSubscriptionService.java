@@ -211,7 +211,7 @@ public final class DiagEventSubscriptionService {
           try {
             Thread.currentThread().setName(node.getHostname());
             LOG.debug("Starting to update event subscriptions for {}", node);
-            ICassandraManagementProxy jmx = context.jmxConnectionFactory.connectAny(Collections.singleton(node));
+            ICassandraManagementProxy jmx = context.jmxManagementConnectionFactory.connectAny(Collections.singleton(node));
 
             // create set of active and inactive events based on all subscriptions for this node
             // active events are all events included in an active subscription

@@ -27,7 +27,7 @@ import io.cassandrareaper.core.RepairUnit;
 import io.cassandrareaper.core.Table;
 import io.cassandrareaper.management.ICassandraManagementProxy;
 import io.cassandrareaper.management.jmx.CassandraManagementProxyTest;
-import io.cassandrareaper.management.jmx.JmxConnectionFactory;
+import io.cassandrareaper.management.jmx.JmxManagementConnectionFactory;
 import io.cassandrareaper.resources.view.RepairRunStatus;
 import io.cassandrareaper.service.RepairManager;
 import io.cassandrareaper.service.RepairRunnerTest;
@@ -177,10 +177,10 @@ public final class RepairRunResourceTest {
     }
     CassandraManagementProxyTest.mockGetEndpointSnitchInfoMBean(proxy, endpointSnitchInfoMBean);
 
-    context.jmxConnectionFactory = mock(JmxConnectionFactory.class);
-    when(context.jmxConnectionFactory.connectAny(Mockito.anyCollection())).thenReturn(proxy);
+    context.jmxManagementConnectionFactory = mock(JmxManagementConnectionFactory.class);
+    when(context.jmxManagementConnectionFactory.connectAny(Mockito.anyCollection())).thenReturn(proxy);
 
-    when(context.jmxConnectionFactory.connectAny(Mockito.anyCollection()))
+    when(context.jmxManagementConnectionFactory.connectAny(Mockito.anyCollection()))
         .thenReturn(proxy);
 
     RepairUnit.Builder repairUnitBuilder = RepairUnit.builder()

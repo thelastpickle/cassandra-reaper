@@ -47,9 +47,9 @@ import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class JmxConnectionFactory {
+public class JmxManagementConnectionFactory {
 
-  private static final Logger LOG = LoggerFactory.getLogger(JmxConnectionFactory.class);
+  private static final Logger LOG = LoggerFactory.getLogger(JmxManagementConnectionFactory.class);
   private static final ConcurrentMap<String, ICassandraManagementProxy> JMX_CONNECTIONS = Maps.newConcurrentMap();
   private final MetricRegistry metricRegistry;
   private final HostConnectionCounters hostConnectionCounters;
@@ -62,7 +62,7 @@ public class JmxConnectionFactory {
   private AddressTranslator addressTranslator;
   private final Set<String> accessibleDatacenters = Sets.newHashSet();
 
-  public JmxConnectionFactory(AppContext context, Cryptograph cryptograph) {
+  public JmxManagementConnectionFactory(AppContext context, Cryptograph cryptograph) {
     this.metricRegistry
         = context.metricRegistry == null ? new MetricRegistry() : context.metricRegistry;
     hostConnectionCounters = new HostConnectionCounters(metricRegistry);
@@ -75,9 +75,9 @@ public class JmxConnectionFactory {
     try {
       if (!this.metricRegistry
           .getGauges()
-          .containsKey(MetricRegistry.name(JmxConnectionFactory.class, "openJmxConnections"))) {
+          .containsKey(MetricRegistry.name(JmxManagementConnectionFactory.class, "openJmxConnections"))) {
         this.metricRegistry.register(
-            MetricRegistry.name(JmxConnectionFactory.class, "openJmxConnections"),
+            MetricRegistry.name(JmxManagementConnectionFactory.class, "openJmxConnections"),
             (Gauge<Integer>) () -> JMX_CONNECTIONS.size());
       }
     } catch (IllegalArgumentException e) {
