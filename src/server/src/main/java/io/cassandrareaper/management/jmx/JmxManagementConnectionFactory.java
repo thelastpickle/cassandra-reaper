@@ -71,8 +71,33 @@ public class JmxManagementConnectionFactory implements IManagementConnectionFact
     registerConnectionsGauge();
     this.context = context;
     this.cryptograph = cryptograph;
-    // Originally came from initialize in ReaperApplication. But we may as well initialize it here.
-    initialize(context, cryptograph);
+
+    if (context.config.getJmxPorts() != null) {
+      LOG.debug("using JMX ports mapping: {}", jmxPorts);
+      this.jmxPorts = context.config.getJmxPorts();
+    }
+    if (context.config.useAddressTranslator()) {
+      setAddressTranslator(new EC2MultiRegionAddressTranslator());
+    }
+    if (context.config.getJmxAddressTranslator().isPresent()) {
+      this.addressTranslator = context.config.getJmxAddressTranslator().get().build();
+    }
+    if (context.config.getJmxmp() != null) {
+      if (context.config.getJmxmp().isEnabled()) {
+        LOG.info("JMXMP enabled");
+      }
+      setJmxmp(context.config.getJmxmp());
+    }
+
+    if (context.config.getJmxAuth() != null) {
+      LOG.debug("using specified JMX credentials for authentication");
+      this.jmxAuth = context.config.getJmxAuth();
+    }
+
+    if (context.config.getJmxCredentials() != null) {
+      LOG.debug("using specified JMX credentials per cluster for authentication");
+      this.jmxCredentials = context.config.getJmxCredentials();
+    }
   }
 
   private void registerConnectionsGauge() {
@@ -103,40 +128,6 @@ public class JmxManagementConnectionFactory implements IManagementConnectionFact
     }
     return host;
   }
-
-  public void initialize(AppContext context, Cryptograph cryptograph) {
-    Map<String, Integer> jmxPorts = context.config.getJmxPorts();
-    if (jmxPorts != null) {
-      LOG.debug("using JMX ports mapping: {}", jmxPorts);
-      setJmxPorts(jmxPorts);
-    }
-    if (context.config.useAddressTranslator()) {
-      setAddressTranslator(new EC2MultiRegionAddressTranslator());
-    }
-    if (context.config.getJmxAddressTranslator().isPresent()) {
-      AddressTranslator addressTranslator = context.config.getJmxAddressTranslator().get().build();
-      setAddressTranslator(addressTranslator);
-    }
-    if (context.config.getJmxmp() != null) {
-      if (context.config.getJmxmp().isEnabled()) {
-        LOG.info("JMXMP enabled");
-      }
-      setJmxmp(context.config.getJmxmp());
-    }
-
-    JmxCredentials jmxAuth = context.config.getJmxAuth();
-    if (jmxAuth != null) {
-      LOG.debug("using specified JMX credentials for authentication");
-      setJmxAuth(jmxAuth);
-    }
-
-    Map<String, JmxCredentials> jmxCredentials = context.config.getJmxCredentials();
-    if (jmxCredentials != null) {
-      LOG.debug("using specified JMX credentials per cluster for authentication");
-      setJmxCredentials(jmxCredentials);
-    }
-  }
-
 
   protected ICassandraManagementProxy connectImpl(Node node) throws ReaperException, InterruptedException {
     // use configured jmx port for host if provided

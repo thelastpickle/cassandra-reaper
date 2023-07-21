@@ -20,7 +20,6 @@ package io.cassandrareaper.management.http;
 import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Node;
-import io.cassandrareaper.crypto.Cryptograph;
 import io.cassandrareaper.management.HostConnectionCounters;
 import io.cassandrareaper.management.ICassandraManagementProxy;
 import io.cassandrareaper.management.IManagementConnectionFactory;
@@ -129,10 +128,6 @@ public class HttpManagementConnectionFactory implements IManagementConnectionFac
   private Response getPid(Node node) {
     //TODO - implement me.
     return Response.ok().build();
-  }
-
-  public void initialize(AppContext context, Cryptograph cryptograph) {
-    // TODO: implement me.
   }
 
   public final Set<String> getAccessibleDatacenters() {

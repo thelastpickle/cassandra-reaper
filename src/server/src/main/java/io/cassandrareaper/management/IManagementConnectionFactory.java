@@ -17,10 +17,8 @@
 
 package io.cassandrareaper.management;
 
-import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Node;
-import io.cassandrareaper.crypto.Cryptograph;
 
 import java.util.Collection;
 import java.util.Set;
@@ -32,6 +30,4 @@ public interface IManagementConnectionFactory {
   Set<String> getAccessibleDatacenters();
 
   HostConnectionCounters getHostConnectionCounters();
-
-  void initialize(AppContext context, Cryptograph cryptograph);
 }
