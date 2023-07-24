@@ -37,12 +37,12 @@ public final class JmxAddresses {
   }
 
   public static JMXServiceURL getJmxServiceUrl(String host, int port)
-        throws MalformedURLException {
+      throws MalformedURLException {
     return getJmxServiceUrl(host, port, false);
   }
 
   public static JMXServiceURL getJmxServiceUrl(String host, int port, boolean jmxmp)
-        throws MalformedURLException {
+      throws MalformedURLException {
     Preconditions.checkNotNull(host);
     Preconditions.checkArgument(port > 0);
     String effectiveHost = isNumericIPv6Address(host) ? wrapIPv6BracesIfNeed(host) : host;

@@ -126,7 +126,6 @@ public final class ClusterFacade {
   protected static Map<List<String>, List<String>>
       maybeCleanupEndpointFromScylla(Map<List<String>, List<String>> endpointMap) {
     Map<List<String>, List<String>> resultEndpointMap = Maps.newHashMap();
-
     String firstToken = "";
     String lastToken = "";
     List<String> lastNode = Lists.newArrayList();

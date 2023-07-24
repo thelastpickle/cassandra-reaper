@@ -36,7 +36,7 @@ public final class StorageServiceProxy {
   }
 
   public static StorageServiceProxy create(ICassandraManagementProxy proxy) {
-    Preconditions.checkArgument(proxy instanceof JmxCassandraManagementProxy, "only JmxProxyImpl is supported");
+
     return new StorageServiceProxy((JmxCassandraManagementProxy) proxy);
   }
 

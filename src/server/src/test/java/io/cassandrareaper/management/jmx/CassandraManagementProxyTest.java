@@ -23,9 +23,7 @@ import io.cassandrareaper.management.ICassandraManagementProxy;
 import java.net.UnknownHostException;
 import java.util.Optional;
 import java.util.Random;
-import javax.management.MBeanServerConnection;
 
-import com.google.common.base.Preconditions;
 import org.apache.cassandra.db.compaction.CompactionManagerMBean;
 import org.apache.cassandra.locator.EndpointSnitchInfoMBean;
 import org.apache.cassandra.streaming.StreamManagerMBean;
@@ -46,29 +44,22 @@ public final class CassandraManagementProxyTest {
     return impl;
   }
 
-  public static void mockGetMBeanServerConnection(ICassandraManagementProxy proxy,
-                                                  MBeanServerConnection serverConnection) {
-    Preconditions.checkArgument(proxy instanceof JmxCassandraManagementProxy, "only JmxProxyImpl is supported");
-    Mockito.when(((JmxCassandraManagementProxy) proxy).getMBeanServerConnection()).thenReturn(serverConnection);
-  }
-
   public static void mockGetStreamManagerMBean(ICassandraManagementProxy proxy,
                                                StreamManagerMBean streamingManagerMBean) {
-    Preconditions.checkArgument(proxy instanceof JmxCassandraManagementProxy, "only JmxProxyImpl is supported");
     Mockito.when(((JmxCassandraManagementProxy) proxy).getStreamManagerMBean())
         .thenReturn(Optional.of(streamingManagerMBean));
   }
 
   public static void mockGetEndpointSnitchInfoMBean(ICassandraManagementProxy proxy,
                                                     EndpointSnitchInfoMBean endpointSnitchInfoMBean) {
-    Preconditions.checkArgument(proxy instanceof JmxCassandraManagementProxy, "only JmxProxyImpl is supported");
+
     Mockito.when(((JmxCassandraManagementProxy) proxy).getEndpointSnitchInfoMBean())
         .thenReturn(endpointSnitchInfoMBean);
   }
 
   public static void mockGetCompactionManagerMBean(ICassandraManagementProxy proxy,
                                                    CompactionManagerMBean compactionManagerMBean) {
-    Preconditions.checkArgument(proxy instanceof JmxCassandraManagementProxy, "only JmxProxyImpl is supported");
+
     Mockito.when(((JmxCassandraManagementProxy) proxy).getCompactionManagerMBean()).thenReturn(compactionManagerMBean);
   }
 

@@ -28,12 +28,20 @@ import java.math.BigInteger;
 import java.net.InetSocketAddress;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
+import javax.management.AttributeList;
+import javax.management.InstanceNotFoundException;
+import javax.management.IntrospectionException;
 import javax.management.JMException;
+import javax.management.MBeanInfo;
 import javax.management.Notification;
+import javax.management.ObjectName;
+import javax.management.QueryExp;
+import javax.management.ReflectionException;
 import javax.management.openmbean.TabularData;
 import javax.validation.constraints.NotNull;
 
@@ -201,6 +209,29 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
   public void forceKeyspaceCompaction(boolean var1, String var2, String... var3) throws IOException,
       ExecutionException, InterruptedException {
     // TODO: implement me.
+  }
+
+
+
+  // From MBeanServerConnection
+  public Set<ObjectName> queryNames(ObjectName name, QueryExp query)
+      throws IOException {
+    // TODO: implement me.
+    return new HashSet<ObjectName>();
+  }
+
+  public MBeanInfo getMBeanInfo(ObjectName name)
+      throws InstanceNotFoundException, IntrospectionException,
+      ReflectionException, IOException {
+    // TODO: implement me.
+    return new MBeanInfo("", "", null, null, null, null);
+  }
+
+  public AttributeList getAttributes(ObjectName name, String[] attributes)
+      throws InstanceNotFoundException, ReflectionException,
+      IOException {
+    // TODO: implement me.
+    return new AttributeList();
   }
 
 }

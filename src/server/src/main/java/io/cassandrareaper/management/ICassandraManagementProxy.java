@@ -30,8 +30,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
+import javax.management.AttributeList;
+import javax.management.InstanceNotFoundException;
+import javax.management.IntrospectionException;
 import javax.management.JMException;
+import javax.management.MBeanInfo;
 import javax.management.NotificationListener;
+import javax.management.ObjectName;
+import javax.management.QueryExp;
+import javax.management.ReflectionException;
 import javax.management.openmbean.TabularData;
 import javax.validation.constraints.NotNull;
 
@@ -143,6 +150,19 @@ public interface ICassandraManagementProxy extends NotificationListener {
 
   void forceKeyspaceCompaction(boolean var1, String var2, String... var3) throws IOException, ExecutionException,
       InterruptedException;
+
+
+  // From MBeanServerConnection
+  Set<ObjectName> queryNames(ObjectName name, QueryExp query)
+      throws IOException;
+
+  MBeanInfo getMBeanInfo(ObjectName name)
+      throws InstanceNotFoundException, IntrospectionException,
+      ReflectionException, IOException;
+
+  AttributeList getAttributes(ObjectName name, String[] attributes)
+      throws InstanceNotFoundException, ReflectionException,
+      IOException;
 
 
 }

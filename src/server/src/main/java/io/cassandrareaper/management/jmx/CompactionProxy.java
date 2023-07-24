@@ -54,7 +54,7 @@ public final class CompactionProxy {
   }
 
   public static CompactionProxy create(ICassandraManagementProxy proxy, MetricRegistry metrics) {
-    Preconditions.checkArgument(proxy instanceof JmxCassandraManagementProxy, "only JmxProxyImpl is supported");
+
     return new CompactionProxy((JmxCassandraManagementProxy) proxy, metrics);
   }
 

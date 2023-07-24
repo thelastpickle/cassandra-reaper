@@ -50,16 +50,21 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
+import javax.management.AttributeList;
 import javax.management.InstanceNotFoundException;
+import javax.management.IntrospectionException;
 import javax.management.JMException;
 import javax.management.JMX;
 import javax.management.ListenerNotFoundException;
+import javax.management.MBeanInfo;
 import javax.management.MBeanServerConnection;
 import javax.management.MalformedObjectNameException;
 import javax.management.Notification;
 import javax.management.NotificationFilter;
 import javax.management.NotificationListener;
 import javax.management.ObjectName;
+import javax.management.QueryExp;
+import javax.management.ReflectionException;
 import javax.management.openmbean.TabularData;
 import javax.management.remote.JMXConnector;
 import javax.management.remote.JMXConnectorFactory;
@@ -157,9 +162,6 @@ final class JmxCassandraManagementProxy implements ICassandraManagementProxy {
     registerConnectionsGauge();
   }
 
-  /**
-   * @see #connect(String, int, Optional, AddressTranslator, int, MetricRegistry, Cryptograph)
-   */
   static ICassandraManagementProxy connect(
       String host,
       Optional<JmxCredentials> jmxCredentials,
@@ -939,7 +941,7 @@ final class JmxCassandraManagementProxy implements ICassandraManagementProxy {
     return ssProxy;
   }
 
-  MBeanServerConnection getMBeanServerConnection() {
+  private MBeanServerConnection getMBeanServerConnection() {
     return mbeanServer;
   }
 
@@ -1014,6 +1016,24 @@ final class JmxCassandraManagementProxy implements ICassandraManagementProxy {
   public void forceKeyspaceCompaction(boolean var1, String var2, String... var3) throws IOException, ExecutionException,
       InterruptedException {
     this.getStorageServiceMBean().forceKeyspaceCompaction(var1, var2, var3);
+  }
+
+  // From MBeanServerConnection
+  public Set<ObjectName> queryNames(ObjectName name, QueryExp query)
+      throws IOException {
+    return getMBeanServerConnection().queryNames(name, query);
+  }
+
+  public MBeanInfo getMBeanInfo(ObjectName name)
+      throws InstanceNotFoundException, IntrospectionException,
+      ReflectionException, IOException {
+    return getMBeanServerConnection().getMBeanInfo(name);
+  }
+
+  public AttributeList getAttributes(ObjectName name, String[] attributes)
+      throws InstanceNotFoundException, ReflectionException,
+      IOException {
+    return getMBeanServerConnection().getAttributes(name, attributes);
   }
 
   private static final class JmxColumnFamily {
@@ -1102,5 +1122,6 @@ final class JmxCassandraManagementProxy implements ICassandraManagementProxy {
       }
     }
   }
+
 
 }

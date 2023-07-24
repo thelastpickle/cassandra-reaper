@@ -28,7 +28,6 @@ import javax.management.InstanceNotFoundException;
 import javax.management.JMException;
 import javax.management.NotificationListener;
 
-import com.google.common.base.Preconditions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,7 +43,7 @@ public final class DiagnosticProxy {
   }
 
   public static DiagnosticProxy create(ICassandraManagementProxy proxy) {
-    Preconditions.checkArgument(proxy instanceof JmxCassandraManagementProxy, "only JmxProxyImpl is supported");
+
     return new DiagnosticProxy((JmxCassandraManagementProxy) proxy);
   }
 

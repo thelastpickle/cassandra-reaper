@@ -70,8 +70,6 @@ public class JmxConnectionsInitializerTest {
     };
 
 
-
-
     Cluster cluster = Cluster.builder()
         .withName("test")
         .withPartitioner("murmur3partitioner")

@@ -37,7 +37,6 @@ import javax.management.MBeanAttributeInfo;
 import javax.management.MBeanInfo;
 import javax.management.ObjectName;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.joda.time.DateTime;
@@ -56,7 +55,7 @@ public final class MetricsProxy {
   }
 
   public static MetricsProxy create(ICassandraManagementProxy proxy) {
-    Preconditions.checkArgument(proxy instanceof JmxCassandraManagementProxy, "only JmxProxyImpl is supported");
+
     return new MetricsProxy((JmxCassandraManagementProxy) proxy);
   }
 
@@ -180,7 +179,7 @@ public final class MetricsProxy {
     List<List<JmxStat>> allStats = Lists.newArrayList();
     Set<ObjectName> beanSet = Sets.newLinkedHashSet();
     for (String bean : beans) {
-      beanSet.addAll(proxy.getMBeanServerConnection().queryNames(new ObjectName(bean), null));
+      beanSet.addAll(proxy.queryNames(new ObjectName(bean), null));
     }
 
     beanSet.stream()
@@ -201,7 +200,7 @@ public final class MetricsProxy {
     List<JmxStat> attributeList = Lists.newArrayList();
     try {
       Map<String, MBeanAttributeInfo> name2AttrInfo = new LinkedHashMap<>();
-      MBeanInfo info = proxy.getMBeanServerConnection().getMBeanInfo(mbeanName);
+      MBeanInfo info = proxy.getMBeanInfo(mbeanName);
       for (MBeanAttributeInfo attrInfo : info.getAttributes()) {
         MBeanAttributeInfo attr = attrInfo;
         if (!attr.isReadable()) {
@@ -210,7 +209,7 @@ public final class MetricsProxy {
           name2AttrInfo.put(attr.getName(), attr);
         }
       }
-      proxy.getMBeanServerConnection().getAttributes(mbeanName, name2AttrInfo.keySet().toArray(new String[0]))
+      proxy.getAttributes(mbeanName, name2AttrInfo.keySet().toArray(new String[0]))
           .asList()
           .forEach((attribute) -> {
             Object value = attribute.getValue();

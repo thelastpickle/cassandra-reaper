@@ -28,7 +28,6 @@ import java.util.Map;
 import java.util.Set;
 import javax.management.openmbean.TabularData;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,7 +51,7 @@ public final class SnapshotProxy {
   }
 
   public static SnapshotProxy create(ICassandraManagementProxy proxy) {
-    Preconditions.checkArgument(proxy instanceof JmxCassandraManagementProxy, "only JmxProxyImpl is supported");
+
     return new SnapshotProxy((JmxCassandraManagementProxy) proxy);
   }
 

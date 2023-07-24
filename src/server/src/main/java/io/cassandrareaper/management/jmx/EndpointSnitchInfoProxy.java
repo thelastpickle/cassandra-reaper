@@ -21,7 +21,6 @@ import io.cassandrareaper.management.ICassandraManagementProxy;
 
 import java.util.concurrent.ExecutionException;
 
-import com.google.common.base.Preconditions;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 
@@ -38,7 +37,7 @@ public final class EndpointSnitchInfoProxy {
   }
 
   public static EndpointSnitchInfoProxy create(ICassandraManagementProxy proxy) {
-    Preconditions.checkArgument(proxy instanceof JmxCassandraManagementProxy, "only JmxProxyImpl is supported");
+
     return new EndpointSnitchInfoProxy((JmxCassandraManagementProxy) proxy);
   }
 

@@ -21,8 +21,6 @@ import io.cassandrareaper.management.ICassandraManagementProxy;
 
 import java.util.Map;
 
-import com.google.common.base.Preconditions;
-
 
 public final class FailureDetectorProxy {
 
@@ -33,7 +31,7 @@ public final class FailureDetectorProxy {
   }
 
   public static FailureDetectorProxy create(ICassandraManagementProxy proxy) {
-    Preconditions.checkArgument(proxy instanceof JmxCassandraManagementProxy, "only JmxProxyImpl is supported");
+
     return new FailureDetectorProxy((JmxCassandraManagementProxy) proxy);
   }
 

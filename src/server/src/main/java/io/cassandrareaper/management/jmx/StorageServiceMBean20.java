@@ -20,7 +20,6 @@ package io.cassandrareaper.management.jmx;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.concurrent.ExecutionException;
-
 import javax.management.NotificationEmitter;
 
 import org.apache.cassandra.service.StorageServiceMBean;
@@ -35,7 +34,9 @@ public interface StorageServiceMBean20 extends NotificationEmitter, StorageServi
   @Deprecated
   double getLoad();
 
-  /** Forces major compaction of a single keyspace */
+  /**
+   * Forces major compaction of a single keyspace
+   */
   void forceKeyspaceCompaction(String keyspaceName, String... columnFamilies)
       throws IOException, ExecutionException, InterruptedException;
 
@@ -85,7 +86,9 @@ public interface StorageServiceMBean20 extends NotificationEmitter, StorageServi
       boolean primaryRange,
       String... columnFamilies);
 
-  /** Same as forceRepairAsync, but handles a specified range */
+  /**
+   * Same as forceRepairAsync, but handles a specified range
+   */
   int forceRepairRangeAsync(
       String beginToken,
       String endToken,
@@ -109,7 +112,9 @@ public interface StorageServiceMBean20 extends NotificationEmitter, StorageServi
       final Collection<String> hosts, // CHECKSTYLE IGNORE THIS LINE
       final String... columnFamilies); // CHECKSTYLE IGNORE THIS LINE
 
-  /** Same as forceRepairAsync, but handles a specified range */
+  /**
+   * Same as forceRepairAsync, but handles a specified range
+   */
   int forceRepairRangeAsync(
       String beginToken,
       String endToken,
@@ -126,7 +131,9 @@ public interface StorageServiceMBean20 extends NotificationEmitter, StorageServi
       String keyspaceName, boolean isSequential, boolean isLocal, String... columnFamilies)
       throws IOException;
 
-  /** Triggers proactive repair but only for the node primary range. */
+  /**
+   * Triggers proactive repair but only for the node primary range.
+   */
   void forceKeyspaceRepairPrimaryRange(
       String keyspaceName, boolean isSequential, boolean isLocal, String... columnFamilies)
       throws IOException;
@@ -146,7 +153,9 @@ public interface StorageServiceMBean20 extends NotificationEmitter, StorageServi
       String... columnFamilies)
       throws IOException;
 
-  /** set the logging level at runtime */
+  /**
+   * set the logging level at runtime
+   */
   void setLog4jLevel(String classQualifier, String level);
 
   @Deprecated
