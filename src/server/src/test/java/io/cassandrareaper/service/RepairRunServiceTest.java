@@ -33,6 +33,7 @@ import io.cassandrareaper.management.jmx.ClusterFacade;
 import io.cassandrareaper.management.jmx.JmxManagementConnectionFactory;
 import io.cassandrareaper.storage.IStorageDao;
 import io.cassandrareaper.storage.MemoryStorageFacade;
+import io.cassandrareaper.storage.cluster.IClusterDao;
 import io.cassandrareaper.storage.repairrun.IRepairRunDao;
 
 import java.math.BigInteger;
@@ -60,6 +61,7 @@ import org.apache.commons.lang3.RandomStringUtils;
 import org.joda.time.DateTimeUtils;
 import org.junit.After;
 import org.junit.Test;
+import org.mockito.Mockito;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -545,6 +547,7 @@ public final class RepairRunServiceTest {
     when(storage.getRepairRunDao()).thenReturn(mockedRepairRunDao);
     AppContext context = new AppContext();
     context.storage = storage;
+    Mockito.when(context.storage.getClusterDao()).thenReturn(Mockito.mock(IClusterDao.class));
     context.config = new ReaperApplicationConfiguration();
     final ICassandraManagementProxy jmx = CassandraManagementProxyTest.mockJmxProxyImpl();
     context.managementConnectionFactory = new JmxManagementConnectionFactory(context, new NoopCrypotograph()) {
@@ -608,6 +611,7 @@ public final class RepairRunServiceTest {
     AppContext context = new AppContext();
     context.storage = storage;
     context.config = new ReaperApplicationConfiguration();
+    Mockito.when(context.storage.getClusterDao()).thenReturn(Mockito.mock(IClusterDao.class));
     final ICassandraManagementProxy jmx = CassandraManagementProxyTest.mockJmxProxyImpl();
     context.managementConnectionFactory = new JmxManagementConnectionFactory(context, new NoopCrypotograph()) {
       @Override

@@ -39,6 +39,7 @@ import java.util.concurrent.ConcurrentMap;
 
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.MetricRegistry;
+import com.codahale.metrics.Timer;
 import com.datastax.driver.core.policies.AddressTranslator;
 import com.datastax.driver.core.policies.EC2MultiRegionAddressTranslator;
 import com.google.common.annotations.VisibleForTesting;
@@ -98,7 +99,29 @@ public class JmxManagementConnectionFactory implements IManagementConnectionFact
       LOG.debug("using specified JMX credentials per cluster for authentication");
       this.jmxCredentials = context.config.getJmxCredentials();
     }
+    initializeJmxSeedsForAllClusters();
   }
+
+  private void initializeJmxSeedsForAllClusters() {
+    LOG.info("Initializing JMX seed list for all clusters...");
+    try (JmxConnectionsInitializer jmxConnectionsIntializer = JmxConnectionsInitializer.create(context);
+         Timer.Context cxt = context
+             .metricRegistry
+             .timer(MetricRegistry.name(JmxManagementConnectionFactory.class, "jmxConnectionsIntializer"))
+             .time()) {
+
+      context
+          .storage
+          .getClusterDao()
+          .getClusters()
+          .parallelStream()
+          .sorted()
+          .forEach(cluster -> jmxConnectionsIntializer.on(cluster));
+
+      LOG.info("Initialized JMX seed list for all clusters.");
+    }
+  }
+
 
   private void registerConnectionsGauge() {
     try {

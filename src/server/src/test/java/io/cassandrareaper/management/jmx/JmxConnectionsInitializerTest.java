@@ -25,7 +25,9 @@ import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.Node;
 import io.cassandrareaper.crypto.Cryptograph;
 import io.cassandrareaper.management.ICassandraManagementProxy;
+import io.cassandrareaper.storage.IStorageDao;
 import io.cassandrareaper.storage.cassandra.CassandraStorageFacade;
+import io.cassandrareaper.storage.cluster.IClusterDao;
 
 import java.net.UnknownHostException;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -35,6 +37,7 @@ import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class JmxConnectionsInitializerTest {
 
@@ -53,6 +56,10 @@ public class JmxConnectionsInitializerTest {
     final ICassandraManagementProxy cassandraManagementProxyMock = CassandraManagementProxyTest.mockJmxProxyImpl();
     final AtomicInteger connectionAttempts = new AtomicInteger(0);
 
+    context.config.setDatacenterAvailability(DatacenterAvailability.EACH);
+    context.storage = mock(CassandraStorageFacade.class);
+    when(context.storage.getClusterDao()).thenReturn(mock(IClusterDao.class));
+
     context.managementConnectionFactory = new JmxManagementConnectionFactory(context, cryptographMock) {
       @Override
       protected ICassandraManagementProxy connectImpl(Node node) throws ReaperException {
@@ -63,8 +70,7 @@ public class JmxConnectionsInitializerTest {
     };
 
 
-    context.config.setDatacenterAvailability(DatacenterAvailability.EACH);
-    context.storage = mock(CassandraStorageFacade.class);
+
 
     Cluster cluster = Cluster.builder()
         .withName("test")
@@ -90,6 +96,7 @@ public class JmxConnectionsInitializerTest {
     context.config = new ReaperApplicationConfiguration();
     context.config.setDatacenterAvailability(DatacenterAvailability.LOCAL);
     context.storage = mock(CassandraStorageFacade.class);
+    when(context.storage.getClusterDao()).thenReturn(mock(IClusterDao.class));
     final Cryptograph cryptographMock = mock(Cryptograph.class);
     final ICassandraManagementProxy cassandraManagementProxyMock = CassandraManagementProxyTest.mockJmxProxyImpl();
     final AtomicInteger connectionAttempts = new AtomicInteger(0);
@@ -126,7 +133,8 @@ public class JmxConnectionsInitializerTest {
     AppContext context = new AppContext();
     context.config = new ReaperApplicationConfiguration();
     context.config.setDatacenterAvailability(DatacenterAvailability.ALL);
-    context.storage = mock(CassandraStorageFacade.class);
+    context.storage = mock(IStorageDao.class);
+    when(context.storage.getClusterDao()).thenReturn(mock(IClusterDao.class));
     final Cryptograph cryptographMock = mock(Cryptograph.class);
     final ICassandraManagementProxy cassandraManagementProxyMock = mock(ICassandraManagementProxy.class);
     final AtomicInteger connectionAttempts = new AtomicInteger(0);

@@ -23,11 +23,14 @@ import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.JmxCredentials;
 import io.cassandrareaper.core.Node;
 import io.cassandrareaper.crypto.Cryptograph;
+import io.cassandrareaper.storage.IStorageDao;
+import io.cassandrareaper.storage.cluster.IClusterDao;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
+import com.codahale.metrics.MetricRegistry;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import org.junit.Test;
@@ -35,12 +38,21 @@ import org.junit.Test;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class JmxManagementConnectionFactoryTest {
 
   @Test
   public void fetchingJmxCredentialsPrioritizesThoseInStorageFirst() {
+    AppContext context = mock(AppContext.class);
+    context.config = new ReaperApplicationConfiguration();
+    context.storage = mock(IStorageDao.class);
+    when(context.storage.getClusterDao()).thenReturn(mock(IClusterDao.class));
+    context.metricRegistry = mock(MetricRegistry.class);
+    when(context.metricRegistry.timer(any())).thenReturn(mock(com.codahale.metrics.Timer.class));
+
     JmxCredentials globalYamlJmxAuth = JmxCredentials.builder()
         .withUsername("global").withPassword("foo1").build();
     JmxCredentials clusterYamlJmxAuth = JmxCredentials.builder()
@@ -49,9 +61,6 @@ public class JmxManagementConnectionFactoryTest {
         .withUsername("storage").withPassword("foo3").build();
     Cluster cluster = Cluster.builder().withName("FooCluster")
         .withSeedHosts(ImmutableSet.of("127.0.0.1")).withJmxCredentials(clusterStorageJmxAuth).build();
-
-    AppContext context = mock(AppContext.class);
-    context.config = new ReaperApplicationConfiguration();
 
     JmxManagementConnectionFactory connectionFactory = new JmxManagementConnectionFactory(context,
         mock(Cryptograph.class));
@@ -67,14 +76,19 @@ public class JmxManagementConnectionFactoryTest {
 
   @Test
   public void fetchingJmxCredentialsPrioritizesClusterSpecificWhenMissingInStorage() {
+    AppContext context = mock(AppContext.class);
+    context.config = new ReaperApplicationConfiguration();
+    context.storage = mock(IStorageDao.class);
+    when(context.storage.getClusterDao()).thenReturn(mock(IClusterDao.class));
+    context.metricRegistry = mock(MetricRegistry.class);
+    when(context.metricRegistry.timer(any())).thenReturn(mock(com.codahale.metrics.Timer.class));
+
     JmxCredentials globalYamlJmxAuth = JmxCredentials.builder()
         .withUsername("global").withPassword("foo1").build();
     JmxCredentials clusterYamlJmxAuth = JmxCredentials.builder()
         .withUsername("cluster").withPassword("foo2").build();
     Cluster cluster = Cluster.builder().withName("FooCluster")
         .withSeedHosts(ImmutableSet.of("127.0.0.1")).build();
-    AppContext context = mock(AppContext.class);
-    context.config = new ReaperApplicationConfiguration();
     JmxManagementConnectionFactory connectionFactory = new JmxManagementConnectionFactory(context,
         mock(Cryptograph.class));
     connectionFactory.setJmxAuth(globalYamlJmxAuth);
@@ -89,13 +103,18 @@ public class JmxManagementConnectionFactoryTest {
 
   @Test
   public void fetchingJmxCredentialsDefaultsToGlobalWhenMissingEverywhereElse() {
+    AppContext context = mock(AppContext.class);
+    context.config = new ReaperApplicationConfiguration();
+    context.storage = mock(IStorageDao.class);
+    when(context.storage.getClusterDao()).thenReturn(mock(IClusterDao.class));
+    context.metricRegistry = mock(MetricRegistry.class);
+    when(context.metricRegistry.timer(any())).thenReturn(mock(com.codahale.metrics.Timer.class));
+
     JmxCredentials globalYamlJmxAuth = JmxCredentials.builder()
         .withUsername("global").withPassword("foo1").build();
     Cluster cluster = Cluster.builder().withName("FooCluster")
         .withSeedHosts(ImmutableSet.of("127.0.0.1")).build();
 
-    AppContext context = mock(AppContext.class);
-    context.config = new ReaperApplicationConfiguration();
     JmxManagementConnectionFactory connectionFactory = new JmxManagementConnectionFactory(context,
         mock(Cryptograph.class));
     connectionFactory.setJmxAuth(globalYamlJmxAuth);
@@ -109,10 +128,15 @@ public class JmxManagementConnectionFactoryTest {
 
   @Test
   public void fetchingJmxCredentialsIsntPresentWhenNotDefinedAnywhere() {
-    Cluster cluster = Cluster.builder().withName("FooCluster")
-        .withSeedHosts(ImmutableSet.of("127.0.0.1")).build();
     AppContext context = mock(AppContext.class);
     context.config = new ReaperApplicationConfiguration();
+    context.storage = mock(IStorageDao.class);
+    context.metricRegistry = mock(MetricRegistry.class);
+    when(context.metricRegistry.timer(any())).thenReturn(mock(com.codahale.metrics.Timer.class));
+    when(context.storage.getClusterDao()).thenReturn(mock(IClusterDao.class));
+
+    Cluster cluster = Cluster.builder().withName("FooCluster")
+        .withSeedHosts(ImmutableSet.of("127.0.0.1")).build();
 
     JmxManagementConnectionFactory connectionFactory = new JmxManagementConnectionFactory(context,
         mock(Cryptograph.class));
@@ -126,6 +150,10 @@ public class JmxManagementConnectionFactoryTest {
   public void ensureIPv6HostCanBeUsed() {
     AppContext context = mock(AppContext.class);
     context.config = new ReaperApplicationConfiguration();
+    context.storage = mock(IStorageDao.class);
+    when(context.storage.getClusterDao()).thenReturn(mock(IClusterDao.class));
+    context.metricRegistry = mock(MetricRegistry.class);
+    when(context.metricRegistry.timer(any())).thenReturn(mock(com.codahale.metrics.Timer.class));
     JmxManagementConnectionFactory connectionFactory = new JmxManagementConnectionFactory(context,
         mock(Cryptograph.class));
     String host = connectionFactory.determineHost(Node.builder()
@@ -142,6 +170,10 @@ public class JmxManagementConnectionFactoryTest {
     jmxPorts.put("127.0.0.3", 7300);
     AppContext context = mock(AppContext.class);
     context.config = new ReaperApplicationConfiguration();
+    context.storage = mock(IStorageDao.class);
+    when(context.storage.getClusterDao()).thenReturn(mock(IClusterDao.class));
+    context.metricRegistry = mock(MetricRegistry.class);
+    when(context.metricRegistry.timer(any())).thenReturn(mock(com.codahale.metrics.Timer.class));
     JmxManagementConnectionFactory connectionFactory = new JmxManagementConnectionFactory(context,
         mock(Cryptograph.class));
     connectionFactory.setJmxPorts(jmxPorts);
@@ -152,7 +184,11 @@ public class JmxManagementConnectionFactoryTest {
   @Test
   public void ensureIPv4HostCanBeUsed() {
     AppContext context = mock(AppContext.class);
+    context.storage = mock(IStorageDao.class);
+    when(context.storage.getClusterDao()).thenReturn(mock(IClusterDao.class));
     context.config = new ReaperApplicationConfiguration();
+    context.metricRegistry = mock(MetricRegistry.class);
+    when(context.metricRegistry.timer(any())).thenReturn(mock(com.codahale.metrics.Timer.class));
     JmxManagementConnectionFactory connectionFactory = new JmxManagementConnectionFactory(context,
         mock(Cryptograph.class));
     String host = connectionFactory.determineHost(Node.builder().withHostname("127.0.0.1").build());

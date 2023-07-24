@@ -25,7 +25,9 @@ import io.cassandrareaper.core.Node;
 import io.cassandrareaper.crypto.Cryptograph;
 import io.cassandrareaper.management.HostConnectionCounters;
 import io.cassandrareaper.management.ICassandraManagementProxy;
+import io.cassandrareaper.storage.IStorageDao;
 import io.cassandrareaper.storage.cassandra.CassandraStorageFacade;
+import io.cassandrareaper.storage.cluster.IClusterDao;
 
 import java.net.UnknownHostException;
 import java.util.Collections;
@@ -33,6 +35,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import com.google.common.collect.ImmutableSet;
 import org.junit.Test;
+import org.mockito.Mockito;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -55,7 +58,8 @@ public final class JmxCustomPortTest {
     final AtomicInteger port = new AtomicInteger(0);
     HostConnectionCounters hostConnectionCounters = mock(HostConnectionCounters.class);
     when(hostConnectionCounters.getSuccessfulConnections(any())).thenReturn(1);
-
+    context.storage = Mockito.mock(IStorageDao.class);
+    Mockito.when(context.storage.getClusterDao()).thenReturn(Mockito.mock(IClusterDao.class));
 
     context.managementConnectionFactory = new JmxManagementConnectionFactory(context, cryptographMock) {
       @Override

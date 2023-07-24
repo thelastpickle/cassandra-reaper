@@ -163,6 +163,7 @@ public final class HeartTest {
     context.config = new ReaperApplicationConfiguration();
     context.config.setDatacenterAvailability(ReaperApplicationConfiguration.DatacenterAvailability.EACH);
     context.storage = Mockito.mock(CassandraStorageFacade.class);
+    Mockito.when(context.storage.getClusterDao()).thenReturn(Mockito.mock(IClusterDao.class));
     context.managementConnectionFactory = new JmxManagementConnectionFactory(context, new NoopCrypotograph());
     IRepairScheduleDao mockedRepairScheduleDao = Mockito.mock(IRepairScheduleDao.class);
     Mockito.when(context.storage.getRepairScheduleDao()).thenReturn(mockedRepairScheduleDao);
@@ -197,6 +198,7 @@ public final class HeartTest {
     context.repairManager.repairRunners.put(UUID.randomUUID(), Mockito.mock(RepairRunner.class));
 
     context.storage = Mockito.mock(CassandraStorageFacade.class);
+    Mockito.when(context.storage.getClusterDao()).thenReturn(Mockito.mock(IClusterDao.class));
     context.managementConnectionFactory = new JmxManagementConnectionFactory(context, new NoopCrypotograph());
 
     try (Heart heart = Heart.create(context)) {

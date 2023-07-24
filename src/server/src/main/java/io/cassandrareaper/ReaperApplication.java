@@ -25,7 +25,6 @@ import io.cassandrareaper.crypto.Cryptograph;
 import io.cassandrareaper.crypto.NoopCrypotograph;
 import io.cassandrareaper.management.http.HttpManagementConnectionFactory;
 import io.cassandrareaper.management.jmx.ClusterFacade;
-import io.cassandrareaper.management.jmx.JmxConnectionsInitializer;
 import io.cassandrareaper.management.jmx.JmxManagementConnectionFactory;
 import io.cassandrareaper.metrics.PrometheusMetricsFilter;
 import io.cassandrareaper.resources.ClusterResource;
@@ -59,8 +58,6 @@ import javax.servlet.DispatcherType;
 import javax.servlet.FilterRegistration;
 
 import com.codahale.metrics.InstrumentedScheduledExecutorService;
-import com.codahale.metrics.MetricRegistry;
-import com.codahale.metrics.Timer;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
@@ -264,7 +261,7 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
       AutoSchedulingManager.start(context, context.storage.getRepairRunDao());
     }
 
-    initializeJmxSeedsForAllClusters();
+
     maybeInitializeSidecarMode(addClusterResource);
     LOG.info("resuming pending repair runs");
 
@@ -422,26 +419,6 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
     LOG.debug("repairParallelism: {}", config.getRepairParallelism());
     LOG.debug("hangingRepairTimeoutMins: {}", config.getHangingRepairTimeoutMins());
     LOG.debug("jmxPorts: {}", config.getJmxPorts());
-  }
-
-  private void initializeJmxSeedsForAllClusters() {
-    LOG.info("Initializing JMX seed list for all clusters...");
-    try (JmxConnectionsInitializer jmxConnectionsIntializer = JmxConnectionsInitializer.create(context);
-         Timer.Context cxt = context
-             .metricRegistry
-             .timer(MetricRegistry.name(JmxManagementConnectionFactory.class, "jmxConnectionsIntializer"))
-             .time()) {
-
-      context
-          .storage
-          .getClusterDao()
-          .getClusters()
-          .parallelStream()
-          .sorted()
-          .forEach(cluster -> jmxConnectionsIntializer.on(cluster));
-
-      LOG.info("Initialized JMX seed list for all clusters.");
-    }
   }
 
   private void tryInitializeStorage(ReaperApplicationConfiguration config, Environment environment)
