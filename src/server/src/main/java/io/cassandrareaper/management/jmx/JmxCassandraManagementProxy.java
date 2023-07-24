@@ -60,6 +60,7 @@ import javax.management.Notification;
 import javax.management.NotificationFilter;
 import javax.management.NotificationListener;
 import javax.management.ObjectName;
+import javax.management.openmbean.TabularData;
 import javax.management.remote.JMXConnector;
 import javax.management.remote.JMXConnectorFactory;
 import javax.management.remote.JMXServiceURL;
@@ -934,7 +935,7 @@ final class JmxCassandraManagementProxy implements ICassandraManagementProxy {
     }
   }
 
-  StorageServiceMBean getStorageServiceMBean() {
+  private StorageServiceMBean getStorageServiceMBean() {
     return ssProxy;
   }
 
@@ -987,6 +988,32 @@ final class JmxCassandraManagementProxy implements ICassandraManagementProxy {
 
   void removeNotificationListener(NotificationListener listener) throws IOException, JMException {
     jmxConnector.getMBeanServerConnection().removeNotificationListener(ObjectNames.LAST_EVENT_ID, listener);
+  }
+
+  // From storageServiceMbean
+  public void clearSnapshot(String var1, String... var2) throws IOException {
+    this.getStorageServiceMBean().clearSnapshot(var1, var2);
+  }
+
+  public Map<String, TabularData> getSnapshotDetails() {
+    return this.getStorageServiceMBean().getSnapshotDetails();
+  }
+
+  public void takeSnapshot(String var1, String... var2) throws IOException {
+    this.getStorageServiceMBean().takeSnapshot(var1, var2);
+  }
+
+  public void takeColumnFamilySnapshot(String var1, String var2, String var3) throws IOException {
+    this.getStorageServiceMBean().takeColumnFamilySnapshot(var1, var2, var3);
+  }
+
+  public Map<String, String> getTokenToEndpointMap() {
+    return this.getStorageServiceMBean().getTokenToEndpointMap();
+  }
+
+  public void forceKeyspaceCompaction(boolean var1, String var2, String... var3) throws IOException, ExecutionException,
+      InterruptedException {
+    this.getStorageServiceMBean().forceKeyspaceCompaction(var1, var2, var3);
   }
 
   private static final class JmxColumnFamily {
@@ -1075,4 +1102,5 @@ final class JmxCassandraManagementProxy implements ICassandraManagementProxy {
       }
     }
   }
+
 }

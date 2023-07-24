@@ -1404,11 +1404,9 @@ public final class SegmentRunnerTest {
       throw new AssertionError(ex);
     }
     CassandraManagementProxyTest.mockGetEndpointSnitchInfoMBean(jmx, endpointSnitchInfoMBean);
-
-    StorageServiceMBean storageServiceMbeanMock = mock(StorageServiceMBean.class);
-    CassandraManagementProxyTest.mockGetStorageServiceMBean(jmx, storageServiceMbeanMock);
+    ICassandraManagementProxy mockManagementProxy = mock(ICassandraManagementProxy.class);
     doThrow(new IOException("failure"))
-        .when(storageServiceMbeanMock).clearSnapshot(any(), any());
+        .when(mockManagementProxy).clearSnapshot(any(), any());
 
     RepairRunner rr = mock(RepairRunner.class);
     RepairUnit ru = mock(RepairUnit.class);
@@ -1427,7 +1425,7 @@ public final class SegmentRunnerTest {
         .create(context, clusterFacade, segmentId, COORDS, 5000, 0.5, PARALLEL, "reaper", ru, TABLES, rr);
 
     sr.tryClearSnapshots(UUIDs.timeBased().toString());
-    Mockito.verify(storageServiceMbeanMock, Mockito.times(1)).clearSnapshot(any(), any());
+    Mockito.verify(mockManagementProxy, Mockito.times(1)).clearSnapshot(any(), any());
   }
 
   @Test
@@ -1481,9 +1479,8 @@ public final class SegmentRunnerTest {
     when(clusterFacade.connect(any(Cluster.class), any())).thenThrow(new ReaperException("failure"));
     StorageServiceMBean storageServiceMbeanMock = mock(StorageServiceMBean.class);
     final ICassandraManagementProxy jmx = CassandraManagementProxyTest.mockJmxProxyImpl();
-    CassandraManagementProxyTest.mockGetStorageServiceMBean(jmx, storageServiceMbeanMock);
     doThrow(new IOException("failure"))
-        .when(storageServiceMbeanMock).clearSnapshot(any(), any());
+        .when(jmx).clearSnapshot(any(), any());
 
     RepairRunner rr = mock(RepairRunner.class);
     SegmentRunner sr = SegmentRunner

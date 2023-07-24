@@ -28,7 +28,6 @@ import javax.management.MBeanServerConnection;
 import com.google.common.base.Preconditions;
 import org.apache.cassandra.db.compaction.CompactionManagerMBean;
 import org.apache.cassandra.locator.EndpointSnitchInfoMBean;
-import org.apache.cassandra.service.StorageServiceMBean;
 import org.apache.cassandra.streaming.StreamManagerMBean;
 import org.junit.Test;
 import org.mockito.Mockito;
@@ -51,11 +50,6 @@ public final class CassandraManagementProxyTest {
                                                   MBeanServerConnection serverConnection) {
     Preconditions.checkArgument(proxy instanceof JmxCassandraManagementProxy, "only JmxProxyImpl is supported");
     Mockito.when(((JmxCassandraManagementProxy) proxy).getMBeanServerConnection()).thenReturn(serverConnection);
-  }
-
-  public static void mockGetStorageServiceMBean(ICassandraManagementProxy proxy, StorageServiceMBean storageMBean) {
-    Preconditions.checkArgument(proxy instanceof JmxCassandraManagementProxy, "only JmxProxyImpl is supported");
-    Mockito.when(((JmxCassandraManagementProxy) proxy).getStorageServiceMBean()).thenReturn(storageMBean);
   }
 
   public static void mockGetStreamManagerMBean(ICassandraManagementProxy proxy,

@@ -87,7 +87,7 @@ public final class SnapshotProxy {
       throw new IllegalArgumentException("repairId cannot be null or empty string");
     }
     try {
-      proxy.getStorageServiceMBean().clearSnapshot(repairId, keyspaceName);
+      proxy.clearSnapshot(repairId, keyspaceName);
     } catch (AssertionError | IOException e) {
       LOG.error("failed to clear snapshot " + repairId + " in keyspace " + keyspaceName, e);
     }
@@ -99,7 +99,7 @@ public final class SnapshotProxy {
       throw new IllegalArgumentException("snapshotName cannot be null or empty string");
     }
     try {
-      proxy.getStorageServiceMBean().clearSnapshot(snapshotName);
+      proxy.clearSnapshot(snapshotName);
     } catch (AssertionError | IOException | RuntimeException e) {
       LOG.error("failed to clear snapshot " + snapshotName, e);
     }
@@ -117,7 +117,7 @@ public final class SnapshotProxy {
 
     Map<String, TabularData> snapshotDetails = Collections.emptyMap();
     try {
-      snapshotDetails = proxy.getStorageServiceMBean().getSnapshotDetails();
+      snapshotDetails = proxy.getSnapshotDetails();
     } catch (RuntimeException ex) {
       LOG.warn("failed getting snapshots details from " + proxy.getClusterName(), ex);
     }
@@ -166,7 +166,7 @@ public final class SnapshotProxy {
 
   public String takeSnapshot(String snapshotName, String... keyspaceNames) throws ReaperException {
     try {
-      proxy.getStorageServiceMBean().takeSnapshot(snapshotName, keyspaceNames);
+      proxy.takeSnapshot(snapshotName, keyspaceNames);
       return snapshotName;
     } catch (IOException e) {
       throw new ReaperException(e);
@@ -179,7 +179,7 @@ public final class SnapshotProxy {
       String snapshotName) throws ReaperException {
 
     try {
-      proxy.getStorageServiceMBean().takeColumnFamilySnapshot(keyspace, table, snapshotName);
+      proxy.takeColumnFamilySnapshot(keyspace, table, snapshotName);
     } catch (IOException e) {
       throw new ReaperException(e);
     }

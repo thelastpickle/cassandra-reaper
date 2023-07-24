@@ -25,17 +25,14 @@ import java.util.Map.Entry;
 import java.util.stream.Collectors;
 
 import com.google.common.base.Preconditions;
-import org.apache.cassandra.service.StorageServiceMBean;
 
 
 public final class StorageServiceProxy {
 
   private final JmxCassandraManagementProxy proxy;
-  private final StorageServiceMBean ssProxy;
 
   private StorageServiceProxy(JmxCassandraManagementProxy proxy) {
     this.proxy = proxy;
-    this.ssProxy = proxy.getStorageServiceMBean();
   }
 
   public static StorageServiceProxy create(ICassandraManagementProxy proxy) {
@@ -44,9 +41,9 @@ public final class StorageServiceProxy {
   }
 
   public Map<String, List<String>> getTokensByNode() {
-    Preconditions.checkNotNull(ssProxy, "Looks like the proxy is not connected");
+    Preconditions.checkNotNull(proxy, "Looks like the proxy is not connected");
 
-    Map<String, String> tokenToEndpointMap = ssProxy.getTokenToEndpointMap();
+    Map<String, String> tokenToEndpointMap = proxy.getTokenToEndpointMap();
     return tokenToEndpointMap
         .entrySet()
         .stream()

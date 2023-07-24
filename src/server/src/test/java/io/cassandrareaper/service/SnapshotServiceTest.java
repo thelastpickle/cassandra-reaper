@@ -24,7 +24,6 @@ import io.cassandrareaper.core.Node;
 import io.cassandrareaper.core.Snapshot;
 import io.cassandrareaper.management.HostConnectionCounters;
 import io.cassandrareaper.management.ICassandraManagementProxy;
-import io.cassandrareaper.management.jmx.CassandraManagementProxyTest;
 import io.cassandrareaper.management.jmx.ClusterFacade;
 import io.cassandrareaper.management.jmx.JmxManagementConnectionFactory;
 import io.cassandrareaper.storage.IStorageDao;
@@ -40,7 +39,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import com.google.common.collect.ImmutableSet;
-import org.apache.cassandra.service.StorageServiceMBean;
 import org.apache.commons.lang3.tuple.Pair;
 import org.assertj.core.api.Assertions;
 import org.junit.Test;
@@ -62,8 +60,6 @@ public final class SnapshotServiceTest {
 
     ICassandraManagementProxy proxy = (ICassandraManagementProxy) mock(
         Class.forName("io.cassandrareaper.management.jmx.JmxCassandraManagementProxy"));
-    StorageServiceMBean storageMBean = Mockito.mock(StorageServiceMBean.class);
-    CassandraManagementProxyTest.mockGetStorageServiceMBean(proxy, storageMBean);
 
     AppContext cxt = new AppContext();
     cxt.config = TestRepairConfiguration.defaultConfig();
@@ -78,7 +74,7 @@ public final class SnapshotServiceTest {
 
     Assertions.assertThat(result.getLeft().getHostname()).isEqualTo("127.0.0.1");
     Assertions.assertThat(result.getRight()).isEqualTo("Test");
-    verify(storageMBean, times(1)).takeSnapshot("Test");
+    verify(proxy, times(1)).takeSnapshot("Test");
   }
 
   @Test
@@ -87,8 +83,6 @@ public final class SnapshotServiceTest {
 
     ICassandraManagementProxy proxy = (ICassandraManagementProxy) mock(
         Class.forName("io.cassandrareaper.management.jmx.JmxCassandraManagementProxy"));
-    StorageServiceMBean storageMBean = Mockito.mock(StorageServiceMBean.class);
-    CassandraManagementProxyTest.mockGetStorageServiceMBean(proxy, storageMBean);
 
     AppContext cxt = new AppContext();
     cxt.config = TestRepairConfiguration.defaultConfig();
@@ -102,7 +96,7 @@ public final class SnapshotServiceTest {
 
     Assertions.assertThat(result.getLeft().getHostname()).isEqualTo("127.0.0.1");
     Assertions.assertThat(result.getRight()).isEqualTo("Test");
-    verify(storageMBean, times(1)).takeSnapshot("Test", "keyspace1", "keyspace2");
+    verify(proxy, times(1)).takeSnapshot("Test", "keyspace1", "keyspace2");
   }
 
   @Test
@@ -111,9 +105,7 @@ public final class SnapshotServiceTest {
     ICassandraManagementProxy proxy = (ICassandraManagementProxy) mock(
         Class.forName("io.cassandrareaper.management.jmx.JmxCassandraManagementProxy"));
     when(proxy.getCassandraVersion()).thenReturn("2.1.0");
-    StorageServiceMBean storageMBean = Mockito.mock(StorageServiceMBean.class);
-    CassandraManagementProxyTest.mockGetStorageServiceMBean(proxy, storageMBean);
-    when(storageMBean.getSnapshotDetails()).thenReturn(Collections.emptyMap());
+    when(proxy.getSnapshotDetails()).thenReturn(Collections.emptyMap());
 
     AppContext cxt = new AppContext();
     cxt.config = TestRepairConfiguration.defaultConfig();
@@ -127,7 +119,7 @@ public final class SnapshotServiceTest {
         .listSnapshots(Node.builder().withHostname("127.0.0.1").build());
 
     Assertions.assertThat(result).isEmpty();
-    verify(storageMBean, times(1)).getSnapshotDetails();
+    verify(proxy, times(1)).getSnapshotDetails();
   }
 
   @Test
@@ -135,8 +127,6 @@ public final class SnapshotServiceTest {
 
     ICassandraManagementProxy proxy = (ICassandraManagementProxy) mock(
         Class.forName("io.cassandrareaper.management.jmx.JmxCassandraManagementProxy"));
-    StorageServiceMBean storageMBean = Mockito.mock(StorageServiceMBean.class);
-    CassandraManagementProxyTest.mockGetStorageServiceMBean(proxy, storageMBean);
 
     AppContext cxt = new AppContext();
     cxt.config = TestRepairConfiguration.defaultConfig();
@@ -147,7 +137,7 @@ public final class SnapshotServiceTest {
         .create(cxt, SNAPSHOT_MANAGER_EXECUTOR, mockSnapshotDao)
         .clearSnapshot("test", Node.builder().withHostname("127.0.0.1").build());
 
-    verify(storageMBean, times(1)).clearSnapshot("test");
+    verify(proxy, times(1)).clearSnapshot("test");
   }
 
   @Test
@@ -156,8 +146,6 @@ public final class SnapshotServiceTest {
 
     ICassandraManagementProxy proxy = (ICassandraManagementProxy) mock(
         Class.forName("io.cassandrareaper.management.jmx.JmxCassandraManagementProxy"));
-    StorageServiceMBean storageMBean = Mockito.mock(StorageServiceMBean.class);
-    CassandraManagementProxyTest.mockGetStorageServiceMBean(proxy, storageMBean);
 
     AppContext cxt = new AppContext();
     cxt.config = TestRepairConfiguration.defaultConfig();
@@ -186,7 +174,7 @@ public final class SnapshotServiceTest {
         .create(cxt, SNAPSHOT_MANAGER_EXECUTOR, () -> clusterFacadeSpy, mockSnapshotDao)
         .clearSnapshotClusterWide("snapshot", "testCluster");
 
-    verify(storageMBean, times(2)).clearSnapshot("snapshot");
+    verify(proxy, times(2)).clearSnapshot("snapshot");
   }
 
   @Test
@@ -195,8 +183,6 @@ public final class SnapshotServiceTest {
 
     ICassandraManagementProxy proxy = (ICassandraManagementProxy) mock(
         Class.forName("io.cassandrareaper.management.jmx.JmxCassandraManagementProxy"));
-    StorageServiceMBean storageMBean = Mockito.mock(StorageServiceMBean.class);
-    CassandraManagementProxyTest.mockGetStorageServiceMBean(proxy, storageMBean);
 
     AppContext cxt = new AppContext();
     cxt.config = TestRepairConfiguration.defaultConfig();
@@ -233,6 +219,6 @@ public final class SnapshotServiceTest {
       Assertions.assertThat(result.get(i).getLeft().getHostname()).isEqualTo("127.0.0." + (i + 1));
       Assertions.assertThat(result.get(i).getRight()).isEqualTo("snapshot");
     }
-    verify(storageMBean, times(3)).takeSnapshot("snapshot");
+    verify(proxy, times(3)).takeSnapshot("snapshot");
   }
 }

@@ -66,7 +66,7 @@ public final class CompactionProxy {
         // calling this multiple times on the same table is ok,
         // but comes at the cost of time spent unnecessary compactions
         // reference: ColumnFamilyStore.runWithCompactionsDisabled(..)
-        proxy.getStorageServiceMBean().forceKeyspaceCompaction(false, keyspaceName, tableNames);
+        proxy.forceKeyspaceCompaction(false, keyspaceName, tableNames);
       } catch (IOException | ExecutionException | InterruptedException ex) {
         LOG.warn(String.format("failed compaction on %s (%s)", keyspaceName, StringUtils.join(tableNames)), ex);
       }

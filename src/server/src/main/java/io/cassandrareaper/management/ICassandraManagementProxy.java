@@ -22,14 +22,17 @@ import io.cassandrareaper.core.Table;
 import io.cassandrareaper.management.jmx.RepairStatusHandler;
 import io.cassandrareaper.service.RingRange;
 
+import java.io.IOException;
 import java.math.BigInteger;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
 import javax.management.JMException;
 import javax.management.NotificationListener;
+import javax.management.openmbean.TabularData;
 import javax.validation.constraints.NotNull;
 
 import org.apache.cassandra.repair.RepairParallelism;
@@ -126,4 +129,20 @@ public interface ICassandraManagementProxy extends NotificationListener {
   void removeRepairStatusHandler(int repairNo);
 
   List<String> getRunningRepairMetricsPost22();
+
+  // From StorageServiceMBean
+  void clearSnapshot(String var1, String... var2) throws IOException;
+
+  Map<String, TabularData> getSnapshotDetails();
+
+  void takeSnapshot(String var1, String... var2) throws IOException;
+
+  void takeColumnFamilySnapshot(String var1, String var2, String var3) throws IOException;
+
+  Map<String, String> getTokenToEndpointMap();
+
+  void forceKeyspaceCompaction(boolean var1, String var2, String... var3) throws IOException, ExecutionException,
+      InterruptedException;
+
+
 }

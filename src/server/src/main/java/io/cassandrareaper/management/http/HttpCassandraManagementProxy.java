@@ -23,14 +23,18 @@ import io.cassandrareaper.management.ICassandraManagementProxy;
 import io.cassandrareaper.management.jmx.RepairStatusHandler;
 import io.cassandrareaper.service.RingRange;
 
+import java.io.IOException;
 import java.math.BigInteger;
 import java.net.InetSocketAddress;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
 import javax.management.JMException;
 import javax.management.Notification;
+import javax.management.openmbean.TabularData;
 import javax.validation.constraints.NotNull;
 
 import com.codahale.metrics.MetricRegistry;
@@ -169,6 +173,34 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
   @Override
   public List<String> getLiveNodes() throws ReaperException {
     return null; // TODO: implement me.
+  }
+
+  public void clearSnapshot(String var1, String... var2) throws IOException {
+    // TODO: implement me.
+  }
+
+  public Map<String, TabularData> getSnapshotDetails() {
+    // TODO: implement me.
+    return new HashMap<>();
+  }
+
+  public void takeSnapshot(String var1, String... var2) throws IOException {
+    // TODO: implement me.
+  }
+
+  public void takeColumnFamilySnapshot(String var1, String var2, String var3) throws IOException {
+    // TODO: implement me.
+
+  }
+
+  public Map<String, String> getTokenToEndpointMap() {
+    // TODO: implement me.
+    return new HashMap<>();
+  }
+
+  public void forceKeyspaceCompaction(boolean var1, String var2, String... var3) throws IOException,
+      ExecutionException, InterruptedException {
+    // TODO: implement me.
   }
 
 }
