@@ -31,7 +31,7 @@ import io.cassandrareaper.core.RepairSchedule;
 import io.cassandrareaper.core.RepairUnit;
 import io.cassandrareaper.core.StreamSession;
 import io.cassandrareaper.core.ThreadPoolStat;
-import io.cassandrareaper.jmx.ClusterFacade;
+import io.cassandrareaper.management.ClusterFacade;
 import io.cassandrareaper.storage.IDistributedStorage;
 import io.cassandrareaper.storage.OpType;
 
@@ -40,7 +40,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
-
 import javax.management.JMException;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -60,15 +59,14 @@ public final class MetricsService {
   private static final Logger LOG = LoggerFactory.getLogger(MetricsService.class);
 
   private static final String[] COLLECTED_METRICS = {
-    "org.apache.cassandra.metrics:type=ThreadPools,path=request,*",
-    "org.apache.cassandra.metrics:type=ThreadPools,path=internal,*",
-    "org.apache.cassandra.metrics:type=ClientRequest,*",
-    "org.apache.cassandra.metrics:type=DroppedMessage,*"
+      "org.apache.cassandra.metrics:type=ThreadPools,path=request,*",
+      "org.apache.cassandra.metrics:type=ThreadPools,path=internal,*",
+      "org.apache.cassandra.metrics:type=ClientRequest,*",
+      "org.apache.cassandra.metrics:type=DroppedMessage,*"
   };
 
   private static final String PERCENT_REPAIRED_METRICS
-      = "org.apache.cassandra.metrics:type=ColumnFamily,keyspace=%s,scope=*,name=PercentRepaired"
-  ;
+      = "org.apache.cassandra.metrics:type=ColumnFamily,keyspace=%s,scope=*,name=PercentRepaired";
 
   private final AppContext context;
   private final ClusterFacade clusterFacade;
@@ -82,8 +80,8 @@ public final class MetricsService {
     if (Boolean.TRUE.equals(context.config.isInSidecarMode())) {
 
       Node host = Node.builder()
-            .withHostname(context.config.getEnforcedLocalNode().orElse("127.0.0.1"))
-            .build();
+          .withHostname(context.config.getEnforcedLocalNode().orElse("127.0.0.1"))
+          .build();
 
       localClusterName = Cluster.toSymbolicName(clusterFacade.getClusterName(host));
     } else {
@@ -118,8 +116,8 @@ public final class MetricsService {
   public List<GenericMetric> convertToGenericMetrics(Map<String, List<JmxStat>> jmxStats, Node node) {
     List<GenericMetric> metrics = Lists.newArrayList();
     DateTime now = DateTime.now();
-    for (Entry<String, List<JmxStat>> jmxStatEntry:jmxStats.entrySet()) {
-      for (JmxStat jmxStat:jmxStatEntry.getValue()) {
+    for (Entry<String, List<JmxStat>> jmxStatEntry : jmxStats.entrySet()) {
+      for (JmxStat jmxStat : jmxStatEntry.getValue()) {
         GenericMetric metric = GenericMetric.builder()
             .withClusterName(node.getClusterName())
             .withHost(node.getHostname())
@@ -148,7 +146,7 @@ public final class MetricsService {
     List<GenericMetric> metrics
         = convertToGenericMetrics(ClusterFacade.create(context).collectMetrics(node, COLLECTED_METRICS), node);
 
-    ((IDistributedStorage)context.storage).storeMetrics(metrics);
+    ((IDistributedStorage) context.storage).storeMetrics(metrics);
 
     LOG.debug("Grabbing and storing metrics for {}", node.getHostname());
 
@@ -196,13 +194,13 @@ public final class MetricsService {
   private Node getNode(Optional<Node> maybeNode) {
     return maybeNode.orElseGet(() ->
         Node.builder()
-          .withHostname(context.getLocalNodeAddress())
-          .withCluster(
-              Cluster.builder()
-                  .withName(localClusterName)
-                  .withSeedHosts(ImmutableSet.of(context.getLocalNodeAddress()))
-                  .build())
-          .build());
+            .withHostname(context.getLocalNodeAddress())
+            .withCluster(
+                Cluster.builder()
+                    .withName(localClusterName)
+                    .withSeedHosts(ImmutableSet.of(context.getLocalNodeAddress()))
+                    .build())
+            .build());
   }
 
   public void grabAndStorePercentRepairedMetrics(Optional<Node> maybeNode, RepairSchedule sched)
@@ -214,11 +212,11 @@ public final class MetricsService {
     // Collect percent repaired metrics for all tables in the keyspace
     List<GenericMetric> metrics
         = convertToGenericMetrics(
-          ClusterFacade.create(context)
+        ClusterFacade.create(context)
             .collectMetrics(
-              node,
-              new String[]{String.format(PERCENT_REPAIRED_METRICS, repairUnit.getKeyspaceName())}),
-          node);
+                node,
+                new String[]{String.format(PERCENT_REPAIRED_METRICS, repairUnit.getKeyspaceName())}),
+        node);
     LOG.debug("Grabbed the following percent repaired metrics: {}", metrics);
 
     // Metrics are filtered to retain only tables of interest, sorted and reduced to keep the smallest percent repaired
@@ -229,13 +227,13 @@ public final class MetricsService {
     if (percentRepairedForSchedule.isPresent()) {
       context.storage.storePercentRepairedMetric(
           PercentRepairedMetric.builder()
-            .withCluster(repairUnit.getClusterName())
-            .withKeyspaceName(repairUnit.getKeyspaceName())
-            .withTableName(percentRepairedForSchedule.get().getMetricScope())
-            .withNode(node.getHostname())
-            .withRepairScheduleId(sched.getId())
-            .withPercentRepaired((int)percentRepairedForSchedule.get().getValue())
-            .build());
+              .withCluster(repairUnit.getClusterName())
+              .withKeyspaceName(repairUnit.getKeyspaceName())
+              .withTableName(percentRepairedForSchedule.get().getMetricScope())
+              .withNode(node.getHostname())
+              .withRepairScheduleId(sched.getId())
+              .withPercentRepaired((int) percentRepairedForSchedule.get().getValue())
+              .build());
     }
   }
 }

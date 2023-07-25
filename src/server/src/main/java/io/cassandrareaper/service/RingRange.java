@@ -128,7 +128,8 @@ public final class RingRange {
     private BigInteger start;
     private BigInteger end;
 
-    public Builder() {}
+    public Builder() {
+    }
 
     public Builder withStart(BigInteger start) {
       this.start = start;

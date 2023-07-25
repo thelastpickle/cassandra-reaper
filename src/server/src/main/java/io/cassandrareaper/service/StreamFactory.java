@@ -31,7 +31,8 @@ import org.apache.cassandra.streaming.StreamSession;
 
 public final class StreamFactory {
 
-  private StreamFactory() {}
+  private StreamFactory() {
+  }
 
   public static Stream newStream(String host, SessionInfo sessionInfo, long timeStamp) {
 

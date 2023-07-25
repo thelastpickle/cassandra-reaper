@@ -24,7 +24,7 @@ import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.Node;
 import io.cassandrareaper.core.RepairSchedule;
-import io.cassandrareaper.jmx.ClusterFacade;
+import io.cassandrareaper.management.ClusterFacade;
 import io.cassandrareaper.storage.IDistributedStorage;
 
 import java.io.IOException;
@@ -207,7 +207,7 @@ public final class Heart implements AutoCloseable {
             clusterFacade.getLiveNodes(cluster)
                 .parallelStream()
                 .filter(hostname -> {
-                  return context.jmxConnectionFactory
+                  return context.managementConnectionFactory
                       .getHostConnectionCounters()
                       .getSuccessfulConnections(hostname) >= 0;
                 })

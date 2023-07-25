@@ -24,7 +24,8 @@ import io.cassandrareaper.core.JmxCredentials;
 import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairSchedule;
 import io.cassandrareaper.crypto.Cryptograph;
-import io.cassandrareaper.jmx.ClusterFacade;
+import io.cassandrareaper.management.ClusterFacade;
+import io.cassandrareaper.management.jmx.JmxManagementConnectionFactory;
 import io.cassandrareaper.resources.view.ClusterStatus;
 import io.cassandrareaper.service.ClusterRepairScheduler;
 import io.cassandrareaper.service.RepairScheduleService;
@@ -168,9 +169,14 @@ public final class ClusterResource {
 
       String jmxUsername = "";
       boolean jmxPasswordIsSet = false;
+      Optional<JmxCredentials> jmxCredentials = Optional.empty();
 
-      Optional<JmxCredentials> jmxCredentials = context.jmxConnectionFactory
-          .getJmxCredentialsForCluster(Optional.ofNullable(cluster));
+      if (context.managementConnectionFactory instanceof JmxManagementConnectionFactory) { // TODO: Please get JMX
+        // out of the resource layer and make even service layer agnostic to which implementation it is using (HTTP
+        // vs JMX).
+        jmxCredentials = ((JmxManagementConnectionFactory) context.managementConnectionFactory)
+                .getJmxCredentialsForCluster(Optional.ofNullable(cluster));
+      }
       if (jmxCredentials.isPresent()) {
         jmxUsername = StringUtils.trimToEmpty(jmxCredentials.get().getUsername());
         jmxPasswordIsSet = !StringUtils.isEmpty(jmxCredentials.get().getPassword());

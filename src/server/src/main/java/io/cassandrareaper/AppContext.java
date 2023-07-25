@@ -17,7 +17,7 @@
 
 package io.cassandrareaper;
 
-import io.cassandrareaper.jmx.JmxConnectionFactory;
+import io.cassandrareaper.management.IManagementConnectionFactory;
 import io.cassandrareaper.service.RepairManager;
 import io.cassandrareaper.service.SchedulingManager;
 import io.cassandrareaper.storage.IStorageDao;
@@ -46,10 +46,15 @@ public final class AppContext {
   public IStorageDao storage;
   public RepairManager repairManager;
   public SchedulingManager schedulingManager;
-  public JmxConnectionFactory jmxConnectionFactory;
+  public IManagementConnectionFactory managementConnectionFactory;
   public ReaperApplicationConfiguration config;
   public MetricRegistry metricRegistry = new MetricRegistry();
   volatile String localNodeAddress = null;
+
+  public String getLocalNodeAddress() {
+    Preconditions.checkState(config.isInSidecarMode());
+    return localNodeAddress;
+  }
 
   private static class Private {
     private static final Logger LOG = LoggerFactory.getLogger(AppContext.class);
@@ -57,16 +62,11 @@ public final class AppContext {
 
     private static String initialiseInstanceAddress() {
       try {
-        return  InetAddress.getLocalHost().getHostAddress();
+        return InetAddress.getLocalHost().getHostAddress();
       } catch (UnknownHostException e) {
         LOG.warn("Cannot get instance address", e);
       }
       return DEFAULT_INSTANCE_ADDRESS;
     }
-  }
-
-  public String getLocalNodeAddress() {
-    Preconditions.checkState(config.isInSidecarMode());
-    return localNodeAddress;
   }
 }

@@ -25,9 +25,9 @@ import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairSegment;
 import io.cassandrareaper.core.RepairUnit;
 import io.cassandrareaper.core.Table;
-import io.cassandrareaper.jmx.JmxConnectionFactory;
-import io.cassandrareaper.jmx.JmxProxy;
-import io.cassandrareaper.jmx.JmxProxyTest;
+import io.cassandrareaper.management.ICassandraManagementProxy;
+import io.cassandrareaper.management.jmx.CassandraManagementProxyTest;
+import io.cassandrareaper.management.jmx.JmxManagementConnectionFactory;
 import io.cassandrareaper.resources.view.RepairRunStatus;
 import io.cassandrareaper.service.RepairManager;
 import io.cassandrareaper.service.RepairRunnerTest;
@@ -110,7 +110,7 @@ public final class RepairRunResourceTest {
   private final String keyspace = "testkeyspace_" + RandomStringUtils.randomAlphabetic(6);
   private AppContext context;
   private UriInfo uriInfo;
-  private JmxProxy proxy;
+  private ICassandraManagementProxy proxy;
 
   @Before
   public void setUp() throws Exception {
@@ -143,7 +143,7 @@ public final class RepairRunResourceTest {
     uriInfo = mock(UriInfo.class);
     when(uriInfo.getBaseUriBuilder()).thenReturn(UriBuilder.fromUri(SAMPLE_URI));
 
-    proxy = JmxProxyTest.mockJmxProxyImpl();
+    proxy = CassandraManagementProxyTest.mockJmxProxyImpl();
     when(proxy.getClusterName()).thenReturn(clustername);
     when(proxy.getCassandraVersion()).thenReturn("3.11.4");
     when(proxy.getPartitioner()).thenReturn(PARTITIONER);
@@ -175,12 +175,11 @@ public final class RepairRunResourceTest {
     } catch (UnknownHostException ex) {
       throw new AssertionError(ex);
     }
-    JmxProxyTest.mockGetEndpointSnitchInfoMBean(proxy, endpointSnitchInfoMBean);
 
-    context.jmxConnectionFactory = mock(JmxConnectionFactory.class);
-    when(context.jmxConnectionFactory.connectAny(Mockito.anyCollection())).thenReturn(proxy);
+    context.managementConnectionFactory = mock(JmxManagementConnectionFactory.class);
+    when(context.managementConnectionFactory.connectAny(Mockito.anyCollection())).thenReturn(proxy);
 
-    when(context.jmxConnectionFactory.connectAny(Mockito.anyCollection()))
+    when(context.managementConnectionFactory.connectAny(Mockito.anyCollection()))
         .thenReturn(proxy);
 
     RepairUnit.Builder repairUnitBuilder = RepairUnit.builder()

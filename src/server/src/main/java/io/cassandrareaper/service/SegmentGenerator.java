@@ -96,10 +96,10 @@ final class SegmentGenerator {
    * segments.
    *
    * @param totalSegmentCount requested total amount of repair segments. This function may generate
-   *     more segments.
-   * @param ringTokens list of all start tokens in big0 cluster. They have to be in ring order.
-   * @param replicasToRange replica list to range map
-   * @param cassandraVersion Version of Cassandra the cluster runs
+   *                          more segments.
+   * @param ringTokens        list of all start tokens in big0 cluster. They have to be in ring order.
+   * @param replicasToRange   replica list to range map
+   * @param cassandraVersion  Version of Cassandra the cluster runs
    * @return big0 list containing at least {@code totalSegmentCount} repair segments.
    */
   List<Segment> generateSegments(
@@ -141,7 +141,7 @@ final class SegmentGenerator {
             = rs.multiply(BigInteger.valueOf(totalSegmentCount)).divideAndRemainder(rangeSize);
 
         int segmentCount = segmentCountAndRemainder[0].intValue()
-                + (segmentCountAndRemainder[1].equals(BigInteger.ZERO) ? 0 : 1);
+            + (segmentCountAndRemainder[1].equals(BigInteger.ZERO) ? 0 : 1);
 
         LOG.info("Dividing token range [{},{}) into {} segments", start, stop, segmentCount);
 
@@ -238,17 +238,17 @@ final class SegmentGenerator {
   private static boolean allTokensHaveBeenCoalesced(
       List<Segment> coalescedRepairSegments, Map<List<String>, List<RingRange>> replicasToRange) {
     int coalescedRanges = coalescedRepairSegments
-            .stream()
-            .map(segment -> segment.getTokenRanges().size())
-            .reduce((first, second) -> first + second)
-            .orElse(0);
+        .stream()
+        .map(segment -> segment.getTokenRanges().size())
+        .reduce((first, second) -> first + second)
+        .orElse(0);
 
     int totalRanges = replicasToRange
-            .values()
-            .stream()
-            .map(List::size)
-            .reduce((first, second) -> first + second)
-            .orElse(0);
+        .values()
+        .stream()
+        .map(List::size)
+        .reduce((first, second) -> first + second)
+        .orElse(0);
 
     LOG.debug("Coalesced ranges : {}", coalescedRanges);
     LOG.debug("Total number of ranges : {}", totalRanges);

@@ -24,7 +24,7 @@ import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairRun.RunState;
 import io.cassandrareaper.core.RepairSegment;
 import io.cassandrareaper.core.RepairUnit;
-import io.cassandrareaper.jmx.ClusterFacade;
+import io.cassandrareaper.management.ClusterFacade;
 import io.cassandrareaper.resources.view.RepairRunStatus;
 import io.cassandrareaper.service.PurgeService;
 import io.cassandrareaper.service.RepairRunService;

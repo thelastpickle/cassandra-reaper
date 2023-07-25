@@ -58,6 +58,12 @@
 
   <developers>
     <developer>
+      <id>Miles-Garnsey</id>
+      <name>Miles Garnsey</name>
+      <url>https://github.com/miles-garnsey</url>
+      <email>miles.garnsey@datastax.com</email>
+    </developer>
+    <developer>
       <id>Bj0rnen</id>
       <name>Björn Hegerfors</name>
       <url>https://github.com/Bj0rnen</url>

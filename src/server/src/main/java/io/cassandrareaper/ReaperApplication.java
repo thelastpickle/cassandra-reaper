@@ -20,13 +20,12 @@ package io.cassandrareaper;
 
 import io.cassandrareaper.ReaperApplicationConfiguration.DatacenterAvailability;
 import io.cassandrareaper.core.Cluster;
-import io.cassandrareaper.core.JmxCredentials;
 import io.cassandrareaper.core.Node;
 import io.cassandrareaper.crypto.Cryptograph;
 import io.cassandrareaper.crypto.NoopCrypotograph;
-import io.cassandrareaper.jmx.ClusterFacade;
-import io.cassandrareaper.jmx.JmxConnectionFactory;
-import io.cassandrareaper.jmx.JmxConnectionsInitializer;
+import io.cassandrareaper.management.ClusterFacade;
+import io.cassandrareaper.management.http.HttpManagementConnectionFactory;
+import io.cassandrareaper.management.jmx.JmxManagementConnectionFactory;
 import io.cassandrareaper.metrics.PrometheusMetricsFilter;
 import io.cassandrareaper.resources.ClusterResource;
 import io.cassandrareaper.resources.CryptoResource;
@@ -52,7 +51,6 @@ import io.cassandrareaper.storage.IDistributedStorage;
 import io.cassandrareaper.storage.InitializeStorage;
 
 import java.util.EnumSet;
-import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -60,10 +58,6 @@ import javax.servlet.DispatcherType;
 import javax.servlet.FilterRegistration;
 
 import com.codahale.metrics.InstrumentedScheduledExecutorService;
-import com.codahale.metrics.MetricRegistry;
-import com.codahale.metrics.Timer;
-import com.datastax.driver.core.policies.AddressTranslator;
-import com.datastax.driver.core.policies.EC2MultiRegionAddressTranslator;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
@@ -185,7 +179,7 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
     Cryptograph cryptograph = context.config == null || context.config.getCryptograph() == null
         ? new NoopCrypotograph() : context.config.getCryptograph().create();
 
-    initializeJmx(config, cryptograph);
+    initializeManagement(context, cryptograph);
 
     context.repairManager = RepairManager.create(
         context,
@@ -267,7 +261,7 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
       AutoSchedulingManager.start(context, context.storage.getRepairRunDao());
     }
 
-    initializeJmxSeedsForAllClusters();
+
     maybeInitializeSidecarMode(addClusterResource);
     LOG.info("resuming pending repair runs");
 
@@ -301,43 +295,16 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
     LOG.warn("Reaper is ready to get things done!");
   }
 
-  private void initializeJmx(ReaperApplicationConfiguration config, Cryptograph cryptograph) {
-    if (context.jmxConnectionFactory == null) {
-      LOG.info("no JMX connection factory given in context, creating default");
-      context.jmxConnectionFactory = new JmxConnectionFactory(context, cryptograph);
 
-      // read jmx host/port mapping from config and provide to jmx con.factory
-      Map<String, Integer> jmxPorts = config.getJmxPorts();
-      if (jmxPorts != null) {
-        LOG.debug("using JMX ports mapping: {}", jmxPorts);
-        context.jmxConnectionFactory.setJmxPorts(jmxPorts);
+  private void initializeManagement(AppContext context, Cryptograph cryptograph) {
+    if (context.managementConnectionFactory == null) {
+      LOG.info("no management connection factory given in context, creating default");
+      if (context.config.getHttpManagement() == null || !context.config.getHttpManagement().getEnabled()) {
+        LOG.info("HTTP management connection config not set, or set disabled. Creating JMX connection factory instead");
+        context.managementConnectionFactory = new JmxManagementConnectionFactory(context, cryptograph);
+      } else {
+        context.managementConnectionFactory = new HttpManagementConnectionFactory(context);
       }
-      if (config.useAddressTranslator()) {
-        context.jmxConnectionFactory.setAddressTranslator(new EC2MultiRegionAddressTranslator());
-      }
-      if (config.getJmxAddressTranslator().isPresent()) {
-        AddressTranslator addressTranslator = config.getJmxAddressTranslator().get().build();
-        context.jmxConnectionFactory.setAddressTranslator(addressTranslator);
-      }
-    }
-
-    if (config.getJmxmp() != null) {
-      if (config.getJmxmp().isEnabled()) {
-        LOG.info("JMXMP enabled");
-      }
-      context.jmxConnectionFactory.setJmxmp(config.getJmxmp());
-    }
-
-    JmxCredentials jmxAuth = config.getJmxAuth();
-    if (jmxAuth != null) {
-      LOG.debug("using specified JMX credentials for authentication");
-      context.jmxConnectionFactory.setJmxAuth(jmxAuth);
-    }
-
-    Map<String, JmxCredentials> jmxCredentials = config.getJmxCredentials();
-    if (jmxCredentials != null) {
-      LOG.debug("using specified JMX credentials per cluster for authentication");
-      context.jmxConnectionFactory.setJmxCredentials(jmxCredentials);
     }
   }
 
@@ -452,26 +419,6 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
     LOG.debug("repairParallelism: {}", config.getRepairParallelism());
     LOG.debug("hangingRepairTimeoutMins: {}", config.getHangingRepairTimeoutMins());
     LOG.debug("jmxPorts: {}", config.getJmxPorts());
-  }
-
-  private void initializeJmxSeedsForAllClusters() {
-    LOG.info("Initializing JMX seed list for all clusters...");
-    try (JmxConnectionsInitializer jmxConnectionsIntializer = JmxConnectionsInitializer.create(context);
-         Timer.Context cxt = context
-             .metricRegistry
-             .timer(MetricRegistry.name(JmxConnectionFactory.class, "jmxConnectionsIntializer"))
-             .time()) {
-
-      context
-          .storage
-          .getClusterDao()
-          .getClusters()
-          .parallelStream()
-          .sorted()
-          .forEach(cluster -> jmxConnectionsIntializer.on(cluster));
-
-      LOG.info("Initialized JMX seed list for all clusters.");
-    }
   }
 
   private void tryInitializeStorage(ReaperApplicationConfiguration config, Environment environment)

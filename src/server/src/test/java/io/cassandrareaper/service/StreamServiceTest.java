@@ -22,11 +22,11 @@ import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.Node;
 import io.cassandrareaper.core.StreamSession;
-import io.cassandrareaper.jmx.ClusterFacade;
-import io.cassandrareaper.jmx.HostConnectionCounters;
-import io.cassandrareaper.jmx.JmxConnectionFactory;
-import io.cassandrareaper.jmx.JmxProxy;
-import io.cassandrareaper.jmx.JmxProxyTest;
+import io.cassandrareaper.management.ClusterFacade;
+import io.cassandrareaper.management.HostConnectionCounters;
+import io.cassandrareaper.management.ICassandraManagementProxy;
+import io.cassandrareaper.management.jmx.CassandraManagementProxyTest;
+import io.cassandrareaper.management.jmx.JmxManagementConnectionFactory;
 
 import java.io.IOException;
 import java.net.URL;
@@ -45,7 +45,6 @@ import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.google.common.io.Resources;
-import org.apache.cassandra.streaming.StreamManagerMBean;
 import org.junit.Test;
 import org.mockito.Mockito;
 
@@ -62,14 +61,12 @@ public class StreamServiceTest {
   @Test
   public void testListStreams()
       throws ReaperException, ClassNotFoundException, InterruptedException, UnknownHostException {
-    JmxProxy proxy = JmxProxyTest.mockJmxProxyImpl();
-    StreamManagerMBean streamingManagerMBean = Mockito.mock(StreamManagerMBean.class);
-    JmxProxyTest.mockGetStreamManagerMBean(proxy, streamingManagerMBean);
+    ICassandraManagementProxy proxy = CassandraManagementProxyTest.mockJmxProxyImpl();
 
     AppContext cxt = new AppContext();
     cxt.config = TestRepairConfiguration.defaultConfig();
-    cxt.jmxConnectionFactory = mock(JmxConnectionFactory.class);
-    when(cxt.jmxConnectionFactory.connectAny(Mockito.anyList())).thenReturn(proxy);
+    cxt.managementConnectionFactory = mock(JmxManagementConnectionFactory.class);
+    when(cxt.managementConnectionFactory.connectAny(Mockito.anyList())).thenReturn(proxy);
     ClusterFacade clusterFacadeSpy = Mockito.spy(ClusterFacade.create(cxt));
     Mockito.doReturn("dc1").when(clusterFacadeSpy).getDatacenter(any(), any());
 
@@ -79,7 +76,7 @@ public class StreamServiceTest {
         .listStreams(Node.builder().withHostname("127.0.0.1").withCluster(Cluster.builder().withJmxPort(7199)
             .withSeedHosts(ImmutableSet.of("127.0.0.1")).withName("test").build()).build());
 
-    verify(streamingManagerMBean, times(1)).getCurrentStreams();
+    verify(proxy, times(1)).getCurrentStreams();
   }
 
   @Test
@@ -95,20 +92,19 @@ public class StreamServiceTest {
     assertEquals(ref.replaceAll("\\s", ""), streamSession.toString().replaceAll("\\s", ""));
 
     // init the stream manager
-    JmxProxy proxy = (JmxProxy) mock(Class.forName("io.cassandrareaper.jmx.JmxProxyImpl"));
-    StreamManagerMBean streamingManagerMBean = Mockito.mock(StreamManagerMBean.class);
-    JmxProxyTest.mockGetStreamManagerMBean(proxy, streamingManagerMBean);
-    when(streamingManagerMBean.getCurrentStreams()).thenReturn(ImmutableSet.of(streamSession));
+    ICassandraManagementProxy proxy = (ICassandraManagementProxy) mock(
+        Class.forName("io.cassandrareaper.management.jmx.JmxCassandraManagementProxy"));
 
     AppContext cxt = new AppContext();
     cxt.config = TestRepairConfiguration.defaultConfig();
-    cxt.jmxConnectionFactory = mock(JmxConnectionFactory.class);
-    when(cxt.jmxConnectionFactory.connectAny(Mockito.anyList())).thenReturn(proxy);
+    cxt.managementConnectionFactory = mock(JmxManagementConnectionFactory.class);
+    when(cxt.managementConnectionFactory.connectAny(Mockito.anyList())).thenReturn(proxy);
     HostConnectionCounters connectionCounters = mock(HostConnectionCounters.class);
-    when(cxt.jmxConnectionFactory.getHostConnectionCounters()).thenReturn(connectionCounters);
+    when(cxt.managementConnectionFactory.getHostConnectionCounters()).thenReturn(connectionCounters);
     when(connectionCounters.getSuccessfulConnections(any())).thenReturn(1);
     ClusterFacade clusterFacadeSpy = Mockito.spy(ClusterFacade.create(cxt));
     Mockito.doReturn("dc1").when(clusterFacadeSpy).getDatacenter(any(), any());
+    when(proxy.getCurrentStreams()).thenReturn(ImmutableSet.of(streamSession));
 
     // do the actual pullStreams() call, which should succeed
     List<StreamSession> result = StreamService
@@ -116,7 +112,7 @@ public class StreamServiceTest {
         .listStreams(Node.builder().withHostname("127.0.0.1").withCluster(Cluster.builder().withJmxPort(7199)
             .withSeedHosts(ImmutableSet.of("127.0.0.1")).withName("test").build()).build());
 
-    verify(streamingManagerMBean, times(1)).getCurrentStreams();
+    verify(proxy, times(1)).getCurrentStreams();
     assertEquals(1, result.size());
   }
 
@@ -133,20 +129,19 @@ public class StreamServiceTest {
     assertEquals(ref.replaceAll("\\s", ""), streamSession.toString().replaceAll("\\s", ""));
 
     // init the stream manager
-    JmxProxy proxy = (JmxProxy) mock(Class.forName("io.cassandrareaper.jmx.JmxProxyImpl"));
-    StreamManagerMBean streamingManagerMBean = Mockito.mock(StreamManagerMBean.class);
-    JmxProxyTest.mockGetStreamManagerMBean(proxy, streamingManagerMBean);
-    when(streamingManagerMBean.getCurrentStreams()).thenReturn(ImmutableSet.of(streamSession));
+    ICassandraManagementProxy proxy = (ICassandraManagementProxy) mock(
+        Class.forName("io.cassandrareaper.management.jmx.JmxCassandraManagementProxy"));
 
     AppContext cxt = new AppContext();
     cxt.config = TestRepairConfiguration.defaultConfig();
-    cxt.jmxConnectionFactory = mock(JmxConnectionFactory.class);
-    when(cxt.jmxConnectionFactory.connectAny(Mockito.anyList())).thenReturn(proxy);
+    cxt.managementConnectionFactory = mock(JmxManagementConnectionFactory.class);
+    when(cxt.managementConnectionFactory.connectAny(Mockito.anyList())).thenReturn(proxy);
     HostConnectionCounters connectionCounters = mock(HostConnectionCounters.class);
-    when(cxt.jmxConnectionFactory.getHostConnectionCounters()).thenReturn(connectionCounters);
+    when(cxt.managementConnectionFactory.getHostConnectionCounters()).thenReturn(connectionCounters);
     when(connectionCounters.getSuccessfulConnections(any())).thenReturn(1);
     ClusterFacade clusterFacadeSpy = Mockito.spy(ClusterFacade.create(cxt));
     Mockito.doReturn("dc1").when(clusterFacadeSpy).getDatacenter(any(), any());
+    when(proxy.getCurrentStreams()).thenReturn(ImmutableSet.of(streamSession));
 
     // do the actual pullStreams() call, which should succeed
     List<StreamSession> result = StreamService
@@ -154,7 +149,7 @@ public class StreamServiceTest {
         .listStreams(Node.builder().withHostname("127.0.0.1").withCluster(Cluster.builder().withJmxPort(7199)
             .withSeedHosts(ImmutableSet.of("127.0.0.1")).withName("test").build()).build());
 
-    verify(streamingManagerMBean, times(1)).getCurrentStreams();
+    verify(proxy, times(1)).getCurrentStreams();
     assertEquals(1, result.size());
   }
 
@@ -171,20 +166,19 @@ public class StreamServiceTest {
     assertEquals(ref.replaceAll("\\s", ""), streamSession.toString().replaceAll("\\s", ""));
 
     // init the stream manager
-    JmxProxy proxy = (JmxProxy) mock(Class.forName("io.cassandrareaper.jmx.JmxProxyImpl"));
-    StreamManagerMBean streamingManagerMBean = Mockito.mock(StreamManagerMBean.class);
-    JmxProxyTest.mockGetStreamManagerMBean(proxy, streamingManagerMBean);
-    when(streamingManagerMBean.getCurrentStreams()).thenReturn(ImmutableSet.of(streamSession));
+    ICassandraManagementProxy proxy = (ICassandraManagementProxy) mock(
+        Class.forName("io.cassandrareaper.management.jmx.JmxCassandraManagementProxy"));
 
     AppContext cxt = new AppContext();
     cxt.config = TestRepairConfiguration.defaultConfig();
-    cxt.jmxConnectionFactory = mock(JmxConnectionFactory.class);
-    when(cxt.jmxConnectionFactory.connectAny(Mockito.anyList())).thenReturn(proxy);
+    cxt.managementConnectionFactory = mock(JmxManagementConnectionFactory.class);
+    when(cxt.managementConnectionFactory.connectAny(Mockito.anyList())).thenReturn(proxy);
     HostConnectionCounters connectionCounters = mock(HostConnectionCounters.class);
-    when(cxt.jmxConnectionFactory.getHostConnectionCounters()).thenReturn(connectionCounters);
+    when(cxt.managementConnectionFactory.getHostConnectionCounters()).thenReturn(connectionCounters);
     when(connectionCounters.getSuccessfulConnections(any())).thenReturn(1);
     ClusterFacade clusterFacadeSpy = Mockito.spy(ClusterFacade.create(cxt));
     Mockito.doReturn("dc1").when(clusterFacadeSpy).getDatacenter(any(), any());
+    when(proxy.getCurrentStreams()).thenReturn(ImmutableSet.of(streamSession));
 
     // do the actual pullStreams() call, which should succeed
     List<StreamSession> result = StreamService
@@ -192,7 +186,7 @@ public class StreamServiceTest {
         .listStreams(Node.builder().withHostname("127.0.0.1").withCluster(Cluster.builder().withJmxPort(7199)
             .withSeedHosts(ImmutableSet.of("127.0.0.1")).withName("test").build()).build());
 
-    verify(streamingManagerMBean, times(1)).getCurrentStreams();
+    verify(proxy, times(1)).getCurrentStreams();
     assertEquals(1, result.size());
   }
 
@@ -209,20 +203,19 @@ public class StreamServiceTest {
     assertEquals(ref.replaceAll("\\s", ""), streamSession.toString().replaceAll("\\s", ""));
 
     // init the stream manager
-    JmxProxy proxy = (JmxProxy) mock(Class.forName("io.cassandrareaper.jmx.JmxProxyImpl"));
-    StreamManagerMBean streamingManagerMBean = Mockito.mock(StreamManagerMBean.class);
-    JmxProxyTest.mockGetStreamManagerMBean(proxy, streamingManagerMBean);
-    when(streamingManagerMBean.getCurrentStreams()).thenReturn(ImmutableSet.of(streamSession));
+    ICassandraManagementProxy proxy = (ICassandraManagementProxy) mock(
+        Class.forName("io.cassandrareaper.management.jmx.JmxCassandraManagementProxy"));
 
     AppContext cxt = new AppContext();
     cxt.config = TestRepairConfiguration.defaultConfig();
-    cxt.jmxConnectionFactory = mock(JmxConnectionFactory.class);
-    when(cxt.jmxConnectionFactory.connectAny(Mockito.anyList())).thenReturn(proxy);
+    cxt.managementConnectionFactory = mock(JmxManagementConnectionFactory.class);
+    when(cxt.managementConnectionFactory.connectAny(Mockito.anyList())).thenReturn(proxy);
     HostConnectionCounters connectionCounters = mock(HostConnectionCounters.class);
-    when(cxt.jmxConnectionFactory.getHostConnectionCounters()).thenReturn(connectionCounters);
+    when(cxt.managementConnectionFactory.getHostConnectionCounters()).thenReturn(connectionCounters);
     when(connectionCounters.getSuccessfulConnections(any())).thenReturn(1);
     ClusterFacade clusterFacadeSpy = Mockito.spy(ClusterFacade.create(cxt));
     Mockito.doReturn("dc1").when(clusterFacadeSpy).getDatacenter(any(), any());
+    when(proxy.getCurrentStreams()).thenReturn(ImmutableSet.of(streamSession));
 
     // do the actual pullStreams() call, which should succeed
     List<StreamSession> result = StreamService
@@ -230,7 +223,7 @@ public class StreamServiceTest {
         .listStreams(Node.builder().withHostname("127.0.0.1").withCluster(Cluster.builder().withJmxPort(7199)
             .withSeedHosts(ImmutableSet.of("127.0.0.1")).withName("test").build()).build());
 
-    verify(streamingManagerMBean, times(1)).getCurrentStreams();
+    verify(proxy, times(1)).getCurrentStreams();
     assertEquals(1, result.size());
   }
 
@@ -244,20 +237,20 @@ public class StreamServiceTest {
     String ref = Resources.toString(url, Charsets.UTF_8);
     assertEquals(ref.replaceAll("\\s", ""), streamSession.toString().replaceAll("\\s", ""));
 
-    JmxProxy proxy = (JmxProxy) mock(Class.forName("io.cassandrareaper.jmx.JmxProxyImpl"));
-    StreamManagerMBean streamingManagerMBean = Mockito.mock(StreamManagerMBean.class);
-    JmxProxyTest.mockGetStreamManagerMBean(proxy, streamingManagerMBean);
-    when(streamingManagerMBean.getCurrentStreams()).thenReturn(ImmutableSet.of(streamSession));
+    ICassandraManagementProxy proxy = (ICassandraManagementProxy) mock(
+        Class.forName("io.cassandrareaper.management.jmx.JmxCassandraManagementProxy"));
 
     AppContext cxt = new AppContext();
     cxt.config = TestRepairConfiguration.defaultConfig();
-    cxt.jmxConnectionFactory = mock(JmxConnectionFactory.class);
-    when(cxt.jmxConnectionFactory.connectAny(Mockito.anyList())).thenReturn(proxy);
+    cxt.managementConnectionFactory = mock(JmxManagementConnectionFactory.class);
+    when(cxt.managementConnectionFactory.connectAny(Mockito.anyList())).thenReturn(proxy);
     HostConnectionCounters connectionCounters = mock(HostConnectionCounters.class);
-    when(cxt.jmxConnectionFactory.getHostConnectionCounters()).thenReturn(connectionCounters);
+    when(cxt.managementConnectionFactory.getHostConnectionCounters()).thenReturn(connectionCounters);
     when(connectionCounters.getSuccessfulConnections(any())).thenReturn(1);
     ClusterFacade clusterFacadeSpy = Mockito.spy(ClusterFacade.create(cxt));
     Mockito.doReturn("dc1").when(clusterFacadeSpy).getDatacenter(any(), any());
+
+    when(proxy.getCurrentStreams()).thenReturn(ImmutableSet.of(streamSession));
 
     // do the actual pullStreams() call, which should succeed
     List<StreamSession> result = StreamService
@@ -265,7 +258,7 @@ public class StreamServiceTest {
         .listStreams(Node.builder().withHostname("127.0.0.1").withCluster(Cluster.builder().withJmxPort(7199)
             .withSeedHosts(ImmutableSet.of("127.0.0.1")).withName("test").build()).build());
 
-    verify(streamingManagerMBean, times(1)).getCurrentStreams();
+    verify(proxy, times(1)).getCurrentStreams();
     assertEquals(1, result.size());
 
   }
