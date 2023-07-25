@@ -33,7 +33,6 @@ import javax.management.ReflectionException;
 
 import com.codahale.metrics.InstrumentedExecutorService;
 import com.codahale.metrics.MetricRegistry;
-import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -74,9 +73,8 @@ public final class CompactionProxy {
   }
 
   public List<Compaction> listActiveCompactions() throws ReflectionException, MalformedObjectNameException {
-    Preconditions.checkNotNull(proxy.getCompactionManagerMBean(), "Looks like the proxy is not connected");
     List<Compaction> activeCompactions = Lists.newArrayList();
-    List<Map<String, String>> compactions = proxy.getCompactionManagerMBean().getCompactions();
+    List<Map<String, String>> compactions = proxy.getCompactions();
     if (!compactions.isEmpty()) {
       for (Map<String, String> c : compactions) {
         Compaction compaction = Compaction.builder()

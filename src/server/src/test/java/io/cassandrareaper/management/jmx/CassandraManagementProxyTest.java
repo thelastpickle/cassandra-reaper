@@ -24,7 +24,6 @@ import java.net.UnknownHostException;
 import java.util.Optional;
 import java.util.Random;
 
-import org.apache.cassandra.db.compaction.CompactionManagerMBean;
 import org.apache.cassandra.locator.EndpointSnitchInfoMBean;
 import org.apache.cassandra.streaming.StreamManagerMBean;
 import org.junit.Test;
@@ -55,12 +54,6 @@ public final class CassandraManagementProxyTest {
 
     Mockito.when(((JmxCassandraManagementProxy) proxy).getEndpointSnitchInfoMBean())
         .thenReturn(endpointSnitchInfoMBean);
-  }
-
-  public static void mockGetCompactionManagerMBean(ICassandraManagementProxy proxy,
-                                                   CompactionManagerMBean compactionManagerMBean) {
-
-    Mockito.when(((JmxCassandraManagementProxy) proxy).getCompactionManagerMBean()).thenReturn(compactionManagerMBean);
   }
 
   @Test

@@ -164,5 +164,9 @@ public interface ICassandraManagementProxy extends NotificationListener {
       throws InstanceNotFoundException, ReflectionException,
       IOException;
 
+  // From CompactionManagerMBean
+
+  List<Map<String, String>> getCompactions();
+
 
 }

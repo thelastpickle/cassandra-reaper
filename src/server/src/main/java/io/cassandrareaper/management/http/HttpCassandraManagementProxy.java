@@ -26,6 +26,7 @@ import io.cassandrareaper.service.RingRange;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.net.InetSocketAddress;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -232,6 +233,12 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
       IOException {
     // TODO: implement me.
     return new AttributeList();
+  }
+
+
+  // From CompactionManagerMBean
+  public List<Map<String, String>> getCompactions() {
+    return new ArrayList<Map<String, String>>();
   }
 
 }

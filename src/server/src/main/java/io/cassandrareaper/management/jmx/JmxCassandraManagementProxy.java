@@ -945,7 +945,7 @@ final class JmxCassandraManagementProxy implements ICassandraManagementProxy {
     return mbeanServer;
   }
 
-  CompactionManagerMBean getCompactionManagerMBean() {
+  private CompactionManagerMBean getCompactionManagerMBean() {
     return cmProxy;
   }
 
@@ -1034,6 +1034,11 @@ final class JmxCassandraManagementProxy implements ICassandraManagementProxy {
       throws InstanceNotFoundException, ReflectionException,
       IOException {
     return getMBeanServerConnection().getAttributes(name, attributes);
+  }
+
+  // From CompactionManagerMBean
+  public List<Map<String, String>> getCompactions() {
+    return getCompactionManagerMBean().getCompactions();
   }
 
   private static final class JmxColumnFamily {
