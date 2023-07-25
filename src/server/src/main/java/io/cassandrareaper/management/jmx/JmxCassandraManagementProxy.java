@@ -27,6 +27,7 @@ import io.cassandrareaper.management.ICassandraManagementProxy;
 import io.cassandrareaper.service.RingRange;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.lang.reflect.UndeclaredThrowableException;
 import java.math.BigInteger;
 import java.net.InetSocketAddress;
@@ -43,6 +44,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.SortedMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -962,7 +964,7 @@ final class JmxCassandraManagementProxy implements ICassandraManagementProxy {
     return endpointSnitchMbean;
   }
 
-  DiagnosticEventPersistenceMBean getDiagnosticEventPersistenceMBean() {
+  private DiagnosticEventPersistenceMBean getDiagnosticEventPersistenceMBean() {
     return diagEventProxy;
   }
 
@@ -1060,7 +1062,18 @@ final class JmxCassandraManagementProxy implements ICassandraManagementProxy {
       return columnFamily;
     }
   }
+  // from DiagnosticEventPersistenceMBean
+  public SortedMap<Long, Map<String, Serializable>> readEvents(String eventClass, Long lastKey, int limit) {
+    return getDiagnosticEventPersistenceMBean().readEvents(eventClass, lastKey, limit);
+  }
 
+  public void enableEventPersistence(String eventClass) {
+    getDiagnosticEventPersistenceMBean().enableEventPersistence(eventClass);
+  }
+
+  public void disableEventPersistence(String eventClass){
+    getDiagnosticEventPersistenceMBean().disableEventPersistence(eventClass);
+  }
   // From FailureDetectorMBean
   public String getAllEndpointStates() {
     return getFailureDetectorMBean().getAllEndpointStates();
@@ -1074,6 +1087,8 @@ final class JmxCassandraManagementProxy implements ICassandraManagementProxy {
   public String getDatacenter(String var1) throws UnknownHostException {
     return getEndpointSnitchInfoMBean().getDatacenter(var1);
   }
+
+
 
 
   // Initialization-on-demand holder for jmx ObjectNames

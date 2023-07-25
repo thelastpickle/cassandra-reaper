@@ -48,11 +48,11 @@ public final class DiagnosticProxy {
   }
 
   public void enableEventPersistence(String eventClazz) {
-    proxy.getDiagnosticEventPersistenceMBean().enableEventPersistence(eventClazz);
+    proxy.enableEventPersistence(eventClazz);
   }
 
   public void disableEventPersistence(String eventClazz) {
-    proxy.getDiagnosticEventPersistenceMBean().disableEventPersistence(eventClazz);
+    proxy.disableEventPersistence(eventClazz);
   }
 
   public Map<String, Comparable> getLastEventIdsIfModified(long lastUpdated) {
@@ -60,7 +60,7 @@ public final class DiagnosticProxy {
   }
 
   public SortedMap<Long, Map<String, Serializable>> readEvents(String eventClazz, Long lastKey, int limit) {
-    return proxy.getDiagnosticEventPersistenceMBean().readEvents(eventClazz, lastKey, limit);
+    return proxy.readEvents(eventClazz, lastKey, limit);
   }
 
   public void subscribeNotifications(NotificationListener listener) {

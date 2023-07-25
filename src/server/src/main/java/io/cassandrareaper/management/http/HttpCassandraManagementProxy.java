@@ -24,6 +24,7 @@ import io.cassandrareaper.management.jmx.RepairStatusHandler;
 import io.cassandrareaper.service.RingRange;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.math.BigInteger;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
@@ -34,6 +35,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.SortedMap;
+import java.util.TreeMap;
 import java.util.concurrent.ExecutionException;
 import javax.management.AttributeList;
 import javax.management.InstanceNotFoundException;
@@ -257,6 +260,20 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
   public String getDatacenter(String var1) throws UnknownHostException {
     // TODO: implement me.
     return "";
+  }
+
+  // from DiagnosticEventPersistenceMBean
+  public SortedMap<Long, Map<String, Serializable>> readEvents(String eventClass, Long lastKey, int limit){
+    //TODO: implement me
+    return new TreeMap<>();
+  }
+
+  public void enableEventPersistence(String eventClass) {
+    //TODO: implement me
+  }
+
+  public void disableEventPersistence(String eventClass){
+    //TODO: implement me
   }
 
 

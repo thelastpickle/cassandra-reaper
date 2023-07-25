@@ -23,6 +23,7 @@ import io.cassandrareaper.management.jmx.RepairStatusHandler;
 import io.cassandrareaper.service.RingRange;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.math.BigInteger;
 import java.net.UnknownHostException;
 import java.time.Duration;
@@ -30,6 +31,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.SortedMap;
 import java.util.concurrent.ExecutionException;
 import javax.management.AttributeList;
 import javax.management.InstanceNotFoundException;
@@ -177,6 +179,12 @@ public interface ICassandraManagementProxy extends NotificationListener {
   // From EndpointSnitchInfoMBean
   String getDatacenter(String var1) throws UnknownHostException;
 
+  // from DiagnosticEventPersistenceMBean
+  SortedMap<Long, Map<String, Serializable>> readEvents(String eventClass, Long lastKey, int limit);
+
+  void enableEventPersistence(String eventClass);
+
+  void disableEventPersistence(String eventClass);
 
 
 }
