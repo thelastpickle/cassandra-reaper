@@ -37,10 +37,10 @@ public final class FailureDetectorProxy {
 
 
   public String getAllEndpointsState() {
-    return proxy.getFailureDetectorMBean().getAllEndpointStates();
+    return proxy.getAllEndpointStates();
   }
 
   public Map<String, String> getSimpleStates() {
-    return proxy.getFailureDetectorMBean().getSimpleStates();
+    return proxy.getSimpleStates();
   }
 }

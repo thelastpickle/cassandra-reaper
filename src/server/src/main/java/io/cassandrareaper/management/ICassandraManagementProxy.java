@@ -168,5 +168,11 @@ public interface ICassandraManagementProxy extends NotificationListener {
 
   List<Map<String, String>> getCompactions();
 
+  // From FailureDetectorMBean
+  String getAllEndpointStates();
+
+  Map<String, String> getSimpleStates();
+
+
 
 }

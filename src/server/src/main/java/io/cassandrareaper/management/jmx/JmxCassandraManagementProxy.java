@@ -953,7 +953,7 @@ final class JmxCassandraManagementProxy implements ICassandraManagementProxy {
     return smProxy;
   }
 
-  FailureDetectorMBean getFailureDetectorMBean() {
+  private FailureDetectorMBean getFailureDetectorMBean() {
     return fdProxy;
   }
 
@@ -1058,6 +1058,15 @@ final class JmxCassandraManagementProxy implements ICassandraManagementProxy {
     public String getColumnFamily() {
       return columnFamily;
     }
+  }
+
+  // From FailureDetectorMBean
+  public String getAllEndpointStates() {
+    return getFailureDetectorMBean().getAllEndpointStates();
+  }
+
+  public Map<String, String> getSimpleStates() {
+    return getFailureDetectorMBean().getSimpleStates();
   }
 
   // Initialization-on-demand holder for jmx ObjectNames

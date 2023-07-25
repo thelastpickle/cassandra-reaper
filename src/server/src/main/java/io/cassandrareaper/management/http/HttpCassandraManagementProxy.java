@@ -241,4 +241,15 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
     return new ArrayList<Map<String, String>>();
   }
 
+  // From FailureDetectorMBean
+  public String getAllEndpointStates() {
+    // TODO: implement me.
+    return "";
+  }
+
+  public Map<String, String> getSimpleStates() {
+    // TODO: implement me.
+    return new HashMap<String, String>();
+  }
+
 }
