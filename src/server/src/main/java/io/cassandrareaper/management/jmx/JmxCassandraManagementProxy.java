@@ -31,6 +31,7 @@ import java.lang.reflect.UndeclaredThrowableException;
 import java.math.BigInteger;
 import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
+import java.net.UnknownHostException;
 import java.rmi.server.RMIClientSocketFactory;
 import java.rmi.server.RMISocketFactory;
 import java.util.Collection;
@@ -957,7 +958,7 @@ final class JmxCassandraManagementProxy implements ICassandraManagementProxy {
     return fdProxy;
   }
 
-  EndpointSnitchInfoMBean getEndpointSnitchInfoMBean() {
+  private EndpointSnitchInfoMBean getEndpointSnitchInfoMBean() {
     return endpointSnitchMbean;
   }
 
@@ -1068,6 +1069,12 @@ final class JmxCassandraManagementProxy implements ICassandraManagementProxy {
   public Map<String, String> getSimpleStates() {
     return getFailureDetectorMBean().getSimpleStates();
   }
+
+  // From EndpointSnitchInfoMBean
+  public String getDatacenter(String var1) throws UnknownHostException {
+    return getEndpointSnitchInfoMBean().getDatacenter(var1);
+  }
+
 
   // Initialization-on-demand holder for jmx ObjectNames
   private static final class ObjectNames {

@@ -152,7 +152,7 @@ public final class SegmentRunnerTest {
     } catch (UnknownHostException ex) {
       throw new AssertionError(ex);
     }
-    CassandraManagementProxyTest.mockGetEndpointSnitchInfoMBean(jmx, endpointSnitchInfoMBean);
+
 
     when(jmx.triggerRepair(any(), any(), any(), any(), any(), anyBoolean(), any(), any(), any(), anyInt()))
         .then(
@@ -276,7 +276,7 @@ public final class SegmentRunnerTest {
     } catch (UnknownHostException ex) {
       throw new AssertionError(ex);
     }
-    CassandraManagementProxyTest.mockGetEndpointSnitchInfoMBean(jmx, endpointSnitchInfoMBean);
+
     when(jmx.triggerRepair(any(), any(), any(), any(), any(), anyBoolean(), any(), any(), any(), anyInt()))
         .then(
             (invocation) -> {
@@ -434,7 +434,7 @@ public final class SegmentRunnerTest {
     } catch (UnknownHostException ex) {
       throw new AssertionError(ex);
     }
-    CassandraManagementProxyTest.mockGetEndpointSnitchInfoMBean(jmx, endpointSnitchInfoMBean);
+
 
     when(jmx.triggerRepair(any(), any(), any(), any(), any(), anyBoolean(), any(), any(), any(), anyInt()))
         .then(
@@ -582,7 +582,7 @@ public final class SegmentRunnerTest {
     } catch (UnknownHostException ex) {
       throw new AssertionError(ex);
     }
-    CassandraManagementProxyTest.mockGetEndpointSnitchInfoMBean(jmx, endpointSnitchInfoMBean);
+
 
     when(jmx.triggerRepair(any(), any(), any(), any(), any(), anyBoolean(), any(), any(), any(), anyInt()))
         .then(
@@ -725,7 +725,7 @@ public final class SegmentRunnerTest {
     } catch (UnknownHostException ex) {
       throw new AssertionError(ex);
     }
-    CassandraManagementProxyTest.mockGetEndpointSnitchInfoMBean(jmx, endpointSnitchInfoMBean);
+
 
     when(jmx.triggerRepair(any(), any(), any(), any(), any(), anyBoolean(), any(), any(), any(), anyInt()))
         .then(
@@ -870,7 +870,7 @@ public final class SegmentRunnerTest {
     } catch (UnknownHostException ex) {
       throw new AssertionError(ex);
     }
-    CassandraManagementProxyTest.mockGetEndpointSnitchInfoMBean(jmx, endpointSnitchInfoMBean);
+
 
     when(jmx.triggerRepair(any(), any(), any(), any(), any(), anyBoolean(), any(), any(), any(), anyInt()))
         .then(
@@ -1016,7 +1016,7 @@ public final class SegmentRunnerTest {
     } catch (UnknownHostException ex) {
       throw new AssertionError(ex);
     }
-    CassandraManagementProxyTest.mockGetEndpointSnitchInfoMBean(jmx, endpointSnitchInfoMBean);
+
 
     when(jmx.triggerRepair(any(), any(), any(), any(), any(), anyBoolean(), any(), any(), any(), anyInt()))
         .then(
@@ -1190,7 +1190,7 @@ public final class SegmentRunnerTest {
     } catch (UnknownHostException ex) {
       throw new AssertionError(ex);
     }
-    CassandraManagementProxyTest.mockGetEndpointSnitchInfoMBean(jmx, endpointSnitchInfoMBean);
+
 
     when(jmx.triggerRepair(any(), any(), any(), any(), any(), anyBoolean(), any(), any(), any(), anyInt()))
         .thenThrow(new ReaperException("failure"));
@@ -1285,7 +1285,7 @@ public final class SegmentRunnerTest {
     } catch (UnknownHostException ex) {
       throw new AssertionError(ex);
     }
-    CassandraManagementProxyTest.mockGetEndpointSnitchInfoMBean(jmx, endpointSnitchInfoMBean);
+
 
     when(jmx.triggerRepair(any(), any(), any(), any(), any(), anyBoolean(), any(), any(), any(), anyInt()))
         .thenReturn(0);
@@ -1403,7 +1403,7 @@ public final class SegmentRunnerTest {
     } catch (UnknownHostException ex) {
       throw new AssertionError(ex);
     }
-    CassandraManagementProxyTest.mockGetEndpointSnitchInfoMBean(jmx, endpointSnitchInfoMBean);
+
     doThrow(new IOException("failure"))
         .when(jmx).clearSnapshot(any(), any());
 

@@ -279,7 +279,6 @@ public final class RepairRunServiceTest {
     } catch (UnknownHostException ex) {
       throw new AssertionError(ex);
     }
-    CassandraManagementProxyTest.mockGetEndpointSnitchInfoMBean(jmx, endpointSnitchInfoMBean);
 
     ClusterFacade clusterFacade = mock(ClusterFacade.class);
     when(clusterFacade.connect(any(Cluster.class))).thenReturn(jmx);
@@ -368,7 +367,6 @@ public final class RepairRunServiceTest {
     } catch (UnknownHostException ex) {
       throw new AssertionError(ex);
     }
-    CassandraManagementProxyTest.mockGetEndpointSnitchInfoMBean(jmx, endpointSnitchInfoMBean);
 
     ClusterFacade clusterFacade = mock(ClusterFacade.class);
     when(clusterFacade.connect(any(Cluster.class))).thenReturn(jmx);
@@ -563,7 +561,6 @@ public final class RepairRunServiceTest {
     } catch (UnknownHostException ex) {
       throw new AssertionError(ex);
     }
-    CassandraManagementProxyTest.mockGetEndpointSnitchInfoMBean(jmx, endpointSnitchInfoMBean);
 
     Cluster cluster = Cluster.builder()
         .withName("test_" + RandomStringUtils.randomAlphabetic(12))
@@ -626,7 +623,6 @@ public final class RepairRunServiceTest {
     } catch (UnknownHostException ex) {
       throw new AssertionError(ex);
     }
-    CassandraManagementProxyTest.mockGetEndpointSnitchInfoMBean(jmx, endpointSnitchInfoMBean);
 
     Cluster cluster = Cluster.builder()
         .withName("test_" + RandomStringUtils.randomAlphabetic(12))
@@ -872,7 +868,6 @@ public final class RepairRunServiceTest {
     } catch (UnknownHostException ex) {
       throw new AssertionError(ex);
     }
-    CassandraManagementProxyTest.mockGetEndpointSnitchInfoMBean(jmx, endpointSnitchInfoMBean);
 
     ClusterFacade clusterFacade = mock(ClusterFacade.class);
     when(clusterFacade.connect(any(Cluster.class))).thenReturn(jmx);

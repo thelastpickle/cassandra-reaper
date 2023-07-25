@@ -24,6 +24,7 @@ import io.cassandrareaper.service.RingRange;
 
 import java.io.IOException;
 import java.math.BigInteger;
+import java.net.UnknownHostException;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.List;
@@ -172,6 +173,9 @@ public interface ICassandraManagementProxy extends NotificationListener {
   String getAllEndpointStates();
 
   Map<String, String> getSimpleStates();
+
+  // From EndpointSnitchInfoMBean
+  String getDatacenter(String var1) throws UnknownHostException;
 
 
 

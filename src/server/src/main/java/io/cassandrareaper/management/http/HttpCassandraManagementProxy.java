@@ -26,6 +26,7 @@ import io.cassandrareaper.service.RingRange;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.net.InetSocketAddress;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -251,5 +252,12 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
     // TODO: implement me.
     return new HashMap<String, String>();
   }
+
+  // From EndpointSnitchInfoMBean
+  public String getDatacenter(String var1) throws UnknownHostException {
+    // TODO: implement me.
+    return "";
+  }
+
 
 }

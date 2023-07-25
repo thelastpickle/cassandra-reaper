@@ -175,7 +175,6 @@ public final class RepairRunResourceTest {
     } catch (UnknownHostException ex) {
       throw new AssertionError(ex);
     }
-    CassandraManagementProxyTest.mockGetEndpointSnitchInfoMBean(proxy, endpointSnitchInfoMBean);
 
     context.managementConnectionFactory = mock(JmxManagementConnectionFactory.class);
     when(context.managementConnectionFactory.connectAny(Mockito.anyCollection())).thenReturn(proxy);

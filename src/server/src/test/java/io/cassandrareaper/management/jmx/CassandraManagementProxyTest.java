@@ -24,7 +24,6 @@ import java.net.UnknownHostException;
 import java.util.Optional;
 import java.util.Random;
 
-import org.apache.cassandra.locator.EndpointSnitchInfoMBean;
 import org.apache.cassandra.streaming.StreamManagerMBean;
 import org.junit.Test;
 import org.mockito.Mockito;
@@ -37,9 +36,7 @@ public final class CassandraManagementProxyTest {
   public static ICassandraManagementProxy mockJmxProxyImpl() throws UnknownHostException {
     JmxCassandraManagementProxy impl = Mockito.mock(JmxCassandraManagementProxy.class);
     Mockito.when(impl.getUntranslatedHost()).thenReturn("test-host-" + new Random().nextInt());
-    EndpointSnitchInfoMBean endpointSnitchInfoMBean = Mockito.mock(EndpointSnitchInfoMBean.class);
-    Mockito.when(endpointSnitchInfoMBean.getDatacenter(any())).thenReturn("dc1");
-    Mockito.when(impl.getEndpointSnitchInfoMBean()).thenReturn(endpointSnitchInfoMBean);
+    Mockito.when(impl.getDatacenter(any())).thenReturn("dc1");
     return impl;
   }
 
@@ -47,13 +44,6 @@ public final class CassandraManagementProxyTest {
                                                StreamManagerMBean streamingManagerMBean) {
     Mockito.when(((JmxCassandraManagementProxy) proxy).getStreamManagerMBean())
         .thenReturn(Optional.of(streamingManagerMBean));
-  }
-
-  public static void mockGetEndpointSnitchInfoMBean(ICassandraManagementProxy proxy,
-                                                    EndpointSnitchInfoMBean endpointSnitchInfoMBean) {
-
-    Mockito.when(((JmxCassandraManagementProxy) proxy).getEndpointSnitchInfoMBean())
-        .thenReturn(endpointSnitchInfoMBean);
   }
 
   @Test

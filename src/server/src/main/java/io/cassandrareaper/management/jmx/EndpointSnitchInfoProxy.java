@@ -48,7 +48,7 @@ public final class EndpointSnitchInfoProxy {
 
   public String getDataCenter(String host) {
     try {
-      return DATACENTERS_BY_HOST.get(host, () -> proxy.getEndpointSnitchInfoMBean().getDatacenter(host));
+      return DATACENTERS_BY_HOST.get(host, () -> proxy.getDatacenter(host));
     } catch (ExecutionException ex) {
       throw new IllegalArgumentException(ex);
     }
