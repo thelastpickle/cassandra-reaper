@@ -52,8 +52,8 @@ public final class HostConnectionCounters {
                     ICassandraManagementProxy.class,
                     "connections",
                     host.replace(
-                        '.',
-                        'x')
+                            '.',
+                            'x')
                         .replaceAll("[^A-Za-z0-9]", "")))
             .inc();
       }

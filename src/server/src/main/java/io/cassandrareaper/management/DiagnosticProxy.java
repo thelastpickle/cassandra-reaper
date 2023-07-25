@@ -17,7 +17,6 @@
 
 package io.cassandrareaper.management;
 
-import io.cassandrareaper.management.ICassandraManagementProxy;
 import io.cassandrareaper.service.DiagEventSubscriptionService;
 
 import java.io.IOException;

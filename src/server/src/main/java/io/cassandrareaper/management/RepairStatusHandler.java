@@ -17,8 +17,6 @@
 
 package io.cassandrareaper.management;
 
-import io.cassandrareaper.management.ICassandraManagementProxy;
-
 import java.util.Optional;
 
 import org.apache.cassandra.service.ActiveRepairService;

@@ -21,10 +21,8 @@ import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.management.ICassandraManagementProxy;
 
 import java.net.UnknownHostException;
-import java.util.Optional;
 import java.util.Random;
 
-import org.apache.cassandra.streaming.StreamManagerMBean;
 import org.junit.Test;
 import org.mockito.Mockito;
 

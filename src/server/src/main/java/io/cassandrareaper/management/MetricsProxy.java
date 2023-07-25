@@ -23,7 +23,6 @@ import io.cassandrareaper.core.JmxStat;
 import io.cassandrareaper.core.MetricsHistogram;
 import io.cassandrareaper.core.Node;
 import io.cassandrareaper.core.ThreadPoolStat;
-import io.cassandrareaper.management.ICassandraManagementProxy;
 
 import java.io.IOException;
 import java.util.LinkedHashMap;
@@ -80,7 +79,7 @@ public final class MetricsProxy {
   }
 
   public static DroppedMessages.Builder updateGenericMetricAttribute(GenericMetric stat,
-                                                                   DroppedMessages.Builder builder) {
+                                                                     DroppedMessages.Builder builder) {
     switch (stat.getMetricAttribute()) {
       case "Count":
         return builder.withCount((int) stat.getValue());
@@ -98,7 +97,7 @@ public final class MetricsProxy {
   }
 
   public static MetricsHistogram.Builder updateGenericMetricAttribute(GenericMetric stat,
-                                                                  MetricsHistogram.Builder builder) {
+                                                                      MetricsHistogram.Builder builder) {
     switch (stat.getMetricAttribute()) {
       case "Count":
         return builder.withCount((int) stat.getValue());

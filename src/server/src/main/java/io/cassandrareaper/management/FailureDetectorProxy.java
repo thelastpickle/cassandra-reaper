@@ -17,9 +17,7 @@
 
 package io.cassandrareaper.management;
 
-
 import java.util.Map;
-
 
 public final class FailureDetectorProxy {
 

@@ -82,7 +82,6 @@ import javax.validation.constraints.NotNull;
 
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.MetricRegistry;
-import com.datastax.driver.core.VersionNumber;
 import com.datastax.driver.core.policies.AddressTranslator;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.BiMap;
@@ -386,7 +385,8 @@ final class JmxCassandraManagementProxy implements ICassandraManagementProxy {
 
   @Override
   public Set<Table> getTablesForKeyspace(String keyspace) throws ReaperException {
-    final boolean canUseCompactionStrategy = ICassandraManagementProxy.versionCompare(getCassandraVersion(), "2.1") >= 0;
+    final boolean canUseCompactionStrategy = ICassandraManagementProxy.versionCompare(getCassandraVersion(),
+        "2.1") >= 0;
 
     final Set<Table> tables = new HashSet<>();
     final Iterator<Map.Entry<String, ColumnFamilyStoreMBean>> proxies;
@@ -1031,25 +1031,6 @@ final class JmxCassandraManagementProxy implements ICassandraManagementProxy {
     return getCompactionManagerMBean().getCompactions();
   }
 
-  private static final class JmxColumnFamily {
-    private final String keyspace;
-    private final String columnFamily;
-
-    JmxColumnFamily(String keyspace, String columnFamily) {
-      super();
-      this.keyspace = keyspace;
-      this.columnFamily = columnFamily;
-    }
-
-    public String getKeyspace() {
-      return keyspace;
-    }
-
-    public String getColumnFamily() {
-      return columnFamily;
-    }
-  }
-
   // from DiagnosticEventPersistenceMBean
   public SortedMap<Long, Map<String, Serializable>> readEvents(String eventClass, Long lastKey, int limit) {
     return getDiagnosticEventPersistenceMBean().readEvents(eventClass, lastKey, limit);
@@ -1091,8 +1072,24 @@ final class JmxCassandraManagementProxy implements ICassandraManagementProxy {
     }
   }
 
+  private static final class JmxColumnFamily {
+    private final String keyspace;
+    private final String columnFamily;
 
+    JmxColumnFamily(String keyspace, String columnFamily) {
+      super();
+      this.keyspace = keyspace;
+      this.columnFamily = columnFamily;
+    }
 
+    public String getKeyspace() {
+      return keyspace;
+    }
+
+    public String getColumnFamily() {
+      return columnFamily;
+    }
+  }
 
   // Initialization-on-demand holder for jmx ObjectNames
   private static final class ObjectNames {

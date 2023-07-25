@@ -29,12 +29,13 @@ import org.apache.cassandra.streaming.StreamState;
 
 public final class StreamSessionFactory {
 
-  private StreamSessionFactory() {}
+  private StreamSessionFactory() {
+  }
 
   /**
    * This is called when stream info is explicitly pulled from a node.
    *
-   * @param host hostname of the node the streams are pulled from.
+   * @param host        hostname of the node the streams are pulled from.
    * @param streamState parsed payload received from Cassandra.
    * @return stream session.
    */

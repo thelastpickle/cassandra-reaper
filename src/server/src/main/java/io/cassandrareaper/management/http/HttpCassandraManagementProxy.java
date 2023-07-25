@@ -221,7 +221,6 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
   }
 
 
-
   // From MBeanServerConnection
   public Set<ObjectName> queryNames(ObjectName name, QueryExp query)
       throws IOException {
@@ -276,7 +275,7 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
     //TODO: implement me
   }
 
-  public void disableEventPersistence(String eventClass){
+  public void disableEventPersistence(String eventClass) {
     //TODO: implement me
   }
 
@@ -302,14 +301,14 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
     // TODO - implement me.
   }
 
-  public void removeNotificationListener(NotificationListener listener) throws IOException, JMException  {
+  public void removeNotificationListener(NotificationListener listener) throws IOException, JMException {
     // TODO - implement me.
   }
+
   public String getUntranslatedHost() {
     //TODO: implement me
     return "";
   }
-
 
 
 }

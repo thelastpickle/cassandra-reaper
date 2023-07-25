@@ -24,10 +24,10 @@ import io.cassandrareaper.core.DroppedMessages;
 import io.cassandrareaper.core.JmxStat;
 import io.cassandrareaper.core.Node;
 import io.cassandrareaper.core.ThreadPoolStat;
-import io.cassandrareaper.management.ICassandraManagementProxy;
 import io.cassandrareaper.management.ClusterFacade;
-import io.cassandrareaper.management.jmx.JmxManagementConnectionFactory;
+import io.cassandrareaper.management.ICassandraManagementProxy;
 import io.cassandrareaper.management.MetricsProxy;
+import io.cassandrareaper.management.jmx.JmxManagementConnectionFactory;
 
 import java.io.IOException;
 import java.util.Collection;

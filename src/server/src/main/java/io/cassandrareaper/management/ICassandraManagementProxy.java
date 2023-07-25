@@ -196,14 +196,14 @@ public interface ICassandraManagementProxy extends NotificationListener {
   Set<CompositeData> getCurrentStreams();
 
 
-  void addConnectionNotificationListener(NotificationListener listener) ;
+  void addConnectionNotificationListener(NotificationListener listener);
 
-  void removeConnectionNotificationListener(NotificationListener listener) throws ListenerNotFoundException ;
+  void removeConnectionNotificationListener(NotificationListener listener) throws ListenerNotFoundException;
 
   void addNotificationListener(NotificationListener listener, NotificationFilter filter)
       throws IOException, JMException;
 
-  void removeNotificationListener(NotificationListener listener) throws IOException, JMException ;
+  void removeNotificationListener(NotificationListener listener) throws IOException, JMException;
 
   /**
    * Compares two Cassandra versions using classes provided by the Datastax Java Driver.

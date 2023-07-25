@@ -22,10 +22,10 @@ import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.Node;
 import io.cassandrareaper.core.StreamSession;
+import io.cassandrareaper.management.ClusterFacade;
 import io.cassandrareaper.management.HostConnectionCounters;
 import io.cassandrareaper.management.ICassandraManagementProxy;
 import io.cassandrareaper.management.jmx.CassandraManagementProxyTest;
-import io.cassandrareaper.management.ClusterFacade;
 import io.cassandrareaper.management.jmx.JmxManagementConnectionFactory;
 
 import java.io.IOException;

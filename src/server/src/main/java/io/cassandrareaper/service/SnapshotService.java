@@ -104,22 +104,22 @@ public final class SnapshotService {
       Cluster cluster = context.storage.getClusterDao().getCluster(clusterName);
 
       Snapshot snapshot = Snapshot.builder()
-              .withClusterName(clusterName)
-              .withName(snapshotName)
-              .withOwner(owner)
-              .withCause(cause)
-              .withCreationDate(DateTime.now())
-              .build();
+          .withClusterName(clusterName)
+          .withName(snapshotName)
+          .withOwner(owner)
+          .withCause(cause)
+          .withCreationDate(DateTime.now())
+          .build();
 
       snapshotDao.saveSnapshot(snapshot);
       LOG.info("Cluster : {} ; Cluster obj : {}", clusterName, cluster);
       List<String> liveNodes = clusterFacade.getLiveNodes(cluster);
 
       List<Callable<Pair<Node, String>>> snapshotTasks = liveNodes
-              .stream()
-              .map(host -> Node.builder().withCluster(cluster).withHostname(host).build())
-              .map(node -> takeSnapshotTask(snapshotName, node, keyspace))
-              .collect(Collectors.toList());
+          .stream()
+          .map(host -> Node.builder().withCluster(cluster).withHostname(host).build())
+          .map(node -> takeSnapshotTask(snapshotName, node, keyspace))
+          .collect(Collectors.toList());
 
       List<Future<Pair<Node, String>>> futures = executor.invokeAll(snapshotTasks);
       for (Future<Pair<Node, String>> future : futures) {
@@ -162,10 +162,10 @@ public final class SnapshotService {
       List<String> liveNodes = clusterFacade.getLiveNodes(cluster);
 
       List<Callable<List<Snapshot>>> listSnapshotTasks = liveNodes
-              .stream()
-              .map(host -> Node.builder().withCluster(cluster).withHostname(host).build())
-              .map(node -> listSnapshotTask(node))
-              .collect(Collectors.toList());
+          .stream()
+          .map(host -> Node.builder().withCluster(cluster).withHostname(host).build())
+          .map(node -> listSnapshotTask(node))
+          .collect(Collectors.toList());
 
       List<Future<List<Snapshot>>> futures = executor.invokeAll(listSnapshotTasks);
 
@@ -181,9 +181,9 @@ public final class SnapshotService {
 
       for (String snapshotName : snapshotsByName.keySet()) {
         Map<String, List<Snapshot>> snapshotsByHost = snapshotsByName
-                .get(snapshotName)
-                .stream()
-                .collect(Collectors.groupingBy(Snapshot::getHost, Collectors.toList()));
+            .get(snapshotName)
+            .stream()
+            .collect(Collectors.groupingBy(Snapshot::getHost, Collectors.toList()));
         snapshotsByNameAndHost.put(snapshotName, snapshotsByHost);
       }
 
@@ -222,10 +222,10 @@ public final class SnapshotService {
       List<String> liveNodes = clusterFacade.getLiveNodes(cluster);
 
       List<Callable<Node>> clearSnapshotTasks = liveNodes
-              .stream()
-              .map(host -> Node.builder().withCluster(cluster).withHostname(host).build())
-              .map(node -> clearSnapshotTask(snapshotName, node))
-              .collect(Collectors.toList());
+          .stream()
+          .map(host -> Node.builder().withCluster(cluster).withHostname(host).build())
+          .map(node -> clearSnapshotTask(snapshotName, node))
+          .collect(Collectors.toList());
 
       List<Future<Node>> futures = executor.invokeAll(clearSnapshotTasks);
       for (Future<Node> future : futures) {
@@ -259,21 +259,21 @@ public final class SnapshotService {
     }
 
     Builder snapshotBuilder = Snapshot.builder()
-            .withClusterName(snapshot.getClusterName())
-            .withName(snapshot.getName())
-            .withHost(snapshot.getHost())
-            .withKeyspace(snapshot.getKeyspace())
-            .withSizeOnDisk(snapshot.getSizeOnDisk())
-            .withTrueSize(snapshot.getTrueSize())
-            .withTable(snapshot.getTable());
+        .withClusterName(snapshot.getClusterName())
+        .withName(snapshot.getName())
+        .withHost(snapshot.getHost())
+        .withKeyspace(snapshot.getKeyspace())
+        .withSizeOnDisk(snapshot.getSizeOnDisk())
+        .withTrueSize(snapshot.getTrueSize())
+        .withTable(snapshot.getTable());
 
     if (snapshotMetadata.isPresent()) {
       snapshotBuilder = snapshotBuilder
-              .withCause(snapshotMetadata.get().getCause().orElse(""))
-              .withOwner(snapshotMetadata.get().getOwner().orElse(""));
+          .withCause(snapshotMetadata.get().getCause().orElse(""))
+          .withOwner(snapshotMetadata.get().getOwner().orElse(""));
       if (snapshotMetadata.get().getCreationDate().isPresent()) {
         snapshotBuilder = snapshotBuilder
-              .withCreationDate(snapshotMetadata.get().getCreationDate().get());
+            .withCreationDate(snapshotMetadata.get().getCreationDate().get());
       }
     }
 

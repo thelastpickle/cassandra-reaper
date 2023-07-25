@@ -92,16 +92,16 @@ public final class PurgeService {
   private int purgeRepairRunsByHistoryDepth(Collection<RepairRun> repairRuns) {
     int purgedRuns = 0;
     Map<UUID, List<RepairRun>> repairRunsByRepairUnit = repairRuns
-            .stream()
-            .filter(run -> run.getRunState().isTerminated()) // only delete terminated runs
-            .collect(Collectors.groupingBy(RepairRun::getRepairUnitId));
+        .stream()
+        .filter(run -> run.getRunState().isTerminated()) // only delete terminated runs
+        .collect(Collectors.groupingBy(RepairRun::getRepairUnitId));
     for (Entry<UUID, List<RepairRun>> repairUnit : repairRunsByRepairUnit.entrySet()) {
       List<RepairRun> repairRunsForUnit = repairUnit.getValue();
       repairRunsForUnit.sort(
           (RepairRun r1, RepairRun r2) -> r2.getEndTime().compareTo(r1.getEndTime()));
       for (int i = context.config.getNumberOfRunsToKeepPerUnit();
-          i < repairRunsForUnit.size();
-          i++) {
+           i < repairRunsForUnit.size();
+           i++) {
         repairRunDao.deleteRepairRun(repairRunsForUnit.get(i).getId());
         purgedRuns++;
       }
