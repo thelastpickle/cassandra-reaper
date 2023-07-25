@@ -42,6 +42,7 @@ import javax.management.NotificationListener;
 import javax.management.ObjectName;
 import javax.management.QueryExp;
 import javax.management.ReflectionException;
+import javax.management.openmbean.CompositeData;
 import javax.management.openmbean.TabularData;
 import javax.validation.constraints.NotNull;
 
@@ -188,5 +189,8 @@ public interface ICassandraManagementProxy extends NotificationListener {
 
   // From LastEventIdBroadcasterMBean
   Map<String, Comparable> getLastEventIdsIfModified(long lastUpdate);
+
+  // From StreamManagerMBean
+  Set<CompositeData> getCurrentStreams();
 
 }

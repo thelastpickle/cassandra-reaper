@@ -71,11 +71,7 @@ public final class StreamsProxy {
   }
 
   private Set<CompositeData> listStreamsInternal() {
-    if (proxy.getStreamManagerMBean().isPresent()) {
-      return proxy.getStreamManagerMBean().get().getCurrentStreams();
-    } else {
-      return ImmutableSet.of();
-    }
+    return proxy.getCurrentStreams();
   }
 
   private Set<StreamState> parseCompositeData(Set<CompositeData> payload) {

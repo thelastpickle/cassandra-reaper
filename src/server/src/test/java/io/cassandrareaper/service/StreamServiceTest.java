@@ -63,8 +63,6 @@ public class StreamServiceTest {
   public void testListStreams()
       throws ReaperException, ClassNotFoundException, InterruptedException, UnknownHostException {
     ICassandraManagementProxy proxy = CassandraManagementProxyTest.mockJmxProxyImpl();
-    StreamManagerMBean streamingManagerMBean = Mockito.mock(StreamManagerMBean.class);
-    CassandraManagementProxyTest.mockGetStreamManagerMBean(proxy, streamingManagerMBean);
 
     AppContext cxt = new AppContext();
     cxt.config = TestRepairConfiguration.defaultConfig();
@@ -79,7 +77,7 @@ public class StreamServiceTest {
         .listStreams(Node.builder().withHostname("127.0.0.1").withCluster(Cluster.builder().withJmxPort(7199)
             .withSeedHosts(ImmutableSet.of("127.0.0.1")).withName("test").build()).build());
 
-    verify(streamingManagerMBean, times(1)).getCurrentStreams();
+    verify(proxy, times(1)).getCurrentStreams();
   }
 
   @Test
@@ -97,9 +95,6 @@ public class StreamServiceTest {
     // init the stream manager
     ICassandraManagementProxy proxy = (ICassandraManagementProxy) mock(
         Class.forName("io.cassandrareaper.management.jmx.JmxCassandraManagementProxy"));
-    StreamManagerMBean streamingManagerMBean = Mockito.mock(StreamManagerMBean.class);
-    CassandraManagementProxyTest.mockGetStreamManagerMBean(proxy, streamingManagerMBean);
-    when(streamingManagerMBean.getCurrentStreams()).thenReturn(ImmutableSet.of(streamSession));
 
     AppContext cxt = new AppContext();
     cxt.config = TestRepairConfiguration.defaultConfig();
@@ -117,7 +112,7 @@ public class StreamServiceTest {
         .listStreams(Node.builder().withHostname("127.0.0.1").withCluster(Cluster.builder().withJmxPort(7199)
             .withSeedHosts(ImmutableSet.of("127.0.0.1")).withName("test").build()).build());
 
-    verify(streamingManagerMBean, times(1)).getCurrentStreams();
+    verify(proxy, times(1)).getCurrentStreams();
     assertEquals(1, result.size());
   }
 
@@ -136,9 +131,6 @@ public class StreamServiceTest {
     // init the stream manager
     ICassandraManagementProxy proxy = (ICassandraManagementProxy) mock(
         Class.forName("io.cassandrareaper.management.jmx.JmxCassandraManagementProxy"));
-    StreamManagerMBean streamingManagerMBean = Mockito.mock(StreamManagerMBean.class);
-    CassandraManagementProxyTest.mockGetStreamManagerMBean(proxy, streamingManagerMBean);
-    when(streamingManagerMBean.getCurrentStreams()).thenReturn(ImmutableSet.of(streamSession));
 
     AppContext cxt = new AppContext();
     cxt.config = TestRepairConfiguration.defaultConfig();
@@ -156,7 +148,7 @@ public class StreamServiceTest {
         .listStreams(Node.builder().withHostname("127.0.0.1").withCluster(Cluster.builder().withJmxPort(7199)
             .withSeedHosts(ImmutableSet.of("127.0.0.1")).withName("test").build()).build());
 
-    verify(streamingManagerMBean, times(1)).getCurrentStreams();
+    verify(proxy, times(1)).getCurrentStreams();
     assertEquals(1, result.size());
   }
 
@@ -175,9 +167,6 @@ public class StreamServiceTest {
     // init the stream manager
     ICassandraManagementProxy proxy = (ICassandraManagementProxy) mock(
         Class.forName("io.cassandrareaper.management.jmx.JmxCassandraManagementProxy"));
-    StreamManagerMBean streamingManagerMBean = Mockito.mock(StreamManagerMBean.class);
-    CassandraManagementProxyTest.mockGetStreamManagerMBean(proxy, streamingManagerMBean);
-    when(streamingManagerMBean.getCurrentStreams()).thenReturn(ImmutableSet.of(streamSession));
 
     AppContext cxt = new AppContext();
     cxt.config = TestRepairConfiguration.defaultConfig();
@@ -195,7 +184,7 @@ public class StreamServiceTest {
         .listStreams(Node.builder().withHostname("127.0.0.1").withCluster(Cluster.builder().withJmxPort(7199)
             .withSeedHosts(ImmutableSet.of("127.0.0.1")).withName("test").build()).build());
 
-    verify(streamingManagerMBean, times(1)).getCurrentStreams();
+    verify(proxy, times(1)).getCurrentStreams();
     assertEquals(1, result.size());
   }
 
@@ -214,9 +203,6 @@ public class StreamServiceTest {
     // init the stream manager
     ICassandraManagementProxy proxy = (ICassandraManagementProxy) mock(
         Class.forName("io.cassandrareaper.management.jmx.JmxCassandraManagementProxy"));
-    StreamManagerMBean streamingManagerMBean = Mockito.mock(StreamManagerMBean.class);
-    CassandraManagementProxyTest.mockGetStreamManagerMBean(proxy, streamingManagerMBean);
-    when(streamingManagerMBean.getCurrentStreams()).thenReturn(ImmutableSet.of(streamSession));
 
     AppContext cxt = new AppContext();
     cxt.config = TestRepairConfiguration.defaultConfig();
@@ -234,7 +220,7 @@ public class StreamServiceTest {
         .listStreams(Node.builder().withHostname("127.0.0.1").withCluster(Cluster.builder().withJmxPort(7199)
             .withSeedHosts(ImmutableSet.of("127.0.0.1")).withName("test").build()).build());
 
-    verify(streamingManagerMBean, times(1)).getCurrentStreams();
+    verify(proxy, times(1)).getCurrentStreams();
     assertEquals(1, result.size());
   }
 
@@ -250,9 +236,6 @@ public class StreamServiceTest {
 
     ICassandraManagementProxy proxy = (ICassandraManagementProxy) mock(
         Class.forName("io.cassandrareaper.management.jmx.JmxCassandraManagementProxy"));
-    StreamManagerMBean streamingManagerMBean = Mockito.mock(StreamManagerMBean.class);
-    CassandraManagementProxyTest.mockGetStreamManagerMBean(proxy, streamingManagerMBean);
-    when(streamingManagerMBean.getCurrentStreams()).thenReturn(ImmutableSet.of(streamSession));
 
     AppContext cxt = new AppContext();
     cxt.config = TestRepairConfiguration.defaultConfig();
@@ -270,7 +253,7 @@ public class StreamServiceTest {
         .listStreams(Node.builder().withHostname("127.0.0.1").withCluster(Cluster.builder().withJmxPort(7199)
             .withSeedHosts(ImmutableSet.of("127.0.0.1")).withName("test").build()).build());
 
-    verify(streamingManagerMBean, times(1)).getCurrentStreams();
+    verify(proxy, times(1)).getCurrentStreams();
     assertEquals(1, result.size());
 
   }

@@ -40,12 +40,6 @@ public final class CassandraManagementProxyTest {
     return impl;
   }
 
-  public static void mockGetStreamManagerMBean(ICassandraManagementProxy proxy,
-                                               StreamManagerMBean streamingManagerMBean) {
-    Mockito.when(((JmxCassandraManagementProxy) proxy).getStreamManagerMBean())
-        .thenReturn(Optional.of(streamingManagerMBean));
-  }
-
   @Test
   public void testVersionCompare() throws ReaperException {
     assertEquals(Integer.valueOf(0), JmxCassandraManagementProxy.versionCompare("1.0", "1.0"));

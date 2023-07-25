@@ -47,6 +47,7 @@ import javax.management.Notification;
 import javax.management.ObjectName;
 import javax.management.QueryExp;
 import javax.management.ReflectionException;
+import javax.management.openmbean.CompositeData;
 import javax.management.openmbean.TabularData;
 import javax.validation.constraints.NotNull;
 
@@ -279,6 +280,11 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
   // From LastEventIdBroadcasterMBean
   public Map<String, Comparable> getLastEventIdsIfModified(long lastUpdate) {
     return new HashMap<String, Comparable>();
+  }
+
+  // From StreamManagerMBean
+  public Set<CompositeData> getCurrentStreams() {
+    return new HashSet<CompositeData>();
   }
 
 

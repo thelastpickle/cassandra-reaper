@@ -68,6 +68,7 @@ import javax.management.NotificationListener;
 import javax.management.ObjectName;
 import javax.management.QueryExp;
 import javax.management.ReflectionException;
+import javax.management.openmbean.CompositeData;
 import javax.management.openmbean.TabularData;
 import javax.management.remote.JMXConnector;
 import javax.management.remote.JMXConnectorFactory;
@@ -85,6 +86,7 @@ import com.datastax.driver.core.policies.AddressTranslator;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.ImmutableBiMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.net.HostAndPort;
@@ -1093,6 +1095,15 @@ final class JmxCassandraManagementProxy implements ICassandraManagementProxy {
   // From LastEventIdBroadcasterMBean
   public Map<String, Comparable> getLastEventIdsIfModified(long lastUpdate) {
     return getLastEventIdBroadcasterMBean().getLastEventIdsIfModified(lastUpdate);
+  }
+
+  // From StreamManagerMBean
+  public Set<CompositeData> getCurrentStreams() {
+    if (getStreamManagerMBean().isPresent()) {
+      return getStreamManagerMBean().get().getCurrentStreams();
+    } else {
+      return ImmutableSet.of();
+    }
   }
 
 
