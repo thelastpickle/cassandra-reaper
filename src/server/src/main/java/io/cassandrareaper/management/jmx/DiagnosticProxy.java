@@ -56,7 +56,7 @@ public final class DiagnosticProxy {
   }
 
   public Map<String, Comparable> getLastEventIdsIfModified(long lastUpdated) {
-    return proxy.getLastEventIdBroadcasterMBean().getLastEventIdsIfModified(lastUpdated);
+    return proxy.getLastEventIdsIfModified(lastUpdated);
   }
 
   public SortedMap<Long, Map<String, Serializable>> readEvents(String eventClazz, Long lastKey, int limit) {

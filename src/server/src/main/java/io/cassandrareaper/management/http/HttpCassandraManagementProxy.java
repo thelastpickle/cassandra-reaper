@@ -263,7 +263,7 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
   }
 
   // from DiagnosticEventPersistenceMBean
-  public SortedMap<Long, Map<String, Serializable>> readEvents(String eventClass, Long lastKey, int limit){
+  public SortedMap<Long, Map<String, Serializable>> readEvents(String eventClass, Long lastKey, int limit) {
     //TODO: implement me
     return new TreeMap<>();
   }
@@ -275,6 +275,12 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
   public void disableEventPersistence(String eventClass){
     //TODO: implement me
   }
+
+  // From LastEventIdBroadcasterMBean
+  public Map<String, Comparable> getLastEventIdsIfModified(long lastUpdate) {
+    return new HashMap<String, Comparable>();
+  }
+
 
 
 }

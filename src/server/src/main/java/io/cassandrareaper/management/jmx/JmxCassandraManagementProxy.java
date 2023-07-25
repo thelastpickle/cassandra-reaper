@@ -952,7 +952,7 @@ final class JmxCassandraManagementProxy implements ICassandraManagementProxy {
     return cmProxy;
   }
 
-  Optional<StreamManagerMBean> getStreamManagerMBean() {
+  private Optional<StreamManagerMBean> getStreamManagerMBean() {
     return smProxy;
   }
 
@@ -968,7 +968,7 @@ final class JmxCassandraManagementProxy implements ICassandraManagementProxy {
     return diagEventProxy;
   }
 
-  LastEventIdBroadcasterMBean getLastEventIdBroadcasterMBean() {
+  private LastEventIdBroadcasterMBean getLastEventIdBroadcasterMBean() {
     return lastEventIdProxy;
   }
 
@@ -1062,6 +1062,7 @@ final class JmxCassandraManagementProxy implements ICassandraManagementProxy {
       return columnFamily;
     }
   }
+
   // from DiagnosticEventPersistenceMBean
   public SortedMap<Long, Map<String, Serializable>> readEvents(String eventClass, Long lastKey, int limit) {
     return getDiagnosticEventPersistenceMBean().readEvents(eventClass, lastKey, limit);
@@ -1071,9 +1072,10 @@ final class JmxCassandraManagementProxy implements ICassandraManagementProxy {
     getDiagnosticEventPersistenceMBean().enableEventPersistence(eventClass);
   }
 
-  public void disableEventPersistence(String eventClass){
+  public void disableEventPersistence(String eventClass) {
     getDiagnosticEventPersistenceMBean().disableEventPersistence(eventClass);
   }
+
   // From FailureDetectorMBean
   public String getAllEndpointStates() {
     return getFailureDetectorMBean().getAllEndpointStates();
@@ -1086,6 +1088,11 @@ final class JmxCassandraManagementProxy implements ICassandraManagementProxy {
   // From EndpointSnitchInfoMBean
   public String getDatacenter(String var1) throws UnknownHostException {
     return getEndpointSnitchInfoMBean().getDatacenter(var1);
+  }
+
+  // From LastEventIdBroadcasterMBean
+  public Map<String, Comparable> getLastEventIdsIfModified(long lastUpdate) {
+    return getLastEventIdBroadcasterMBean().getLastEventIdsIfModified(lastUpdate);
   }
 
 

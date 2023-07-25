@@ -186,5 +186,7 @@ public interface ICassandraManagementProxy extends NotificationListener {
 
   void disableEventPersistence(String eventClass);
 
+  // From LastEventIdBroadcasterMBean
+  Map<String, Comparable> getLastEventIdsIfModified(long lastUpdate);
 
 }
