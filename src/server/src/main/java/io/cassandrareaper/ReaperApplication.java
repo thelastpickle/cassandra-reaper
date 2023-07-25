@@ -24,7 +24,7 @@ import io.cassandrareaper.core.Node;
 import io.cassandrareaper.crypto.Cryptograph;
 import io.cassandrareaper.crypto.NoopCrypotograph;
 import io.cassandrareaper.management.http.HttpManagementConnectionFactory;
-import io.cassandrareaper.management.jmx.ClusterFacade;
+import io.cassandrareaper.management.ClusterFacade;
 import io.cassandrareaper.management.jmx.JmxManagementConnectionFactory;
 import io.cassandrareaper.metrics.PrometheusMetricsFilter;
 import io.cassandrareaper.resources.ClusterResource;

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package io.cassandrareaper.management.jmx;
+package io.cassandrareaper.management;
 
 import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperApplicationConfiguration.DatacenterAvailability;
@@ -33,7 +33,6 @@ import io.cassandrareaper.core.Snapshot;
 import io.cassandrareaper.core.StreamSession;
 import io.cassandrareaper.core.Table;
 import io.cassandrareaper.core.ThreadPoolStat;
-import io.cassandrareaper.management.ICassandraManagementProxy;
 import io.cassandrareaper.resources.view.NodesStatus;
 import io.cassandrareaper.service.RingRange;
 import io.cassandrareaper.storage.IDistributedStorage;
@@ -75,8 +74,7 @@ import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static io.cassandrareaper.management.jmx.MetricsProxy.convertToGenericMetrics;
-import static io.cassandrareaper.management.jmx.MetricsProxy.updateGenericMetricAttribute;
+import static io.cassandrareaper.management.MetricsProxy.convertToGenericMetrics;
 
 
 public final class ClusterFacade {
@@ -683,7 +681,7 @@ public final class ClusterFacade {
     for (Entry<String, List<GenericMetric>> pool : metricsByScope.entrySet()) {
       DroppedMessages.Builder builder = DroppedMessages.builder().withName(pool.getKey());
       for (GenericMetric stat : pool.getValue()) {
-        builder = updateGenericMetricAttribute(stat, builder);
+        builder = MetricsProxy.updateGenericMetricAttribute(stat, builder);
       }
       droppedMessages.add(builder.build());
     }
@@ -726,7 +724,7 @@ public final class ClusterFacade {
     for (Entry<String, List<GenericMetric>> pool : metricsByScope.entrySet()) {
       ThreadPoolStat.Builder builder = ThreadPoolStat.builder().withName(pool.getKey());
       for (GenericMetric stat : pool.getValue()) {
-        builder = updateGenericMetricAttribute(stat, builder);
+        builder = MetricsProxy.updateGenericMetricAttribute(stat, builder);
       }
       tpstats.add(builder.build());
     }
@@ -753,7 +751,7 @@ public final class ClusterFacade {
             .withName(metricByScope.getKey())
             .withType(metricByName.getKey());
         for (GenericMetric stat : metricByName.getValue()) {
-          builder = updateGenericMetricAttribute(stat, builder);
+          builder = MetricsProxy.updateGenericMetricAttribute(stat, builder);
         }
         histograms.add(builder.build());
       }
@@ -859,8 +857,8 @@ public final class ClusterFacade {
   private Map<List<String>, List<String>> getRangeToEndpointMapImpl(
       Cluster cluster,
       String keyspace) throws ReaperException {
-    ICassandraManagementProxy jmxConnection = connect(cluster);
-    Map<List<String>, List<String>> endpointMap = jmxConnection.getRangeToEndpointMap(keyspace);
+    ICassandraManagementProxy managementConnection = connect(cluster);
+    Map<List<String>, List<String>> endpointMap = managementConnection.getRangeToEndpointMap(keyspace);
     return maybeCleanupEndpointFromScylla(endpointMap);
   }
 

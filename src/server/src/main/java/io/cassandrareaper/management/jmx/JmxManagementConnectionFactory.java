@@ -24,6 +24,7 @@ import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.JmxCredentials;
 import io.cassandrareaper.core.Node;
 import io.cassandrareaper.crypto.Cryptograph;
+import io.cassandrareaper.management.EndpointSnitchInfoProxy;
 import io.cassandrareaper.management.HostConnectionCounters;
 import io.cassandrareaper.management.ICassandraManagementProxy;
 import io.cassandrareaper.management.IManagementConnectionFactory;

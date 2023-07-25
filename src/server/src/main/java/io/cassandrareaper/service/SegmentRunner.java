@@ -24,9 +24,9 @@ import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.RepairSegment;
 import io.cassandrareaper.core.RepairUnit;
 import io.cassandrareaper.management.ICassandraManagementProxy;
-import io.cassandrareaper.management.jmx.ClusterFacade;
-import io.cassandrareaper.management.jmx.RepairStatusHandler;
-import io.cassandrareaper.management.jmx.SnapshotProxy;
+import io.cassandrareaper.management.ClusterFacade;
+import io.cassandrareaper.management.RepairStatusHandler;
+import io.cassandrareaper.management.SnapshotProxy;
 import io.cassandrareaper.storage.IDistributedStorage;
 
 import java.lang.management.ManagementFactory;

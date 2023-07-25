@@ -21,7 +21,7 @@ import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Node;
 import io.cassandrareaper.core.StreamSession;
-import io.cassandrareaper.management.jmx.ClusterFacade;
+import io.cassandrareaper.management.ClusterFacade;
 import io.cassandrareaper.service.CompactionService;
 import io.cassandrareaper.service.MetricsService;
 import io.cassandrareaper.service.StreamService;

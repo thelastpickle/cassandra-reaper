@@ -20,7 +20,7 @@ package io.cassandrareaper.management.http;
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Table;
 import io.cassandrareaper.management.ICassandraManagementProxy;
-import io.cassandrareaper.management.jmx.RepairStatusHandler;
+import io.cassandrareaper.management.RepairStatusHandler;
 import io.cassandrareaper.service.RingRange;
 
 import java.io.IOException;
@@ -42,8 +42,11 @@ import javax.management.AttributeList;
 import javax.management.InstanceNotFoundException;
 import javax.management.IntrospectionException;
 import javax.management.JMException;
+import javax.management.ListenerNotFoundException;
 import javax.management.MBeanInfo;
 import javax.management.Notification;
+import javax.management.NotificationFilter;
+import javax.management.NotificationListener;
 import javax.management.ObjectName;
 import javax.management.QueryExp;
 import javax.management.ReflectionException;
@@ -285,6 +288,26 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
   // From StreamManagerMBean
   public Set<CompositeData> getCurrentStreams() {
     return new HashSet<CompositeData>();
+  }
+
+  public void addConnectionNotificationListener(NotificationListener listener) {
+    // TODO - implement me.
+  }
+
+  public void removeConnectionNotificationListener(NotificationListener listener) throws ListenerNotFoundException {
+    // TODO - implement me.
+  }
+
+  public void addNotificationListener(NotificationListener listener, NotificationFilter filter) {
+    // TODO - implement me.
+  }
+
+  public void removeNotificationListener(NotificationListener listener) throws IOException, JMException  {
+    // TODO - implement me.
+  }
+  public String getUntranslatedHost() {
+    //TODO: implement me
+    return "";
   }
 
 

@@ -26,8 +26,8 @@ import io.cassandrareaper.core.RepairUnit;
 import io.cassandrareaper.core.Segment;
 import io.cassandrareaper.core.Table;
 import io.cassandrareaper.management.ICassandraManagementProxy;
-import io.cassandrareaper.management.jmx.ClusterFacade;
-import io.cassandrareaper.management.jmx.EndpointSnitchInfoProxy;
+import io.cassandrareaper.management.ClusterFacade;
+import io.cassandrareaper.management.EndpointSnitchInfoProxy;
 import io.cassandrareaper.storage.repairrun.IRepairRunDao;
 
 import java.math.BigInteger;

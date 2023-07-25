@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package io.cassandrareaper.management.jmx;
+package io.cassandrareaper.management;
 
 import io.cassandrareaper.core.DroppedMessages;
 import io.cassandrareaper.core.GenericMetric;
@@ -48,18 +48,19 @@ public final class MetricsProxy {
 
   private static final Logger LOG = LoggerFactory.getLogger(MetricsProxy.class);
 
-  private final JmxCassandraManagementProxy proxy;
+  private final ICassandraManagementProxy proxy;
 
-  private MetricsProxy(JmxCassandraManagementProxy proxy) {
+  private MetricsProxy(ICassandraManagementProxy proxy) {
     this.proxy = proxy;
   }
 
   public static MetricsProxy create(ICassandraManagementProxy proxy) {
 
-    return new MetricsProxy((JmxCassandraManagementProxy) proxy);
+    return new MetricsProxy((ICassandraManagementProxy) proxy);
   }
 
-  static ThreadPoolStat.Builder updateGenericMetricAttribute(GenericMetric stat, ThreadPoolStat.Builder builder) {
+  public static ThreadPoolStat.Builder updateGenericMetricAttribute(GenericMetric stat,
+                                                                    ThreadPoolStat.Builder builder) {
     switch (stat.getMetricName()) {
       case "MaxPoolSize":
         return builder.withMaxPoolSize((int) stat.getValue());
@@ -78,7 +79,8 @@ public final class MetricsProxy {
     }
   }
 
-  static DroppedMessages.Builder updateGenericMetricAttribute(GenericMetric stat, DroppedMessages.Builder builder) {
+  public static DroppedMessages.Builder updateGenericMetricAttribute(GenericMetric stat,
+                                                                   DroppedMessages.Builder builder) {
     switch (stat.getMetricAttribute()) {
       case "Count":
         return builder.withCount((int) stat.getValue());
@@ -95,7 +97,8 @@ public final class MetricsProxy {
     }
   }
 
-  static MetricsHistogram.Builder updateGenericMetricAttribute(GenericMetric stat, MetricsHistogram.Builder builder) {
+  public static MetricsHistogram.Builder updateGenericMetricAttribute(GenericMetric stat,
+                                                                  MetricsHistogram.Builder builder) {
     switch (stat.getMetricAttribute()) {
       case "Count":
         return builder.withCount((int) stat.getValue());

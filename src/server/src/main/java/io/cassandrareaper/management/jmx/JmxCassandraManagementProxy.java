@@ -24,6 +24,7 @@ import io.cassandrareaper.core.JmxCredentials;
 import io.cassandrareaper.core.Table;
 import io.cassandrareaper.crypto.Cryptograph;
 import io.cassandrareaper.management.ICassandraManagementProxy;
+import io.cassandrareaper.management.RepairStatusHandler;
 import io.cassandrareaper.service.RingRange;
 
 import java.io.IOException;
@@ -310,22 +311,6 @@ final class JmxCassandraManagementProxy implements ICassandraManagementProxy {
     return future.get(timeout, unit);
   }
 
-  /**
-   * Compares two Cassandra versions using classes provided by the Datastax Java Driver.
-   *
-   * @param str1 a string of ordinal numbers separated by decimal points.
-   * @param str2 a string of ordinal numbers separated by decimal points.
-   * @return The result is a negative integer if str1 is _numerically_ less than str2. The result is
-   *     a positive integer if str1 is _numerically_ greater than str2. The result is zero if the
-   *     strings are _numerically_ equal. It does not work if "1.10" is supposed to be equal to
-   *     "1.10.0".
-   */
-  static Integer versionCompare(String str1, String str2) {
-    VersionNumber version1 = VersionNumber.parse(str1);
-    VersionNumber version2 = VersionNumber.parse(str2);
-
-    return version1.compareTo(version2);
-  }
 
   private static RMIClientSocketFactory getRmiClientSocketFactory() {
     return Boolean.parseBoolean(System.getProperty("ssl.enable"))
@@ -360,7 +345,7 @@ final class JmxCassandraManagementProxy implements ICassandraManagementProxy {
   @Override
   public String getLocalEndpoint() throws ReaperException {
     String cassandraVersion = getCassandraVersion();
-    if (versionCompare(cassandraVersion, "2.1.10") >= 0) {
+    if (ICassandraManagementProxy.versionCompare(cassandraVersion, "2.1.10") >= 0) {
       return ssProxy.getHostIdToEndpoint().get(ssProxy.getLocalHostId());
     } else {
       // pre-2.1.10 compatibility
@@ -401,7 +386,7 @@ final class JmxCassandraManagementProxy implements ICassandraManagementProxy {
 
   @Override
   public Set<Table> getTablesForKeyspace(String keyspace) throws ReaperException {
-    final boolean canUseCompactionStrategy = versionCompare(getCassandraVersion(), "2.1") >= 0;
+    final boolean canUseCompactionStrategy = ICassandraManagementProxy.versionCompare(getCassandraVersion(), "2.1") >= 0;
 
     final Set<Table> tables = new HashSet<>();
     final Iterator<Map.Entry<String, ColumnFamilyStoreMBean>> proxies;
@@ -597,7 +582,7 @@ final class JmxCassandraManagementProxy implements ICassandraManagementProxy {
 
     Preconditions.checkNotNull(ssProxy, "Looks like the proxy is not connected");
     String cassandraVersion = getCassandraVersion();
-    final boolean canUseDatacenterAware = versionCompare(cassandraVersion, "2.0.12") >= 0;
+    final boolean canUseDatacenterAware = ICassandraManagementProxy.versionCompare(cassandraVersion, "2.0.12") >= 0;
 
     String msg = String.format(
         "Triggering repair of range (%s,%s] for keyspace \"%s\" on "
@@ -974,26 +959,26 @@ final class JmxCassandraManagementProxy implements ICassandraManagementProxy {
     return lastEventIdProxy;
   }
 
-  String getUntranslatedHost() {
+  public String getUntranslatedHost() {
     return hostBeforeTranslation;
   }
 
-  void addConnectionNotificationListener(NotificationListener listener) {
+  public void addConnectionNotificationListener(NotificationListener listener) {
     jmxConnector.addConnectionNotificationListener(listener, null, null);
   }
 
-  void removeConnectionNotificationListener(NotificationListener listener) throws ListenerNotFoundException {
+  public void removeConnectionNotificationListener(NotificationListener listener) throws ListenerNotFoundException {
     jmxConnector.removeConnectionNotificationListener(listener);
   }
 
-  void addNotificationListener(NotificationListener listener, NotificationFilter filter)
+  public void addNotificationListener(NotificationListener listener, NotificationFilter filter)
       throws IOException, JMException {
 
     jmxConnector.getMBeanServerConnection()
         .addNotificationListener(ObjectNames.LAST_EVENT_ID, listener, filter, null);
   }
 
-  void removeNotificationListener(NotificationListener listener) throws IOException, JMException {
+  public void removeNotificationListener(NotificationListener listener) throws IOException, JMException {
     jmxConnector.getMBeanServerConnection().removeNotificationListener(ObjectNames.LAST_EVENT_ID, listener);
   }
 

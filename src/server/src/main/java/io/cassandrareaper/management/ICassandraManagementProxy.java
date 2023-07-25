@@ -19,7 +19,6 @@ package io.cassandrareaper.management;
 
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Table;
-import io.cassandrareaper.management.jmx.RepairStatusHandler;
 import io.cassandrareaper.service.RingRange;
 
 import java.io.IOException;
@@ -37,7 +36,9 @@ import javax.management.AttributeList;
 import javax.management.InstanceNotFoundException;
 import javax.management.IntrospectionException;
 import javax.management.JMException;
+import javax.management.ListenerNotFoundException;
 import javax.management.MBeanInfo;
+import javax.management.NotificationFilter;
 import javax.management.NotificationListener;
 import javax.management.ObjectName;
 import javax.management.QueryExp;
@@ -46,6 +47,7 @@ import javax.management.openmbean.CompositeData;
 import javax.management.openmbean.TabularData;
 import javax.validation.constraints.NotNull;
 
+import com.datastax.driver.core.VersionNumber;
 import org.apache.cassandra.repair.RepairParallelism;
 
 
@@ -192,5 +194,34 @@ public interface ICassandraManagementProxy extends NotificationListener {
 
   // From StreamManagerMBean
   Set<CompositeData> getCurrentStreams();
+
+
+  void addConnectionNotificationListener(NotificationListener listener) ;
+
+  void removeConnectionNotificationListener(NotificationListener listener) throws ListenerNotFoundException ;
+
+  void addNotificationListener(NotificationListener listener, NotificationFilter filter)
+      throws IOException, JMException;
+
+  void removeNotificationListener(NotificationListener listener) throws IOException, JMException ;
+
+  /**
+   * Compares two Cassandra versions using classes provided by the Datastax Java Driver.
+   *
+   * @param str1 a string of ordinal numbers separated by decimal points.
+   * @param str2 a string of ordinal numbers separated by decimal points.
+   * @return The result is a negative integer if str1 is _numerically_ less than str2. The result is
+   *     a positive integer if str1 is _numerically_ greater than str2. The result is zero if the
+   *     strings are _numerically_ equal. It does not work if "1.10" is supposed to be equal to
+   *     "1.10.0".
+   */
+  static Integer versionCompare(String str1, String str2) {
+    VersionNumber version1 = VersionNumber.parse(str1);
+    VersionNumber version2 = VersionNumber.parse(str2);
+
+    return version1.compareTo(version2);
+  }
+
+  String getUntranslatedHost();
 
 }

@@ -42,15 +42,15 @@ public final class CassandraManagementProxyTest {
 
   @Test
   public void testVersionCompare() throws ReaperException {
-    assertEquals(Integer.valueOf(0), JmxCassandraManagementProxy.versionCompare("1.0", "1.0"));
-    assertEquals(Integer.valueOf(0), JmxCassandraManagementProxy.versionCompare("1000.999", "1000.999"));
-    assertEquals(Integer.valueOf(-1), JmxCassandraManagementProxy.versionCompare("1.0", "1.1"));
-    assertEquals(Integer.valueOf(-1), JmxCassandraManagementProxy.versionCompare("1.2", "2.1"));
-    assertEquals(Integer.valueOf(1), JmxCassandraManagementProxy.versionCompare("10.0.0", "1.0"));
-    assertEquals(Integer.valueOf(1), JmxCassandraManagementProxy.versionCompare("99.0.0", "9.0"));
-    assertEquals(Integer.valueOf(1), JmxCassandraManagementProxy.versionCompare("99.0.10", "99.0.1"));
-    assertEquals(Integer.valueOf(-1), JmxCassandraManagementProxy.versionCompare("99.0.10~1", "99.0.10~2"));
-    assertEquals(Integer.valueOf(-1), JmxCassandraManagementProxy.versionCompare("2.0.17", "2.1.1"));
+    assertEquals(Integer.valueOf(0), ICassandraManagementProxy.versionCompare("1.0", "1.0"));
+    assertEquals(Integer.valueOf(0), ICassandraManagementProxy.versionCompare("1000.999", "1000.999"));
+    assertEquals(Integer.valueOf(-1), ICassandraManagementProxy.versionCompare("1.0", "1.1"));
+    assertEquals(Integer.valueOf(-1), ICassandraManagementProxy.versionCompare("1.2", "2.1"));
+    assertEquals(Integer.valueOf(1), ICassandraManagementProxy.versionCompare("10.0.0", "1.0"));
+    assertEquals(Integer.valueOf(1), ICassandraManagementProxy.versionCompare("99.0.0", "9.0"));
+    assertEquals(Integer.valueOf(1), ICassandraManagementProxy.versionCompare("99.0.10", "99.0.1"));
+    assertEquals(Integer.valueOf(-1), ICassandraManagementProxy.versionCompare("99.0.10~1", "99.0.10~2"));
+    assertEquals(Integer.valueOf(-1), ICassandraManagementProxy.versionCompare("2.0.17", "2.1.1"));
   }
 
 }

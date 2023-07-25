@@ -25,7 +25,7 @@ import io.cassandrareaper.core.StreamSession;
 import io.cassandrareaper.management.HostConnectionCounters;
 import io.cassandrareaper.management.ICassandraManagementProxy;
 import io.cassandrareaper.management.jmx.CassandraManagementProxyTest;
-import io.cassandrareaper.management.jmx.ClusterFacade;
+import io.cassandrareaper.management.ClusterFacade;
 import io.cassandrareaper.management.jmx.JmxManagementConnectionFactory;
 
 import java.io.IOException;
@@ -45,7 +45,6 @@ import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.google.common.io.Resources;
-import org.apache.cassandra.streaming.StreamManagerMBean;
 import org.junit.Test;
 import org.mockito.Mockito;
 
@@ -105,6 +104,7 @@ public class StreamServiceTest {
     when(connectionCounters.getSuccessfulConnections(any())).thenReturn(1);
     ClusterFacade clusterFacadeSpy = Mockito.spy(ClusterFacade.create(cxt));
     Mockito.doReturn("dc1").when(clusterFacadeSpy).getDatacenter(any(), any());
+    when(proxy.getCurrentStreams()).thenReturn(ImmutableSet.of(streamSession));
 
     // do the actual pullStreams() call, which should succeed
     List<StreamSession> result = StreamService
@@ -141,6 +141,7 @@ public class StreamServiceTest {
     when(connectionCounters.getSuccessfulConnections(any())).thenReturn(1);
     ClusterFacade clusterFacadeSpy = Mockito.spy(ClusterFacade.create(cxt));
     Mockito.doReturn("dc1").when(clusterFacadeSpy).getDatacenter(any(), any());
+    when(proxy.getCurrentStreams()).thenReturn(ImmutableSet.of(streamSession));
 
     // do the actual pullStreams() call, which should succeed
     List<StreamSession> result = StreamService
@@ -177,6 +178,7 @@ public class StreamServiceTest {
     when(connectionCounters.getSuccessfulConnections(any())).thenReturn(1);
     ClusterFacade clusterFacadeSpy = Mockito.spy(ClusterFacade.create(cxt));
     Mockito.doReturn("dc1").when(clusterFacadeSpy).getDatacenter(any(), any());
+    when(proxy.getCurrentStreams()).thenReturn(ImmutableSet.of(streamSession));
 
     // do the actual pullStreams() call, which should succeed
     List<StreamSession> result = StreamService
@@ -213,6 +215,7 @@ public class StreamServiceTest {
     when(connectionCounters.getSuccessfulConnections(any())).thenReturn(1);
     ClusterFacade clusterFacadeSpy = Mockito.spy(ClusterFacade.create(cxt));
     Mockito.doReturn("dc1").when(clusterFacadeSpy).getDatacenter(any(), any());
+    when(proxy.getCurrentStreams()).thenReturn(ImmutableSet.of(streamSession));
 
     // do the actual pullStreams() call, which should succeed
     List<StreamSession> result = StreamService
@@ -246,6 +249,8 @@ public class StreamServiceTest {
     when(connectionCounters.getSuccessfulConnections(any())).thenReturn(1);
     ClusterFacade clusterFacadeSpy = Mockito.spy(ClusterFacade.create(cxt));
     Mockito.doReturn("dc1").when(clusterFacadeSpy).getDatacenter(any(), any());
+
+    when(proxy.getCurrentStreams()).thenReturn(ImmutableSet.of(streamSession));
 
     // do the actual pullStreams() call, which should succeed
     List<StreamSession> result = StreamService

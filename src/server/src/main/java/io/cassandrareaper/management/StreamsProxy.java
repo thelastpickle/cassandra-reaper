@@ -15,11 +15,10 @@
  * limitations under the License.
  */
 
-package io.cassandrareaper.management.jmx;
+package io.cassandrareaper.management;
 
 import io.cassandrareaper.core.Node;
 import io.cassandrareaper.core.StreamSession;
-import io.cassandrareaper.management.ICassandraManagementProxy;
 import io.cassandrareaper.service.StreamSessionFactory;
 
 import java.net.InetAddress;
@@ -33,7 +32,6 @@ import javax.management.openmbean.CompositeData;
 import javax.management.openmbean.InvalidKeyException;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import org.apache.cassandra.streaming.ProgressInfo;
 import org.apache.cassandra.streaming.SessionInfo;
@@ -50,15 +48,15 @@ public final class StreamsProxy {
 
   private static final Logger LOG = LoggerFactory.getLogger(StreamsProxy.class);
 
-  private final JmxCassandraManagementProxy proxy;
+  private final ICassandraManagementProxy proxy;
 
-  private StreamsProxy(JmxCassandraManagementProxy proxy) {
+  private StreamsProxy(ICassandraManagementProxy proxy) {
     this.proxy = proxy;
   }
 
   public static StreamsProxy create(ICassandraManagementProxy proxy) {
 
-    return new StreamsProxy((JmxCassandraManagementProxy) proxy);
+    return new StreamsProxy((ICassandraManagementProxy) proxy);
   }
 
   public List<StreamSession> listStreams(Node node) {

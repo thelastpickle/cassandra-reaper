@@ -20,6 +20,7 @@ package io.cassandrareaper.management.jmx;
 import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperApplicationConfiguration.DatacenterAvailability;
 import io.cassandrareaper.core.Cluster;
+import io.cassandrareaper.management.ClusterFacade;
 import io.cassandrareaper.management.ICassandraManagementProxy;
 import io.cassandrareaper.storage.IDistributedStorage;
 

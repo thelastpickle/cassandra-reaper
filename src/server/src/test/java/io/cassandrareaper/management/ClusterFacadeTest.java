@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package io.cassandrareaper.management.jmx;
+package io.cassandrareaper.management;
 
 import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperApplicationConfiguration;
@@ -26,7 +26,9 @@ import io.cassandrareaper.core.Compaction;
 import io.cassandrareaper.core.CompactionStats;
 import io.cassandrareaper.core.JmxCredentials;
 import io.cassandrareaper.core.StreamSession;
+import io.cassandrareaper.management.ClusterFacade;
 import io.cassandrareaper.management.ICassandraManagementProxy;
+import io.cassandrareaper.management.jmx.JmxManagementConnectionFactory;
 
 import java.io.IOException;
 import java.net.URL;

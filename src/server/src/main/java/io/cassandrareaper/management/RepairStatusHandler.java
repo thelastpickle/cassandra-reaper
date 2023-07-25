@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package io.cassandrareaper.management.jmx;
+package io.cassandrareaper.management;
 
 import io.cassandrareaper.management.ICassandraManagementProxy;
 

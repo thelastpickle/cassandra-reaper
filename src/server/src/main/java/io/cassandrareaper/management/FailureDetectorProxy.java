@@ -15,24 +15,23 @@
  * limitations under the License.
  */
 
-package io.cassandrareaper.management.jmx;
+package io.cassandrareaper.management;
 
-import io.cassandrareaper.management.ICassandraManagementProxy;
 
 import java.util.Map;
 
 
 public final class FailureDetectorProxy {
 
-  private final JmxCassandraManagementProxy proxy;
+  private final ICassandraManagementProxy proxy;
 
-  private FailureDetectorProxy(JmxCassandraManagementProxy proxy) {
+  private FailureDetectorProxy(ICassandraManagementProxy proxy) {
     this.proxy = proxy;
   }
 
   public static FailureDetectorProxy create(ICassandraManagementProxy proxy) {
 
-    return new FailureDetectorProxy((JmxCassandraManagementProxy) proxy);
+    return new FailureDetectorProxy((ICassandraManagementProxy) proxy);
   }
 
 

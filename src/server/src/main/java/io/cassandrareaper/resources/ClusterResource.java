@@ -24,7 +24,7 @@ import io.cassandrareaper.core.JmxCredentials;
 import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairSchedule;
 import io.cassandrareaper.crypto.Cryptograph;
-import io.cassandrareaper.management.jmx.ClusterFacade;
+import io.cassandrareaper.management.ClusterFacade;
 import io.cassandrareaper.management.jmx.JmxManagementConnectionFactory;
 import io.cassandrareaper.resources.view.ClusterStatus;
 import io.cassandrareaper.service.ClusterRepairScheduler;

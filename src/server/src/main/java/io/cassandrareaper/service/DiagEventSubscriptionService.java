@@ -23,7 +23,7 @@ import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.DiagEventSubscription;
 import io.cassandrareaper.core.Node;
 import io.cassandrareaper.management.ICassandraManagementProxy;
-import io.cassandrareaper.management.jmx.DiagnosticProxy;
+import io.cassandrareaper.management.DiagnosticProxy;
 import io.cassandrareaper.resources.view.DiagnosticEvent;
 import io.cassandrareaper.storage.events.IEventsDao;
 
