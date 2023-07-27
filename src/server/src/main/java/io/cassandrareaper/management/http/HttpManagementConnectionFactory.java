@@ -112,7 +112,7 @@ public class HttpManagementConnectionFactory implements IManagementConnectionFac
 
   private ICassandraManagementProxy connectImpl(Node node)
       throws ReaperException, InterruptedException {
-    Integer managementPort = 9999; // TODO - get this from the config.
+    Integer managementPort = 8080; // TODO - get this from the config.
     String rootPath = "/"; // TODO - get this from the config.
     Response pidResponse = getPid(node);
     if (pidResponse.getStatus() != 200) {

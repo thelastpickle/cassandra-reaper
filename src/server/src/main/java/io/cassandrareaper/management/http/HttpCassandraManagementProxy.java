@@ -29,6 +29,7 @@ import java.math.BigInteger;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -55,13 +56,23 @@ import javax.management.openmbean.TabularData;
 import javax.validation.constraints.NotNull;
 
 import com.codahale.metrics.MetricRegistry;
+import com.datastax.mgmtapi.client.api.DefaultApi;
+import com.datastax.mgmtapi.client.invoker.ApiClient;
+import com.datastax.mgmtapi.client.invoker.ApiException;
+import com.datastax.mgmtapi.client.model.EndpointStates;
+import com.datastax.mgmtapi.client.model.TakeSnapshotRequest;
 import org.apache.cassandra.repair.RepairParallelism;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
+  private static final Logger LOG = LoggerFactory.getLogger(HttpCassandraManagementProxy.class);
+
   String host;
   MetricRegistry metricRegistry;
   String rootPath;
   InetSocketAddress endpoint;
+  DefaultApi apiClient;
 
   public HttpCassandraManagementProxy(MetricRegistry metricRegistry,
                                       String rootPath,
@@ -70,6 +81,8 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
     this.metricRegistry = metricRegistry;
     this.rootPath = rootPath;
     this.endpoint = endpoint;
+    final String basePath = new StringBuilder().append("http://").append(endpoint.getHostName()).append(":").append(endpoint.getPort()).append(rootPath).toString();
+    this.apiClient = new DefaultApi(new ApiClient().setBasePath(basePath));
   }
 
   @Override
@@ -106,7 +119,12 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
 
   @Override
   public String getClusterName() {
-    return null; // TODO: implement me.
+    try {
+      return apiClient.getClusterName();
+    } catch (ApiException ae) {
+      LOG.error("Could not fetch Cluster Name", ae);
+    }
+    return null;
   }
 
   @Override
@@ -147,7 +165,13 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
 
   @Override
   public String getCassandraVersion() {
-    return null; // TODO: implement me.
+    try {
+      return apiClient.getReleaseVersion();
+    } catch (ApiException ae) {
+      LOG.error("Failed to get Cassandra version", ae);
+    }
+    // should not get here
+    return "UNKNOWN";
   }
 
   @Override
@@ -189,20 +213,48 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
 
   @Override
   public List<String> getLiveNodes() throws ReaperException {
-    return null; // TODO: implement me.
+    List<String> liveNodes = new ArrayList<>();
+    // first get the endpoint states
+    try {
+      EndpointStates endpoints = apiClient.getEndpointStates();
+      for (Map<String, String> states : endpoints.getEntity()) {
+        if (states.containsKey("IS_ALIVE") && Boolean.parseBoolean(states.get("IS_ALIVE"))) {
+          liveNodes.add(states.get("ENDPOINT_IP"));
+        }
+      }
+    } catch (ApiException ae) {
+      LOG.error("Failed to retrieve Live Nodes", ae);
+    }
+    return liveNodes;
   }
 
   public void clearSnapshot(String var1, String... var2) throws IOException {
-    // TODO: implement me.
+    try {
+      apiClient.clearSnapshots(Arrays.asList(var1), Arrays.asList(var2));
+    } catch (ApiException ae) {
+      LOG.error("Error clearing snapshots", ae);
+    }
   }
 
   public Map<String, TabularData> getSnapshotDetails() {
-    // TODO: implement me.
-    return new HashMap<>();
+    // TODO: This API needs to not return TabularData as that is a JMX specific thing
+    Map<String, TabularData> snapshotDetails = new HashMap<>();
+    try {
+      String details = apiClient.getSnapshotDetails(null, null);
+      LOG.error("Snapshots retrieved:\n" + details);
+    } catch (ApiException ae) {
+      LOG.error("Failed to retrieve snapshot details", ae);
+    }
+    return snapshotDetails;
   }
 
   public void takeSnapshot(String var1, String... var2) throws IOException {
-    // TODO: implement me.
+    TakeSnapshotRequest req = new TakeSnapshotRequest().snapshotName(var1).keyspaces(Arrays.asList(var2));
+    try {
+      apiClient.takeSnapshot(req);
+    } catch (ApiException ae) {
+      LOG.error("Failed to take snapshot", ae);
+    }
   }
 
   public void takeColumnFamilySnapshot(String var1, String var2, String var3) throws IOException {
