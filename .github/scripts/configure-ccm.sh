@@ -19,11 +19,15 @@ echo "Starting Install step..."
 set -xe
 
 function set_java_home() {
+    # GitHub runners don't have AdoptOpenJDK any more
+    # https://github.com/actions/runner-images/blob/main/images/linux/Ubuntu2004-Readme.md#java
     major_version=$1
     if [[ "$major_version" == "11" ]]; then
         export CASSANDRA_USE_JDK11=true
-    else
+        export JAVA_HOME=${JAVA_HOME_11_X64}
+    elif [[ "$major_version" == "8" ]]; then
         export CASSANDRA_USE_JDK11=false
+        export JAVA_HOME=${JAVA_HOME_8_X64}
     fi
     for jdk in /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/${major_version}*/; 
     do 
@@ -60,6 +64,27 @@ configure_ccm () {
   echo "JVM_OPTS=\"\$JVM_OPTS -Djava.rmi.server.hostname=127.0.0.$i\"" >> ~/.ccm/test/node$1/conf/cassandra-env.sh
 }
 
+add_management_api () {
+   if [[ ! -L /tmp/datastax-mgmtapi-agent.jar ]]; then
+     # Do some fancy pom.xml parsing to figure out which version of the Management API client we are using
+     MGMT_API_VERSION=`mvn dependency:tree -f src/server/pom.xml |grep datastax-mgmtapi-client-openapi|cut -d ":" -f 4`
+     # Download the Management API bundle
+     mvn dependency:copy -Dartifact=io.k8ssandra:datastax-mgmtapi-server:$MGMT_API_VERSION -f src/server/pom.xml -DoutputDirectory=/tmp -Dmdep.stripVersion=true -Dmdep.overWriteReleases=true
+     # Unzip the agent for the version of Cassandra
+     if [[ "$CASSANDRA_VERSION" == *"3.11"* ]]; then
+        mvn dependency:copy -Dartifact=io.k8ssandra:datastax-mgmtapi-agent-3.x:$MGMT_API_VERSION -f src/server/pom.xml -DoutputDirectory=/tmp -Dmdep.stripVersion=true -Dmdep.overWriteReleases=true
+        ln -s /tmp/management-api-agent-4.x/target/datastax-mgmtapi-agent-3.x.jar /tmp/datastax-mgmtapi-agent.jar
+     elif [[ "$CASSANDRA_VERSION" == *"4.0"* ]]; then
+        mvn dependency:copy -Dartifact=io.k8ssandra:datastax-mgmtapi-agent-4.x:$MGMT_API_VERSION -f src/server/pom.xml -DoutputDirectory=/tmp -Dmdep.stripVersion=true -Dmdep.overWriteReleases=true
+        ln -s /tmp/management-api-agent-4.x/target/datastax-mgmtapi-agent-4.x.jar /tmp/datastax-mgmtapi-agent.jar
+     elif [[ "$CASSANDRA_VERSION" == *"4.1"* ]]; then
+        mvn dependency:copy -Dartifact=io.k8ssandra:datastax-mgmtapi-agent-4.1.x:$MGMT_API_VERSION -f src/server/pom.xml -DoutputDirectory=/tmp -Dmdep.stripVersion=true -Dmdep.overWriteReleases=true
+        ln -s /tmp/management-api-agent-4.x/target/datastax-mgmtapi-agent-4.1.x.jar /tmp/datastax-mgmtapi-agent.jar
+     fi
+   fi
+  echo "JVM_OPTS=\"\$JVM_OPTS -javaagent:/tmp/datastax-mgmtapi-agent.jar\"" >> ~/.ccm/test/node$1/conf/cassandra-env.sh
+}
+
 set_java_home ${JDK_VERSION}
 
 case "${TEST_TYPE}" in
@@ -67,7 +92,7 @@ case "${TEST_TYPE}" in
         echo "ERROR: Environment variable TEST_TYPE is unspecified."
         exit 1
         ;;
-    "ccm"|"upgrade"|"elassandra"|"http-api")
+    "ccm"|"upgrade"|"elassandra")
         mkdir -p ~/.local
         cp ./.github/files/jmxremote.password ~/.local/jmxremote.password
         chmod 400 ~/.local/jmxremote.password
@@ -91,6 +116,27 @@ case "${TEST_TYPE}" in
           sed -i 's/DC1/dc1/' ~/.ccm/test/node$i/conf/cassandra-rackdc.properties
           sed -i 's/PropertyFileSnitch/GossipingPropertyFileSnitch/' ~/.ccm/test/node$i/conf/cassandra.yaml
           configure_ccm $i
+        done
+        ;;
+    "http-api")
+        mkdir -p ~/.local
+        cp ./.github/files/jmxremote.password ~/.local/jmxremote.password
+        chmod 400 ~/.local/jmxremote.password
+        # Our move to support jdk11 makes it possible to get either jdk 8.0.192 or jdk 8.0.292 which both require to be configured properly.
+        sudo chmod 777 "${JAVA_HOME_8_X64}"/jre/lib/management/jmxremote.access
+        echo "cassandra     readwrite" >> "${JAVA_HOME_8_X64}"/jre/lib/management/jmxremote.access
+        ccm create test -v $CASSANDRA_VERSION
+        # use "2:0" to ensure the first datacenter name is "dc1" instead of "datacenter1", so to be compatible with CircleCI tests
+        ccm populate --vnodes -n 2:0 > /dev/null
+        for i in `seq 1 2` ; do
+          sed -i 's/LOCAL_JMX=yes/LOCAL_JMX=no/' ~/.ccm/test/node$i/conf/cassandra-env.sh
+          sed -i 's/etc\/cassandra\/jmxremote.password/home\/runner\/.local\/jmxremote.password/' ~/.ccm/test/node$i/conf/cassandra-env.sh
+          # relevant for elassandra, ensure the node's dc name matches the client
+          sed -i 's/DC1/dc1/' ~/.ccm/test/node$i/conf/cassandra-rackdc.properties
+          sed -i 's/PropertyFileSnitch/GossipingPropertyFileSnitch/' ~/.ccm/test/node$i/conf/cassandra.yaml
+          configure_ccm $i
+          # Add Management API agent to nodes
+          add_management_api $i
         done
         ;;
     "sidecar")

@@ -299,7 +299,7 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
   private void initializeManagement(AppContext context, Cryptograph cryptograph) {
     if (context.managementConnectionFactory == null) {
       LOG.info("no management connection factory given in context, creating default");
-      if (context.config.getHttpManagement() == null || !context.config.getHttpManagement().getEnabled()) {
+      if (context.config.getHttpManagement() == null || !context.config.getHttpManagement().isEnabled()) {
         LOG.info("HTTP management connection config not set, or set disabled. Creating JMX connection factory instead");
         context.managementConnectionFactory = new JmxManagementConnectionFactory(context, cryptograph);
       } else {

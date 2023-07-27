@@ -55,13 +55,21 @@ import javax.management.openmbean.TabularData;
 import javax.validation.constraints.NotNull;
 
 import com.codahale.metrics.MetricRegistry;
+import com.datastax.mgmtapi.client.api.DefaultApi;
+import com.datastax.mgmtapi.client.invoker.ApiClient;
+import com.datastax.mgmtapi.client.invoker.ApiException;
 import org.apache.cassandra.repair.RepairParallelism;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
+  private static final Logger LOG = LoggerFactory.getLogger(HttpCassandraManagementProxy.class);
+
   String host;
   MetricRegistry metricRegistry;
   String rootPath;
   InetSocketAddress endpoint;
+  DefaultApi apiClient;
 
   public HttpCassandraManagementProxy(MetricRegistry metricRegistry,
                                       String rootPath,
@@ -70,6 +78,7 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
     this.metricRegistry = metricRegistry;
     this.rootPath = rootPath;
     this.endpoint = endpoint;
+    this.apiClient = new DefaultApi(new ApiClient().setBasePath("https://" + endpoint.getHostName() + ":" + endpoint.getPort() + rootPath));
   }
 
   @Override
@@ -147,7 +156,13 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
 
   @Override
   public String getCassandraVersion() {
-    return null; // TODO: implement me.
+    try {
+      return apiClient.getReleaseVersion();
+    } catch (ApiException ae) {
+      LOG.error("Failed to get Cassandra version", ae);
+    }
+    // should not get here
+    return "UNKNOWN";
   }
 
   @Override

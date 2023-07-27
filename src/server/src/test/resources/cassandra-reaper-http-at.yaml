@@ -79,4 +79,4 @@ cryptograph:
   systemPropertySecret: REAPER_ENCRYPTION_KEY
 
 httpManagement:
-  isEnabled: true
+  enabled: true

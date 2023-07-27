@@ -20,6 +20,8 @@ REAPER_ENCRYPTION_KEY="SECRET_KEY"
 set -xe
 
 function set_java_home() {
+    # GitHub runners don't have AdoptOpenJDK any more
+    # https://github.com/actions/runner-images/blob/main/images/linux/Ubuntu2004-Readme.md#java
     major_version=$1
     for jdk in /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/${major_version}*/; 
     do 
@@ -89,6 +91,30 @@ case "${TEST_TYPE}" in
             echo "${TEST_TYPE}" | grep -q ccm && sleep 30 || sleep 120
             ccm status
             ccm node1 nodetool -- -u cassandra -pw cassandrapassword status
+            # Stop CCM now so we can restart it with Management API
+            ccm stop
+            # start Cassandra via Management API
+            # make log directories and files
+            mkdir -p /tmp/log/cassandra1/ && touch /tmp/log/cassandra1/stdout.log
+            mkdir -p /tmp/log/cassandra2/ && touch /tmp/log/cassandra2/stdout.log
+            # run Management API for node1
+            MGMT_API_LOG_DIR=/tmp/log/cassandra1 bash -c 'nohup java -jar /tmp/datastax-mgmtapi-server.jar --db-socket=/tmp/db1.sock --host=unix:///tmp/mgmtapi1.sock --host=http://127.0.0.1:8080 --db-home=`dirname ~/.ccm/test/node1`/node1 &'
+            # run Management API for node2
+            MGMT_API_LOG_DIR=/tmp/log/cassandra2 bash -c 'nohup java -jar /tmp/datastax-mgmtapi-server.jar --db-socket=/tmp/db2.sock --host=unix:///tmp/mgmtapi2.sock --host=http://127.0.0.2:8080 --db-home=`dirname ~/.ccm/test/node2`/node2 &'
+            # wait for Cassandra to be ready
+            for i in `seq 1 30` ; do
+                # keep curl from exiting with non-zero
+                HTTPCODE1=`curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8080/api/v0/probes/readiness` || true
+                HTTPCODE2=`curl -s -o /dev/null -w "%{http_code}" http://127.0.0.2:8080/api/v0/probes/readiness` || true
+                if [ "${HTTPCODE1}" != "200" -o "${HTTPCODE2}" != "200" ]
+                then
+                    echo "Cassandra not ready yet. Sleeping.... $i"
+                else
+                    echo "Cassandra started via Management API successfully"
+                    break
+                fi
+                sleep 5
+            done
             # Reaper requires JDK11 for compilation
             set_java_home 11
             case "${STORAGE_TYPE}" in
