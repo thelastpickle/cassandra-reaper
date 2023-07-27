@@ -67,7 +67,7 @@ case "${TEST_TYPE}" in
         echo "ERROR: Environment variable TEST_TYPE is unspecified."
         exit 1
         ;;
-    "ccm"|"upgrade"|"elassandra")
+    "ccm"|"upgrade"|"elassandra"|"http-api")
         mkdir -p ~/.local
         cp ./.github/files/jmxremote.password ~/.local/jmxremote.password
         chmod 400 ~/.local/jmxremote.password
@@ -116,5 +116,3 @@ case "${TEST_TYPE}" in
     *)
         echo "Skipping, no actions for TEST_TYPE=${TEST_TYPE}."
 esac
-
-

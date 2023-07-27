@@ -273,6 +273,61 @@ jobs:
 
       - uses: codecov/codecov-action@v1
 
+  its-http-management:
+    needs: [ build ]
+    name: HTTP Management
+    runs-on: ubuntu-20.04
+    continue-on-error: ${{ matrix.experimental }}
+    strategy:
+      matrix:
+        cassandra-version: [ 'binary:3.11.11', 'binary:4.0.1' ]
+        storage-type: [ local ]
+        test-type: [ "http-api" ]
+        grim-max: [ 1 ]
+        grim-min: [ 1 ]
+        # all versions but trunk have the same cucumber options, but we can't declare that more effectively (yet)
+        include:
+          - cassandra-version: 'binary:3.11.11'
+            cucumber-options: '--tags ~@cassandra_4_0_onwards --tags @http_management'
+            experimental: false
+            jdk-version: '8'
+          - cassandra-version: 'binary:4.0.1'
+            cucumber-options: '--tags @http_management'
+            experimental: false
+            jdk-version: '11'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Setup
+        uses: ./.github/actions/setup
+
+      - name: Install CCM
+        run: |
+          pip install pyyaml
+          pip install ccm
+
+      - name: Setup CCM Cluster
+        run: ./.github/scripts/configure-ccm.sh
+        env:
+          TEST_TYPE: ${{ matrix.test-type }}
+          CASSANDRA_VERSION: ${{ matrix.cassandra-version }}
+          STORAGE_TYPE: ${{ matrix.storage-type }}
+          JDK_VERSION: ${{ matrix.jdk-version }}
+
+      - name: Run Tests
+        run: ./.github/scripts/run-tests.sh || ./.github/scripts/run-tests.sh
+        env:
+          TEST_TYPE: ${{ matrix.test-type }}
+          CASSANDRA_VERSION: ${{ matrix.cassandra-version }}
+          STORAGE_TYPE: ${{ matrix.storage-type }}
+          GRIM_MAX: ${{ matrix.grim-max }}
+          GRIM_MIN: ${{ matrix.grim-min }}
+          CUCUMBER_OPTIONS: ${{ matrix.cucumber-options }}
+          JDK_VERSION: ${{ matrix.jdk-version }}
+
+      - uses: codecov/codecov-action@v1
+
   its-each:
     needs: [docker-tests, its-ccm-local, its-ccm-cass]
     name: Each DC Availability
@@ -385,7 +440,6 @@ jobs:
           JDK_VERSION: ${{ matrix.jdk-version }}
 
       - uses: codecov/codecov-action@v1
-
 
   its-flapping:
     needs: [docker-tests, its-ccm-local, its-ccm-cass]

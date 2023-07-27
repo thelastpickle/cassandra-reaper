@@ -80,6 +80,32 @@ case "${TEST_TYPE}" in
         esac
 
         ;;
+    "http-api")
+            mvn --version -B
+            ps uax | grep cass
+            # dependending on the version of cassandra, we may need to use a different jdk
+            set_java_home ${JDK_VERSION}
+            ccm start -v --no-wait --skip-wait-other-notice || true
+            echo "${TEST_TYPE}" | grep -q ccm && sleep 30 || sleep 120
+            ccm status
+            ccm node1 nodetool -- -u cassandra -pw cassandrapassword status
+            # Reaper requires JDK11 for compilation
+            set_java_home 11
+            case "${STORAGE_TYPE}" in
+                "")
+                    echo "ERROR: Environment variable STORAGE_TYPE is unspecified."
+                    exit 1
+                    ;;
+                "local")
+                    mvn -B package -DskipTests
+                    mvn -B org.jacoco:jacoco-maven-plugin:${JACOCO_VERSION}:prepare-agent surefire:test -DsurefireArgLine="-Xmx256m"  -Dtest=ReaperHttpIT -Dcucumber.options="$CUCUMBER_OPTIONS" org.jacoco:jacoco-maven-plugin:${JACOCO_VERSION}:report
+                    ;;
+                *)
+                    echo "Skipping, no actions for STORAGE_TYPE=${STORAGE_TYPE}."
+                    ;;
+            esac
+
+            ;;
     "sidecar")
         mvn --version -B
         mvn -B package -DskipTests
