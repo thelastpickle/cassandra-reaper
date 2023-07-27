@@ -23,7 +23,7 @@ Feature: Using Reaper
     And cluster "test" has keyspace "test_keyspace2" with tables "test_table1, test_table2"
     And cluster "test" has keyspace "test_keyspace3" with tables "test_table1, test_table2"
 
-@all_nodes_reachable
+  @all_nodes_reachable
   @cassandra_3_11_onwards
   @snapshots
   @http_management
@@ -43,7 +43,7 @@ Feature: Using Reaper
     Then there is 0 snapshot returned when listing snapshots
     When the last added cluster is deleted
     Then reaper has no longer the last added cluster in storage
-  ${cucumber.upgrade-versions}
+
 
   @all_nodes_reachable
   @cassandra_3_11_onwards
@@ -66,7 +66,7 @@ Feature: Using Reaper
     Then there is 0 snapshot returned when listing snapshots
     When the last added cluster is deleted
     Then reaper has no longer the last added cluster in storage
-  ${cucumber.upgrade-versions}
+
 
   @sidecar
   @http_management
@@ -88,7 +88,7 @@ Feature: Using Reaper
     When the last added cluster is force deleted
     And reaper has 0 scheduled repairs for cluster called "test"
     Then reaper has no longer the last added cluster in storage
-  ${cucumber.upgrade-versions}
+
 
   @sidecar
   @cassandra_3_11_onwards
@@ -111,7 +111,7 @@ Feature: Using Reaper
     When the last added schedule is deleted for the last added cluster
     And the last added cluster is deleted
     Then reaper has no longer the last added cluster in storage
-  ${cucumber.upgrade-versions}
+
 
   @sidecar
   @http_management
@@ -138,7 +138,7 @@ Feature: Using Reaper
     When all added schedules are deleted for the last added cluster
     And the last added cluster is deleted
     Then reaper has no longer the last added cluster in storage
-  ${cucumber.upgrade-versions}
+
 
   @sidecar
   @all_nodes_reachable
@@ -158,7 +158,7 @@ Feature: Using Reaper
     When all added schedules are deleted for the last added cluster
     And the last added cluster is deleted
     Then reaper has no longer the last added cluster in storage
-  ${cucumber.upgrade-versions}
+
 
   @sidecar
   @all_nodes_reachable
@@ -179,7 +179,7 @@ Feature: Using Reaper
     When all added schedules are deleted for the last added cluster
     And the last added cluster is deleted
     Then reaper has no longer the last added cluster in storage
-  ${cucumber.upgrade-versions}
+
 
   @sidecar
   @all_nodes_reachable
@@ -199,7 +199,7 @@ Feature: Using Reaper
     When all added schedules are deleted for the last added cluster
     And the last added cluster is deleted
     Then reaper has no longer the last added cluster in storage
-  ${cucumber.upgrade-versions}
+
 
   @sidecar
   @cassandra_3_11_onwards
@@ -223,7 +223,7 @@ Feature: Using Reaper
     When all added schedules are deleted for the last added cluster
     And the last added cluster is deleted
     Then reaper has no longer the last added cluster in storage
-  ${cucumber.upgrade-versions}
+
 
   @sidecar
   @cassandra_3_11_onwards
@@ -246,11 +246,10 @@ Feature: Using Reaper
     And all added repair runs are deleted for the last added cluster
     And the last added cluster is deleted
     Then reaper has no longer the last added cluster in storage
-  ${cucumber.upgrade-versions}
 
+  # this has a problem in the upgrade integration tests, ref: 88d4d5c
   @cassandra_3_11_onwards
   @http_management
-  # this has a problem in the upgrade integration tests, ref: 88d4d5c
   Scenario Outline: Create a cluster and a repair run with auto twcs blacklist and delete them
     Given that reaper <version> is running
     And reaper has no cluster in storage
@@ -268,7 +267,6 @@ Feature: Using Reaper
     And all added repair runs are deleted for the last added cluster
     And the last added cluster is deleted
     Then reaper has no longer the last added cluster in storage
- ${cucumber.upgrade-versions}
 
   @sidecar
   @all_nodes_reachable
@@ -295,7 +293,7 @@ Feature: Using Reaper
     And all added repair runs are deleted for the last added cluster
     And the last added cluster is deleted
     Then reaper has no longer the last added cluster in storage
-  ${cucumber.upgrade-versions}
+
 
   @sidecar
   @all_nodes_reachable
@@ -321,7 +319,7 @@ Feature: Using Reaper
     When all added repair runs are deleted for the last added cluster
     And the last added cluster is deleted
     Then reaper has no longer the last added cluster in storage
-  ${cucumber.upgrade-versions}
+
 
   @all_nodes_reachable
   @cassandra_3_11_onwards
@@ -371,7 +369,7 @@ Feature: Using Reaper
     And all added repair runs are deleted for the last added cluster
     And the last added cluster is deleted
     Then reaper has no longer the last added cluster in storage
-  ${cucumber.upgrade-versions}
+
 
   @sidecar
   @all_nodes_reachable
@@ -404,7 +402,7 @@ Feature: Using Reaper
     And I cannot start an unknown schedule
     When the last added cluster is force deleted
     Then reaper has no longer the last added cluster in storage
-  ${cucumber.upgrade-versions}
+
 
   @sidecar
   @cassandra_3_11_onwards
@@ -429,4 +427,3 @@ Feature: Using Reaper
     When I list the last 10 repairs, I can see 6 repairs at "ABORTED" state
     When the last added cluster is force deleted
     Then reaper has no longer the last added cluster in storage
-  ${cucumber.upgrade-versions}
