@@ -711,5 +711,6 @@ public final class ReaperApplicationConfiguration extends Configuration {
     public Boolean getEnabled() {
       return enabled;
     }
+    // TODO: Add ports and root paths here.
   }
 }
