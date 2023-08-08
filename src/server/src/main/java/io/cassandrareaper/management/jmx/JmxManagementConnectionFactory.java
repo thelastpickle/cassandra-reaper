@@ -54,7 +54,7 @@ import org.slf4j.LoggerFactory;
 public class JmxManagementConnectionFactory implements IManagementConnectionFactory {
 
   private static final Logger LOG = LoggerFactory.getLogger(JmxManagementConnectionFactory.class);
-  private static final ConcurrentMap<String, ICassandraManagementProxy> JMX_CONNECTIONS = Maps.newConcurrentMap();
+  private static final ConcurrentMap<String, JmxCassandraManagementProxy> JMX_CONNECTIONS = Maps.newConcurrentMap();
   private final MetricRegistry metricRegistry;
   private final HostConnectionCounters hostConnectionCounters;
   private final AppContext context;
@@ -153,7 +153,7 @@ public class JmxManagementConnectionFactory implements IManagementConnectionFact
     return host;
   }
 
-  protected ICassandraManagementProxy connectImpl(Node node) throws ReaperException, InterruptedException {
+  protected JmxCassandraManagementProxy connectImpl(Node node) throws ReaperException, InterruptedException {
     // use configured jmx port for host if provided
     String host = determineHost(node);
 
@@ -164,7 +164,7 @@ public class JmxManagementConnectionFactory implements IManagementConnectionFact
           host, jmxCredentials, context.config.getJmxConnectionTimeoutInSeconds(),
           this.metricRegistry, cryptograph, this.jmxmp);
       JMX_CONNECTIONS.computeIfAbsent(host, provider::apply);
-      ICassandraManagementProxy proxy = JMX_CONNECTIONS.get(host);
+      JmxCassandraManagementProxy proxy = JMX_CONNECTIONS.get(host);
       if (!proxy.isConnectionAlive()) {
         LOG.info("Adding new JMX Proxy for host {}", host);
         JMX_CONNECTIONS.put(host, provider.apply(host)).close();
@@ -295,10 +295,10 @@ public class JmxManagementConnectionFactory implements IManagementConnectionFact
     }
 
     @Override
-    public ICassandraManagementProxy apply(String host) {
+    public JmxCassandraManagementProxy apply(String host) {
       Preconditions.checkArgument(host.equals(this.host));
       try {
-        ICassandraManagementProxy proxy = JmxCassandraManagementProxy.connect(
+        JmxCassandraManagementProxy proxy = JmxCassandraManagementProxy.connect(
             host, jmxCredentials, addressTranslator, connectionTimeout, metricRegistry, cryptograph, jmxmp);
         return proxy;
       } catch (ReaperException | InterruptedException ex) {

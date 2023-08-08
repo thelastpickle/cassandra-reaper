@@ -107,7 +107,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 
-final class JmxCassandraManagementProxy implements ICassandraManagementProxy {
+final class JmxCassandraManagementProxy implements ICassandraManagementProxy, NotificationListener  {
 
   private static final Logger LOG = LoggerFactory.getLogger(ICassandraManagementProxy.class);
 
@@ -167,7 +167,7 @@ final class JmxCassandraManagementProxy implements ICassandraManagementProxy {
     registerConnectionsGauge();
   }
 
-  static ICassandraManagementProxy connect(
+  static JmxCassandraManagementProxy connect(
       String host,
       Optional<JmxCredentials> jmxCredentials,
       final AddressTranslator addressTranslator,
@@ -203,7 +203,7 @@ final class JmxCassandraManagementProxy implements ICassandraManagementProxy {
    * @param addressTranslator if EC2MultiRegionAddressTranslator isn't null it will be used to
    *                          translate addresses
    */
-  private static ICassandraManagementProxy connect(
+  private static JmxCassandraManagementProxy connect(
       String originalHost,
       int port,
       Optional<JmxCredentials> jmxCredentials,
@@ -264,7 +264,7 @@ final class JmxCassandraManagementProxy implements ICassandraManagementProxy {
         smProxy = Optional.of(JMX.newMBeanProxy(mbeanServerConn, ObjectNames.STREAM_MANAGER, StreamManagerMBean.class));
       }
 
-      ICassandraManagementProxy proxy
+      JmxCassandraManagementProxy proxy
           = new JmxCassandraManagementProxy(
           host,
           originalHost,
@@ -853,7 +853,6 @@ final class JmxCassandraManagementProxy implements ICassandraManagementProxy {
     return jmxConnector.getConnectionId();
   }
 
-  @Override
   public boolean isConnectionAlive() {
     try {
       String connectionId = getConnectionId();
