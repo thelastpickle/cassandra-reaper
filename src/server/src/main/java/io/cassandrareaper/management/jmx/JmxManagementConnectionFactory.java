@@ -185,7 +185,7 @@ public class JmxManagementConnectionFactory implements IManagementConnectionFact
   }
 
   @VisibleForTesting
-  public final ICassandraManagementProxy connectAny(Collection<Node> nodes) throws ReaperException {
+  public final JmxCassandraManagementProxy connectAny(Collection<Node> nodes) throws ReaperException {
 
     Preconditions.checkArgument(
         null != nodes && !nodes.isEmpty(), "no hosts provided to connectAny");
@@ -200,7 +200,7 @@ public class JmxManagementConnectionFactory implements IManagementConnectionFact
           try {
             LOG.debug("Trying to connect to node {} with {} successful connections with i = {}",
                 node.getHostname(), getHostConnectionCounters().getSuccessfulConnections(node.getHostname()), i);
-            ICassandraManagementProxy cassandraManagementProxy = connectImpl(node);
+            JmxCassandraManagementProxy cassandraManagementProxy = connectImpl(node);
             getHostConnectionCounters().incrementSuccessfulConnections(node.getHostname());
             if (getHostConnectionCounters().getSuccessfulConnections(node.getHostname()) > 0) {
               accessibleDatacenters.add(EndpointSnitchInfoProxy.create(cassandraManagementProxy).getDataCenter());

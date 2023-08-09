@@ -23,7 +23,6 @@ import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.CompactionStats;
 import io.cassandrareaper.core.DroppedMessages;
 import io.cassandrareaper.core.GenericMetric;
-import io.cassandrareaper.core.JmxStat;
 import io.cassandrareaper.core.MetricsHistogram;
 import io.cassandrareaper.core.Node;
 import io.cassandrareaper.core.PercentRepairedMetric;
@@ -36,8 +35,6 @@ import io.cassandrareaper.storage.IDistributedStorage;
 import io.cassandrareaper.storage.OpType;
 
 import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
 import javax.management.JMException;
@@ -49,24 +46,12 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Lists;
-import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public final class MetricsService {
 
   private static final Logger LOG = LoggerFactory.getLogger(MetricsService.class);
-
-  private static final String[] COLLECTED_METRICS = {
-      "org.apache.cassandra.metrics:type=ThreadPools,path=request,*",
-      "org.apache.cassandra.metrics:type=ThreadPools,path=internal,*",
-      "org.apache.cassandra.metrics:type=ClientRequest,*",
-      "org.apache.cassandra.metrics:type=DroppedMessage,*"
-  };
-
-  private static final String PERCENT_REPAIRED_METRICS
-      = "org.apache.cassandra.metrics:type=ColumnFamily,keyspace=%s,scope=*,name=PercentRepaired";
 
   private final AppContext context;
   private final ClusterFacade clusterFacade;
@@ -113,29 +98,6 @@ public final class MetricsService {
     return clusterFacade.getClientRequestLatencies(host);
   }
 
-  public List<GenericMetric> convertToGenericMetrics(Map<String, List<JmxStat>> jmxStats, Node node) {
-    List<GenericMetric> metrics = Lists.newArrayList();
-    DateTime now = DateTime.now();
-    for (Entry<String, List<JmxStat>> jmxStatEntry : jmxStats.entrySet()) {
-      for (JmxStat jmxStat : jmxStatEntry.getValue()) {
-        GenericMetric metric = GenericMetric.builder()
-            .withClusterName(node.getClusterName())
-            .withHost(node.getHostname())
-            .withMetricDomain(jmxStat.getDomain())
-            .withMetricType(jmxStat.getType())
-            .withMetricScope(jmxStat.getScope())
-            .withMetricName(jmxStat.getName())
-            .withMetricAttribute(jmxStat.getAttribute())
-            .withValue(jmxStat.getValue())
-            .withTs(now)
-            .build();
-
-        metrics.add(metric);
-      }
-    }
-    return metrics;
-  }
-
   void grabAndStoreGenericMetrics(Optional<Node> maybeNode) throws ReaperException, InterruptedException, JMException {
     Preconditions.checkState(
         context.config.getDatacenterAvailability().isInCollocatedMode(),
@@ -143,8 +105,7 @@ public final class MetricsService {
 
     Node node = getNode(maybeNode);
 
-    List<GenericMetric> metrics
-        = convertToGenericMetrics(ClusterFacade.create(context).collectMetrics(node, COLLECTED_METRICS), node);
+    List<GenericMetric> metrics = ClusterFacade.create(context).collectGenericMetrics(node);
 
     ((IDistributedStorage) context.storage).storeMetrics(metrics);
 
@@ -210,13 +171,8 @@ public final class MetricsService {
     Set<String> tables = this.repairUnitService.getTablesToRepair(node.getCluster().get(), repairUnit);
 
     // Collect percent repaired metrics for all tables in the keyspace
-    List<GenericMetric> metrics
-        = convertToGenericMetrics(
-        ClusterFacade.create(context)
-            .collectMetrics(
-                node,
-                new String[]{String.format(PERCENT_REPAIRED_METRICS, repairUnit.getKeyspaceName())}),
-        node);
+    List<GenericMetric> metrics = ClusterFacade.create(context).collectPercentRepairedMetrics(node,
+            repairUnit.getKeyspaceName());
     LOG.debug("Grabbed the following percent repaired metrics: {}", metrics);
 
     // Metrics are filtered to retain only tables of interest, sorted and reduced to keep the smallest percent repaired

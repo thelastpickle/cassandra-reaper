@@ -107,7 +107,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 
-final class JmxCassandraManagementProxy implements ICassandraManagementProxy, NotificationListener  {
+public final class JmxCassandraManagementProxy implements ICassandraManagementProxy, NotificationListener  {
 
   private static final Logger LOG = LoggerFactory.getLogger(ICassandraManagementProxy.class);
 

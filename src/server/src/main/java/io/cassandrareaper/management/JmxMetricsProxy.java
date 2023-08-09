@@ -23,6 +23,7 @@ import io.cassandrareaper.core.JmxStat;
 import io.cassandrareaper.core.MetricsHistogram;
 import io.cassandrareaper.core.Node;
 import io.cassandrareaper.core.ThreadPoolStat;
+import io.cassandrareaper.management.jmx.JmxCassandraManagementProxy;
 
 import java.io.IOException;
 import java.util.LinkedHashMap;
@@ -43,19 +44,28 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 
-public final class MetricsProxy {
+public final class JmxMetricsProxy {
 
-  private static final Logger LOG = LoggerFactory.getLogger(MetricsProxy.class);
+  private static final Logger LOG = LoggerFactory.getLogger(JmxMetricsProxy.class);
 
-  private final ICassandraManagementProxy proxy;
+  private static final String[] GENERIC_METRICS = {
+      "org.apache.cassandra.metrics:type=ThreadPools,path=request,*",
+      "org.apache.cassandra.metrics:type=ThreadPools,path=internal,*",
+      "org.apache.cassandra.metrics:type=ClientRequest,*",
+      "org.apache.cassandra.metrics:type=DroppedMessage,*"
+  };
 
-  private MetricsProxy(ICassandraManagementProxy proxy) {
+  private static final String PERCENT_REPAIRED_METRICS
+          = "org.apache.cassandra.metrics:type=ColumnFamily,keyspace=%s,scope=*,name=PercentRepaired";
+
+  private final JmxCassandraManagementProxy proxy;
+
+  private JmxMetricsProxy(JmxCassandraManagementProxy proxy) {
     this.proxy = proxy;
   }
 
-  public static MetricsProxy create(ICassandraManagementProxy proxy) {
-
-    return new MetricsProxy((ICassandraManagementProxy) proxy);
+  public static JmxMetricsProxy create(JmxCassandraManagementProxy proxy) {
+    return new JmxMetricsProxy(proxy);
   }
 
   public static ThreadPoolStat.Builder updateGenericMetricAttribute(GenericMetric stat,
@@ -134,7 +144,7 @@ public final class MetricsProxy {
     }
   }
 
-  public static List<GenericMetric> convertToGenericMetrics(Map<String, List<JmxStat>> jmxStats, Node node) {
+  private List<GenericMetric> convertToGenericMetrics(Map<String, List<JmxStat>> jmxStats, Node node) {
     List<GenericMetric> metrics = Lists.newArrayList();
     DateTime now = DateTime.now();
     for (Entry<String, List<JmxStat>> jmxStatEntry : jmxStats.entrySet()) {
@@ -157,18 +167,18 @@ public final class MetricsProxy {
     return metrics;
   }
 
-  public Map<String, List<JmxStat>> collectTpStats() throws JMException, IOException {
-    return collectMetrics(
+  public List<GenericMetric> collectTpStats(Node node) throws JMException, IOException {
+    return convertToGenericMetrics(collectMetrics(
         "org.apache.cassandra.metrics:type=ThreadPools,path=request,*",
-        "org.apache.cassandra.metrics:type=ThreadPools,path=internal,*");
+        "org.apache.cassandra.metrics:type=ThreadPools,path=internal,*"), node);
   }
 
-  public Map<String, List<JmxStat>> collectDroppedMessages() throws JMException, IOException {
-    return collectMetrics("org.apache.cassandra.metrics:type=DroppedMessage,*");
+  public List<GenericMetric> collectDroppedMessages(Node node) throws JMException, IOException {
+    return convertToGenericMetrics(collectMetrics("org.apache.cassandra.metrics:type=DroppedMessage,*"), node);
   }
 
-  public Map<String, List<JmxStat>> collectLatencyMetrics() throws JMException, IOException {
-    return collectMetrics("org.apache.cassandra.metrics:type=ClientRequest,*");
+  public List<GenericMetric> collectLatencyMetrics(Node node) throws JMException, IOException {
+    return convertToGenericMetrics(collectMetrics("org.apache.cassandra.metrics:type=ClientRequest,*"), node);
   }
 
   /**
@@ -196,6 +206,15 @@ public final class MetricsProxy {
         .collect(Collectors.groupingBy(JmxStat::getMbeanName));
 
     return groupedStatList;
+  }
+
+  public List<GenericMetric> collectGenericMetrics(Node node) throws JMException, IOException {
+    return convertToGenericMetrics(collectMetrics(GENERIC_METRICS), node);
+  }
+
+  public List<GenericMetric> collectPercentRepairedMetrics(Node node, String keyspaceName)
+          throws JMException, IOException {
+    return convertToGenericMetrics(collectMetrics(String.format(PERCENT_REPAIRED_METRICS, keyspaceName)), node);
   }
 
   private List<JmxStat> scrapeBean(ObjectName mbeanName) {
@@ -233,6 +252,4 @@ public final class MetricsProxy {
     }
     return attributeList;
   }
-
-
 }

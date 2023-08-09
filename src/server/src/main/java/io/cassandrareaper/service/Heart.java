@@ -242,7 +242,6 @@ public final class Heart implements AutoCloseable {
    * Such metrics will only be retrieved if an incremental repair schedule exists.
    *
    * @param node                       An optional node to grab the metrics from (the local node if not provided)
-   * @param incrementalRepairSchedules a collection of incremental repair schedules
    */
   private void updatePercentRepairedForNode(
       Optional<Node> node,

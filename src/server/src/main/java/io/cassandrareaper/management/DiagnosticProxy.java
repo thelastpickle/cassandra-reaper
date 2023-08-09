@@ -17,6 +17,7 @@
 
 package io.cassandrareaper.management;
 
+import io.cassandrareaper.management.jmx.JmxCassandraManagementProxy;
 import io.cassandrareaper.service.DiagEventSubscriptionService;
 
 import java.io.IOException;
@@ -35,13 +36,13 @@ public final class DiagnosticProxy {
 
   private static final Logger LOG = LoggerFactory.getLogger(DiagEventSubscriptionService.class);
 
-  private final ICassandraManagementProxy proxy;
+  private final JmxCassandraManagementProxy proxy;
 
-  private DiagnosticProxy(ICassandraManagementProxy proxy) {
+  private DiagnosticProxy(JmxCassandraManagementProxy proxy) {
     this.proxy = proxy;
   }
 
-  public static DiagnosticProxy create(ICassandraManagementProxy proxy) {
+  public static DiagnosticProxy create(JmxCassandraManagementProxy proxy) {
 
     return new DiagnosticProxy(proxy);
   }
