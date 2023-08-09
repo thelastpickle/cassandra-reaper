@@ -239,7 +239,8 @@ public final class HeartTest {
     }
 
     Mockito.verify((CassandraStorageFacade) context.storage, Mockito.times(1)).saveHeartbeat();
-    Mockito.verify(((JmxManagementConnectionFactory) context.managementConnectionFactory), Mockito.times(0)).connectAny(any(Collection.class));
+    Mockito.verify(((JmxManagementConnectionFactory) context.managementConnectionFactory),
+            Mockito.times(0)).connectAny(any(Collection.class));
   }
 
   @Test
@@ -267,7 +268,8 @@ public final class HeartTest {
 
     ICassandraManagementProxy nodeProxy = Mockito.mock(ICassandraManagementProxy.class);
 
-    Mockito.when(((JmxManagementConnectionFactory) context.managementConnectionFactory).connectAny(any(Collection.class))).thenReturn((JmxCassandraManagementProxy) nodeProxy);
+    Mockito.when(((JmxManagementConnectionFactory) context.managementConnectionFactory)
+            .connectAny(any(Collection.class))).thenReturn((JmxCassandraManagementProxy) nodeProxy);
 
     try (Heart heart = Heart.create(context)) {
       context.isDistributed.set(true);
@@ -276,7 +278,8 @@ public final class HeartTest {
     }
 
     Mockito.verify((CassandraStorageFacade) context.storage, Mockito.times(1)).saveHeartbeat();
-    Mockito.verify(((JmxManagementConnectionFactory) context.managementConnectionFactory), Mockito.times(0)).connectAny(any(Collection.class));
+    Mockito.verify(((JmxManagementConnectionFactory) context.managementConnectionFactory),
+            Mockito.times(0)).connectAny(any(Collection.class));
   }
 
   @Test
@@ -315,7 +318,8 @@ public final class HeartTest {
 
     ICassandraManagementProxy nodeProxy = Mockito.mock(ICassandraManagementProxy.class);
 
-    Mockito.when(((JmxManagementConnectionFactory) context.managementConnectionFactory).connectAny(any(Collection.class))).thenReturn((JmxCassandraManagementProxy) nodeProxy);
+    Mockito.when(((JmxManagementConnectionFactory) context.managementConnectionFactory)
+            .connectAny(any(Collection.class))).thenReturn((JmxCassandraManagementProxy) nodeProxy);
 
     try (Heart heart = Heart.create(context)) {
       context.isDistributed.set(true);

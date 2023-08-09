@@ -177,7 +177,8 @@ public final class RepairRunResourceTest {
     }
 
     context.managementConnectionFactory = mock(JmxManagementConnectionFactory.class);
-    when(((JmxManagementConnectionFactory) context.managementConnectionFactory).connectAny(Mockito.anyCollection())).thenReturn((JmxCassandraManagementProxy) proxy);
+    when(((JmxManagementConnectionFactory) context.managementConnectionFactory).connectAny(Mockito.anyCollection()))
+            .thenReturn((JmxCassandraManagementProxy) proxy);
 
     when(((JmxManagementConnectionFactory) context.managementConnectionFactory).connectAny(Mockito.anyCollection()))
         .thenReturn((JmxCassandraManagementProxy) proxy);

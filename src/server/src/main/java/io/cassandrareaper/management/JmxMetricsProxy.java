@@ -17,7 +17,6 @@
 
 package io.cassandrareaper.management;
 
-import com.google.common.annotations.VisibleForTesting;
 import io.cassandrareaper.core.DroppedMessages;
 import io.cassandrareaper.core.GenericMetric;
 import io.cassandrareaper.core.JmxStat;
@@ -38,6 +37,7 @@ import javax.management.MBeanAttributeInfo;
 import javax.management.MBeanInfo;
 import javax.management.ObjectName;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.joda.time.DateTime;

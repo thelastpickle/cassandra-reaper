@@ -661,7 +661,8 @@ public final class ClusterResourceTest {
 
     context.managementConnectionFactory = mock(JmxManagementConnectionFactory.class);
 
-    when(((JmxManagementConnectionFactory) context.managementConnectionFactory).connectAny(Mockito.anyCollection())).thenReturn(cassandraManagementProxy);
+    when(((JmxManagementConnectionFactory) context.managementConnectionFactory).connectAny(Mockito.anyCollection()))
+            .thenReturn(cassandraManagementProxy);
 
     Cryptograph cryptograph = mock(Cryptograph.class);
     when(cryptograph.encrypt(any(String.class))).thenReturn(RandomStringUtils.randomNumeric(10));

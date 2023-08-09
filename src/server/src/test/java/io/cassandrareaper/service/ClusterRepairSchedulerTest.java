@@ -82,7 +82,8 @@ public final class ClusterRepairSchedulerTest {
     clusterRepairAuto = new ClusterRepairScheduler(context, context.storage.getRepairRunDao());
     cassandraManagementProxy = mock(ICassandraManagementProxy.class);
 
-    when(((JmxManagementConnectionFactory) context.managementConnectionFactory).connectAny(Mockito.anyCollection())).thenReturn((JmxCassandraManagementProxy) cassandraManagementProxy);
+    when(((JmxManagementConnectionFactory) context.managementConnectionFactory)
+            .connectAny(Mockito.anyCollection())).thenReturn((JmxCassandraManagementProxy) cassandraManagementProxy);
   }
 
   @Test

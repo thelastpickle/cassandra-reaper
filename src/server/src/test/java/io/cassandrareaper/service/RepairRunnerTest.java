@@ -31,7 +31,6 @@ import io.cassandrareaper.core.RepairUnit;
 import io.cassandrareaper.core.Segment;
 import io.cassandrareaper.crypto.NoopCrypotograph;
 import io.cassandrareaper.management.ClusterFacade;
-import io.cassandrareaper.management.ICassandraManagementProxy;
 import io.cassandrareaper.management.RepairStatusHandler;
 import io.cassandrareaper.management.jmx.CassandraManagementProxyTest;
 import io.cassandrareaper.management.jmx.JmxCassandraManagementProxy;

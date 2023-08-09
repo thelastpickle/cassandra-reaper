@@ -26,8 +26,6 @@ import io.cassandrareaper.core.Compaction;
 import io.cassandrareaper.core.CompactionStats;
 import io.cassandrareaper.core.JmxCredentials;
 import io.cassandrareaper.core.StreamSession;
-import io.cassandrareaper.management.ClusterFacade;
-import io.cassandrareaper.management.ICassandraManagementProxy;
 import io.cassandrareaper.management.jmx.JmxCassandraManagementProxy;
 import io.cassandrareaper.management.jmx.JmxManagementConnectionFactory;
 
