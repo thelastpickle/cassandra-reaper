@@ -25,7 +25,7 @@ import io.cassandrareaper.core.JmxStat;
 import io.cassandrareaper.core.Node;
 import io.cassandrareaper.core.ThreadPoolStat;
 import io.cassandrareaper.management.ClusterFacade;
-import io.cassandrareaper.management.JmxMetricsProxy;
+import io.cassandrareaper.management.jmx.JmxMetricsProxy;
 import io.cassandrareaper.management.jmx.JmxCassandraManagementProxy;
 import io.cassandrareaper.management.jmx.JmxManagementConnectionFactory;
 

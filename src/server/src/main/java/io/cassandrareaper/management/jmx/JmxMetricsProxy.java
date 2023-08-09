@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package io.cassandrareaper.management;
+package io.cassandrareaper.management.jmx;
 
 import io.cassandrareaper.core.DroppedMessages;
 import io.cassandrareaper.core.GenericMetric;
@@ -23,7 +23,7 @@ import io.cassandrareaper.core.JmxStat;
 import io.cassandrareaper.core.MetricsHistogram;
 import io.cassandrareaper.core.Node;
 import io.cassandrareaper.core.ThreadPoolStat;
-import io.cassandrareaper.management.jmx.JmxCassandraManagementProxy;
+import io.cassandrareaper.management.MetricsProxy;
 
 import java.io.IOException;
 import java.util.LinkedHashMap;
@@ -45,7 +45,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 
-public final class JmxMetricsProxy {
+public final class JmxMetricsProxy implements MetricsProxy {
 
   private static final Logger LOG = LoggerFactory.getLogger(JmxMetricsProxy.class);
 
@@ -169,16 +169,19 @@ public final class JmxMetricsProxy {
     return metrics;
   }
 
+  @Override
   public List<GenericMetric> collectTpStats(Node node) throws JMException, IOException {
     return convertToGenericMetrics(collectMetrics(
         "org.apache.cassandra.metrics:type=ThreadPools,path=request,*",
         "org.apache.cassandra.metrics:type=ThreadPools,path=internal,*"), node);
   }
 
+  @Override
   public List<GenericMetric> collectDroppedMessages(Node node) throws JMException, IOException {
     return convertToGenericMetrics(collectMetrics("org.apache.cassandra.metrics:type=DroppedMessage,*"), node);
   }
 
+  @Override
   public List<GenericMetric> collectLatencyMetrics(Node node) throws JMException, IOException {
     return convertToGenericMetrics(collectMetrics("org.apache.cassandra.metrics:type=ClientRequest,*"), node);
   }
@@ -210,10 +213,12 @@ public final class JmxMetricsProxy {
     return groupedStatList;
   }
 
+  @Override
   public List<GenericMetric> collectGenericMetrics(Node node) throws JMException, IOException {
     return convertToGenericMetrics(collectMetrics(GENERIC_METRICS), node);
   }
 
+  @Override
   public List<GenericMetric> collectPercentRepairedMetrics(Node node, String keyspaceName)
           throws JMException, IOException {
     return convertToGenericMetrics(collectMetrics(String.format(PERCENT_REPAIRED_METRICS, keyspaceName)), node);

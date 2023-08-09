@@ -282,7 +282,7 @@ public final class RepairRunServiceTest {
 
     ClusterFacade clusterFacade = mock(ClusterFacade.class);
     when(clusterFacade.connect(any(Cluster.class))).thenReturn(jmx);
-    when(clusterFacade.nodeIsAccessibleThroughJmx(any(), any())).thenReturn(true);
+    when(clusterFacade.nodeIsDirectlyAccessible(any(), any())).thenReturn(true);
     when(clusterFacade.tokenRangeToEndpoint(any(), anyString(), any())).thenReturn(Lists.newArrayList(NODES));
     when(clusterFacade.getRangeToEndpointMap(any(), anyString()))
         .thenThrow(new ReaperException("fail"));
@@ -369,7 +369,7 @@ public final class RepairRunServiceTest {
 
     ClusterFacade clusterFacade = mock(ClusterFacade.class);
     when(clusterFacade.connect(any(Cluster.class))).thenReturn(jmx);
-    when(clusterFacade.nodeIsAccessibleThroughJmx(any(), any())).thenReturn(true);
+    when(clusterFacade.nodeIsDirectlyAccessible(any(), any())).thenReturn(true);
     when(clusterFacade.tokenRangeToEndpoint(any(), anyString(), any())).thenReturn(Lists.newArrayList(NODES));
     when(clusterFacade.getRangeToEndpointMap(any(), anyString()))
         .thenReturn((Map) ImmutableMap.of(Lists.newArrayList("0", "100"), Lists.newArrayList(NODES)));
@@ -435,7 +435,7 @@ public final class RepairRunServiceTest {
 
     ClusterFacade clusterFacade = mock(ClusterFacade.class);
     when(clusterFacade.connect(any(Cluster.class))).thenReturn(jmx);
-    when(clusterFacade.nodeIsAccessibleThroughJmx(any(), any())).thenReturn(true);
+    when(clusterFacade.nodeIsDirectlyAccessible(any(), any())).thenReturn(true);
     when(clusterFacade.tokenRangeToEndpoint(any(), anyString(), any())).thenReturn(Lists.newArrayList(NODES));
     when(clusterFacade.getRangeToEndpointMap(any(), anyString()))
         .thenReturn((Map) ImmutableMap.of(Lists.newArrayList("0", "100"), Lists.newArrayList(NODES)));
@@ -494,7 +494,7 @@ public final class RepairRunServiceTest {
 
     ClusterFacade clusterFacade = mock(ClusterFacade.class);
     when(clusterFacade.connect(any(Cluster.class))).thenReturn(jmx);
-    when(clusterFacade.nodeIsAccessibleThroughJmx(any(), any())).thenReturn(true);
+    when(clusterFacade.nodeIsDirectlyAccessible(any(), any())).thenReturn(true);
     when(clusterFacade.tokenRangeToEndpoint(any(), anyString(), any())).thenReturn(Lists.newArrayList(NODES));
     when(clusterFacade.getRangeToEndpointMap(any(), anyString()))
         .thenReturn((Map) ImmutableMap.of(Lists.newArrayList("0", "100"), Lists.newArrayList(NODES)));
@@ -865,7 +865,7 @@ public final class RepairRunServiceTest {
 
     ClusterFacade clusterFacade = mock(ClusterFacade.class);
     when(clusterFacade.connect(any(Cluster.class))).thenReturn(jmx);
-    when(clusterFacade.nodeIsAccessibleThroughJmx(any(), any())).thenReturn(true);
+    when(clusterFacade.nodeIsDirectlyAccessible(any(), any())).thenReturn(true);
     when(clusterFacade.tokenRangeToEndpoint(any(), anyString(), any())).thenReturn(Lists.newArrayList(NODES));
     when(clusterFacade.getRangeToEndpointMap(any(), anyString()))
         .thenReturn((Map) ImmutableMap.of(Lists.newArrayList("0", "100"), Collections.EMPTY_LIST));
