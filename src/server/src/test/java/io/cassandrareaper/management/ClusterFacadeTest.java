@@ -28,6 +28,7 @@ import io.cassandrareaper.core.JmxCredentials;
 import io.cassandrareaper.core.StreamSession;
 import io.cassandrareaper.management.ClusterFacade;
 import io.cassandrareaper.management.ICassandraManagementProxy;
+import io.cassandrareaper.management.jmx.JmxCassandraManagementProxy;
 import io.cassandrareaper.management.jmx.JmxManagementConnectionFactory;
 
 import java.io.IOException;
@@ -210,7 +211,7 @@ public class ClusterFacadeTest {
 
     contextSpy.config.setDatacenterAvailability(DatacenterAvailability.SIDECAR);
     JmxManagementConnectionFactory jmxManagementConnectionFactory = mock(JmxManagementConnectionFactory.class);
-    ICassandraManagementProxy mockProxy = mock(ICassandraManagementProxy.class);
+    JmxCassandraManagementProxy mockProxy = mock(JmxCassandraManagementProxy.class);
     when(jmxManagementConnectionFactory.connectAny(any(Collection.class))).thenReturn(mockProxy);
     contextSpy.managementConnectionFactory = jmxManagementConnectionFactory;
     final ClusterFacade cf = ClusterFacade.create(contextSpy);

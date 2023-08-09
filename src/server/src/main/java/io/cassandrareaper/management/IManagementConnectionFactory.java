@@ -17,10 +17,15 @@
 
 package io.cassandrareaper.management;
 
+import io.cassandrareaper.ReaperException;
+import io.cassandrareaper.core.Node;
+
+import java.util.Collection;
 import java.util.Set;
 
 public interface IManagementConnectionFactory {
-  //  void setAddressTranslator(AddressTranslator addressTranslator); // TODO: May not be needed for GA
+  ICassandraManagementProxy connectAny(Collection<Node> nodes) throws ReaperException;
+
   Set<String> getAccessibleDatacenters();
 
   HostConnectionCounters getHostConnectionCounters();

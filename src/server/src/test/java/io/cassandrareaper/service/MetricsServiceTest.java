@@ -20,13 +20,10 @@ package io.cassandrareaper.service;
 import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperApplicationConfiguration;
 import io.cassandrareaper.ReaperException;
-import io.cassandrareaper.core.DroppedMessages;
-import io.cassandrareaper.core.JmxStat;
-import io.cassandrareaper.core.Node;
-import io.cassandrareaper.core.ThreadPoolStat;
+import io.cassandrareaper.core.*;
 import io.cassandrareaper.management.ClusterFacade;
-import io.cassandrareaper.management.ICassandraManagementProxy;
-import io.cassandrareaper.management.MetricsProxy;
+import io.cassandrareaper.management.JmxMetricsProxy;
+import io.cassandrareaper.management.jmx.JmxCassandraManagementProxy;
 import io.cassandrareaper.management.jmx.JmxManagementConnectionFactory;
 
 import java.io.IOException;
@@ -59,9 +56,9 @@ public class MetricsServiceTest {
     cxt.config = new ReaperApplicationConfiguration();
     cxt.config.setJmxConnectionTimeoutInSeconds(10);
     cxt.managementConnectionFactory = mock(JmxManagementConnectionFactory.class);
-    ICassandraManagementProxy jmx = (ICassandraManagementProxy) mock(
+    JmxCassandraManagementProxy jmx = (JmxCassandraManagementProxy) mock(
         Class.forName("io.cassandrareaper.management.jmx.JmxCassandraManagementProxy"));
-    when(cxt.managementConnectionFactory.connectAny(any(Collection.class))).thenReturn(jmx);
+    when(((JmxManagementConnectionFactory) cxt.managementConnectionFactory).connectAny(any(Collection.class))).thenReturn(jmx);
 
     // @todo capture objectName and return valid set of objectNames,
     // to properly test MetricsProxy.collectMetrics(..) and MetricsService.convertToThreadPoolStats(..)
@@ -124,7 +121,7 @@ public class MetricsServiceTest {
     AppContext context = new AppContext();
     List<ThreadPoolStat> threadPoolStats
         = ClusterFacade.create(context).convertToThreadPoolStats(
-        MetricsProxy.convertToGenericMetrics(jmxStats, node));
+        JmxMetricsProxy.convertToGenericMetrics(jmxStats, node));
     ThreadPoolStat tpstat = threadPoolStats.get(0);
 
     assertEquals(1, tpstat.getPendingTasks().intValue());
@@ -145,9 +142,9 @@ public class MetricsServiceTest {
     cxt.config = new ReaperApplicationConfiguration();
     cxt.config.setJmxConnectionTimeoutInSeconds(10);
     cxt.managementConnectionFactory = mock(JmxManagementConnectionFactory.class);
-    ICassandraManagementProxy jmx = (ICassandraManagementProxy) mock(
+    JmxCassandraManagementProxy jmx = (JmxCassandraManagementProxy) mock(
         Class.forName("io.cassandrareaper.management.jmx.JmxCassandraManagementProxy"));
-    when(cxt.managementConnectionFactory.connectAny(any(Collection.class))).thenReturn(jmx);
+    when(((JmxManagementConnectionFactory) cxt.managementConnectionFactory).connectAny(any(Collection.class))).thenReturn(jmx);
 
     // @todo capture objectName and return valid set of objectNames,
     // to properly test MetricsProxy.collectMetrics(..) and MetricsService.convertToDroppedMessages(..)
@@ -208,7 +205,7 @@ public class MetricsServiceTest {
     Node node = Node.builder().withHostname("127.0.0.1").build();
     List<DroppedMessages> droppedMessages
         = clusterFacade.convertToDroppedMessages(
-        MetricsProxy.convertToGenericMetrics(jmxStats, node));
+        JmxMetricsProxy.convertToGenericMetrics(jmxStats, node));
     DroppedMessages dropped = droppedMessages.get(0);
 
     assertEquals(1, dropped.getMeanRate().intValue());
@@ -228,9 +225,9 @@ public class MetricsServiceTest {
     cxt.config = new ReaperApplicationConfiguration();
     cxt.config.setJmxConnectionTimeoutInSeconds(10);
     cxt.managementConnectionFactory = mock(JmxManagementConnectionFactory.class);
-    ICassandraManagementProxy jmx = (ICassandraManagementProxy) mock(
+    JmxCassandraManagementProxy jmx = (JmxCassandraManagementProxy) mock(
         Class.forName("io.cassandrareaper.management.jmx.JmxCassandraManagementProxy"));
-    when(cxt.managementConnectionFactory.connectAny(any(Collection.class))).thenReturn(jmx);
+    when(((JmxManagementConnectionFactory) cxt.managementConnectionFactory).connectAny(any(Collection.class))).thenReturn(jmx);
 
     // @todo capture objectName and return valid set of objectNames,
     // to properly test MetricsProxy.collectMetrics(..) and MetricsService.convertToMetricsHistogram(..)

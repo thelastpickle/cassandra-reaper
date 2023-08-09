@@ -54,7 +54,7 @@ public final class JmxCustomPortTest {
     AppContext context = new AppContext();
     context.config = new ReaperApplicationConfiguration();
     final Cryptograph cryptographMock = mock(Cryptograph.class);
-    final ICassandraManagementProxy cassandraManagementProxyMock = CassandraManagementProxyTest.mockJmxProxyImpl();
+    final JmxCassandraManagementProxy cassandraManagementProxyMock = CassandraManagementProxyTest.mockJmxProxyImpl();
     final AtomicInteger port = new AtomicInteger(0);
     HostConnectionCounters hostConnectionCounters = mock(HostConnectionCounters.class);
     when(hostConnectionCounters.getSuccessfulConnections(any())).thenReturn(1);
@@ -63,8 +63,8 @@ public final class JmxCustomPortTest {
 
     context.managementConnectionFactory = new JmxManagementConnectionFactory(context, cryptographMock) {
       @Override
-      protected ICassandraManagementProxy connectImpl(Node node) throws ReaperException {
-        final ICassandraManagementProxy jmx = cassandraManagementProxyMock;
+      protected JmxCassandraManagementProxy connectImpl(Node node) throws ReaperException {
+        final JmxCassandraManagementProxy jmx = cassandraManagementProxyMock;
         port.set(node.getJmxPort());
         return jmx;
       }
@@ -85,7 +85,7 @@ public final class JmxCustomPortTest {
         .withJmxPort(7188)
         .build();
 
-    context.managementConnectionFactory
+    ((JmxManagementConnectionFactory) context.managementConnectionFactory)
         .connectAny(Collections.singleton(Node.builder().withCluster(cluster).withHostname("127.0.0.1").build()));
 
     assertEquals(7188, port.get());
@@ -97,7 +97,7 @@ public final class JmxCustomPortTest {
         .withJmxPort(7198)
         .build();
 
-    context.managementConnectionFactory
+    ((JmxManagementConnectionFactory) context.managementConnectionFactory)
         .connectAny(Collections.singleton(Node.builder().withCluster(cluster2).withHostname("127.0.0.3").build()));
 
     assertEquals(7198, port.get());

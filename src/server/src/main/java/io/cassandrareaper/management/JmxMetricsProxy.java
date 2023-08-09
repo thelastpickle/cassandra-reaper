@@ -17,6 +17,7 @@
 
 package io.cassandrareaper.management;
 
+import com.google.common.annotations.VisibleForTesting;
 import io.cassandrareaper.core.DroppedMessages;
 import io.cassandrareaper.core.GenericMetric;
 import io.cassandrareaper.core.JmxStat;
@@ -144,7 +145,8 @@ public final class JmxMetricsProxy {
     }
   }
 
-  private List<GenericMetric> convertToGenericMetrics(Map<String, List<JmxStat>> jmxStats, Node node) {
+  @VisibleForTesting
+  public static List<GenericMetric> convertToGenericMetrics(Map<String, List<JmxStat>> jmxStats, Node node) {
     List<GenericMetric> metrics = Lists.newArrayList();
     DateTime now = DateTime.now();
     for (Entry<String, List<JmxStat>> jmxStatEntry : jmxStats.entrySet()) {
