@@ -22,7 +22,6 @@ import io.cassandrareaper.core.Table;
 import io.cassandrareaper.service.RingRange;
 
 import java.io.IOException;
-import java.io.Serializable;
 import java.math.BigInteger;
 import java.net.UnknownHostException;
 import java.time.Duration;
@@ -30,7 +29,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.SortedMap;
 import java.util.concurrent.ExecutionException;
 import javax.management.JMException;
 import javax.management.openmbean.CompositeData;
@@ -156,16 +154,6 @@ public interface ICassandraManagementProxy {
 
   // From EndpointSnitchInfoMBean
   String getDatacenter(String var1) throws UnknownHostException;
-
-  // from DiagnosticEventPersistenceMBean
-  SortedMap<Long, Map<String, Serializable>> readEvents(String eventClass, Long lastKey, int limit);
-
-  void enableEventPersistence(String eventClass);
-
-  void disableEventPersistence(String eventClass);
-
-  // From LastEventIdBroadcasterMBean
-  Map<String, Comparable> getLastEventIdsIfModified(long lastUpdate);
 
   // From StreamManagerMBean
   Set<CompositeData> getCurrentStreams();

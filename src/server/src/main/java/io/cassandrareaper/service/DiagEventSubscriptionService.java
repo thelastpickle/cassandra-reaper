@@ -104,6 +104,8 @@ public final class DiagEventSubscriptionService {
 
   public static DiagEventSubscriptionService create(AppContext cxt, HttpClient client, ScheduledExecutorService exec,
                                                     IEventsDao eventsDao) {
+    Preconditions.checkState(cxt.managementConnectionFactory instanceof JmxManagementConnectionFactory,
+        "JMX diagnostic events are only available when JMX connections are used.");
     return new DiagEventSubscriptionService(cxt, client, exec, eventsDao);
   }
 

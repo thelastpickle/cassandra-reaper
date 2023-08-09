@@ -43,7 +43,6 @@ public final class DiagnosticProxy {
   }
 
   public static DiagnosticProxy create(JmxCassandraManagementProxy proxy) {
-
     return new DiagnosticProxy(proxy);
   }
 
