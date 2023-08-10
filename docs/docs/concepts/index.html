@@ -13,7 +13,7 @@
 
   
 
-  <meta name="generator" content="Hugo 0.69.2" />
+  <meta name="generator" content="Hugo 0.79.0" />
 
   <link href='//fonts.googleapis.com/css?family=Roboto:400,100,100italic,300,300italic,500,700,800' rel='stylesheet' type='text/css'>
 
@@ -333,6 +333,7 @@ In Cassandra 2.2, one repair session will be started for each subrange of the se
 <p>Reaper will associate each segment with its replicas, and run repairs sequentially on only one of the replicas. If a repair is already running on one of the replicas or if there are more than 20 pending compactions, Reaper will postpone the segment for future processing and try to repair the next segment.</p>
 <h2 id="concurrency-and-multithreading">Concurrency and Multithreading</h2>
 <p>Being a multi threaded service, Reaper will compute how many concurrent repair sessions can run on the cluster and adjust its thread pool accordingly. To that end, it will check the number of nodes in the cluster and the RF (Replication Factor) of the repaired keyspace. On a three node cluster with RF=3, only one segment can be repaired at a time. On a six node cluster with RF=3, two segments can be repaired at the same time.</p>
+<p>In the case of a cluster spread around multiple datacenters, the number of concurrent repair will depend on the datacenter with the smallest RF by node. On a cluster composed of a main datacenter with 9 nodes and RF=3 and a backup datacenter with 4 nodes and RF=3, only one segment can be repaired at the same time because of the backup datacenter.</p>
 <p>The maximum number of concurrent repairs is 15 by default and can be modified in the YAML configuration (<em>cassandra-reaper.yaml</em>) file.</p>
 <p>Since Cassandra 2.2, repairs are multithreaded in order to process several token ranges concurrently and speed up the process. No more than four threads are authorized by Cassandra. The number of repair threads can be set differently for each repair run/schedule.
 This setting will be ignored for clusters running an older version of Apache Cassandra.</p>

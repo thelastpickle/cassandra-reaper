@@ -5,10 +5,6 @@
     <link>http://cassandra-reaper.io/tags/</link>
     <description>Recent content in Tags on Reaper: Easy Repair Management for Apache Cassandra</description>
     <generator>Hugo -- gohugo.io</generator>
-    <language>en-us</language>
-    
-	<atom:link href="http://cassandra-reaper.io/tags/index.xml" rel="self" type="application/rss+xml" />
-    
-    
+    <language>en-us</language><atom:link href="http://cassandra-reaper.io/tags/index.xml" rel="self" type="application/rss+xml" />
   </channel>
 </rss>

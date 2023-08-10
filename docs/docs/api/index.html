@@ -13,7 +13,7 @@
 
   
 
-  <meta name="generator" content="Hugo 0.69.2" />
+  <meta name="generator" content="Hugo 0.79.0" />
 
   <link href='//fonts.googleapis.com/css?family=Roboto:400,100,100italic,300,300italic,500,700,800' rel='stylesheet' type='text/css'>
 
@@ -719,6 +719,51 @@ If no tables given, then the whole keyspace is targeted. (Optional)
 <li>Expected query parameters:
 * <em>text</em>: The text to encrypt.</li>
 <li>Encrypt text when cryptograph settings are configured in the reaper yaml.</li>
+</ul>
+</li>
+</ul>
+<h2 id="node-resource">Node Resource</h2>
+<ul>
+<li>
+<p><strong>GET /node/tpstats/{clusterName}/{host}</strong></p>
+<ul>
+<li>Expected query parameters: <em>None</em></li>
+<li>Returns thread pool stats for a node.</li>
+</ul>
+</li>
+<li>
+<p><strong>GET /node/dropped/{clusterName}/{host}</strong></p>
+<ul>
+<li>Expected query parameters: <em>None</em></li>
+<li>Returns dropped messages stats for a node.</li>
+</ul>
+</li>
+<li>
+<p><strong>GET /node/clientRequestLatencies/{clusterName}/{host}</strong></p>
+<ul>
+<li>Expected query parameters: <em>None</em></li>
+<li>Returns client request latencies for a node.</li>
+</ul>
+</li>
+<li>
+<p><strong>GET /node/streams/{clusterName}/{host}</strong></p>
+<ul>
+<li>Expected query parameters: <em>None</em></li>
+<li>Returns streams currently happening on a node.</li>
+</ul>
+</li>
+<li>
+<p><strong>GET /node/compactions/{clusterName}/{host}</strong></p>
+<ul>
+<li>Expected query parameters: <em>None</em></li>
+<li>Returns thread pool stats for a node.</li>
+</ul>
+</li>
+<li>
+<p><strong>GET /node/tokens/{clusterName}/{host}</strong></p>
+<ul>
+<li>Expected query parameters: <em>None</em></li>
+<li>Returns the tokens owned by a node.</li>
 </ul>
 </li>
 </ul>

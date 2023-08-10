@@ -13,7 +13,7 @@
 
   
 
-  <meta name="generator" content="Hugo 0.69.2" />
+  <meta name="generator" content="Hugo 0.79.0" />
 
   <link href='//fonts.googleapis.com/css?family=Roboto:400,100,100italic,300,300italic,500,700,800' rel='stylesheet' type='text/css'>
 
@@ -562,13 +562,13 @@ blocking in cause some thread is waiting for I/O, like calling a Cassandra clust
 <h3 id="jmxaddresstranslator"><code>jmxAddressTranslator</code></h3>
 <p><em><strong>Since 2.1.0</strong></em></p>
 <p>Sometimes it’s not possible for Cassandra nodes to broadcast addresses that will work for each and every client; for instance, they might broadcast private IPs because most clients are in the same network, but a particular client could be on another network and go through a router. For such cases, you can configure a custom address translator that will perform additional address translation based on configured mapping.</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#66d9ef">jmxAddressTranslator</span>:
-  <span style="color:#66d9ef">type</span>: multiIpPerNode
-  <span style="color:#66d9ef">ipTranslations</span>:
-    - <span style="color:#66d9ef">from</span>: <span style="color:#e6db74">&#34;10.10.10.111&#34;</span>
-      <span style="color:#66d9ef">to</span>: <span style="color:#e6db74">&#34;node1.cassandra.reaper.io&#34;</span>
-    - <span style="color:#66d9ef">from</span>: <span style="color:#e6db74">&#34;10.10.10.112&#34;</span>
-      <span style="color:#66d9ef">to</span>: <span style="color:#e6db74">&#34;node2.cassandra.reaper.io&#34;</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#f92672">jmxAddressTranslator</span>:
+  <span style="color:#f92672">type</span>: <span style="color:#ae81ff">multiIpPerNode</span>
+  <span style="color:#f92672">ipTranslations</span>:
+    - <span style="color:#f92672">from</span>: <span style="color:#e6db74">&#34;10.10.10.111&#34;</span>
+      <span style="color:#f92672">to</span>: <span style="color:#e6db74">&#34;node1.cassandra.reaper.io&#34;</span>
+    - <span style="color:#f92672">from</span>: <span style="color:#e6db74">&#34;10.10.10.112&#34;</span>
+      <span style="color:#f92672">to</span>: <span style="color:#e6db74">&#34;node2.cassandra.reaper.io&#34;</span>
 </code></pre></div><p>When running multi region clusters in AWS, set type to <code>ec2MultiRegion</code> in order to use the EC2MultiRegionAddressTranslator from the Datastax Java Driver. This will allow translating the public address that the nodes broadcast to the private IP address that is used to expose JMX.</p>
 <!-- raw HTML omitted -->
 <h3 id="accesscontrol"><code>accessControl</code></h3>
