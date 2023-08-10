@@ -63,3 +63,8 @@ The [cassandra-reaper.io](http://cassandra-reaper.io/) pages are not updated aut
 - Run `make build`.
 - Commit changes in the `docs` folder (relative to the root of the repository).
 - Open a PR with the changes <s>or ninja push to master</s>.
+
+# Editor Config
+
+Reaper uses Checkstyle to maintain consistent style across the repo. In the src/docs folder you can find a file Reaper-IDEA.xml which contains
+IDE settings for the Intellij IDEA editor. This configuration will allow IDEA to reformat imports and statements to suit Checkstyle's requirements.
