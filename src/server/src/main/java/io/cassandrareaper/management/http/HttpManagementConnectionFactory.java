@@ -31,10 +31,14 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ScheduledExecutorService;
 import javax.ws.rs.core.Response;
 
 import com.codahale.metrics.Gauge;
+import com.codahale.metrics.InstrumentedScheduledExecutorService;
 import com.codahale.metrics.MetricRegistry;
+import com.datastax.mgmtapi.client.api.DefaultApi;
+import com.datastax.mgmtapi.client.invoker.ApiClient;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -47,14 +51,17 @@ public class HttpManagementConnectionFactory implements IManagementConnectionFac
   private final MetricRegistry metricRegistry;
   private final HostConnectionCounters hostConnectionCounters;
 
+  private ScheduledExecutorService jobStatusPollerExecutor;
+
   private final Set<String> accessibleDatacenters = Sets.newHashSet();
 
   // Constructor for HttpManagementConnectionFactory
-  public HttpManagementConnectionFactory(AppContext context) {
+  public HttpManagementConnectionFactory(AppContext context, ScheduledExecutorService jobStatusPollerExecutor) {
     this.metricRegistry
         = context.metricRegistry == null ? new MetricRegistry() : context.metricRegistry;
     hostConnectionCounters = new HostConnectionCounters(metricRegistry);
     registerConnectionsGauge();
+    this.jobStatusPollerExecutor = jobStatusPollerExecutor;
   }
 
   public ICassandraManagementProxy connectAny(Collection<Node> nodes) throws ReaperException {
@@ -118,10 +125,17 @@ public class HttpManagementConnectionFactory implements IManagementConnectionFac
     if (pidResponse.getStatus() != 200) {
       throw new ReaperException("Could not get PID for node " + node.getHostname());
     }
+    DefaultApi apiClient = new DefaultApi(
+        new ApiClient().setBasePath("https://" + node.getHostname() + ":" + managementPort + rootPath));
+
+    InstrumentedScheduledExecutorService statusTracker = new InstrumentedScheduledExecutorService(
+        jobStatusPollerExecutor, metricRegistry);
     return new HttpCassandraManagementProxy(
         metricRegistry,
         rootPath,
-        new InetSocketAddress(node.getHostname(), managementPort)
+        new InetSocketAddress(node.getHostname(), managementPort),
+        statusTracker,
+        apiClient
     );
   }
 
