@@ -25,6 +25,7 @@ function set_java_home() {
     do 
         export JAVA_HOME="${jdk/}"x64/
         echo "JAVA_HOME is set to $JAVA_HOME"
+        export JAVA_TOOL_OPTIONS="-Dcom.sun.jndi.rmiURLParsing=legacy"
     done
 }
 
