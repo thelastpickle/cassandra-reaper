@@ -70,6 +70,7 @@ case "${TEST_TYPE}" in
         mkdir -p ~/.local
         cp ./.github/files/jmxremote.password ~/.local/jmxremote.password
         chmod 400 ~/.local/jmxremote.password
+        ls -lrt /opt/hostedtoolcache/
         # Our move to support jdk11 makes it possible to get either jdk 8.0.192 or jdk 8.0.292 which both require to be configured properly.
         for jdk in /opt/hostedtoolcache/Java_Adopt_jdk/8*/; 
         do 
