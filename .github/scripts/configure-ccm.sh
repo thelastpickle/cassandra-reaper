@@ -25,7 +25,7 @@ function set_java_home() {
     else
         export CASSANDRA_USE_JDK11=false
     fi
-    for jdk in /opt/hostedtoolcache/Java_Adopt_jdk/${major_version}*/; 
+    for jdk in /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/${major_version}*/; 
     do 
         export JAVA_HOME="${jdk/}"x64/
         echo "JAVA_HOME is set to $JAVA_HOME"
@@ -71,8 +71,7 @@ case "${TEST_TYPE}" in
         cp ./.github/files/jmxremote.password ~/.local/jmxremote.password
         chmod 400 ~/.local/jmxremote.password
         ls -lrt /opt/hostedtoolcache/
-        # Our move to support jdk11 makes it possible to get either jdk 8.0.192 or jdk 8.0.292 which both require to be configured properly.
-        for jdk in /opt/hostedtoolcache/Java_Adopt_jdk/8*/; 
+        for jdk in /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/8*/; 
         do 
           sudo chmod 777 "${jdk/}"x64/jre/lib/management/jmxremote.access
           echo "cassandra     readwrite" >> "${jdk/}"x64/jre/lib/management/jmxremote.access
