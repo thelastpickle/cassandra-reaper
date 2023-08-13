@@ -233,7 +233,7 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
 
     HttpClient httpClient = createHttpClient(config, environment);
 
-    if (context.managementConnectionFactory instanceof JmxManagementConnectionFactory) {
+    if (config.getHttpManagement() == null || !config.getHttpManagement().getEnabled()) {
       ScheduledExecutorService ses = environment.lifecycle().scheduledExecutorService("Diagnostics").threads(6).build();
       final DiagEventSubscriptionResource eventsResource = new DiagEventSubscriptionResource(context, httpClient, ses,
           context.storage.getEventsDao());
