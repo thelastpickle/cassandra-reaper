@@ -271,6 +271,11 @@
             <artifactId>jmxremote_optional-repackaged</artifactId>
             <version>5.0</version>
         </dependency>
+        <dependency>
+            <groupId>io.k8ssandra</groupId>
+            <artifactId>datastax-mgmtapi-client-openapi</artifactId>
+            <version>0.1.0-507f418</version>
+        </dependency>
         <!--test scope -->
 
         <dependency>
@@ -773,6 +778,17 @@
             </releases>
             <snapshots>
             <enabled>true</enabled>
+            </snapshots>
+        </repository>
+        <repository>
+            <id>thelastpickle-reaper-mvn</id>
+            <url>https://dl.cloudsmith.io/public/thelastpickle/reaper-mvn/maven/</url>
+            <releases>
+                <enabled>true</enabled>
+                <updatePolicy>always</updatePolicy>
+            </releases>
+            <snapshots>
+                <enabled>false</enabled>
             </snapshots>
         </repository>
     </repositories>
