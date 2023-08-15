@@ -25,7 +25,6 @@ import io.cassandrareaper.core.Compaction;
 import io.cassandrareaper.core.CompactionStats;
 import io.cassandrareaper.core.DroppedMessages;
 import io.cassandrareaper.core.GenericMetric;
-import io.cassandrareaper.core.JmxStat;
 import io.cassandrareaper.core.MetricsHistogram;
 import io.cassandrareaper.core.Node;
 import io.cassandrareaper.core.Segment;
@@ -33,6 +32,7 @@ import io.cassandrareaper.core.Snapshot;
 import io.cassandrareaper.core.StreamSession;
 import io.cassandrareaper.core.Table;
 import io.cassandrareaper.core.ThreadPoolStat;
+import io.cassandrareaper.management.jmx.JmxMetricsProxy;
 import io.cassandrareaper.resources.view.NodesStatus;
 import io.cassandrareaper.service.RingRange;
 import io.cassandrareaper.storage.IDistributedStorage;
@@ -73,9 +73,6 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static io.cassandrareaper.management.MetricsProxy.convertToGenericMetrics;
-
 
 public final class ClusterFacade {
 
@@ -546,7 +543,7 @@ public final class ClusterFacade {
 
     LOG.debug("Listing active compactions for node {}", node);
     String nodeDc = getDatacenter(node.getCluster().get(), node.getHostname());
-    if (nodeIsAccessibleThroughJmx(nodeDc, node.getHostname())) {
+    if (nodeIsDirectlyAccessible(nodeDc, node.getHostname())) {
       LOG.debug("Yay!! Node {} in DC {} is accessible through JMX", node.getHostname(), nodeDc);
       // We have direct JMX access to the node
       return listCompactionStatsDirect(node);
@@ -589,7 +586,7 @@ public final class ClusterFacade {
    * @param node   the target node
    * @return true if the node is supposedly accessible through JMX, otherwise false
    */
-  public boolean nodeIsAccessibleThroughJmx(String nodeDc, String node) {
+  public boolean nodeIsDirectlyAccessible(String nodeDc, String node) {
     return DatacenterAvailability.ALL == context.config.getDatacenterAvailability()
         || (Arrays.asList(DatacenterAvailability.EACH, DatacenterAvailability.LOCAL)
         .contains(context.config.getDatacenterAvailability())
@@ -598,17 +595,18 @@ public final class ClusterFacade {
         && node.equals(context.getLocalNodeAddress()));
   }
 
-  /**
-   * Collect a set of metrics through JMX on a specific node.
-   *
-   * @param node             the node to collect metrics on
-   * @param collectedMetrics the list of metrics to collect
-   * @return the list of collected metrics
-   * @throws ReaperException any runtime exception we catch in the process
-   */
-  public Map<String, List<JmxStat>> collectMetrics(Node node, String[] collectedMetrics) throws ReaperException {
+  public List<GenericMetric> collectGenericMetrics(Node node) throws ReaperException {
     try {
-      return MetricsProxy.create(connect(node)).collectMetrics(collectedMetrics);
+      return MetricsProxy.create(connect(node)).collectGenericMetrics(node);
+    } catch (JMException | IOException e) {
+      LOG.error("Failed collecting metrics for host {}", node, e);
+      throw new ReaperException(e);
+    }
+  }
+
+  public List<GenericMetric> collectPercentRepairedMetrics(Node node, String keyspaceName) throws ReaperException {
+    try {
+      return MetricsProxy.create(connect(node)).collectPercentRepairedMetrics(node, keyspaceName);
     } catch (JMException | IOException e) {
       LOG.error("Failed collecting metrics for host {}", node, e);
       throw new ReaperException(e);
@@ -625,10 +623,9 @@ public final class ClusterFacade {
   public List<MetricsHistogram> getClientRequestLatencies(Node node) throws ReaperException {
     try {
       String nodeDc = getDatacenter(node.getCluster().get(), node.getHostname());
-      if (nodeIsAccessibleThroughJmx(nodeDc, node.getHostname())) {
+      if (nodeIsDirectlyAccessible(nodeDc, node.getHostname())) {
         MetricsProxy metricsProxy = MetricsProxy.create(connect(node));
-        return convertToMetricsHistogram(
-            convertToGenericMetrics(metricsProxy.collectLatencyMetrics(), node));
+        return convertToMetricsHistogram(metricsProxy.collectLatencyMetrics(node));
       } else {
         // We look for metrics in the last two time based partitions to make sure we get a result
         return convertToMetricsHistogram(((IDistributedStorage) context.storage)
@@ -655,9 +652,9 @@ public final class ClusterFacade {
   public List<DroppedMessages> getDroppedMessages(Node node) throws ReaperException {
     try {
       String nodeDc = getDatacenter(node.getCluster().get(), node.getHostname());
-      if (nodeIsAccessibleThroughJmx(nodeDc, node.getHostname())) {
+      if (nodeIsDirectlyAccessible(nodeDc, node.getHostname())) {
         MetricsProxy proxy = MetricsProxy.create(connect(node));
-        return convertToDroppedMessages(convertToGenericMetrics(proxy.collectDroppedMessages(), node));
+        return convertToDroppedMessages(proxy.collectDroppedMessages(node));
       } else {
         return convertToDroppedMessages(((IDistributedStorage) context.storage)
             .getMetrics(
@@ -681,7 +678,7 @@ public final class ClusterFacade {
     for (Entry<String, List<GenericMetric>> pool : metricsByScope.entrySet()) {
       DroppedMessages.Builder builder = DroppedMessages.builder().withName(pool.getKey());
       for (GenericMetric stat : pool.getValue()) {
-        builder = MetricsProxy.updateGenericMetricAttribute(stat, builder);
+        builder = JmxMetricsProxy.updateGenericMetricAttribute(stat, builder);
       }
       droppedMessages.add(builder.build());
     }
@@ -698,9 +695,9 @@ public final class ClusterFacade {
   public List<ThreadPoolStat> getTpStats(Node node) throws ReaperException {
     try {
       String nodeDc = getDatacenter(node.getCluster().get(), node.getHostname());
-      if (nodeIsAccessibleThroughJmx(nodeDc, node.getHostname())) {
+      if (nodeIsDirectlyAccessible(nodeDc, node.getHostname())) {
         MetricsProxy proxy = MetricsProxy.create(connect(node));
-        return convertToThreadPoolStats(convertToGenericMetrics(proxy.collectTpStats(), node));
+        return convertToThreadPoolStats(proxy.collectTpStats(node));
       } else {
         return convertToThreadPoolStats(((IDistributedStorage) context.storage)
             .getMetrics(
@@ -724,7 +721,7 @@ public final class ClusterFacade {
     for (Entry<String, List<GenericMetric>> pool : metricsByScope.entrySet()) {
       ThreadPoolStat.Builder builder = ThreadPoolStat.builder().withName(pool.getKey());
       for (GenericMetric stat : pool.getValue()) {
-        builder = MetricsProxy.updateGenericMetricAttribute(stat, builder);
+        builder = JmxMetricsProxy.updateGenericMetricAttribute(stat, builder);
       }
       tpstats.add(builder.build());
     }
@@ -751,7 +748,7 @@ public final class ClusterFacade {
             .withName(metricByScope.getKey())
             .withType(metricByName.getKey());
         for (GenericMetric stat : metricByName.getValue()) {
-          builder = MetricsProxy.updateGenericMetricAttribute(stat, builder);
+          builder = JmxMetricsProxy.updateGenericMetricAttribute(stat, builder);
         }
         histograms.add(builder.build());
       }
@@ -822,7 +819,7 @@ public final class ClusterFacade {
   public List<StreamSession> listActiveStreams(Node node)
       throws ReaperException, InterruptedException, IOException {
     String nodeDc = getDatacenter(node.getCluster().get(), node.getHostname());
-    if (nodeIsAccessibleThroughJmx(nodeDc, node.getHostname())) {
+    if (nodeIsDirectlyAccessible(nodeDc, node.getHostname())) {
       // We have direct JMX access to the node
       return listStreamsDirect(node);
     } else {
@@ -892,9 +889,11 @@ public final class ClusterFacade {
   ////  private connection methods ////
 
   // cluster object contains additional connection info like jmx port and jmx credentials
-  private ICassandraManagementProxy connectImpl(Cluster cluster, Collection<String> endpoints) throws ReaperException {
+  private ICassandraManagementProxy connectImpl(Cluster cluster, Collection<String> endpoints)
+          throws ReaperException {
     try {
-      ICassandraManagementProxy proxy = context.managementConnectionFactory.connectAny(
+      ICassandraManagementProxy proxy = context.managementConnectionFactory
+              .connectAny(
           endpoints
               .stream()
               .map(host -> Node.builder().withCluster(cluster).withHostname(host).build())

@@ -24,6 +24,7 @@ import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.Cluster.State;
 import io.cassandrareaper.crypto.NoopCrypotograph;
 import io.cassandrareaper.management.ICassandraManagementProxy;
+import io.cassandrareaper.management.jmx.JmxCassandraManagementProxy;
 import io.cassandrareaper.management.jmx.JmxManagementConnectionFactory;
 import io.cassandrareaper.storage.IStorageDao;
 import io.cassandrareaper.storage.MemoryStorageFacade;
@@ -238,7 +239,8 @@ public final class HeartTest {
     }
 
     Mockito.verify((CassandraStorageFacade) context.storage, Mockito.times(1)).saveHeartbeat();
-    Mockito.verify(context.managementConnectionFactory, Mockito.times(0)).connectAny(any(Collection.class));
+    Mockito.verify(((JmxManagementConnectionFactory) context.managementConnectionFactory),
+            Mockito.times(0)).connectAny(any(Collection.class));
   }
 
   @Test
@@ -264,9 +266,10 @@ public final class HeartTest {
     context.storage = Mockito.mock(CassandraStorageFacade.class);
     context.managementConnectionFactory = Mockito.mock(JmxManagementConnectionFactory.class);
 
-    ICassandraManagementProxy nodeProxy = Mockito.mock(ICassandraManagementProxy.class);
+    JmxCassandraManagementProxy nodeProxy = Mockito.mock(JmxCassandraManagementProxy.class);
 
-    Mockito.when(context.managementConnectionFactory.connectAny(any(Collection.class))).thenReturn(nodeProxy);
+    Mockito.when(context.managementConnectionFactory
+            .connectAny(any(Collection.class))).thenReturn(nodeProxy);
 
     try (Heart heart = Heart.create(context)) {
       context.isDistributed.set(true);
@@ -275,7 +278,8 @@ public final class HeartTest {
     }
 
     Mockito.verify((CassandraStorageFacade) context.storage, Mockito.times(1)).saveHeartbeat();
-    Mockito.verify(context.managementConnectionFactory, Mockito.times(0)).connectAny(any(Collection.class));
+    Mockito.verify(((JmxManagementConnectionFactory) context.managementConnectionFactory),
+            Mockito.times(0)).connectAny(any(Collection.class));
   }
 
   @Test
@@ -312,9 +316,10 @@ public final class HeartTest {
                 .withJmxPort(7199)
                 .build());
 
-    ICassandraManagementProxy nodeProxy = Mockito.mock(ICassandraManagementProxy.class);
+    ICassandraManagementProxy nodeProxy = Mockito.mock(JmxCassandraManagementProxy.class);
 
-    Mockito.when(context.managementConnectionFactory.connectAny(any(Collection.class))).thenReturn(nodeProxy);
+    Mockito.when(context.managementConnectionFactory
+            .connectAny(any(Collection.class))).thenReturn(nodeProxy);
 
     try (Heart heart = Heart.create(context)) {
       context.isDistributed.set(true);

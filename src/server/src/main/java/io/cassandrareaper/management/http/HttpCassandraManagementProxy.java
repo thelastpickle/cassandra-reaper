@@ -24,7 +24,6 @@ import io.cassandrareaper.management.RepairStatusHandler;
 import io.cassandrareaper.service.RingRange;
 
 import java.io.IOException;
-import java.io.Serializable;
 import java.math.BigInteger;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
@@ -35,21 +34,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.SortedMap;
-import java.util.TreeMap;
 import java.util.concurrent.ExecutionException;
-import javax.management.AttributeList;
-import javax.management.InstanceNotFoundException;
-import javax.management.IntrospectionException;
 import javax.management.JMException;
-import javax.management.ListenerNotFoundException;
-import javax.management.MBeanInfo;
-import javax.management.Notification;
-import javax.management.NotificationFilter;
-import javax.management.NotificationListener;
-import javax.management.ObjectName;
-import javax.management.QueryExp;
-import javax.management.ReflectionException;
 import javax.management.openmbean.CompositeData;
 import javax.management.openmbean.TabularData;
 import javax.validation.constraints.NotNull;
@@ -168,16 +154,6 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
   }
 
   @Override
-  public void handleNotification(final Notification notification, Object handback) {
-    // TODO: implement me.
-  }
-
-  @Override
-  public boolean isConnectionAlive() {
-    return true; // TODO: implement me.
-  }
-
-  @Override
   public void removeRepairStatusHandler(int repairNo) {
     // TODO: implement me.
   }
@@ -220,29 +196,6 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
     // TODO: implement me.
   }
 
-
-  // From MBeanServerConnection
-  public Set<ObjectName> queryNames(ObjectName name, QueryExp query)
-      throws IOException {
-    // TODO: implement me.
-    return new HashSet<ObjectName>();
-  }
-
-  public MBeanInfo getMBeanInfo(ObjectName name)
-      throws InstanceNotFoundException, IntrospectionException,
-      ReflectionException, IOException {
-    // TODO: implement me.
-    return new MBeanInfo("", "", null, null, null, null);
-  }
-
-  public AttributeList getAttributes(ObjectName name, String[] attributes)
-      throws InstanceNotFoundException, ReflectionException,
-      IOException {
-    // TODO: implement me.
-    return new AttributeList();
-  }
-
-
   // From CompactionManagerMBean
   public List<Map<String, String>> getCompactions() {
     return new ArrayList<Map<String, String>>();
@@ -265,44 +218,9 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
     return "";
   }
 
-  // from DiagnosticEventPersistenceMBean
-  public SortedMap<Long, Map<String, Serializable>> readEvents(String eventClass, Long lastKey, int limit) {
-    //TODO: implement me
-    return new TreeMap<>();
-  }
-
-  public void enableEventPersistence(String eventClass) {
-    //TODO: implement me
-  }
-
-  public void disableEventPersistence(String eventClass) {
-    //TODO: implement me
-  }
-
-  // From LastEventIdBroadcasterMBean
-  public Map<String, Comparable> getLastEventIdsIfModified(long lastUpdate) {
-    return new HashMap<String, Comparable>();
-  }
-
   // From StreamManagerMBean
   public Set<CompositeData> getCurrentStreams() {
     return new HashSet<CompositeData>();
-  }
-
-  public void addConnectionNotificationListener(NotificationListener listener) {
-    // TODO - implement me.
-  }
-
-  public void removeConnectionNotificationListener(NotificationListener listener) throws ListenerNotFoundException {
-    // TODO - implement me.
-  }
-
-  public void addNotificationListener(NotificationListener listener, NotificationFilter filter) {
-    // TODO - implement me.
-  }
-
-  public void removeNotificationListener(NotificationListener listener) throws IOException, JMException {
-    // TODO - implement me.
   }
 
   public String getUntranslatedHost() {

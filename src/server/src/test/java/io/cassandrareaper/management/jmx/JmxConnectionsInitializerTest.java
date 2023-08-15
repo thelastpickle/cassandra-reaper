@@ -24,7 +24,6 @@ import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.Node;
 import io.cassandrareaper.crypto.Cryptograph;
-import io.cassandrareaper.management.ICassandraManagementProxy;
 import io.cassandrareaper.storage.IStorageDao;
 import io.cassandrareaper.storage.cassandra.CassandraStorageFacade;
 import io.cassandrareaper.storage.cluster.IClusterDao;
@@ -53,7 +52,7 @@ public class JmxConnectionsInitializerTest {
     AppContext context = new AppContext();
     context.config = new ReaperApplicationConfiguration();
     final Cryptograph cryptographMock = mock(Cryptograph.class);
-    final ICassandraManagementProxy cassandraManagementProxyMock = CassandraManagementProxyTest.mockJmxProxyImpl();
+    final JmxCassandraManagementProxy cassandraManagementProxyMock = CassandraManagementProxyTest.mockJmxProxyImpl();
     final AtomicInteger connectionAttempts = new AtomicInteger(0);
 
     context.config.setDatacenterAvailability(DatacenterAvailability.EACH);
@@ -62,8 +61,8 @@ public class JmxConnectionsInitializerTest {
 
     context.managementConnectionFactory = new JmxManagementConnectionFactory(context, cryptographMock) {
       @Override
-      protected ICassandraManagementProxy connectImpl(Node node) throws ReaperException {
-        final ICassandraManagementProxy jmx = cassandraManagementProxyMock;
+      protected JmxCassandraManagementProxy connectImpl(Node node) throws ReaperException {
+        final JmxCassandraManagementProxy jmx = cassandraManagementProxyMock;
         connectionAttempts.incrementAndGet();
         return jmx;
       }
@@ -96,13 +95,13 @@ public class JmxConnectionsInitializerTest {
     context.storage = mock(CassandraStorageFacade.class);
     when(context.storage.getClusterDao()).thenReturn(mock(IClusterDao.class));
     final Cryptograph cryptographMock = mock(Cryptograph.class);
-    final ICassandraManagementProxy cassandraManagementProxyMock = CassandraManagementProxyTest.mockJmxProxyImpl();
+    final JmxCassandraManagementProxy cassandraManagementProxyMock = CassandraManagementProxyTest.mockJmxProxyImpl();
     final AtomicInteger connectionAttempts = new AtomicInteger(0);
 
     context.managementConnectionFactory = new JmxManagementConnectionFactory(context, cryptographMock) {
       @Override
-      protected ICassandraManagementProxy connectImpl(Node node) throws ReaperException {
-        final ICassandraManagementProxy jmx = cassandraManagementProxyMock;
+      protected JmxCassandraManagementProxy connectImpl(Node node) throws ReaperException {
+        final JmxCassandraManagementProxy jmx = cassandraManagementProxyMock;
         connectionAttempts.incrementAndGet();
         return jmx;
       }
@@ -134,13 +133,13 @@ public class JmxConnectionsInitializerTest {
     context.storage = mock(IStorageDao.class);
     when(context.storage.getClusterDao()).thenReturn(mock(IClusterDao.class));
     final Cryptograph cryptographMock = mock(Cryptograph.class);
-    final ICassandraManagementProxy cassandraManagementProxyMock = mock(ICassandraManagementProxy.class);
+    final JmxCassandraManagementProxy cassandraManagementProxyMock = mock(JmxCassandraManagementProxy.class);
     final AtomicInteger connectionAttempts = new AtomicInteger(0);
 
     context.managementConnectionFactory = new JmxManagementConnectionFactory(context, cryptographMock) {
       @Override
-      protected ICassandraManagementProxy connectImpl(Node node) throws ReaperException {
-        final ICassandraManagementProxy jmx = cassandraManagementProxyMock;
+      protected JmxCassandraManagementProxy connectImpl(Node node) throws ReaperException {
+        final JmxCassandraManagementProxy jmx = cassandraManagementProxyMock;
         connectionAttempts.incrementAndGet();
         return jmx;
       }

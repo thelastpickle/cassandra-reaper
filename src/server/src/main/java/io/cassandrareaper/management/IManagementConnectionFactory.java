@@ -26,7 +26,6 @@ import java.util.Set;
 public interface IManagementConnectionFactory {
   ICassandraManagementProxy connectAny(Collection<Node> nodes) throws ReaperException;
 
-  //  void setAddressTranslator(AddressTranslator addressTranslator); // TODO: May not be needed for GA
   Set<String> getAccessibleDatacenters();
 
   HostConnectionCounters getHostConnectionCounters();

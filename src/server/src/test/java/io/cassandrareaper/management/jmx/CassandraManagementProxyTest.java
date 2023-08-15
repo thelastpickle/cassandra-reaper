@@ -31,10 +31,11 @@ import static org.mockito.ArgumentMatchers.any;
 
 public final class CassandraManagementProxyTest {
 
-  public static ICassandraManagementProxy mockJmxProxyImpl() throws UnknownHostException {
+  public static JmxCassandraManagementProxy mockJmxProxyImpl() throws UnknownHostException {
     JmxCassandraManagementProxy impl = Mockito.mock(JmxCassandraManagementProxy.class);
     Mockito.when(impl.getUntranslatedHost()).thenReturn("test-host-" + new Random().nextInt());
     Mockito.when(impl.getDatacenter(any())).thenReturn("dc1");
+    Mockito.when(impl.isConnectionAlive()).thenReturn(true);
     return impl;
   }
 

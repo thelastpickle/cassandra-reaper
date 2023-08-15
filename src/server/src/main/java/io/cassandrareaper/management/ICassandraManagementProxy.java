@@ -22,7 +22,6 @@ import io.cassandrareaper.core.Table;
 import io.cassandrareaper.service.RingRange;
 
 import java.io.IOException;
-import java.io.Serializable;
 import java.math.BigInteger;
 import java.net.UnknownHostException;
 import java.time.Duration;
@@ -30,19 +29,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.SortedMap;
 import java.util.concurrent.ExecutionException;
-import javax.management.AttributeList;
-import javax.management.InstanceNotFoundException;
-import javax.management.IntrospectionException;
 import javax.management.JMException;
-import javax.management.ListenerNotFoundException;
-import javax.management.MBeanInfo;
-import javax.management.NotificationFilter;
-import javax.management.NotificationListener;
-import javax.management.ObjectName;
-import javax.management.QueryExp;
-import javax.management.ReflectionException;
 import javax.management.openmbean.CompositeData;
 import javax.management.openmbean.TabularData;
 import javax.validation.constraints.NotNull;
@@ -51,7 +39,7 @@ import com.datastax.driver.core.VersionNumber;
 import org.apache.cassandra.repair.RepairParallelism;
 
 
-public interface ICassandraManagementProxy extends NotificationListener {
+public interface ICassandraManagementProxy {
 
   Duration DEFAULT_JMX_CONNECTION_TIMEOUT = Duration.ofSeconds(5);
 
@@ -102,8 +90,6 @@ public interface ICassandraManagementProxy extends NotificationListener {
    * @return list of tokens in the cluster
    */
   List<BigInteger> getTokens();
-
-  boolean isConnectionAlive();
 
   /**
    * @return true if any repairs are running on the node.
@@ -157,19 +143,6 @@ public interface ICassandraManagementProxy extends NotificationListener {
   void forceKeyspaceCompaction(boolean var1, String var2, String... var3) throws IOException, ExecutionException,
       InterruptedException;
 
-
-  // From MBeanServerConnection
-  Set<ObjectName> queryNames(ObjectName name, QueryExp query)
-      throws IOException;
-
-  MBeanInfo getMBeanInfo(ObjectName name)
-      throws InstanceNotFoundException, IntrospectionException,
-      ReflectionException, IOException;
-
-  AttributeList getAttributes(ObjectName name, String[] attributes)
-      throws InstanceNotFoundException, ReflectionException,
-      IOException;
-
   // From CompactionManagerMBean
 
   List<Map<String, String>> getCompactions();
@@ -182,28 +155,8 @@ public interface ICassandraManagementProxy extends NotificationListener {
   // From EndpointSnitchInfoMBean
   String getDatacenter(String var1) throws UnknownHostException;
 
-  // from DiagnosticEventPersistenceMBean
-  SortedMap<Long, Map<String, Serializable>> readEvents(String eventClass, Long lastKey, int limit);
-
-  void enableEventPersistence(String eventClass);
-
-  void disableEventPersistence(String eventClass);
-
-  // From LastEventIdBroadcasterMBean
-  Map<String, Comparable> getLastEventIdsIfModified(long lastUpdate);
-
   // From StreamManagerMBean
   Set<CompositeData> getCurrentStreams();
-
-
-  void addConnectionNotificationListener(NotificationListener listener);
-
-  void removeConnectionNotificationListener(NotificationListener listener) throws ListenerNotFoundException;
-
-  void addNotificationListener(NotificationListener listener, NotificationFilter filter)
-      throws IOException, JMException;
-
-  void removeNotificationListener(NotificationListener listener) throws IOException, JMException;
 
   /**
    * Compares two Cassandra versions using classes provided by the Datastax Java Driver.

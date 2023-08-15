@@ -25,6 +25,7 @@ import io.cassandrareaper.core.RepairSchedule;
 import io.cassandrareaper.core.RepairUnit;
 import io.cassandrareaper.core.Table;
 import io.cassandrareaper.management.ICassandraManagementProxy;
+import io.cassandrareaper.management.jmx.JmxCassandraManagementProxy;
 import io.cassandrareaper.management.jmx.JmxManagementConnectionFactory;
 import io.cassandrareaper.storage.MemoryStorageFacade;
 
@@ -79,9 +80,10 @@ public final class ClusterRepairSchedulerTest {
 
     context.managementConnectionFactory = mock(JmxManagementConnectionFactory.class);
     clusterRepairAuto = new ClusterRepairScheduler(context, context.storage.getRepairRunDao());
-    cassandraManagementProxy = mock(ICassandraManagementProxy.class);
+    cassandraManagementProxy = mock(JmxCassandraManagementProxy.class);
 
-    when(context.managementConnectionFactory.connectAny(Mockito.anyCollection())).thenReturn(cassandraManagementProxy);
+    when(context.managementConnectionFactory
+            .connectAny(Mockito.anyCollection())).thenReturn(cassandraManagementProxy);
   }
 
   @Test

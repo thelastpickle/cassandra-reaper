@@ -25,6 +25,7 @@ import io.cassandrareaper.crypto.Cryptograph;
 import io.cassandrareaper.crypto.NoopCrypotograph;
 import io.cassandrareaper.management.ClusterFacade;
 import io.cassandrareaper.management.ICassandraManagementProxy;
+import io.cassandrareaper.management.jmx.JmxCassandraManagementProxy;
 import io.cassandrareaper.management.jmx.JmxManagementConnectionFactory;
 import io.cassandrareaper.service.TestRepairConfiguration;
 import io.cassandrareaper.storage.MemoryStorageFacade;
@@ -654,13 +655,14 @@ public final class ClusterResourceTest {
     UriInfo uriInfo = mock(UriInfo.class);
     when(uriInfo.getBaseUriBuilder()).thenReturn(UriBuilder.fromUri(SAMPLE_URI));
 
-    ICassandraManagementProxy cassandraManagementProxy = mock(ICassandraManagementProxy.class);
+    JmxCassandraManagementProxy cassandraManagementProxy = mock(JmxCassandraManagementProxy.class);
     when(cassandraManagementProxy.getClusterName()).thenReturn(CLUSTER_NAME);
     when(cassandraManagementProxy.getPartitioner()).thenReturn(PARTITIONER);
 
     context.managementConnectionFactory = mock(JmxManagementConnectionFactory.class);
 
-    when(context.managementConnectionFactory.connectAny(Mockito.anyCollection())).thenReturn(cassandraManagementProxy);
+    when(((JmxManagementConnectionFactory) context.managementConnectionFactory).connectAny(Mockito.anyCollection()))
+            .thenReturn(cassandraManagementProxy);
 
     Cryptograph cryptograph = mock(Cryptograph.class);
     when(cryptograph.encrypt(any(String.class))).thenReturn(RandomStringUtils.randomNumeric(10));

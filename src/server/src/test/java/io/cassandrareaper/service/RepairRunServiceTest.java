@@ -30,6 +30,7 @@ import io.cassandrareaper.crypto.NoopCrypotograph;
 import io.cassandrareaper.management.ClusterFacade;
 import io.cassandrareaper.management.ICassandraManagementProxy;
 import io.cassandrareaper.management.jmx.CassandraManagementProxyTest;
+import io.cassandrareaper.management.jmx.JmxCassandraManagementProxy;
 import io.cassandrareaper.management.jmx.JmxManagementConnectionFactory;
 import io.cassandrareaper.storage.IStorageDao;
 import io.cassandrareaper.storage.MemoryStorageFacade;
@@ -268,9 +269,8 @@ public final class RepairRunServiceTest {
     AppContext context = new AppContext();
     context.storage = storage;
     context.config = new ReaperApplicationConfiguration();
-    final ICassandraManagementProxy jmx = CassandraManagementProxyTest.mockJmxProxyImpl();
+    final JmxCassandraManagementProxy jmx = CassandraManagementProxyTest.mockJmxProxyImpl();
     when(jmx.getClusterName()).thenReturn(cluster.getName());
-    when(jmx.isConnectionAlive()).thenReturn(true);
     when(jmx.getRangeToEndpointMap(anyString())).thenReturn(RepairRunnerTest.sixNodeCluster());
     EndpointSnitchInfoMBean endpointSnitchInfoMBean = mock(EndpointSnitchInfoMBean.class);
     when(endpointSnitchInfoMBean.getDatacenter()).thenReturn("dc1");
@@ -282,7 +282,7 @@ public final class RepairRunServiceTest {
 
     ClusterFacade clusterFacade = mock(ClusterFacade.class);
     when(clusterFacade.connect(any(Cluster.class))).thenReturn(jmx);
-    when(clusterFacade.nodeIsAccessibleThroughJmx(any(), any())).thenReturn(true);
+    when(clusterFacade.nodeIsDirectlyAccessible(any(), any())).thenReturn(true);
     when(clusterFacade.tokenRangeToEndpoint(any(), anyString(), any())).thenReturn(Lists.newArrayList(NODES));
     when(clusterFacade.getRangeToEndpointMap(any(), anyString()))
         .thenThrow(new ReaperException("fail"));
@@ -292,7 +292,7 @@ public final class RepairRunServiceTest {
 
     context.managementConnectionFactory = new JmxManagementConnectionFactory(context, new NoopCrypotograph()) {
       @Override
-      protected ICassandraManagementProxy connectImpl(Node host) throws ReaperException {
+      protected JmxCassandraManagementProxy connectImpl(Node host) throws ReaperException {
         return jmx;
       }
     };
@@ -356,9 +356,8 @@ public final class RepairRunServiceTest {
     context.storage = storage;
     context.config = new ReaperApplicationConfiguration();
     final Semaphore mutex = new Semaphore(0);
-    final ICassandraManagementProxy jmx = CassandraManagementProxyTest.mockJmxProxyImpl();
+    final JmxCassandraManagementProxy jmx = CassandraManagementProxyTest.mockJmxProxyImpl();
     when(jmx.getClusterName()).thenReturn(cluster.getName());
-    when(jmx.isConnectionAlive()).thenReturn(true);
     when(jmx.getRangeToEndpointMap(anyString())).thenReturn(RepairRunnerTest.sixNodeCluster());
     EndpointSnitchInfoMBean endpointSnitchInfoMBean = mock(EndpointSnitchInfoMBean.class);
     when(endpointSnitchInfoMBean.getDatacenter()).thenReturn("dc1");
@@ -370,7 +369,7 @@ public final class RepairRunServiceTest {
 
     ClusterFacade clusterFacade = mock(ClusterFacade.class);
     when(clusterFacade.connect(any(Cluster.class))).thenReturn(jmx);
-    when(clusterFacade.nodeIsAccessibleThroughJmx(any(), any())).thenReturn(true);
+    when(clusterFacade.nodeIsDirectlyAccessible(any(), any())).thenReturn(true);
     when(clusterFacade.tokenRangeToEndpoint(any(), anyString(), any())).thenReturn(Lists.newArrayList(NODES));
     when(clusterFacade.getRangeToEndpointMap(any(), anyString()))
         .thenReturn((Map) ImmutableMap.of(Lists.newArrayList("0", "100"), Lists.newArrayList(NODES)));
@@ -380,7 +379,7 @@ public final class RepairRunServiceTest {
 
     context.managementConnectionFactory = new JmxManagementConnectionFactory(context, new NoopCrypotograph()) {
       @Override
-      protected ICassandraManagementProxy connectImpl(Node host) throws ReaperException {
+      protected JmxCassandraManagementProxy connectImpl(Node host) throws ReaperException {
         return jmx;
       }
     };
@@ -431,13 +430,12 @@ public final class RepairRunServiceTest {
         .withPartitioner("Murmur3Partitioner")
         .build();
     when(jmx.getClusterName()).thenReturn(cluster.getName());
-    when(jmx.isConnectionAlive()).thenReturn(true);
     when(jmx.getRangeToEndpointMap(anyString())).thenReturn(RepairRunnerTest.sixNodeCluster());
 
 
     ClusterFacade clusterFacade = mock(ClusterFacade.class);
     when(clusterFacade.connect(any(Cluster.class))).thenReturn(jmx);
-    when(clusterFacade.nodeIsAccessibleThroughJmx(any(), any())).thenReturn(true);
+    when(clusterFacade.nodeIsDirectlyAccessible(any(), any())).thenReturn(true);
     when(clusterFacade.tokenRangeToEndpoint(any(), anyString(), any())).thenReturn(Lists.newArrayList(NODES));
     when(clusterFacade.getRangeToEndpointMap(any(), anyString()))
         .thenReturn((Map) ImmutableMap.of(Lists.newArrayList("0", "100"), Lists.newArrayList(NODES)));
@@ -491,13 +489,12 @@ public final class RepairRunServiceTest {
         .withPartitioner("Murmur3Partitioner")
         .build();
     when(jmx.getClusterName()).thenReturn(cluster.getName());
-    when(jmx.isConnectionAlive()).thenReturn(true);
     when(jmx.getRangeToEndpointMap(anyString())).thenReturn(RepairRunnerTest.sixNodeCluster());
 
 
     ClusterFacade clusterFacade = mock(ClusterFacade.class);
     when(clusterFacade.connect(any(Cluster.class))).thenReturn(jmx);
-    when(clusterFacade.nodeIsAccessibleThroughJmx(any(), any())).thenReturn(true);
+    when(clusterFacade.nodeIsDirectlyAccessible(any(), any())).thenReturn(true);
     when(clusterFacade.tokenRangeToEndpoint(any(), anyString(), any())).thenReturn(Lists.newArrayList(NODES));
     when(clusterFacade.getRangeToEndpointMap(any(), anyString()))
         .thenReturn((Map) ImmutableMap.of(Lists.newArrayList("0", "100"), Lists.newArrayList(NODES)));
@@ -547,10 +544,10 @@ public final class RepairRunServiceTest {
     context.storage = storage;
     Mockito.when(context.storage.getClusterDao()).thenReturn(Mockito.mock(IClusterDao.class));
     context.config = new ReaperApplicationConfiguration();
-    final ICassandraManagementProxy jmx = CassandraManagementProxyTest.mockJmxProxyImpl();
+    final JmxCassandraManagementProxy jmx = CassandraManagementProxyTest.mockJmxProxyImpl();
     context.managementConnectionFactory = new JmxManagementConnectionFactory(context, new NoopCrypotograph()) {
       @Override
-      public ICassandraManagementProxy connectImpl(Node host) throws ReaperException {
+      public JmxCassandraManagementProxy connectImpl(Node host) throws ReaperException {
         return jmx;
       }
     };
@@ -569,7 +566,6 @@ public final class RepairRunServiceTest {
         .withPartitioner("Murmur3Partitioner")
         .build();
     when(jmx.getClusterName()).thenReturn(cluster.getName());
-    when(jmx.isConnectionAlive()).thenReturn(true);
     when(jmx.getRangeToEndpointMap(anyString())).thenReturn(RepairRunnerTest.sixNodeCluster());
 
     RepairRunService repairRunService = RepairRunService.create(context, context.storage.getRepairRunDao());
@@ -609,10 +605,10 @@ public final class RepairRunServiceTest {
     context.storage = storage;
     context.config = new ReaperApplicationConfiguration();
     Mockito.when(context.storage.getClusterDao()).thenReturn(Mockito.mock(IClusterDao.class));
-    final ICassandraManagementProxy jmx = CassandraManagementProxyTest.mockJmxProxyImpl();
+    final JmxCassandraManagementProxy jmx = CassandraManagementProxyTest.mockJmxProxyImpl();
     context.managementConnectionFactory = new JmxManagementConnectionFactory(context, new NoopCrypotograph()) {
       @Override
-      public ICassandraManagementProxy connectImpl(Node host) throws ReaperException {
+      public JmxCassandraManagementProxy connectImpl(Node host) throws ReaperException {
         return jmx;
       }
     };
@@ -631,7 +627,6 @@ public final class RepairRunServiceTest {
         .withPartitioner("Murmur3Partitioner")
         .build();
     when(jmx.getClusterName()).thenReturn(cluster.getName());
-    when(jmx.isConnectionAlive()).thenReturn(true);
 
     ClusterFacade clusterFacade = mock(ClusterFacade.class);
     when(clusterFacade.connect(any(Cluster.class))).thenReturn(jmx);
@@ -857,9 +852,8 @@ public final class RepairRunServiceTest {
     context.storage = storage;
     context.config = new ReaperApplicationConfiguration();
     final Semaphore mutex = new Semaphore(0);
-    final ICassandraManagementProxy jmx = CassandraManagementProxyTest.mockJmxProxyImpl();
+    final JmxCassandraManagementProxy jmx = CassandraManagementProxyTest.mockJmxProxyImpl();
     when(jmx.getClusterName()).thenReturn(cluster.getName());
-    when(jmx.isConnectionAlive()).thenReturn(true);
     when(jmx.getRangeToEndpointMap(anyString())).thenReturn(RepairRunnerTest.sixNodeCluster());
     EndpointSnitchInfoMBean endpointSnitchInfoMBean = mock(EndpointSnitchInfoMBean.class);
     when(endpointSnitchInfoMBean.getDatacenter()).thenReturn("dc1");
@@ -871,7 +865,7 @@ public final class RepairRunServiceTest {
 
     ClusterFacade clusterFacade = mock(ClusterFacade.class);
     when(clusterFacade.connect(any(Cluster.class))).thenReturn(jmx);
-    when(clusterFacade.nodeIsAccessibleThroughJmx(any(), any())).thenReturn(true);
+    when(clusterFacade.nodeIsDirectlyAccessible(any(), any())).thenReturn(true);
     when(clusterFacade.tokenRangeToEndpoint(any(), anyString(), any())).thenReturn(Lists.newArrayList(NODES));
     when(clusterFacade.getRangeToEndpointMap(any(), anyString()))
         .thenReturn((Map) ImmutableMap.of(Lists.newArrayList("0", "100"), Collections.EMPTY_LIST));
@@ -881,7 +875,7 @@ public final class RepairRunServiceTest {
 
     context.managementConnectionFactory = new JmxManagementConnectionFactory(context, new NoopCrypotograph()) {
       @Override
-      protected ICassandraManagementProxy connectImpl(Node host) throws ReaperException {
+      protected JmxCassandraManagementProxy connectImpl(Node host) throws ReaperException {
         return jmx;
       }
     };

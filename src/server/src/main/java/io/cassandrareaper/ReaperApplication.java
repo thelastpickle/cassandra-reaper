@@ -232,13 +232,16 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
     environment.jersey().register(addCryptoResource);
 
     HttpClient httpClient = createHttpClient(config, environment);
-    ScheduledExecutorService ses = environment.lifecycle().scheduledExecutorService("Diagnostics").threads(6).build();
-    final DiagEventSubscriptionResource eventsResource = new DiagEventSubscriptionResource(context, httpClient, ses,
-        context.storage.getEventsDao());
-    environment.jersey().register(eventsResource);
-    final DiagEventSseResource diagEvents = new DiagEventSseResource(context, httpClient, ses,
-        context.storage.getEventsDao());
-    environment.jersey().register(diagEvents);
+
+    if (config.getHttpManagement() == null || !config.getHttpManagement().getEnabled()) {
+      ScheduledExecutorService ses = environment.lifecycle().scheduledExecutorService("Diagnostics").threads(6).build();
+      final DiagEventSubscriptionResource eventsResource = new DiagEventSubscriptionResource(context, httpClient, ses,
+          context.storage.getEventsDao());
+      environment.jersey().register(eventsResource);
+      final DiagEventSseResource diagEvents = new DiagEventSseResource(context, httpClient, ses,
+          context.storage.getEventsDao());
+      environment.jersey().register(diagEvents);
+    }
 
     if (config.isAccessControlEnabled()) {
       SessionHandler sessionHandler = new SessionHandler();

@@ -26,8 +26,7 @@ import io.cassandrareaper.core.Compaction;
 import io.cassandrareaper.core.CompactionStats;
 import io.cassandrareaper.core.JmxCredentials;
 import io.cassandrareaper.core.StreamSession;
-import io.cassandrareaper.management.ClusterFacade;
-import io.cassandrareaper.management.ICassandraManagementProxy;
+import io.cassandrareaper.management.jmx.JmxCassandraManagementProxy;
 import io.cassandrareaper.management.jmx.JmxManagementConnectionFactory;
 
 import java.io.IOException;
@@ -73,8 +72,8 @@ public class ClusterFacadeTest {
         new HashSet<String>(Arrays.asList("dc1")));
     contextSpy.managementConnectionFactory = jmxManagementConnectionFactory;
     ClusterFacade clusterFacade = ClusterFacade.create(contextSpy);
-    assertTrue(clusterFacade.nodeIsAccessibleThroughJmx("dc1", contextSpy.getLocalNodeAddress()));
-    assertFalse(clusterFacade.nodeIsAccessibleThroughJmx("dc1", "127.0.0.2"));
+    assertTrue(clusterFacade.nodeIsDirectlyAccessible("dc1", contextSpy.getLocalNodeAddress()));
+    assertFalse(clusterFacade.nodeIsDirectlyAccessible("dc1", "127.0.0.2"));
   }
 
   @Test
@@ -87,8 +86,8 @@ public class ClusterFacadeTest {
         .thenReturn(new HashSet<>(Arrays.asList("dc1")));
 
     context.config.setDatacenterAvailability(DatacenterAvailability.ALL);
-    assertTrue(ClusterFacade.create(context).nodeIsAccessibleThroughJmx("dc1", "127.0.0.1"));
-    assertTrue(ClusterFacade.create(context).nodeIsAccessibleThroughJmx("dc2", "127.0.0.2"));
+    assertTrue(ClusterFacade.create(context).nodeIsDirectlyAccessible("dc1", "127.0.0.1"));
+    assertTrue(ClusterFacade.create(context).nodeIsDirectlyAccessible("dc2", "127.0.0.2"));
   }
 
   @Test
@@ -102,9 +101,9 @@ public class ClusterFacadeTest {
 
     context.config.setDatacenterAvailability(DatacenterAvailability.LOCAL);
     // it's in another DC so LOCAL disallows attempting it
-    assertFalse(ClusterFacade.create(context).nodeIsAccessibleThroughJmx("dc2", "127.0.0.2"));
+    assertFalse(ClusterFacade.create(context).nodeIsDirectlyAccessible("dc2", "127.0.0.2"));
     // Should be accessible, same DC
-    assertTrue(ClusterFacade.create(context).nodeIsAccessibleThroughJmx("dc1", "127.0.0.2"));
+    assertTrue(ClusterFacade.create(context).nodeIsDirectlyAccessible("dc1", "127.0.0.2"));
   }
 
   @Test
@@ -118,9 +117,9 @@ public class ClusterFacadeTest {
 
     context.config.setDatacenterAvailability(DatacenterAvailability.EACH);
     // Should not be accessible as it's in another DC
-    assertFalse(ClusterFacade.create(context).nodeIsAccessibleThroughJmx("dc2", "127.0.0.2"));
+    assertFalse(ClusterFacade.create(context).nodeIsDirectlyAccessible("dc2", "127.0.0.2"));
     // Should be accessible, same DC
-    assertTrue(ClusterFacade.create(context).nodeIsAccessibleThroughJmx("dc1", "127.0.0.2"));
+    assertTrue(ClusterFacade.create(context).nodeIsDirectlyAccessible("dc1", "127.0.0.2"));
   }
 
   @Test
@@ -210,7 +209,7 @@ public class ClusterFacadeTest {
 
     contextSpy.config.setDatacenterAvailability(DatacenterAvailability.SIDECAR);
     JmxManagementConnectionFactory jmxManagementConnectionFactory = mock(JmxManagementConnectionFactory.class);
-    ICassandraManagementProxy mockProxy = mock(ICassandraManagementProxy.class);
+    JmxCassandraManagementProxy mockProxy = mock(JmxCassandraManagementProxy.class);
     when(jmxManagementConnectionFactory.connectAny(any(Collection.class))).thenReturn(mockProxy);
     contextSpy.managementConnectionFactory = jmxManagementConnectionFactory;
     final ClusterFacade cf = ClusterFacade.create(contextSpy);
