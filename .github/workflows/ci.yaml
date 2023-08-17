@@ -316,7 +316,7 @@ jobs:
           JDK_VERSION: ${{ matrix.jdk-version }}
 
       - name: Run Tests
-        run: ./.github/scripts/run-tests.sh || ./.github/scripts/run-tests.sh
+        run: ./.github/scripts/run-tests.sh
         env:
           TEST_TYPE: ${{ matrix.test-type }}
           CASSANDRA_VERSION: ${{ matrix.cassandra-version }}
