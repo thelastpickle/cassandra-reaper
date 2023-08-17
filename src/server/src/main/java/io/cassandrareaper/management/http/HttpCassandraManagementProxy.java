@@ -18,6 +18,7 @@
 package io.cassandrareaper.management.http;
 
 import io.cassandrareaper.ReaperException;
+import io.cassandrareaper.core.Snapshot;
 import io.cassandrareaper.core.Table;
 import io.cassandrareaper.management.ICassandraManagementProxy;
 import io.cassandrareaper.management.RepairStatusHandler;
@@ -37,7 +38,6 @@ import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import javax.management.JMException;
 import javax.management.openmbean.CompositeData;
-import javax.management.openmbean.TabularData;
 import javax.validation.constraints.NotNull;
 
 import com.codahale.metrics.MetricRegistry;
@@ -187,9 +187,8 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
     // TODO: implement me.
   }
 
-  public Map<String, TabularData> getSnapshotDetails() {
-    // TODO: implement me.
-    return new HashMap<>();
+  public List<Snapshot> listSnapshots() throws UnsupportedOperationException {
+    return new ArrayList<Snapshot>();
   }
 
   public void takeSnapshot(String var1, String... var2) throws IOException {
