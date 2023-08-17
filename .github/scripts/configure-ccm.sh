@@ -71,7 +71,6 @@ case "${TEST_TYPE}" in
         mkdir -p ~/.local
         cp ./.github/files/jmxremote.password ~/.local/jmxremote.password
         chmod 400 ~/.local/jmxremote.password
-        ls -lrt /opt/hostedtoolcache/
         for jdk in /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/8*/; 
         do 
           sudo chmod 777 "${jdk/}"x64/jre/lib/management/jmxremote.access

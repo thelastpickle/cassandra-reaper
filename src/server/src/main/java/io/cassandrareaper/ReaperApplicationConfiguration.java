@@ -708,7 +708,7 @@ public final class ReaperApplicationConfiguration extends Configuration {
     @JsonProperty
     private Boolean enabled = false;
 
-    public Boolean getEnabled() {
+    public Boolean isEnabled() {
       return enabled;
     }
     // TODO: Add ports and root paths here.

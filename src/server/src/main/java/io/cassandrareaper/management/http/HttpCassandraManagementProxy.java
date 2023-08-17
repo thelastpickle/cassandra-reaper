@@ -43,6 +43,7 @@ import javax.validation.constraints.NotNull;
 import com.codahale.metrics.MetricRegistry;
 import com.datastax.mgmtapi.client.api.DefaultApi;
 import com.datastax.mgmtapi.client.invoker.ApiClient;
+import com.datastax.mgmtapi.client.invoker.ApiException;
 import org.apache.cassandra.repair.RepairParallelism;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -141,7 +142,13 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
 
   @Override
   public String getCassandraVersion() {
-    return null; // TODO: implement me.
+    try {
+      return apiClient.getReleaseVersion();
+    } catch (ApiException ae) {
+      LOG.error("Failed to get Cassandra version", ae);
+    }
+    // should not get here
+    return "UNKNOWN";
   }
 
   @Override

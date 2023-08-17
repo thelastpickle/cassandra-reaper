@@ -233,7 +233,7 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
 
     HttpClient httpClient = createHttpClient(config, environment);
 
-    if (config.getHttpManagement() == null || !config.getHttpManagement().getEnabled()) {
+    if (config.getHttpManagement() == null || !config.getHttpManagement().isEnabled()) {
       ScheduledExecutorService ses = environment.lifecycle().scheduledExecutorService("Diagnostics").threads(6).build();
       final DiagEventSubscriptionResource eventsResource = new DiagEventSubscriptionResource(context, httpClient, ses,
           context.storage.getEventsDao());
@@ -302,7 +302,7 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
   private void initializeManagement(AppContext context, Cryptograph cryptograph) {
     if (context.managementConnectionFactory == null) {
       LOG.info("no management connection factory given in context, creating default");
-      if (context.config.getHttpManagement() == null || !context.config.getHttpManagement().getEnabled()) {
+      if (context.config.getHttpManagement() == null || !context.config.getHttpManagement().isEnabled()) {
         LOG.info("HTTP management connection config not set, or set disabled. Creating JMX connection factory instead");
         context.managementConnectionFactory = new JmxManagementConnectionFactory(context, cryptograph);
       } else {
