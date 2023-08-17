@@ -1,0 +1,47 @@
+{
+    "entity": [
+        {
+            "Column family name": "booya0",
+            "Keyspace name": "booya",
+            "Size on disk": "119.26 KiB",
+            "Snapshot name": "testSnapshot",
+            "True size": "413 bytes"
+        },
+        {
+            "Column family name": "booya1",
+            "Keyspace name": "booya",
+            "Size on disk": "8.29 KiB",
+            "Snapshot name": "testSnapshot",
+            "True size": "256 bytes"
+        },
+        {
+            "Column family name": "booya2",
+            "Keyspace name": "booya",
+            "Size on disk": "8.27 KiB",
+            "Snapshot name": "testSnapshot",
+            "True size": "10 bytes"
+        }
+    ],
+    "variant": {
+        "language": null,
+        "mediaType": {
+            "type": "application",
+            "subtype": "json",
+            "parameters": {},
+            "wildcardType": false,
+            "wildcardSubtype": false
+        },
+        "encoding": null,
+        "languageString": null
+    },
+    "annotations": [],
+    "mediaType": {
+        "type": "application",
+        "subtype": "json",
+        "parameters": {},
+        "wildcardType": false,
+        "wildcardSubtype": false
+    },
+    "language": null,
+    "encoding": null
+}
