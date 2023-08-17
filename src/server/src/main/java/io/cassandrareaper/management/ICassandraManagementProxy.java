@@ -18,6 +18,7 @@
 package io.cassandrareaper.management;
 
 import io.cassandrareaper.ReaperException;
+import io.cassandrareaper.core.Snapshot;
 import io.cassandrareaper.core.Table;
 import io.cassandrareaper.service.RingRange;
 
@@ -32,7 +33,6 @@ import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import javax.management.JMException;
 import javax.management.openmbean.CompositeData;
-import javax.management.openmbean.TabularData;
 import javax.validation.constraints.NotNull;
 
 import com.datastax.driver.core.VersionNumber;
@@ -42,6 +42,13 @@ import org.apache.cassandra.repair.RepairParallelism;
 public interface ICassandraManagementProxy {
 
   Duration DEFAULT_JMX_CONNECTION_TIMEOUT = Duration.ofSeconds(5);
+  long KB_FACTOR = 1000;
+  long KIB_FACTOR = 1024;
+  long MB_FACTOR = 1000 * KB_FACTOR;
+  long GB_FACTOR = 1000 * MB_FACTOR;
+  long MIB_FACTOR = 1024 * KIB_FACTOR;
+  long GIB_FACTOR = 1024 * MIB_FACTOR;
+
 
   /**
    * Terminates all ongoing repairs on the node this proxy is connected to
@@ -132,7 +139,7 @@ public interface ICassandraManagementProxy {
   // From StorageServiceMBean
   void clearSnapshot(String var1, String... var2) throws IOException;
 
-  Map<String, TabularData> getSnapshotDetails();
+  List<Snapshot> listSnapshots() throws UnsupportedOperationException;
 
   void takeSnapshot(String var1, String... var2) throws IOException;
 
@@ -176,5 +183,31 @@ public interface ICassandraManagementProxy {
   }
 
   String getUntranslatedHost();
+
+  static double parseHumanReadableSize(String readableSize) {
+    int spaceNdx = readableSize.indexOf(" ");
+
+    double ret = readableSize.contains(".")
+        ? Double.parseDouble(readableSize.substring(0, spaceNdx))
+        : Double.parseDouble(readableSize.substring(0, spaceNdx).replace(",", "."));
+
+    switch (readableSize.substring(spaceNdx + 1)) {
+      case "GB":
+        return ret * GB_FACTOR;
+      case "GiB":
+        return ret * GIB_FACTOR;
+      case "MB":
+        return ret * MB_FACTOR;
+      case "MiB":
+        return ret * MIB_FACTOR;
+      case "KB":
+        return ret * KB_FACTOR;
+      case "KiB":
+        return ret * KIB_FACTOR;
+      default:
+        return 0;
+    }
+  }
+
 
 }

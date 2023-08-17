@@ -21,6 +21,7 @@ import io.cassandrareaper.ReaperApplicationConfiguration.Jmxmp;
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.JmxCredentials;
+import io.cassandrareaper.core.Snapshot;
 import io.cassandrareaper.core.Table;
 import io.cassandrareaper.crypto.Cryptograph;
 import io.cassandrareaper.management.ICassandraManagementProxy;
@@ -986,8 +987,69 @@ public final class JmxCassandraManagementProxy implements ICassandraManagementPr
     this.getStorageServiceMBean().clearSnapshot(var1, var2);
   }
 
-  public Map<String, TabularData> getSnapshotDetails() {
+  private Map<String, TabularData> getSnapshotDetails() {
+
     return this.getStorageServiceMBean().getSnapshotDetails();
+
+  }
+
+  public List<Snapshot> listSnapshots() throws UnsupportedOperationException {
+    List<Snapshot> snapshots = Lists.newArrayList();
+
+    String cassandraVersion = getCassandraVersion();
+    if (ICassandraManagementProxy.versionCompare(cassandraVersion, "2.1.0") < 0) {
+      // 2.0 and prior do not allow to list snapshots
+      throw new UnsupportedOperationException(
+          "Snapshot listing is not supported in Cassandra 2.0 and prior.");
+    }
+
+    Map<String, TabularData> snapshotDetails = Collections.emptyMap();
+    try {
+      snapshotDetails = getSnapshotDetails();
+    } catch (RuntimeException ex) {
+      LOG.warn("failed getting snapshots details from " + getClusterName(), ex);
+    }
+
+    if (snapshotDetails.isEmpty()) {
+      LOG.debug("There are no snapshots on host {}", getHost());
+      return snapshots;
+    }
+    // display column names only once
+    final List<String> indexNames
+        = snapshotDetails.entrySet().iterator().next().getValue().getTabularType().getIndexNames();
+
+    for (final Map.Entry<String, TabularData> snapshotDetail : snapshotDetails.entrySet()) {
+      Set<?> values = snapshotDetail.getValue().keySet();
+      for (Object eachValue : values) {
+        int index = 0;
+        Snapshot.Builder snapshotBuilder = Snapshot.builder().withHost(getHost());
+        final List<?> valueList = (List<?>) eachValue;
+        for (Object value : valueList) {
+          switch (indexNames.get(index)) {
+            case "Snapshot name":
+              snapshotBuilder.withName((String) value);
+              break;
+            case "Keyspace name":
+              snapshotBuilder.withKeyspace((String) value);
+              break;
+            case "Column family name":
+              snapshotBuilder.withTable((String) value);
+              break;
+            case "True size":
+              snapshotBuilder.withTrueSize(ICassandraManagementProxy.parseHumanReadableSize((String) value));
+              break;
+            case "Size on disk":
+              snapshotBuilder.withSizeOnDisk(ICassandraManagementProxy.parseHumanReadableSize((String) value));
+              break;
+            default:
+              break;
+          }
+          index++;
+        }
+        snapshots.add(snapshotBuilder.withClusterName(getClusterName()).build());
+      }
+    }
+    return snapshots;
   }
 
   public void takeSnapshot(String var1, String... var2) throws IOException {
