@@ -19,6 +19,7 @@ package io.cassandrareaper.management.jmx;
 
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.management.ICassandraManagementProxy;
+import io.cassandrareaper.management.StreamsProxy;
 
 import java.net.UnknownHostException;
 import java.util.Random;
@@ -33,9 +34,11 @@ public final class CassandraManagementProxyTest {
 
   public static JmxCassandraManagementProxy mockJmxProxyImpl() throws UnknownHostException {
     JmxCassandraManagementProxy impl = Mockito.mock(JmxCassandraManagementProxy.class);
+    StreamsProxy streamsImpl = Mockito.mock(JmxStreamsProxy.class);
     Mockito.when(impl.getUntranslatedHost()).thenReturn("test-host-" + new Random().nextInt());
     Mockito.when(impl.getDatacenter(any())).thenReturn("dc1");
     Mockito.when(impl.isConnectionAlive()).thenReturn(true);
+    Mockito.when(impl.getStreamsProxy()).thenReturn(streamsImpl);
     return impl;
   }
 

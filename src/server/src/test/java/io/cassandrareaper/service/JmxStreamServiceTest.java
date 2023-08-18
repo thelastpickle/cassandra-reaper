@@ -24,9 +24,11 @@ import io.cassandrareaper.core.Node;
 import io.cassandrareaper.core.StreamSession;
 import io.cassandrareaper.management.ClusterFacade;
 import io.cassandrareaper.management.HostConnectionCounters;
-import io.cassandrareaper.management.ICassandraManagementProxy;
 import io.cassandrareaper.management.jmx.CassandraManagementProxyTest;
+import io.cassandrareaper.management.jmx.JmxCassandraManagementProxy;
 import io.cassandrareaper.management.jmx.JmxManagementConnectionFactory;
+import io.cassandrareaper.management.jmx.JmxStreamsProxy;
+import io.cassandrareaper.management.jmx.JmxStreamsProxyUtil;
 
 import java.io.IOException;
 import java.net.URL;
@@ -56,12 +58,12 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 
-public class StreamServiceTest {
+public class JmxStreamServiceTest {
 
   @Test
   public void testListStreams()
       throws ReaperException, ClassNotFoundException, InterruptedException, UnknownHostException {
-    ICassandraManagementProxy proxy = CassandraManagementProxyTest.mockJmxProxyImpl();
+    JmxCassandraManagementProxy proxy = CassandraManagementProxyTest.mockJmxProxyImpl();
 
     AppContext cxt = new AppContext();
     cxt.config = TestRepairConfiguration.defaultConfig();
@@ -76,7 +78,7 @@ public class StreamServiceTest {
         .listStreams(Node.builder().withHostname("127.0.0.1").withCluster(Cluster.builder().withJmxPort(7199)
             .withSeedHosts(ImmutableSet.of("127.0.0.1")).withName("test").build()).build());
 
-    verify(proxy, times(1)).getCurrentStreams();
+    verify(proxy, times(1)).getStreamsProxy();
   }
 
   @Test
@@ -92,7 +94,7 @@ public class StreamServiceTest {
     assertEquals(ref.replaceAll("\\s", ""), streamSession.toString().replaceAll("\\s", ""));
 
     // init the stream manager
-    ICassandraManagementProxy proxy = (ICassandraManagementProxy) mock(
+    JmxCassandraManagementProxy proxy = (JmxCassandraManagementProxy) mock(
         Class.forName("io.cassandrareaper.management.jmx.JmxCassandraManagementProxy"));
 
     AppContext cxt = new AppContext();
@@ -104,6 +106,8 @@ public class StreamServiceTest {
     when(connectionCounters.getSuccessfulConnections(any())).thenReturn(1);
     ClusterFacade clusterFacadeSpy = Mockito.spy(ClusterFacade.create(cxt));
     Mockito.doReturn("dc1").when(clusterFacadeSpy).getDatacenter(any(), any());
+    JmxStreamsProxy streamsProxy = JmxStreamsProxyUtil.createProxy(proxy);
+    when(proxy.getStreamsProxy()).thenReturn(streamsProxy);
     when(proxy.getCurrentStreams()).thenReturn(ImmutableSet.of(streamSession));
 
     // do the actual pullStreams() call, which should succeed
@@ -112,7 +116,7 @@ public class StreamServiceTest {
         .listStreams(Node.builder().withHostname("127.0.0.1").withCluster(Cluster.builder().withJmxPort(7199)
             .withSeedHosts(ImmutableSet.of("127.0.0.1")).withName("test").build()).build());
 
-    verify(proxy, times(1)).getCurrentStreams();
+    verify(proxy, times(1)).getStreamsProxy();
     assertEquals(1, result.size());
   }
 
@@ -129,7 +133,7 @@ public class StreamServiceTest {
     assertEquals(ref.replaceAll("\\s", ""), streamSession.toString().replaceAll("\\s", ""));
 
     // init the stream manager
-    ICassandraManagementProxy proxy = (ICassandraManagementProxy) mock(
+    JmxCassandraManagementProxy proxy = (JmxCassandraManagementProxy) mock(
         Class.forName("io.cassandrareaper.management.jmx.JmxCassandraManagementProxy"));
 
     AppContext cxt = new AppContext();
@@ -141,6 +145,8 @@ public class StreamServiceTest {
     when(connectionCounters.getSuccessfulConnections(any())).thenReturn(1);
     ClusterFacade clusterFacadeSpy = Mockito.spy(ClusterFacade.create(cxt));
     Mockito.doReturn("dc1").when(clusterFacadeSpy).getDatacenter(any(), any());
+    JmxStreamsProxy streamsProxy = JmxStreamsProxyUtil.createProxy(proxy);
+    when(proxy.getStreamsProxy()).thenReturn(streamsProxy);
     when(proxy.getCurrentStreams()).thenReturn(ImmutableSet.of(streamSession));
 
     // do the actual pullStreams() call, which should succeed
@@ -149,7 +155,7 @@ public class StreamServiceTest {
         .listStreams(Node.builder().withHostname("127.0.0.1").withCluster(Cluster.builder().withJmxPort(7199)
             .withSeedHosts(ImmutableSet.of("127.0.0.1")).withName("test").build()).build());
 
-    verify(proxy, times(1)).getCurrentStreams();
+    verify(proxy, times(1)).getStreamsProxy();
     assertEquals(1, result.size());
   }
 
@@ -166,7 +172,7 @@ public class StreamServiceTest {
     assertEquals(ref.replaceAll("\\s", ""), streamSession.toString().replaceAll("\\s", ""));
 
     // init the stream manager
-    ICassandraManagementProxy proxy = (ICassandraManagementProxy) mock(
+    JmxCassandraManagementProxy proxy = (JmxCassandraManagementProxy) mock(
         Class.forName("io.cassandrareaper.management.jmx.JmxCassandraManagementProxy"));
 
     AppContext cxt = new AppContext();
@@ -178,6 +184,8 @@ public class StreamServiceTest {
     when(connectionCounters.getSuccessfulConnections(any())).thenReturn(1);
     ClusterFacade clusterFacadeSpy = Mockito.spy(ClusterFacade.create(cxt));
     Mockito.doReturn("dc1").when(clusterFacadeSpy).getDatacenter(any(), any());
+    JmxStreamsProxy streamsProxy = JmxStreamsProxyUtil.createProxy(proxy);
+    when(proxy.getStreamsProxy()).thenReturn(streamsProxy);
     when(proxy.getCurrentStreams()).thenReturn(ImmutableSet.of(streamSession));
 
     // do the actual pullStreams() call, which should succeed
@@ -186,7 +194,7 @@ public class StreamServiceTest {
         .listStreams(Node.builder().withHostname("127.0.0.1").withCluster(Cluster.builder().withJmxPort(7199)
             .withSeedHosts(ImmutableSet.of("127.0.0.1")).withName("test").build()).build());
 
-    verify(proxy, times(1)).getCurrentStreams();
+    verify(proxy, times(1)).getStreamsProxy();
     assertEquals(1, result.size());
   }
 
@@ -203,7 +211,7 @@ public class StreamServiceTest {
     assertEquals(ref.replaceAll("\\s", ""), streamSession.toString().replaceAll("\\s", ""));
 
     // init the stream manager
-    ICassandraManagementProxy proxy = (ICassandraManagementProxy) mock(
+    JmxCassandraManagementProxy proxy = (JmxCassandraManagementProxy) mock(
         Class.forName("io.cassandrareaper.management.jmx.JmxCassandraManagementProxy"));
 
     AppContext cxt = new AppContext();
@@ -215,6 +223,8 @@ public class StreamServiceTest {
     when(connectionCounters.getSuccessfulConnections(any())).thenReturn(1);
     ClusterFacade clusterFacadeSpy = Mockito.spy(ClusterFacade.create(cxt));
     Mockito.doReturn("dc1").when(clusterFacadeSpy).getDatacenter(any(), any());
+    JmxStreamsProxy streamsProxy = JmxStreamsProxyUtil.createProxy(proxy);
+    when(proxy.getStreamsProxy()).thenReturn(streamsProxy);
     when(proxy.getCurrentStreams()).thenReturn(ImmutableSet.of(streamSession));
 
     // do the actual pullStreams() call, which should succeed
@@ -223,7 +233,7 @@ public class StreamServiceTest {
         .listStreams(Node.builder().withHostname("127.0.0.1").withCluster(Cluster.builder().withJmxPort(7199)
             .withSeedHosts(ImmutableSet.of("127.0.0.1")).withName("test").build()).build());
 
-    verify(proxy, times(1)).getCurrentStreams();
+    verify(proxy, times(1)).getStreamsProxy();
     assertEquals(1, result.size());
   }
 
@@ -237,7 +247,7 @@ public class StreamServiceTest {
     String ref = Resources.toString(url, Charsets.UTF_8);
     assertEquals(ref.replaceAll("\\s", ""), streamSession.toString().replaceAll("\\s", ""));
 
-    ICassandraManagementProxy proxy = (ICassandraManagementProxy) mock(
+    JmxCassandraManagementProxy proxy = (JmxCassandraManagementProxy) mock(
         Class.forName("io.cassandrareaper.management.jmx.JmxCassandraManagementProxy"));
 
     AppContext cxt = new AppContext();
@@ -250,6 +260,8 @@ public class StreamServiceTest {
     ClusterFacade clusterFacadeSpy = Mockito.spy(ClusterFacade.create(cxt));
     Mockito.doReturn("dc1").when(clusterFacadeSpy).getDatacenter(any(), any());
 
+    JmxStreamsProxy streamsProxy = JmxStreamsProxyUtil.createProxy(proxy);
+    when(proxy.getStreamsProxy()).thenReturn(streamsProxy);
     when(proxy.getCurrentStreams()).thenReturn(ImmutableSet.of(streamSession));
 
     // do the actual pullStreams() call, which should succeed
@@ -258,7 +270,7 @@ public class StreamServiceTest {
         .listStreams(Node.builder().withHostname("127.0.0.1").withCluster(Cluster.builder().withJmxPort(7199)
             .withSeedHosts(ImmutableSet.of("127.0.0.1")).withName("test").build()).build());
 
-    verify(proxy, times(1)).getCurrentStreams();
+    verify(proxy, times(1)).getStreamsProxy();
     assertEquals(1, result.size());
 
   }

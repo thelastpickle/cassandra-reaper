@@ -844,7 +844,7 @@ public final class ClusterFacade {
    * @throws ReaperException any runtime exception we can catch in the process
    */
   public List<StreamSession> listStreamsDirect(Node node) throws ReaperException {
-    return StreamsProxy.create(connect(node)).listStreams(node);
+    return connect(node).getStreamsProxy().listStreams(node);
   }
 
   private Set<Table> getTablesForKeyspaceImpl(Cluster cluster, String keyspaceName) throws ReaperException {

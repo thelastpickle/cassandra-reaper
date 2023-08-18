@@ -26,6 +26,7 @@ import io.cassandrareaper.core.Table;
 import io.cassandrareaper.crypto.Cryptograph;
 import io.cassandrareaper.management.ICassandraManagementProxy;
 import io.cassandrareaper.management.RepairStatusHandler;
+import io.cassandrareaper.management.StreamsProxy;
 import io.cassandrareaper.service.RingRange;
 
 import java.io.IOException;
@@ -135,6 +136,7 @@ public final class JmxCassandraManagementProxy implements ICassandraManagementPr
   private final DiagnosticEventPersistenceMBean diagEventProxy;
   private final LastEventIdBroadcasterMBean lastEventIdProxy;
   private final Jmxmp jmxmp;
+  private final StreamsProxy streamsProxy = new JmxStreamsProxy(this);
 
   private JmxCassandraManagementProxy(
       String host,
@@ -1131,6 +1133,10 @@ public final class JmxCassandraManagementProxy implements ICassandraManagementPr
     } else {
       return ImmutableSet.of();
     }
+  }
+
+  public StreamsProxy getStreamsProxy() {
+    return this.streamsProxy;
   }
 
   private static final class JmxColumnFamily {

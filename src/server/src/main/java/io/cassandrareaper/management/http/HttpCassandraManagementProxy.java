@@ -22,6 +22,7 @@ import io.cassandrareaper.core.Snapshot;
 import io.cassandrareaper.core.Table;
 import io.cassandrareaper.management.ICassandraManagementProxy;
 import io.cassandrareaper.management.RepairStatusHandler;
+import io.cassandrareaper.management.StreamsProxy;
 import io.cassandrareaper.service.RingRange;
 
 import java.io.IOException;
@@ -54,11 +55,12 @@ import org.slf4j.LoggerFactory;
 
 public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
   private static final Logger LOG = LoggerFactory.getLogger(HttpCassandraManagementProxy.class);
-  final String host;
-  final MetricRegistry metricRegistry;
-  final String rootPath;
-  final InetSocketAddress endpoint;
-  final DefaultApi apiClient;
+  private final String host;
+  private final MetricRegistry metricRegistry;
+  private final String rootPath;
+  private final InetSocketAddress endpoint;
+  private final DefaultApi apiClient;
+  private final StreamsProxy streamsProxy = new HttpStreamsProxy(this);
 
   public HttpCassandraManagementProxy(MetricRegistry metricRegistry,
                                       String rootPath,
@@ -331,5 +333,8 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
     return "";
   }
 
-
+  @Override
+  public StreamsProxy getStreamsProxy() {
+    return this.streamsProxy;
+  }
 }

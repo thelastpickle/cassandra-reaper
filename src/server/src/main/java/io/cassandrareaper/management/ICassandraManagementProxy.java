@@ -32,7 +32,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import javax.management.JMException;
-import javax.management.openmbean.CompositeData;
 import javax.validation.constraints.NotNull;
 
 import com.datastax.driver.core.VersionNumber;
@@ -162,9 +161,6 @@ public interface ICassandraManagementProxy {
   // From EndpointSnitchInfoMBean
   String getDatacenter(String var1) throws UnknownHostException;
 
-  // From StreamManagerMBean
-  Set<CompositeData> getCurrentStreams();
-
   /**
    * Compares two Cassandra versions using classes provided by the Datastax Java Driver.
    *
@@ -183,6 +179,14 @@ public interface ICassandraManagementProxy {
   }
 
   String getUntranslatedHost();
+
+  /**
+   * Retrieves a StreamsProxy implementation. Implementations should only create a single instance and cache/store
+   * the instance. Subsequent calls to this method should return the stored/cached instance.
+   *
+   * @return A StreamsProxy implementation.
+   */
+  StreamsProxy getStreamsProxy();
 
   static double parseHumanReadableSize(String readableSize) {
     int spaceNdx = readableSize.indexOf(" ");

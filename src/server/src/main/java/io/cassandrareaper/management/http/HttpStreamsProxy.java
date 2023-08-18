@@ -1,6 +1,5 @@
 /*
- * Copyright 2014-2017 Spotify AB
- * Copyright 2016-2019 The Last Pickle Ltd
+ * Copyright 2023-2023 DataStax, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,14 +14,32 @@
  * limitations under the License.
  */
 
-package io.cassandrareaper.management;
+
+package io.cassandrareaper.management.http;
 
 import io.cassandrareaper.core.Node;
 import io.cassandrareaper.core.StreamSession;
+import io.cassandrareaper.management.StreamsProxy;
 
 import java.util.List;
 
-public interface StreamsProxy {
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-  List<StreamSession> listStreams(Node node);
+
+public final class HttpStreamsProxy implements StreamsProxy {
+
+  private static final Logger LOG = LoggerFactory.getLogger(HttpStreamsProxy.class);
+
+  private final HttpCassandraManagementProxy proxy;
+
+  HttpStreamsProxy(HttpCassandraManagementProxy proxy) {
+    this.proxy = proxy;
+  }
+
+  @Override
+  public List<StreamSession> listStreams(Node node) {
+    throw new UnsupportedOperationException("Not supported yet.");
+  }
+
 }

@@ -1,6 +1,6 @@
 /*
- * Copyright 2014-2017 Spotify AB
- * Copyright 2016-2019 The Last Pickle Ltd
+ * Copyright 2023-2023 DataStax, Inc.
+ *
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,14 +15,16 @@
  * limitations under the License.
  */
 
-package io.cassandrareaper.management;
+package io.cassandrareaper.management.jmx;
 
-import io.cassandrareaper.core.Node;
-import io.cassandrareaper.core.StreamSession;
 
-import java.util.List;
+public final class JmxStreamsProxyUtil {
 
-public interface StreamsProxy {
+  private JmxStreamsProxyUtil() {
+    super();
+  }
 
-  List<StreamSession> listStreams(Node node);
+  public static JmxStreamsProxy createProxy(JmxCassandraManagementProxy proxy) {
+    return new JmxStreamsProxy(proxy);
+  }
 }
