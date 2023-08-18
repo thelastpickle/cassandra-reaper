@@ -430,3 +430,214 @@ Feature: Using Reaper
     When the last added cluster is force deleted
     Then reaper has no longer the last added cluster in storage
   ${cucumber.upgrade-versions}
+
+  @sidecar
+  @cassandra_3_11_onwards
+  @http_management
+  Scenario Outline: Call the method cancelAllRepairs on HttpManagementProxy
+    Given that reaper <version> is running
+#    TODO: implement me
+
+  @sidecar
+  @cassandra_3_11_onwards
+  @http_management
+  Scenario Outline: Call the method getCassandraVersion on HttpManagementProxy
+    Given that reaper <version> is running
+#    TODO: implement me
+  ${cucumber.upgrade-versions}
+
+  @sidecar
+  @cassandra_3_11_onwards
+  @http_management
+  Scenario Outline: Call the method getClusterName on HttpManagementProxy
+    Given that reaper <version> is running
+#    TODO: implement me
+  ${cucumber.upgrade-versions}
+
+  @sidecar
+  @cassandra_3_11_onwards
+  @http_management
+  Scenario Outline: Call the method getEndpointToHostId on HttpManagementProxy
+    Given that reaper <version> is running
+#    TODO: implement me
+  ${cucumber.upgrade-versions}
+
+
+  @sidecar
+  @cassandra_3_11_onwards
+  @http_management
+  Scenario Outline: Call the method getKeyspaces on HttpManagementProxy
+    Given that reaper <version> is running
+#    TODO: implement me
+    ${cucumber.upgrade-versions}
+
+  @sidecar
+  @cassandra_3_11_onwards
+  @http_management
+  Scenario Outline: Call the method getLiveNodes on HttpManagementProxy
+    Given that reaper <version> is running
+#    TODO: implement me
+  ${cucumber.upgrade-versions}
+
+  @sidecar
+  @cassandra_3_11_onwards
+  @http_management
+  Scenario Outline: Call the method getPartitioner on HttpManagementProxy
+    Given that reaper <version> is running
+#    TODO: implement me
+  ${cucumber.upgrade-versions}
+
+  @sidecar
+  @cassandra_3_11_onwards
+  @http_management
+  Scenario Outline: Call the method getPendingCompactions on HttpManagementProxy
+    Given that reaper <version> is running
+#    TODO: implement me
+  ${cucumber.upgrade-versions}
+
+  @sidecar
+  @cassandra_3_11_onwards
+  @http_management
+  Scenario Outline: Call the method getRangeToEndpointMap on HttpManagementProxy
+    Given that reaper <version> is running
+#    TODO: implement me
+
+  @sidecar
+  @cassandra_3_11_onwards
+  @http_management
+  Scenario Outline: Call the method getTablesForKeyspace on HttpManagementProxy
+    Given that reaper <version> is running
+#    TODO: implement me
+  ${cucumber.upgrade-versions}
+
+  @sidecar
+  @cassandra_3_11_onwards
+  @http_management
+  Scenario Outline: Call the method getTokens on HttpManagementProxy
+    Given that reaper <version> is running
+#    TODO: implement me
+
+  @sidecar
+  @cassandra_3_11_onwards
+  @http_management
+  Scenario Outline: Call the method isRepairRunning on HttpManagementProxy
+    Given that reaper <version> is running
+#    TODO: implement me
+  ${cucumber.upgrade-versions}
+
+
+  @sidecar
+  @cassandra_3_11_onwards
+  @http_management
+  Scenario Outline: Call the method listTablesByKeyspace on HttpManagementProxy
+    Given that reaper <version> is running
+#    TODO: implement me
+  ${cucumber.upgrade-versions}
+
+  @sidecar
+  @cassandra_3_11_onwards
+  @http_management
+  Scenario Outline: Call the method close on HttpManagementProxy
+    Given that reaper <version> is running
+#    TODO: implement me
+  ${cucumber.upgrade-versions}
+
+  @sidecar
+  @cassandra_3_11_onwards
+  @http_management
+  Scenario Outline: Call the method removeRepairStatusHandler on HttpManagementProxy
+    Given that reaper <version> is running
+#    TODO: implement me
+  ${cucumber.upgrade-versions}
+
+  @sidecar
+  @cassandra_3_11_onwards
+  @http_management
+  Scenario Outline: Call the method getRunningRepairMetricsPost22 on HttpManagementProxy
+    Given that reaper <version> is running
+#    TODO: implement me
+  ${cucumber.upgrade-versions}
+
+  @sidecar
+  @cassandra_3_11_onwards
+  @http_management
+  Scenario Outline: Call the method clearSnapshot on HttpManagementProxy
+    Given that reaper <version> is running
+#    TODO: implement me
+  ${cucumber.upgrade-versions}
+
+
+  @sidecar
+  @cassandra_3_11_onwards
+  @http_management
+  Scenario Outline: Call the method listSnapshots on HttpManagementProxy
+    Given that reaper <version> is running
+#    TODO: implement me
+  ${cucumber.upgrade-versions}
+
+
+  @sidecar
+  @cassandra_3_11_onwards
+  @http_management
+  Scenario Outline: Call the method takeSnapshot on HttpManagementProxy
+    Given that reaper <version> is running
+#    TODO: implement me
+  ${cucumber.upgrade-versions}
+
+
+  @sidecar
+  @cassandra_3_11_onwards
+  @http_management
+  Scenario Outline: Call the method takeColumnFamilySnapshot on HttpManagementProxy
+    Given that reaper <version> is running
+#    TODO: implement me
+  ${cucumber.upgrade-versions}
+
+  @sidecar
+  @cassandra_3_11_onwards
+  @http_management
+  Scenario Outline: Call the method getTokenToEndpointMap on HttpManagementProxy
+    Given that reaper <version> is running
+#    TODO: implement me
+  ${cucumber.upgrade-versions}
+
+
+  @sidecar
+  @cassandra_3_11_onwards
+  @http_management
+  Scenario Outline: Call the method getCompactions on HttpManagementProxy
+    Given that reaper <version> is running
+#    TODO: implement me
+  ${cucumber.upgrade-versions}
+
+  @sidecar
+  @cassandra_3_11_onwards
+  @http_management
+  Scenario Outline: Call the method getAllEndpointStates on HttpManagementProxy
+    Given that reaper <version> is running
+#    TODO: implement me
+  ${cucumber.upgrade-versions}
+
+  @sidecar
+  @cassandra_3_11_onwards
+  @http_management
+  Scenario Outline: Call the method getSimpleStates on HttpManagementProxy
+    Given that reaper <version> is running
+#    TODO: implement me
+  ${cucumber.upgrade-versions}
+
+  @sidecar
+  @cassandra_3_11_onwards
+  @http_management
+  Scenario Outline: Call the method getSimpleStates on HttpManagementProxy
+    Given that reaper <version> is running
+#    TODO: implement me
+  ${cucumber.upgrade-versions}
+
+  @sidecar
+  @cassandra_3_11_onwards
+  @http_management
+  Scenario Outline: Call the method getCurrentStreams on HttpManagementProxy
+    Given that reaper <version> is running
+#    TODO: implement me
+  ${cucumber.upgrade-versions}

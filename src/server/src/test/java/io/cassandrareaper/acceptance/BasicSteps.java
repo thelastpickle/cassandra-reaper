@@ -17,6 +17,7 @@
 
 package io.cassandrareaper.acceptance;
 
+import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.SimpleReaperClient;
 import io.cassandrareaper.core.DiagEventSubscription;
 import io.cassandrareaper.core.DroppedMessages;
@@ -24,14 +25,21 @@ import io.cassandrareaper.core.MetricsHistogram;
 import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairSegment;
 import io.cassandrareaper.core.Snapshot;
+import io.cassandrareaper.core.Table;
 import io.cassandrareaper.core.ThreadPoolStat;
+import io.cassandrareaper.management.RepairStatusHandler;
 import io.cassandrareaper.resources.view.RepairRunStatus;
 import io.cassandrareaper.resources.view.RepairScheduleStatus;
 import io.cassandrareaper.service.RepairRunService;
+import io.cassandrareaper.service.RingRange;
 import io.cassandrareaper.storage.DiagEventSubscriptionMapper;
 import io.cassandrareaper.storage.cassandra.CassandraStorageFacade;
 
+import java.io.IOException;
+import java.math.BigInteger;
+import java.net.UnknownHostException;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -42,9 +50,13 @@ import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
+import javax.management.JMException;
+import javax.management.openmbean.CompositeData;
+import javax.validation.constraints.NotNull;
 import javax.ws.rs.client.Client;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.sse.SseEventSource;
@@ -68,6 +80,7 @@ import cucumber.api.java.en.And;
 import cucumber.api.java.en.Given;
 import cucumber.api.java.en.Then;
 import cucumber.api.java.en.When;
+import org.apache.cassandra.repair.RepairParallelism;
 import org.apache.commons.lang3.StringUtils;
 import org.assertj.core.api.Assertions;
 import org.awaitility.Duration;
@@ -3094,4 +3107,155 @@ public final class BasicSteps {
       );
     }
   }
+  @When("^we call cancelAllRepairs HTTP method$")
+  public void cancelAllRepairs() throws Throwable {
+    // TODO: implement me
+  }
+
+  @When("^we call getCassandraVersion HTTP method$")
+  public void getCassandraVersionTest() throws Throwable {
+    // TODO: implement me
+  }
+
+  @When("^we call getClusterName HTTP method$")
+  public void getClusterName() throws Throwable {
+    // TODO: implement me
+  }
+
+  @When("^we call getEndpointToHostId HTTP method$")
+  public void getEndpointToHostId() throws Throwable {
+    // TODO: implement me
+  }
+
+  @When("^we call getLocalEndpoint HTTP method$")
+  public void getLocalEndpoint() throws Throwable {
+    // TODO: implement me
+  }
+
+  @When("^we call getHost HTTP method$")
+  public void getHost() throws Throwable {
+    // TODO: implement me
+  }
+
+  @When("^we call getKeyspaces HTTP method$")
+  public void getKeyspaces() throws Throwable {
+    // TODO: implement me
+  }
+
+  @When("^we call getLiveNodes HTTP method$")
+  public void getLiveNodes() throws Throwable {
+    // TODO: implement me
+  }
+
+  @When("^we call getPartitioner HTTP method$")
+  public void getPartitioner() throws Throwable {
+    // TODO: implement me
+  }
+  @When("^we call getPendingCompactions HTTP method$")
+  public void getPendingCompactions() throws Throwable {
+    // TODO: implement me
+  }
+
+  @When("^we call getRangeToEndpointMap HTTP method$")
+  public void getRangeToEndpointMap() throws Throwable {
+    // TODO: implement me
+  }
+
+  @When("^we call getTablesForKeyspace HTTP method$")
+  public void getTablesForKeyspace() throws Throwable {
+    // TODO: implement me
+  }
+
+  @When("^we call getTokens HTTP method$")
+  public void getTokens() throws Throwable {
+    // TODO: implement me
+  }
+
+  @When("^we call isRepairRunning HTTP method$")
+  public void isRepairRunning() throws Throwable {
+    // TODO: implement me
+  }
+
+  @When("^we call listTablesByKeyspace HTTP method$")
+  public void listTablesByKeyspace() throws Throwable {
+    // TODO: implement me
+  }
+
+  @When("^we call triggerRepair HTTP method$")
+  public void triggerRepair() throws Throwable {
+    // TODO: implement me
+  }
+
+
+  @When("^we call close HTTP method$")
+  public void close() throws Throwable {
+    // TODO: implement me
+  }
+
+  @When("^we call removeRepairStatusHandler HTTP method$")
+  public void removeRepairStatusHandler() throws Throwable {
+    // TODO: implement me
+  }
+
+  @When("^we call getRunningRepairMetricsPost22 HTTP method$")
+  public void getRunningRepairMetricsPost22() throws Throwable {
+    // TODO: implement me
+  }
+
+  @When("^we call clearSnapshot HTTP method$")
+  public void clearSnapshot() throws Throwable {
+    // TODO: implement me
+  }
+
+  @When("^we call listSnapshots HTTP method$")
+  public void listSnapshots() throws Throwable {
+    // TODO: implement me
+  }
+
+  @When("^we call takeSnapshot HTTP method$")
+  public void takeSnapshot() throws Throwable {
+    // TODO: implement me
+  }
+
+  @When("^we call takeColumnFamilySnapshot HTTP method$")
+  public void takeColumnFamilySnapshot() throws Throwable {
+    // TODO: implement me
+  }
+
+  @When("^we call getTokenToEndpointMap HTTP method$")
+  public void getTokenToEndpointMap() throws Throwable {
+    // TODO: implement me
+  }
+
+
+  @When("^we call forceKeyspaceCompaction HTTP method$")
+  public void forceKeyspaceCompaction() throws Throwable {
+    // TODO: implement me
+  }
+
+  @When("^we call getCompactions HTTP method$")
+  public void getCompactions() throws Throwable {
+    // TODO: implement me
+  }
+
+  @When("^we call getAllEndpointStates HTTP method$")
+  public void getAllEndpointStates() throws Throwable {
+    // TODO: implement me
+  }
+
+  @When("^we call getSimpleStates HTTP method$")
+  public void getSimpleStates() throws Throwable {
+    // TODO: implement me
+  }
+
+  @When("^we call getDatacenter HTTP method$")
+  public void getDatacenter() throws Throwable {
+    // TODO: implement me
+  }
+
+  @When("^we call getCurrentStreams HTTP method$")
+  public void getCurrentStreams() throws Throwable {
+    // TODO: implement me
+  }
+
 }
