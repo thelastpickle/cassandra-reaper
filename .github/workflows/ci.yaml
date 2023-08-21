@@ -326,6 +326,13 @@ jobs:
           CUCUMBER_OPTIONS: ${{ matrix.cucumber-options }}
           JDK_VERSION: ${{ matrix.jdk-version }}
 
+      - name: Setup tmate session
+        if: ${{ failure() }}
+        uses: mxschmitt/action-tmate@v3
+        timeout-minutes: 15
+        with:
+          limit-access-to-actor: true
+
       - uses: codecov/codecov-action@v1
 
   its-each:
