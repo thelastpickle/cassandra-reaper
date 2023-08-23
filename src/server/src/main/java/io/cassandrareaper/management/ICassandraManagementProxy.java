@@ -204,6 +204,8 @@ public interface ICassandraManagementProxy {
         return ret * KB_FACTOR;
       case "KiB":
         return ret * KIB_FACTOR;
+      case "bytes":
+        return ret;
       default:
         return 0;
     }
