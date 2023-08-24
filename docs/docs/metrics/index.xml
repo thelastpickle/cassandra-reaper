@@ -5,11 +5,7 @@
     <link>http://cassandra-reaper.io/docs/metrics/</link>
     <description>Recent content on Reaper: Easy Repair Management for Apache Cassandra</description>
     <generator>Hugo -- gohugo.io</generator>
-    <language>en-us</language>
-    
-	<atom:link href="http://cassandra-reaper.io/docs/metrics/index.xml" rel="self" type="application/rss+xml" />
-    
-    
+    <language>en-us</language><atom:link href="http://cassandra-reaper.io/docs/metrics/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title></title>
       <link>http://cassandra-reaper.io/docs/metrics/dashboards/</link>
@@ -40,7 +36,7 @@ Metrics: frequency: 1 minute reporters: - type: graphite host: &amp;lt;host_addr
       <guid>http://cassandra-reaper.io/docs/metrics/prometheus/</guid>
       <description>Prometheus Reaper exposes all its metrics in a Prometheus-ready format under the /prometheusMetrics endpoint on the admin port.
 It&amp;rsquo;s fairly straightforward to configure Prometheus to grab them. The config can look something like:
-scrape_configs: - job_name: &amp;#39;reaper&amp;#39; metrics_path: &amp;#39;/prometheusMetrics&amp;#39; scrape_interval: 5s static_configs: - targets: [&amp;#39;host.docker.internal:8081&amp;#39;]  The host.docker.internal tells a Prometheus instance running inside a docker container to connect to the host&amp;rsquo;s 8081 port where Raper runs from a JAR.  Metric Relabelling Reaper doesn&amp;rsquo;t do anything with the metrics.</description>
+scrape_configs: - job_name: &amp;#39;reaper&amp;#39; metrics_path: &amp;#39;/prometheusMetrics&amp;#39; scrape_interval: 5s static_configs: - targets: [&amp;#39;host.docker.internal:8081&amp;#39;]  The host.docker.internal tells a Prometheus instance running inside a docker container to connect to the host&amp;rsquo;s 8081 port where Raper runs from a JAR.  </description>
     </item>
     
   </channel>

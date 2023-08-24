@@ -13,7 +13,7 @@
 
   
 
-  <meta name="generator" content="Hugo 0.69.2" />
+  <meta name="generator" content="Hugo 0.79.0" />
 
   <link href='//fonts.googleapis.com/css?family=Roboto:400,100,100italic,300,300italic,500,700,800' rel='stylesheet' type='text/css'>
 
@@ -326,13 +326,13 @@
                         <div>
                           <h2 id="graphite-reporter">Graphite Reporter</h2>
 <p>Reaper can be configured to periodically report metrics to a Graphite host. This can be done using the following properties in the Reaper configuration YAML file.</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#66d9ef">Metrics</span>:
-  <span style="color:#66d9ef">frequency</span>: <span style="color:#ae81ff">1</span> minute
-  <span style="color:#66d9ef">reporters</span>:
-    - <span style="color:#66d9ef">type</span>: graphite
-      <span style="color:#66d9ef">host</span>: &lt;host_address<span style="color:#e6db74">&gt;
-</span><span style="color:#e6db74">      port: &lt;port_number&gt;</span>
-      <span style="color:#66d9ef">prefix</span>: &lt;prefix&gt;
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#f92672">Metrics</span>:
+  <span style="color:#f92672">frequency</span>: <span style="color:#ae81ff">1</span> <span style="color:#ae81ff">minute</span>
+  <span style="color:#f92672">reporters</span>:
+    - <span style="color:#f92672">type</span>: <span style="color:#ae81ff">graphite</span>
+      <span style="color:#f92672">host</span>: <span style="color:#ae81ff">&lt;host_address&gt;</span>
+      <span style="color:#f92672">port</span>: <span style="color:#ae81ff">&lt;port_number&gt;</span>
+      <span style="color:#f92672">prefix</span>: <span style="color:#ae81ff">&lt;prefix&gt;</span>
 </code></pre></div><p>Where:</p>
 <ul>
 <li><code>host_address</code> is hostname of the Graphite server to report to.</li>

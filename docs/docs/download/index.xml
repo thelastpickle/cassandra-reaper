@@ -5,11 +5,7 @@
     <link>http://cassandra-reaper.io/docs/download/</link>
     <description>Recent content on Reaper: Easy Repair Management for Apache Cassandra</description>
     <generator>Hugo -- gohugo.io</generator>
-    <language>en-us</language>
-    
-	<atom:link href="http://cassandra-reaper.io/docs/download/index.xml" rel="self" type="application/rss+xml" />
-    
-    
+    <language>en-us</language><atom:link href="http://cassandra-reaper.io/docs/download/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title></title>
       <link>http://cassandra-reaper.io/docs/download/building/</link>

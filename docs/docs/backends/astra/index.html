@@ -13,7 +13,7 @@
 
   
 
-  <meta name="generator" content="Hugo 0.69.2" />
+  <meta name="generator" content="Hugo 0.79.0" />
 
   <link href='//fonts.googleapis.com/css?family=Roboto:400,100,100italic,300,300italic,500,700,800' rel='stylesheet' type='text/css'>
 
@@ -326,19 +326,20 @@
                         <div>
                           <h1 id="astra-backend">Astra Backend</h1>
 <p>To use Astra (Cassandra managed service by Datastax) as the persistent storage for Reaper, the <code>storageType</code> setting must be set to <strong>astra</strong> in the Reaper configuration YAML file. In addition, the connection details for the Astra cluster being used to store Reaper data must be specified in the configuration YAML file. An example of how to configure Astra as persistent storage for Reaper can be found in the <em><a href="https://github.com/thelastpickle/cassandra-reaper/blob/master/src/packaging/resource/cassandra-reaper-astra.yaml">cassandra-reaper-astra.yaml</a></em>.</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#66d9ef">storageType</span>: astra
-<span style="color:#66d9ef">cassandra</span>:
-  <span style="color:#66d9ef">clusterName</span>: <span style="color:#e6db74">&#34;reaper&#34;</span>
-  <span style="color:#66d9ef">contactPoints</span>: [<span style="color:#e6db74">&#34;astra host from the secure bundle config.json file&#34;</span>]
-  <span style="color:#66d9ef">keyspace</span>: reaper_db
-  <span style="color:#66d9ef">port</span>: &lt;cql port found in the secure bundle cqlshrc file<span style="color:#e6db74">&gt;
-</span><span style="color:#e6db74">  authProvider:</span>
-    <span style="color:#66d9ef">type</span>: plainText
-    <span style="color:#66d9ef">username</span>: reaper
-    <span style="color:#66d9ef">password</span>: ReaperOnAstraRocks
-  <span style="color:#66d9ef">ssl</span>:
-    <span style="color:#66d9ef">type</span>: jdk
-</code></pre></div><p>The CQL port to connect to can be found in the <code>cqlshrc</code> file of Astra&rsquo;s secure connect bundle. The port found in <code>config.json</code> is the metadata port which cannot be used for CQL connections.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#f92672">storageType</span>: <span style="color:#ae81ff">astra</span>
+<span style="color:#f92672">cassandra</span>:
+  <span style="color:#f92672">clusterName</span>: <span style="color:#e6db74">&#34;reaper&#34;</span>
+  <span style="color:#f92672">contactPoints</span>: [<span style="color:#e6db74">&#34;astra host from the secure bundle config.json file&#34;</span>]
+  <span style="color:#f92672">keyspace</span>: <span style="color:#ae81ff">reaper_db</span>
+  <span style="color:#f92672">port</span>: <span style="color:#ae81ff">&lt;cql port found in the secure bundle cqlshrc file&gt;</span>
+  <span style="color:#f92672">authProvider</span>:
+    <span style="color:#f92672">type</span>: <span style="color:#ae81ff">plainText</span>
+    <span style="color:#f92672">username</span>: <span style="color:#ae81ff">&lt;client id&gt;</span>
+    <span style="color:#f92672">password</span>: <span style="color:#ae81ff">&lt;client secret&gt;</span>
+  <span style="color:#f92672">ssl</span>:
+    <span style="color:#f92672">type</span>: <span style="color:#ae81ff">jdk</span>
+</code></pre></div><p>Generate a token in the Astra UI and use the token client id as the username and the token client secret as the password (you will not need the token itself).</p>
+<p>The CQL port to connect to can be found in the <code>cqlshrc</code> file of Astra&rsquo;s secure connect bundle. The port found in <code>config.json</code> is the metadata port which cannot be used for CQL connections.</p>
 <p>The Astra backend provides the same capabilities as <a href="http://cassandra-reaper.io/docs/backends/cassandra/">the Cassanda backend</a>.</p>
 <p>Schema initialization and migration will be done automatically upon startup.</p>
 <h2 id="ssl-settings">SSL settings</h2>

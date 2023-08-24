@@ -13,7 +13,7 @@
 
   
 
-  <meta name="generator" content="Hugo 0.69.2" />
+  <meta name="generator" content="Hugo 0.79.0" />
 
   <link href='//fonts.googleapis.com/css?family=Roboto:400,100,100italic,300,300italic,500,700,800' rel='stylesheet' type='text/css'>
 
@@ -337,23 +337,23 @@ Note that Cassandra backend configuration relies on the <a href="https://github.
 <!-- raw HTML omitted -->
 <h3 id="cassandra"><code>cassandra</code></h3>
 <p>Settings to configure Reaper to use Cassandra for storage of its control data. Reaper uses the Cassandra Java driver version <a href="http://docs.datastax.com/en/developer/java-driver/3.1/">3.1.4</a> to perform operations on the cluster. An example of the configuration settings for the driver are as follows.</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#66d9ef">cassandra</span>:
-  <span style="color:#66d9ef">clusterName</span>: <span style="color:#e6db74">&#34;test&#34;</span>
-  <span style="color:#66d9ef">contactPoints</span>: [<span style="color:#e6db74">&#34;127.0.0.1&#34;</span>]
-  <span style="color:#66d9ef">port</span>: <span style="color:#ae81ff">9042</span>
-  <span style="color:#66d9ef">keyspace</span>: reaper_db
-  <span style="color:#66d9ef">loadBalancingPolicy</span>:
-    <span style="color:#66d9ef">type</span>: tokenAware
-    <span style="color:#66d9ef">shuffleReplicas</span>: <span style="color:#66d9ef">true</span>
-    <span style="color:#66d9ef">subPolicy</span>:
-      <span style="color:#66d9ef">type</span>: dcAwareRoundRobin
-      <span style="color:#66d9ef">localDC</span>:
-      <span style="color:#66d9ef">usedHostsPerRemoteDC</span>: <span style="color:#ae81ff">0</span>
-      <span style="color:#66d9ef">allowRemoteDCsForLocalConsistencyLevel</span>: <span style="color:#66d9ef">false</span>
-  <span style="color:#66d9ef">authProvider</span>:
-    <span style="color:#66d9ef">type</span>: plainText
-    <span style="color:#66d9ef">username</span>: cassandra
-    <span style="color:#66d9ef">password</span>: cassandra
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#f92672">cassandra</span>:
+  <span style="color:#f92672">clusterName</span>: <span style="color:#e6db74">&#34;test&#34;</span>
+  <span style="color:#f92672">contactPoints</span>: [<span style="color:#e6db74">&#34;127.0.0.1&#34;</span>]
+  <span style="color:#f92672">port</span>: <span style="color:#ae81ff">9042</span>
+  <span style="color:#f92672">keyspace</span>: <span style="color:#ae81ff">reaper_db</span>
+  <span style="color:#f92672">loadBalancingPolicy</span>:
+    <span style="color:#f92672">type</span>: <span style="color:#ae81ff">tokenAware</span>
+    <span style="color:#f92672">shuffleReplicas</span>: <span style="color:#66d9ef">true</span>
+    <span style="color:#f92672">subPolicy</span>:
+      <span style="color:#f92672">type</span>: <span style="color:#ae81ff">dcAwareRoundRobin</span>
+      <span style="color:#f92672">localDC</span>:
+      <span style="color:#f92672">usedHostsPerRemoteDC</span>: <span style="color:#ae81ff">0</span>
+      <span style="color:#f92672">allowRemoteDCsForLocalConsistencyLevel</span>: <span style="color:#66d9ef">false</span>
+  <span style="color:#f92672">authProvider</span>:
+    <span style="color:#f92672">type</span>: <span style="color:#ae81ff">plainText</span>
+    <span style="color:#f92672">username</span>: <span style="color:#ae81ff">cassandra</span>
+    <span style="color:#f92672">password</span>: <span style="color:#ae81ff">cassandra</span>
 </code></pre></div><p>Definitions for some of the above sub-settings are as follows.</p>
 <h4 id="clustername"><code>clusterName</code></h4>
 <p>Type: <em>String</em></p>
@@ -388,65 +388,61 @@ Note that Cassandra backend configuration relies on the <a href="https://github.
 <p>Type: <em>String</em></p>
 <p>Cassandra native protocol password.</p>
 <h4 id="full-configuration-reference">Full Configuration Reference</h4>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#66d9ef">clusterName</span>:
-<span style="color:#66d9ef">keyspace</span>:
-<span style="color:#66d9ef">validationQuery</span>:
-<span style="color:#66d9ef">healthCheckTimeout</span>:
-<span style="color:#66d9ef">contactPoints</span>:
-<span style="color:#66d9ef">port</span>:
-<span style="color:#66d9ef">protocolVersion</span>:
-<span style="color:#66d9ef">compression</span>:
-<span style="color:#66d9ef">maxSchemaAgreementWait</span>:
-<span style="color:#66d9ef">ssl</span>:
-  <span style="color:#66d9ef">type</span>:
-<span style="color:#66d9ef">addressTranslator</span>:
-  <span style="color:#66d9ef">type</span>:
-<span style="color:#66d9ef">reconnectionPolicy</span>:
-  <span style="color:#66d9ef">type</span>:
-<span style="color:#66d9ef">authProvider</span>:
-  <span style="color:#66d9ef">type</span>:
-<span style="color:#66d9ef">retryPolicy</span>:
-  <span style="color:#66d9ef">type</span>:
-<span style="color:#66d9ef">loadBalancingPolicy</span>:
-  <span style="color:#66d9ef">type</span>:
-<span style="color:#66d9ef">speculativeExecutionPolicy</span>:
-  <span style="color:#66d9ef">type</span>:
-<span style="color:#66d9ef">queryOptions</span>:
-  <span style="color:#66d9ef">consistencyLevel</span>:
-  <span style="color:#66d9ef">serialConsistencyLevel</span>:
-  <span style="color:#66d9ef">fetchSize</span>:
-<span style="color:#66d9ef">socketOptions</span>:
-  <span style="color:#66d9ef">connectTimeoutMillis</span>:
-  <span style="color:#66d9ef">readTimeoutMillis</span>:
-  <span style="color:#66d9ef">keepAlive</span>:
-  <span style="color:#66d9ef">reuseAddress</span>:
-  <span style="color:#66d9ef">soLinger</span>:
-  <span style="color:#66d9ef">tcpNoDelay</span>:
-  <span style="color:#66d9ef">receiveBufferSize</span>:
-  <span style="color:#66d9ef">sendBufferSize</span>:
-<span style="color:#66d9ef">poolingOptions</span>:
-  <span style="color:#66d9ef">heartbeatInterval</span>:
-  <span style="color:#66d9ef">poolTimeout</span>:
-  <span style="color:#66d9ef">local</span>:
-    <span style="color:#66d9ef">maxRequestsPerConnection</span>:
-    <span style="color:#66d9ef">newConnectionThreshold</span>:
-    <span style="color:#66d9ef">coreConnections</span>:
-    <span style="color:#66d9ef">maxConnections</span>:
-  <span style="color:#66d9ef">remote</span>:
-    <span style="color:#66d9ef">maxRequestsPerConnection</span>:
-    <span style="color:#66d9ef">newConnectionThreshold</span>:
-    <span style="color:#66d9ef">coreConnections</span>:
-    <span style="color:#66d9ef">maxConnections</span>:
-<span style="color:#66d9ef">metricsEnabled</span>:
-<span style="color:#66d9ef">jmxEnabled</span>:
-<span style="color:#66d9ef">shutdownGracePeriod</span>:
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#f92672">clusterName</span>:
+<span style="color:#f92672">keyspace</span>:
+<span style="color:#f92672">validationQuery</span>:
+<span style="color:#f92672">healthCheckTimeout</span>:
+<span style="color:#f92672">contactPoints</span>:
+<span style="color:#f92672">port</span>:
+<span style="color:#f92672">protocolVersion</span>:
+<span style="color:#f92672">compression</span>:
+<span style="color:#f92672">maxSchemaAgreementWait</span>:
+<span style="color:#f92672">ssl</span>:
+  <span style="color:#f92672">type</span>:
+<span style="color:#f92672">addressTranslator</span>:
+  <span style="color:#f92672">type</span>:
+<span style="color:#f92672">reconnectionPolicy</span>:
+  <span style="color:#f92672">type</span>:
+<span style="color:#f92672">authProvider</span>:
+  <span style="color:#f92672">type</span>:
+<span style="color:#f92672">retryPolicy</span>:
+  <span style="color:#f92672">type</span>:
+<span style="color:#f92672">loadBalancingPolicy</span>:
+  <span style="color:#f92672">type</span>:
+<span style="color:#f92672">speculativeExecutionPolicy</span>:
+  <span style="color:#f92672">type</span>:
+<span style="color:#f92672">socketOptions</span>:
+  <span style="color:#f92672">connectTimeoutMillis</span>:
+  <span style="color:#f92672">readTimeoutMillis</span>:
+  <span style="color:#f92672">keepAlive</span>:
+  <span style="color:#f92672">reuseAddress</span>:
+  <span style="color:#f92672">soLinger</span>:
+  <span style="color:#f92672">tcpNoDelay</span>:
+  <span style="color:#f92672">receiveBufferSize</span>:
+  <span style="color:#f92672">sendBufferSize</span>:
+<span style="color:#f92672">poolingOptions</span>:
+  <span style="color:#f92672">heartbeatInterval</span>:
+  <span style="color:#f92672">poolTimeout</span>:
+  <span style="color:#f92672">local</span>:
+    <span style="color:#f92672">maxRequestsPerConnection</span>:
+    <span style="color:#f92672">newConnectionThreshold</span>:
+    <span style="color:#f92672">coreConnections</span>:
+    <span style="color:#f92672">maxConnections</span>:
+  <span style="color:#f92672">remote</span>:
+    <span style="color:#f92672">maxRequestsPerConnection</span>:
+    <span style="color:#f92672">newConnectionThreshold</span>:
+    <span style="color:#f92672">coreConnections</span>:
+    <span style="color:#f92672">maxConnections</span>:
+<span style="color:#f92672">metricsEnabled</span>:
+<span style="color:#f92672">jmxEnabled</span>:
+<span style="color:#f92672">shutdownGracePeriod</span>:
 </code></pre></div><h2 id="h2-or-postgres-database-settings">H2 or Postgres Database Settings</h2>
 <p><strong>Removed in v3.0.0</strong></p>
 <p>The following settings are specific to a Reaper deployment that is backed by either a H2 or Postgres database. An example of the configuration settings for a Postgres database are as follows.</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#66d9ef">postgres</span>:
-  <span style="color:#66d9ef">url</span>: jdbc:postgresql://<span style="color:#ae81ff">127.0.0.1</span>/reaper
-  <span style="color:#66d9ef">user</span>: postgres
-  <span style="color:#66d9ef">password</span>:
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#f92672">postgres</span>:
+  <span style="color:#f92672">url</span>: <span style="color:#ae81ff">jdbc:postgresql://127.0.0.1/reaper</span>
+  <span style="color:#f92672">user</span>: <span style="color:#ae81ff">postgres</span>
+  <span style="color:#f92672">password</span>:
 </code></pre></div><p>Definitions for the above sub-settings are as follows.</p>
 <!-- raw HTML omitted -->
 <h3 id="h2"><code>h2</code></h3>
