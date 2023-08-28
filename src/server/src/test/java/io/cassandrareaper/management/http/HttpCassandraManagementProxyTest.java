@@ -110,8 +110,10 @@ public class HttpCassandraManagementProxyTest {
         this.getClass().getResource(filename).openStream(), clazz);
   }
 
+  // Verify all the maps are correctly updated in the triggerRepair and removeRepairHandler which get called
+  // from other classes
   @Test
-  public void testRepairHandlers() throws Exception {
+  public void testRepairProcessMapHandlers() throws Exception {
     HttpManagementConnectionFactory connectionFactory = Mockito.mock(HttpManagementConnectionFactory.class);
     DefaultApi mockClient = Mockito.mock(DefaultApi.class);
     doReturn("repair-123456789").when(mockClient).repair1(any());
@@ -157,12 +159,12 @@ public class HttpCassandraManagementProxyTest {
         mock(InetSocketAddress.class), executorService, mockClient);
     when(connectionFactory.connectAny(any())).thenReturn(httpCassandraManagementProxy);
 
+    // Since we don't have existing implementation of RepairStatusHandler interface, we'll create a small "mock
+    // implementation" here to catch all the calls to the handler() method
     final AtomicInteger callTimes = new AtomicInteger(0);
     RepairStatusHandler workAroundHandler = (repairNumber, status, progress, message, cassandraManagementProxy)
         -> callTimes.incrementAndGet();
 
-    //    RepairStatusHandler repairStatusHandler = mock(RepairStatusHandler.class);
-    //    doNothing().when(repairStatusHandler).handle(any(), any(), any(), any(), any());
     int repairNo = httpCassandraManagementProxy.triggerRepair(BigInteger.ZERO, BigInteger.ONE, "ks",
         RepairParallelism.PARALLEL,
         Collections.singleton("table"), true, Collections.emptyList(), workAroundHandler,
@@ -191,7 +193,6 @@ public class HttpCassandraManagementProxyTest {
 
     verify(mockClient, times(1)).getJobStatus(any());
     assertEquals(1, callTimes.get());
-    //    verify(repairStatusHandler, times(1)).handle(any(), any(), any(), any(), any());
 
     StatusChange secondSc = new StatusChange();
     secondSc.setStatus("COMPLETE");

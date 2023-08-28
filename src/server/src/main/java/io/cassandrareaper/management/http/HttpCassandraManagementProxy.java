@@ -95,7 +95,7 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
     this.statusTracker = executor;
 
     // TODO Perhaps the poll interval should be configurable through context.config ?
-    this.scheduleJobPoller(statusTracker, DEFAULT_POLL_INTERVAL_IN_MILLISECONDS);
+    this.scheduleJobPoller(DEFAULT_POLL_INTERVAL_IN_MILLISECONDS);
   }
 
   @Override
@@ -402,8 +402,8 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
   }
 
   @VisibleForTesting
-  private void scheduleJobPoller(ScheduledExecutorService scheduler, int pollInterval) {
-    scheduler.scheduleWithFixedDelay(
+  private void scheduleJobPoller(int pollInterval) {
+    statusTracker.scheduleWithFixedDelay(
         notificationsTracker(),
         pollInterval * 2,
         pollInterval,
