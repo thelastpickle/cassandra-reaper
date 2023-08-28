@@ -108,7 +108,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 
-public final class JmxCassandraManagementProxy implements ICassandraManagementProxy, NotificationListener  {
+public final class JmxCassandraManagementProxy implements ICassandraManagementProxy, NotificationListener {
 
   private static final Logger LOG = LoggerFactory.getLogger(ICassandraManagementProxy.class);
 
@@ -1064,9 +1064,10 @@ public final class JmxCassandraManagementProxy implements ICassandraManagementPr
     return this.getStorageServiceMBean().getTokenToEndpointMap();
   }
 
-  public void forceKeyspaceCompaction(boolean var1, String var2, String... var3) throws IOException, ExecutionException,
+  public void forceKeyspaceCompaction(boolean splitOutput, String keyspaceName, String... columnFamilies) throws
+      IOException, ExecutionException,
       InterruptedException {
-    this.getStorageServiceMBean().forceKeyspaceCompaction(var1, var2, var3);
+    this.getStorageServiceMBean().forceKeyspaceCompaction(splitOutput, keyspaceName, columnFamilies);
   }
 
   // From MBeanServerConnection
