@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2020 The Last Pickle Ltd
+ * Copyright 2023-2023 DataStax, Inc.
  *
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -22,6 +22,7 @@ import io.cassandrareaper.core.Snapshot;
 import io.cassandrareaper.core.Table;
 import io.cassandrareaper.management.ICassandraManagementProxy;
 import io.cassandrareaper.management.RepairStatusHandler;
+import io.cassandrareaper.management.http.models.JobStatusTracker;
 import io.cassandrareaper.service.RingRange;
 
 import java.io.IOException;
@@ -35,25 +36,37 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import javax.management.JMException;
 import javax.management.openmbean.CompositeData;
 import javax.validation.constraints.NotNull;
 
 import com.codahale.metrics.MetricRegistry;
 import com.datastax.mgmtapi.client.api.DefaultApi;
-import com.datastax.mgmtapi.client.invoker.ApiClient;
 import com.datastax.mgmtapi.client.invoker.ApiException;
 import com.datastax.mgmtapi.client.model.EndpointStates;
+import com.datastax.mgmtapi.client.model.Job;
+import com.datastax.mgmtapi.client.model.RepairRequest;
 import com.datastax.mgmtapi.client.model.SnapshotDetails;
+import com.datastax.mgmtapi.client.model.StatusChange;
 import com.datastax.mgmtapi.client.model.TakeSnapshotRequest;
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.Maps;
 import org.apache.cassandra.repair.RepairParallelism;
+import org.apache.cassandra.utils.progress.ProgressEventType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
+
+  public static final int DEFAULT_POLL_INTERVAL_IN_MILLISECONDS = 5000;
   private static final Logger LOG = LoggerFactory.getLogger(HttpCassandraManagementProxy.class);
   final String host;
   final MetricRegistry metricRegistry;
@@ -61,16 +74,28 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
   final InetSocketAddress endpoint;
   final DefaultApi apiClient;
 
+  final ConcurrentMap<Integer, RepairStatusHandler> repairStatusHandlers = Maps.newConcurrentMap();
+  final ConcurrentMap<String, JobStatusTracker> jobTracker = Maps.newConcurrentMap();
+  final ConcurrentMap<Integer, ExecutorService> repairStatusExecutors = Maps.newConcurrentMap();
+
+
+  private ScheduledExecutorService statusTracker;
+
   public HttpCassandraManagementProxy(MetricRegistry metricRegistry,
                                       String rootPath,
-                                      InetSocketAddress endpoint
+                                      InetSocketAddress endpoint,
+                                      ScheduledExecutorService executor,
+                                      DefaultApi apiClient
   ) {
     this.host = endpoint.getHostString();
     this.metricRegistry = metricRegistry;
     this.rootPath = rootPath;
     this.endpoint = endpoint;
-    this.apiClient = new DefaultApi(
-        new ApiClient().setBasePath("http://" + endpoint.getHostName() + ":" + endpoint.getPort() + rootPath));
+    this.apiClient = apiClient;
+    this.statusTracker = executor;
+
+    // TODO Perhaps the poll interval should be configurable through context.config ?
+    this.scheduleJobPoller(DEFAULT_POLL_INTERVAL_IN_MILLISECONDS);
   }
 
   @Override
@@ -192,13 +217,31 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
       List<RingRange> associatedTokens,
       int repairThreadCount)
       throws ReaperException {
-    return 1; //TODO: implement me
 
+    String jobId;
+    try {
+      jobId = apiClient.repair1(new RepairRequest());
+    } catch (ApiException e) {
+      throw new ReaperException(e);
+    }
+
+    int repairNo = Integer.parseInt(jobId.substring(7));
+
+    repairStatusExecutors.putIfAbsent(repairNo, Executors.newSingleThreadExecutor());
+    repairStatusHandlers.putIfAbsent(repairNo, repairStatusHandler);
+    jobTracker.put(jobId, new JobStatusTracker());
+    return repairNo;
   }
 
   @Override
   public void removeRepairStatusHandler(int repairNo) {
-    // TODO: implement me.
+    repairStatusHandlers.remove(repairNo);
+    ExecutorService repairStatusExecutor = repairStatusExecutors.remove(repairNo);
+    if (null != repairStatusExecutor) {
+      repairStatusExecutor.shutdown();
+    }
+    String jobId = String.format("repair-%d", repairNo);
+    jobTracker.remove(jobId);
   }
 
   @Override
@@ -347,5 +390,55 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
   public String getUntranslatedHost() {
     //TODO: implement me
     return "";
+  }
+
+  private Job getJobStatus(String id) {
+    // Poll with HTTP client the job's status
+    try {
+      return apiClient.getJobStatus(id);
+    } catch (ApiException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  @VisibleForTesting
+  private void scheduleJobPoller(int pollInterval) {
+    statusTracker.scheduleWithFixedDelay(
+        notificationsTracker(),
+        pollInterval * 2,
+        pollInterval,
+        TimeUnit.MILLISECONDS);
+  }
+
+  @VisibleForTesting
+  Runnable notificationsTracker() {
+    return () -> {
+      if (jobTracker.size() > 0) {
+        for (Map.Entry<String, JobStatusTracker> entry : jobTracker.entrySet()) {
+          Job job = getJobStatus(entry.getKey());
+          int availableNotifications = job.getStatusChanges().size();
+          int currentNotificationCount = entry.getValue().latestNotificationCount.get();
+
+          if (currentNotificationCount < availableNotifications) {
+            // We need to process the new ones
+            for (int i = currentNotificationCount; i < availableNotifications; i++) {
+              StatusChange statusChange = job.getStatusChanges().get(i);
+              // remove "repair-" prefix
+              int repairNo = Integer.parseInt(job.getId().substring(7));
+              ProgressEventType progressType = ProgressEventType.valueOf(statusChange.getStatus());
+              repairStatusExecutors.get(repairNo).submit(() -> {
+                repairStatusHandlers
+                    .get(repairNo)
+                    .handle(repairNo, Optional.empty(), Optional.of(progressType),
+                        statusChange.getMessage(), this);
+              });
+
+              // Update the count as we process them
+              entry.getValue().latestNotificationCount.incrementAndGet();
+            }
+          }
+        }
+      }
+    };
   }
 }
