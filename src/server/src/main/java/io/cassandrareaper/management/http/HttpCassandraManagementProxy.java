@@ -40,7 +40,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -53,6 +52,7 @@ import javax.validation.constraints.NotNull;
 import com.codahale.metrics.MetricRegistry;
 import com.datastax.mgmtapi.client.api.DefaultApi;
 import com.datastax.mgmtapi.client.invoker.ApiException;
+import com.datastax.mgmtapi.client.model.CompactRequest;
 import com.datastax.mgmtapi.client.model.EndpointStates;
 import com.datastax.mgmtapi.client.model.Job;
 import com.datastax.mgmtapi.client.model.RepairRequest;
@@ -378,15 +378,31 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
   }
 
   @Override
-  public void forceKeyspaceCompaction(boolean var1, String var2, String... var3) throws IOException,
-      ExecutionException, InterruptedException {
-    // TODO: implement me.
+  public void forceKeyspaceCompaction(boolean splitOutput, String keyspaceName, String... columnFamilies) throws
+      IOException {
+    CompactRequest request = new CompactRequest();
+    request.setSplitOutput(splitOutput);
+    request.setKeyspaceName(keyspaceName);
+    for (String columnFamily : columnFamilies) {
+      request.addTablesItem(columnFamily);
+    }
+    try {
+      apiClient.compact(request);
+    } catch (ApiException ae) {
+      LOG.error("Failed to force compaction", ae);
+      throw new IOException(ae);
+    }
   }
 
   // From CompactionManagerMBean
   @Override
   public List<Map<String, String>> getCompactions() {
-    return new ArrayList<Map<String, String>>();
+    try {
+      return apiClient.getCompactions().stream().map(Compactions::asMap).collect(Collectors.toList());
+    } catch (ApiException ae) {
+      LOG.error("Failed to get compactions", ae);
+      return Collections.emptyList();
+    }
   }
 
   // From FailureDetectorMBean

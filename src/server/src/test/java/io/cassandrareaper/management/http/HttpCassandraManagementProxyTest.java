@@ -27,12 +27,15 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import com.datastax.mgmtapi.client.api.DefaultApi;
+import com.datastax.mgmtapi.client.model.CompactRequest;
+import com.datastax.mgmtapi.client.model.Compaction;
 import com.datastax.mgmtapi.client.model.Job;
 import com.datastax.mgmtapi.client.model.RepairRequest;
 import com.datastax.mgmtapi.client.model.RepairRequestResponse;
@@ -40,10 +43,12 @@ import com.datastax.mgmtapi.client.model.SnapshotDetails;
 import com.datastax.mgmtapi.client.model.StatusChange;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.MoreExecutors;
 import org.apache.cassandra.repair.RepairParallelism;
 import org.apache.commons.lang3.concurrent.ConcurrentUtils;
 import org.junit.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -173,14 +178,14 @@ public class HttpCassandraManagementProxyTest {
         Collections.emptyList(), 1);
 
     verify(mockClient).putRepairV2(eq(
-        (new RepairRequest())
-          .keyspace("ks")
-          .repairParallelism(RepairRequest.RepairParallelismEnum.PARALLEL)
-          .tables(Arrays.asList("table"))
-          .fullRepair(true)
-          .datacenters(null)
-          .repairThreadCount(1)
-          .associatedTokens(Collections.emptyList())
+            (new RepairRequest())
+                .keyspace("ks")
+                .repairParallelism(RepairRequest.RepairParallelismEnum.PARALLEL)
+                .tables(Arrays.asList("table"))
+                .fullRepair(true)
+                .datacenters(null)
+                .repairThreadCount(1)
+                .associatedTokens(Collections.emptyList())
         )
     );
 
@@ -254,6 +259,70 @@ public class HttpCassandraManagementProxyTest {
     verifyNoMoreInteractions(mockClient);
   }
 
+  @Test
+  public void testCancelAllRepairs() throws Exception {
+    DefaultApi mockClient = Mockito.mock(DefaultApi.class);
+    HttpCassandraManagementProxy httpCassandraManagementProxy = mockProxy(mockClient);
+
+    httpCassandraManagementProxy.cancelAllRepairs();
+    verify(mockClient).deleteRepairsV2();
+    verifyNoMoreInteractions(mockClient);
+  }
+
+  @Test
+  public void testForceKeyspaceCompaction() throws Exception {
+    DefaultApi mockClient = Mockito.mock(DefaultApi.class);
+    ArgumentCaptor<CompactRequest> requestCaptor = ArgumentCaptor.forClass(CompactRequest.class);
+    when(mockClient.compact(requestCaptor.capture())).thenReturn(null);
+    HttpCassandraManagementProxy proxy = mockProxy(mockClient);
+
+    proxy.forceKeyspaceCompaction(true, "ks", "tbl1", "tbl2", "tbl3");
+
+    verify(mockClient).compact(any());
+    CompactRequest request = requestCaptor.getValue();
+    assertThat(request.getSplitOutput()).isTrue();
+    assertThat(request.getKeyspaceName()).isEqualTo("ks");
+    assertThat(request.getTables()).containsOnly("tbl1", "tbl2", "tbl3");
+    verifyNoMoreInteractions(mockClient);
+  }
+
+  @Test
+  public void testGetCompactions() throws Exception {
+    DefaultApi mockClient = Mockito.mock(DefaultApi.class);
+    when(mockClient.getCompactions()).thenReturn(ImmutableList.of(
+        new Compaction()
+            .compactionId("c1")
+            .keyspace("ks1")
+            .columnfamily("tbl1")
+            .sstables("sst1, sst2"),
+        new Compaction()
+            .compactionId("c2")
+            .keyspace("ks2")
+            .columnfamily("tbl2")
+            .sstables("sst3, sst4")
+    ));
+    HttpCassandraManagementProxy proxy = mockProxy(mockClient);
+
+    List<Map<String, String>> compactions = proxy.getCompactions();
+
+    verify(mockClient).getCompactions();
+    assertThat(compactions).containsOnly(
+        ImmutableMap.of(
+            "compactionId", "c1",
+            "keyspace", "ks1",
+            "columnfamily", "tbl1",
+            "sstables", "sst1, sst2"
+        ),
+        ImmutableMap.of(
+            "compactionId", "c2",
+            "keyspace", "ks2",
+            "columnfamily", "tbl2",
+            "sstables", "sst3, sst4"
+        )
+    );
+    verifyNoMoreInteractions(mockClient);
+  }
+
   private static HttpCassandraManagementProxy mockProxy(DefaultApi mockClient) {
     ScheduledExecutorService executorService = mock(ScheduledExecutorService.class);
     when(executorService.submit(any(Callable.class))).thenAnswer(i -> {
@@ -264,16 +333,6 @@ public class HttpCassandraManagementProxyTest {
 
     return new HttpCassandraManagementProxy(
         null, "/", InetSocketAddress.createUnresolved("localhost", 8080), executorService, mockClient);
-  }
-
-  @Test
-  public void testCancelAllRepairs() throws Exception {
-    DefaultApi mockClient = Mockito.mock(DefaultApi.class);
-    HttpCassandraManagementProxy httpCassandraManagementProxy = mockProxy(mockClient);
-
-    httpCassandraManagementProxy.cancelAllRepairs();
-    verify(mockClient).deleteRepairsV2();
-    verifyNoMoreInteractions(mockClient);
   }
 
 

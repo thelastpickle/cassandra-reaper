@@ -143,7 +143,8 @@ public interface ICassandraManagementProxy {
 
   Map<String, String> getTokenToEndpointMap();
 
-  void forceKeyspaceCompaction(boolean var1, String var2, String... var3) throws IOException, ExecutionException,
+  void forceKeyspaceCompaction(boolean splitOutput, String keyspaceName, String... columnFamilies) throws IOException,
+      ExecutionException,
       InterruptedException;
 
   // From CompactionManagerMBean
