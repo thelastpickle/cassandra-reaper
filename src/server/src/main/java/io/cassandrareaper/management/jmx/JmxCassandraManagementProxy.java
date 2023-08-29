@@ -569,8 +569,6 @@ public final class JmxCassandraManagementProxy implements ICassandraManagementPr
 
   @Override
   public int triggerRepair(
-      BigInteger beginToken,
-      BigInteger endToken,
       String keyspace,
       RepairParallelism repairParallelism,
       Collection<String> columnFamilies,
@@ -586,12 +584,10 @@ public final class JmxCassandraManagementProxy implements ICassandraManagementPr
     final boolean canUseDatacenterAware = ICassandraManagementProxy.versionCompare(cassandraVersion, "2.0.12") >= 0;
 
     String msg = String.format(
-        "Triggering repair of range (%s,%s] for keyspace \"%s\" on "
+        "Triggering repair for keyspace \"%s\" on "
             + "host %s, with repair parallelism %s, in cluster with Cassandra "
             + "version '%s' (can use DATACENTER_AWARE '%s'), "
             + "for column families: %s",
-        beginToken.toString(),
-        endToken.toString(),
         keyspace,
         this.host,
         repairParallelism,
@@ -608,34 +604,14 @@ public final class JmxCassandraManagementProxy implements ICassandraManagementPr
     }
     try {
       int repairNo;
-      if (cassandraVersion.startsWith("2.0") || cassandraVersion.startsWith("1.")) {
-        repairNo = triggerRepairPre2dot1(
-            repairParallelism,
-            keyspace,
-            columnFamilies,
-            beginToken,
-            endToken,
-            datacenters.size() > 0 ? datacenters : null);
-      } else if (cassandraVersion.startsWith("2.1")) {
-        repairNo = triggerRepair2dot1(
-            fullRepair,
-            repairParallelism,
-            keyspace,
-            columnFamilies,
-            beginToken,
-            endToken,
-            cassandraVersion,
-            datacenters.size() > 0 ? datacenters : null);
-      } else {
-        repairNo = triggerRepairPost2dot2(
-            fullRepair,
-            repairParallelism,
-            keyspace,
-            columnFamilies,
-            datacenters,
-            associatedTokens,
-            repairThreadCount);
-      }
+      repairNo = triggerRepairPost2dot2(
+          fullRepair,
+          repairParallelism,
+          keyspace,
+          columnFamilies,
+          datacenters,
+          associatedTokens,
+          repairThreadCount);
       repairStatusExecutors.putIfAbsent(repairNo, Executors.newSingleThreadExecutor());
       repairStatusHandlers.putIfAbsent(repairNo, repairStatusHandler);
       return repairNo;
@@ -680,89 +656,6 @@ public final class JmxCassandraManagementProxy implements ICassandraManagementPr
     options.put(RepairOption.DATACENTERS_KEY, StringUtils.join(datacenters, ","));
     // options.put(RepairOption.HOSTS_KEY, StringUtils.join(specificHosts, ","));
     return ssProxy.repairAsync(keyspace, options);
-  }
-
-  private int triggerRepair2dot1(
-      boolean fullRepair,
-      RepairParallelism repairParallelism,
-      String keyspace,
-      Collection<String> columnFamilies,
-      BigInteger beginToken,
-      BigInteger endToken,
-      String cassandraVersion,
-      Collection<String> datacenters) {
-
-    if (fullRepair) {
-      // full repair
-      if (repairParallelism.equals(RepairParallelism.DATACENTER_AWARE)) {
-        return ssProxy
-            .forceRepairRangeAsync(
-                beginToken.toString(),
-                endToken.toString(),
-                keyspace,
-                repairParallelism.ordinal(),
-                datacenters,
-                cassandraVersion.startsWith("2.2") ? new HashSet<>() : null,
-                fullRepair,
-                columnFamilies.toArray(new String[columnFamilies.size()]));
-      }
-      boolean snapshotRepair = repairParallelism.equals(RepairParallelism.SEQUENTIAL);
-
-      return ssProxy
-          .forceRepairRangeAsync(
-              beginToken.toString(),
-              endToken.toString(),
-              keyspace,
-              snapshotRepair
-                  ? RepairParallelism.SEQUENTIAL.ordinal()
-                  : RepairParallelism.PARALLEL.ordinal(),
-              datacenters,
-              cassandraVersion.startsWith("2.2") ? new HashSet<>() : null,
-              fullRepair,
-              columnFamilies.toArray(new String[columnFamilies.size()]));
-    }
-
-    // incremental repair
-    return ssProxy
-        .forceRepairAsync(
-            keyspace,
-            Boolean.FALSE,
-            Boolean.FALSE,
-            Boolean.FALSE,
-            fullRepair,
-            columnFamilies.toArray(new String[columnFamilies.size()]));
-  }
-
-  private int triggerRepairPre2dot1(
-      RepairParallelism repairParallelism,
-      String keyspace,
-      Collection<String> columnFamilies,
-      BigInteger beginToken,
-      BigInteger endToken,
-      Collection<String> datacenters) {
-
-    // Cassandra 1.2 and 2.0 compatibility
-    if (repairParallelism.equals(RepairParallelism.DATACENTER_AWARE)) {
-      return ((StorageServiceMBean20) ssProxy)
-          .forceRepairRangeAsync(
-              beginToken.toString(),
-              endToken.toString(),
-              keyspace,
-              repairParallelism.ordinal(),
-              datacenters,
-              null,
-              columnFamilies.toArray(new String[columnFamilies.size()]));
-    }
-    boolean snapshotRepair = repairParallelism.equals(RepairParallelism.SEQUENTIAL);
-
-    return ((StorageServiceMBean20) ssProxy)
-        .forceRepairRangeAsync(
-            beginToken.toString(),
-            endToken.toString(),
-            keyspace,
-            snapshotRepair,
-            false,
-            columnFamilies.toArray(new String[columnFamilies.size()]));
   }
 
   /**

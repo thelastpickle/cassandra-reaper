@@ -154,7 +154,7 @@ public final class SegmentRunnerTest {
     }
 
 
-    when(jmx.triggerRepair(any(), any(), any(), any(), any(), anyBoolean(), any(), any(), any(), anyInt()))
+    when(jmx.triggerRepair(any(), any(), any(), anyBoolean(), any(), any(), any(), anyInt()))
         .then(
             (invocation) -> {
               assertEquals(
@@ -276,7 +276,7 @@ public final class SegmentRunnerTest {
       throw new AssertionError(ex);
     }
 
-    when(jmx.triggerRepair(any(), any(), any(), any(), any(), anyBoolean(), any(), any(), any(), anyInt()))
+    when(jmx.triggerRepair(any(), any(), any(), anyBoolean(), any(), any(), any(), anyInt()))
         .then(
             (invocation) -> {
               assertEquals(
@@ -434,7 +434,7 @@ public final class SegmentRunnerTest {
     }
 
 
-    when(jmx.triggerRepair(any(), any(), any(), any(), any(), anyBoolean(), any(), any(), any(), anyInt()))
+    when(jmx.triggerRepair(any(), any(), any(), anyBoolean(), any(), any(), any(), anyInt()))
         .then(
             (invocation) -> {
               assertEquals(
@@ -581,7 +581,7 @@ public final class SegmentRunnerTest {
     }
 
 
-    when(jmx.triggerRepair(any(), any(), any(), any(), any(), anyBoolean(), any(), any(), any(), anyInt()))
+    when(jmx.triggerRepair(any(), any(), any(), anyBoolean(), any(), any(), any(), anyInt()))
         .then(
             invocation -> {
               assertEquals(
@@ -723,7 +723,7 @@ public final class SegmentRunnerTest {
     }
 
 
-    when(jmx.triggerRepair(any(), any(), any(), any(), any(), anyBoolean(), any(), any(), any(), anyInt()))
+    when(jmx.triggerRepair(any(), any(), any(), anyBoolean(), any(), any(), any(), anyInt()))
         .then(
             invocation -> {
               assertEquals(
@@ -867,7 +867,7 @@ public final class SegmentRunnerTest {
     }
 
 
-    when(jmx.triggerRepair(any(), any(), any(), any(), any(), anyBoolean(), any(), any(), any(), anyInt()))
+    when(jmx.triggerRepair(any(), any(), any(), anyBoolean(), any(), any(), any(), anyInt()))
         .then(
             invocation -> {
               assertEquals(
@@ -1012,7 +1012,7 @@ public final class SegmentRunnerTest {
     }
 
 
-    when(jmx.triggerRepair(any(), any(), any(), any(), any(), anyBoolean(), any(), any(), any(), anyInt()))
+    when(jmx.triggerRepair(any(), any(), any(), anyBoolean(), any(), any(), any(), anyInt()))
         .then(
             invocation -> {
               assertEquals(
@@ -1185,7 +1185,7 @@ public final class SegmentRunnerTest {
     }
 
 
-    when(jmx.triggerRepair(any(), any(), any(), any(), any(), anyBoolean(), any(), any(), any(), anyInt()))
+    when(jmx.triggerRepair(any(), any(), any(), anyBoolean(), any(), any(), any(), anyInt()))
         .thenThrow(new ReaperException("failure"));
 
     context.managementConnectionFactory = new JmxManagementConnectionFactory(context, new NoopCrypotograph()) {
@@ -1279,7 +1279,7 @@ public final class SegmentRunnerTest {
     }
 
 
-    when(jmx.triggerRepair(any(), any(), any(), any(), any(), anyBoolean(), any(), any(), any(), anyInt()))
+    when(jmx.triggerRepair(any(), any(), any(), anyBoolean(), any(), any(), any(), anyInt()))
         .thenReturn(0);
 
     context.managementConnectionFactory = new JmxManagementConnectionFactory(context, new NoopCrypotograph()) {

@@ -22,7 +22,6 @@ import io.cassandrareaper.core.Table;
 import io.cassandrareaper.management.RepairStatusHandler;
 import io.cassandrareaper.management.http.models.JobStatusTracker;
 
-import java.math.BigInteger;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -124,7 +123,7 @@ public class HttpCassandraManagementProxyTest {
 
     RepairStatusHandler repairStatusHandler = Mockito.mock(RepairStatusHandler.class);
 
-    int repairNo = httpCassandraManagementProxy.triggerRepair(BigInteger.ZERO, BigInteger.ONE, "ks",
+    int repairNo = httpCassandraManagementProxy.triggerRepair("ks",
         RepairParallelism.PARALLEL,
         Collections.singleton("table"), true, Collections.emptyList(), repairStatusHandler, Collections.emptyList(), 1);
 
@@ -157,7 +156,7 @@ public class HttpCassandraManagementProxyTest {
     RepairStatusHandler workAroundHandler = (repairNumber, status, progress, message, cassandraManagementProxy)
         -> callTimes.incrementAndGet();
 
-    int repairNo = httpCassandraManagementProxy.triggerRepair(BigInteger.ZERO, BigInteger.ONE, "ks",
+    int repairNo = httpCassandraManagementProxy.triggerRepair("ks",
         RepairParallelism.PARALLEL,
         Collections.singleton("table"), true, Collections.emptyList(), workAroundHandler,
         Collections.emptyList(), 1);

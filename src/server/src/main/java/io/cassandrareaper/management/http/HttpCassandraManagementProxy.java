@@ -224,8 +224,6 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
 
   @Override
   public int triggerRepair(
-      BigInteger beginToken,
-      BigInteger endToken,
       String keyspace,
       RepairParallelism repairParallelism,
       Collection<String> columnFamilies,
