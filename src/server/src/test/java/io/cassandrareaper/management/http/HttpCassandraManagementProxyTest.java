@@ -33,6 +33,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import com.datastax.mgmtapi.client.api.DefaultApi;
 import com.datastax.mgmtapi.client.model.Job;
+import com.datastax.mgmtapi.client.model.RepairRequestResponse;
 import com.datastax.mgmtapi.client.model.SnapshotDetails;
 import com.datastax.mgmtapi.client.model.StatusChange;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -117,7 +118,9 @@ public class HttpCassandraManagementProxyTest {
   @Test
   public void testRepairProcessMapHandlers() throws Exception {
     DefaultApi mockClient = Mockito.mock(DefaultApi.class);
-    when(mockClient.repair1(any())).thenReturn("repair-123456789");
+    doReturn((new RepairRequestResponse()).repairId("repair-123456789")).when(mockClient).putRepairV2(any());
+    ScheduledExecutorService executorService = Mockito.mock(ScheduledExecutorService.class);
+    doReturn(ConcurrentUtils.constantFuture(null)).when(executorService).submit(any(Callable.class));
 
     HttpCassandraManagementProxy httpCassandraManagementProxy = mockProxy(mockClient);
 
@@ -146,9 +149,17 @@ public class HttpCassandraManagementProxyTest {
   @Test
   public void testNotificationsTracker() throws Exception {
     DefaultApi mockClient = Mockito.mock(DefaultApi.class);
-    when(mockClient.repair1(any())).thenReturn("repair-123456789");
 
     HttpCassandraManagementProxy httpCassandraManagementProxy = mockProxy(mockClient);
+    HttpManagementConnectionFactory connectionFactory = Mockito.mock(HttpManagementConnectionFactory.class);
+    DefaultApi mockClient = mock(DefaultApi.class);
+    doReturn((new RepairRequestResponse()).repairId("repair-123456789")).when(mockClient).putRepairV2(any());
+    ScheduledExecutorService executorService = mock(ScheduledExecutorService.class);
+    doReturn(ConcurrentUtils.constantFuture(null)).when(executorService).submit(any(Callable.class));
+    HttpCassandraManagementProxy httpCassandraManagementProxy = new HttpCassandraManagementProxy(
+        mock(MetricRegistry.class), "",
+        mock(InetSocketAddress.class), executorService, mockClient);
+    when(connectionFactory.connectAny(any())).thenReturn(httpCassandraManagementProxy);
 
     // Since we don't have existing implementation of RepairStatusHandler interface, we'll create a small "mock
     // implementation" here to catch all the calls to the handler() method
