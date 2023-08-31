@@ -18,6 +18,7 @@
 package io.cassandrareaper.management.http;
 
 import io.cassandrareaper.core.Snapshot;
+import io.cassandrareaper.core.Table;
 import io.cassandrareaper.management.RepairStatusHandler;
 import io.cassandrareaper.management.http.models.JobStatusTracker;
 
@@ -26,31 +27,34 @@ import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import com.codahale.metrics.MetricRegistry;
 import com.datastax.mgmtapi.client.api.DefaultApi;
 import com.datastax.mgmtapi.client.model.Job;
 import com.datastax.mgmtapi.client.model.SnapshotDetails;
 import com.datastax.mgmtapi.client.model.StatusChange;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.MoreExecutors;
 import org.apache.cassandra.repair.RepairParallelism;
 import org.apache.commons.lang3.concurrent.ConcurrentUtils;
 import org.junit.Test;
 import org.mockito.Mockito;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 public class HttpCassandraManagementProxyTest {
@@ -58,10 +62,9 @@ public class HttpCassandraManagementProxyTest {
   @Test
   public void testConvertSnapshots() throws Exception {
     DefaultApi mockClient = Mockito.mock(DefaultApi.class);
-    ScheduledExecutorService executorService = Mockito.mock(ScheduledExecutorService.class);
-    doReturn(ConcurrentUtils.constantFuture(null)).when(executorService).submit(any(Callable.class));
-    HttpCassandraManagementProxy proxy = new HttpCassandraManagementProxy(
-        null, "/", InetSocketAddress.createUnresolved("localhost", 8080), executorService, mockClient);
+
+    HttpCassandraManagementProxy proxy = mockProxy(mockClient);
+
     SnapshotDetails details = jsonFromResourceFile("example_snapshot_details.json", SnapshotDetails.class);
     List<Snapshot> snapshots = proxy.convertSnapshots(details);
     assertEquals(3, snapshots.size());
@@ -114,16 +117,10 @@ public class HttpCassandraManagementProxyTest {
   // from other classes
   @Test
   public void testRepairProcessMapHandlers() throws Exception {
-    HttpManagementConnectionFactory connectionFactory = Mockito.mock(HttpManagementConnectionFactory.class);
     DefaultApi mockClient = Mockito.mock(DefaultApi.class);
-    doReturn("repair-123456789").when(mockClient).repair1(any());
-    ScheduledExecutorService executorService = Mockito.mock(ScheduledExecutorService.class);
-    doReturn(ConcurrentUtils.constantFuture(null)).when(executorService).submit(any(Callable.class));
+    when(mockClient.repair1(any())).thenReturn("repair-123456789");
 
-    HttpCassandraManagementProxy httpCassandraManagementProxy = new HttpCassandraManagementProxy(
-        Mockito.mock(MetricRegistry.class), "",
-        Mockito.mock(InetSocketAddress.class), executorService, mockClient);
-    when(connectionFactory.connectAny(any())).thenReturn(httpCassandraManagementProxy);
+    HttpCassandraManagementProxy httpCassandraManagementProxy = mockProxy(mockClient);
 
     RepairStatusHandler repairStatusHandler = Mockito.mock(RepairStatusHandler.class);
 
@@ -149,15 +146,10 @@ public class HttpCassandraManagementProxyTest {
 
   @Test
   public void testNotificationsTracker() throws Exception {
-    HttpManagementConnectionFactory connectionFactory = Mockito.mock(HttpManagementConnectionFactory.class);
-    DefaultApi mockClient = mock(DefaultApi.class);
-    doReturn("repair-123456789").when(mockClient).repair1(any());
-    ScheduledExecutorService executorService = mock(ScheduledExecutorService.class);
-    doReturn(ConcurrentUtils.constantFuture(null)).when(executorService).submit(any(Callable.class));
-    HttpCassandraManagementProxy httpCassandraManagementProxy = new HttpCassandraManagementProxy(
-        mock(MetricRegistry.class), "",
-        mock(InetSocketAddress.class), executorService, mockClient);
-    when(connectionFactory.connectAny(any())).thenReturn(httpCassandraManagementProxy);
+    DefaultApi mockClient = Mockito.mock(DefaultApi.class);
+    when(mockClient.repair1(any())).thenReturn("repair-123456789");
+
+    HttpCassandraManagementProxy httpCassandraManagementProxy = mockProxy(mockClient);
 
     // Since we don't have existing implementation of RepairStatusHandler interface, we'll create a small "mock
     // implementation" here to catch all the calls to the handler() method
@@ -181,7 +173,7 @@ public class HttpCassandraManagementProxyTest {
     List<StatusChange> statusChanges = new ArrayList<>();
     statusChanges.add(firstSc);
     job.setStatusChanges(statusChanges);
-    doReturn(job).when(mockClient).getJobStatus("repair-123456789");
+    when(mockClient.getJobStatus("repair-123456789")).thenReturn(job);
 
     httpCassandraManagementProxy.notificationsTracker().run();
 
@@ -203,5 +195,52 @@ public class HttpCassandraManagementProxyTest {
     jobStatus = httpCassandraManagementProxy.jobTracker.get(jobId);
     assertEquals(2, jobStatus.latestNotificationCount.get());
     assertEquals(2, callTimes.get());
+  }
+
+  @Test
+  public void testGetKeyspaces() throws Exception {
+    DefaultApi mockClient = Mockito.mock(DefaultApi.class);
+    when(mockClient.listKeyspaces("")).thenReturn(ImmutableList.of("ks1", "ks2", "ks3"));
+
+    HttpCassandraManagementProxy proxy = mockProxy(mockClient);
+    List<String> keyspaces = proxy.getKeyspaces();
+
+    assertThat(keyspaces).containsExactly("ks1", "ks2", "ks3");
+    verify(mockClient).listKeyspaces("");
+    verifyNoMoreInteractions(mockClient);
+  }
+
+  @Test
+  public void testGetTablesForKeyspace() throws Exception {
+    DefaultApi mockClient = Mockito.mock(DefaultApi.class);
+    when(mockClient.listTablesV1("ks")).thenReturn(ImmutableList.of(
+        new com.datastax.mgmtapi.client.model.Table().name("tbl1").putCompactionItem("class", "Compaction1"),
+        new com.datastax.mgmtapi.client.model.Table().name("tbl2").putCompactionItem("class", "Compaction2"),
+        new com.datastax.mgmtapi.client.model.Table().name("tbl3").putCompactionItem("class", "Compaction3")
+    ));
+
+    HttpCassandraManagementProxy proxy = mockProxy(mockClient);
+    Set<Table> tables = proxy.getTablesForKeyspace("ks");
+
+    assertThat(tables)
+        .extracting(Table::getName, Table::getCompactionStrategy) // Table does not override equals
+        .containsOnly(
+            tuple("tbl1", "Compaction1"),
+            tuple("tbl2", "Compaction2"),
+            tuple("tbl3", "Compaction3"));
+    verify(mockClient).listTablesV1("ks");
+    verifyNoMoreInteractions(mockClient);
+  }
+
+  private static HttpCassandraManagementProxy mockProxy(DefaultApi mockClient) {
+    ScheduledExecutorService executorService = mock(ScheduledExecutorService.class);
+    when(executorService.submit(any(Callable.class))).thenAnswer(i -> {
+      Callable<Object> callable = i.getArgument(0);
+      callable.call();
+      return ConcurrentUtils.constantFuture(null);
+    });
+
+    return new HttpCassandraManagementProxy(
+        null, "/", InetSocketAddress.createUnresolved("localhost", 8080), executorService, mockClient);
   }
 }
