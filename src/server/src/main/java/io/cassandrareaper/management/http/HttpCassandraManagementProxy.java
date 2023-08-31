@@ -250,13 +250,10 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
               .associatedTokens(
                   associatedTokens.stream().map(i ->
                       (new com.datastax.mgmtapi.client.model.RingRange())
-                          .start(i.getStart().intValue()) // TODO: figure out why we can't instantiate with the
-                          // BigInteger directly
-                          .end(i.getEnd().intValue())
-              ).collect(Collectors.toList()))
-
-
-
+                          .start(i.getStart().longValue())
+                          .end(i.getEnd().longValue())
+                ).collect(Collectors.toList())
+              )
       );
       jobId = resp.getRepairId();
     } catch (ApiException e) {
