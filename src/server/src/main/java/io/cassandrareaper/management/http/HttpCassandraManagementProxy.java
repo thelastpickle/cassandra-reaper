@@ -61,6 +61,8 @@ import com.datastax.mgmtapi.client.model.RepairRequestResponse;
 import com.datastax.mgmtapi.client.model.SnapshotDetails;
 import com.datastax.mgmtapi.client.model.StatusChange;
 import com.datastax.mgmtapi.client.model.TakeSnapshotRequest;
+import com.datastax.mgmtapi.client.model.TokenRangeToEndpointResponse;
+import com.datastax.mgmtapi.client.model.TokenRangeToEndpoints;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Maps;
 import org.apache.cassandra.repair.RepairParallelism;
@@ -109,19 +111,17 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
 
   @Override
   public List<BigInteger> getTokens() {
-    EndpointStates endpointStates;
     try {
-      endpointStates = apiClient.getEndpointStates();
-      return Arrays.stream(endpointStates.getEntity().stream().filter(i ->
-                  i.getOrDefault("IS_LOCAL", "false")
-                      .equals("true")
-              )
-              .findFirst()
-              .orElseThrow(() -> new RuntimeException("Failed to find local endpoint"))
-              .get("TOKENS")
-              .split(","))
-          .map(strToken -> new BigInteger(strToken)).collect(Collectors.toList());
-
+      EndpointStates endpointStates = apiClient.getEndpointStates();
+      List<BigInteger> tokenList = new ArrayList<>();
+      endpointStates.getEntity().forEach((Map<String, String> states) -> {
+        for (String token : states.get("TOKENS").split(",")) {
+          tokenList.add(new BigInteger(token));
+        }
+      });
+      // sort the list
+      Collections.sort(tokenList);
+      return tokenList;
     } catch (ApiException e) {
       LOG.error("Failed to retrieve endpoint states", e);
       return Collections.emptyList();
@@ -130,7 +130,23 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
 
   @Override
   public Map<List<String>, List<String>> getRangeToEndpointMap(String keyspace) throws ReaperException {
-    return null; // TODO: implement me.
+    try {
+      TokenRangeToEndpointResponse resp = apiClient.getRangeToEndpointMapV2(keyspace);
+      List<TokenRangeToEndpoints> list = resp.getTokenRangeToEndpoints();
+      Map<List<String>, List<String>> map = new HashMap<>(list.size());
+      list.forEach((TokenRangeToEndpoints entry) -> {
+        List<Long> tokens = entry.getTokens();
+        List<String> range = new ArrayList<>(tokens.size());
+        tokens.forEach((Long token) -> {
+          range.add(token.toString());
+        });
+        map.put(range, entry.getEndpoints());
+      });
+      return map;
+    } catch (ApiException e) {
+      LOG.error("Failed to retrieve token range to endpoint mapping", e);
+      throw new ReaperException(e);
+    }
   }
 
   @NotNull
@@ -431,8 +447,20 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
 
   @Override
   public Map<String, String> getTokenToEndpointMap() {
-    // TODO: implement me.
-    return new HashMap<>();
+    try {
+      EndpointStates epStates = apiClient.getEndpointStates();
+      Map<String, String> tokenMap = new HashMap<>();
+      for (Map<String, String> states : epStates.getEntity()) {
+        String ip = states.get("ENDPOINT_IP");
+        for (String token : states.get("TOKENS").split(",")) {
+          tokenMap.put(token, ip);
+        }
+      }
+      return tokenMap;
+    } catch (ApiException ae) {
+      LOG.error("Failed to get endpoint states", ae);
+    }
+    return null;
   }
 
   @Override
