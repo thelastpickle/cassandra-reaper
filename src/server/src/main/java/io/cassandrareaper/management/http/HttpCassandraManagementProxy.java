@@ -32,6 +32,7 @@ import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -44,6 +45,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 import javax.management.JMException;
 import javax.management.openmbean.CompositeData;
 import javax.validation.constraints.NotNull;
@@ -159,12 +161,27 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
 
   @Override
   public List<String> getKeyspaces() {
-    return null; // TODO: implement me.
+    try {
+      return apiClient.listKeyspaces("");
+    } catch (ApiException ae) {
+      LOG.error("Failed to list keyspaces", ae);
+      return Collections.emptyList();
+    }
   }
 
   @Override
   public Set<Table> getTablesForKeyspace(String keyspace) throws ReaperException {
-    return null; // TODO: implement me.
+    try {
+      return apiClient.listTablesV1(keyspace).stream()
+          .map(t ->
+              Table.builder()
+                  .withName(t.getName())
+                  .withCompactionStrategy(t.getCompaction().get("class"))
+                  .build())
+          .collect(Collectors.toSet());
+    } catch (ApiException e) {
+      throw new ReaperException("Error querying table data", e);
+    }
   }
 
   @Override
