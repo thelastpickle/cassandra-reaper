@@ -203,7 +203,11 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
 
   @Override
   public void cancelAllRepairs() {
-    // TODO: implement me.
+    try {
+      apiClient.deleteRepairsV2();
+    } catch (ApiException ae) {
+      LOG.error("Failed to cancel all repairs", ae);
+    }
   }
 
   @Override
@@ -236,7 +240,24 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
 
     String jobId;
     try {
-      RepairRequestResponse resp = apiClient.putRepairV2(new RepairRequest());
+      RepairRequestResponse resp = apiClient.putRepairV2(
+          (new RepairRequest())
+              .fullRepair(fullRepair)
+              .keyspace(keyspace)
+              .tables(new ArrayList<>(columnFamilies))
+              .repairParallelism(RepairRequest.RepairParallelismEnum.fromValue(repairParallelism.getName()))
+              .repairThreadCount(repairThreadCount)
+              .associatedTokens(
+                  associatedTokens.stream().map(i ->
+                      (new com.datastax.mgmtapi.client.model.RingRange())
+                          .start(i.getStart().intValue()) // TODO: figure out why we can't instantiate with the
+                          // BigInteger directly
+                          .end(i.getEnd().intValue())
+              ).collect(Collectors.toList()))
+
+
+
+      );
       jobId = resp.getRepairId();
     } catch (ApiException e) {
       throw new ReaperException(e);
