@@ -436,30 +436,7 @@ public final class JmxCassandraManagementProxy implements ICassandraManagementPr
 
   @Override
   public boolean isRepairRunning() throws JMException {
-    return isRepairRunningPre22() || isRepairRunningPost22() || isValidationCompactionRunning();
-  }
-
-  /**
-   * @return true if any repairs are running on the node.
-   */
-  private boolean isRepairRunningPre22() throws JMException {
-    // Check if AntiEntropySession is actually running on the node
-    try {
-      int activeCount = (Integer) mbeanServer.getAttribute(ObjectNames.ANTI_ENTROPY_SESSIONS, "ActiveCount");
-      long pendingCount = (Long) mbeanServer.getAttribute(ObjectNames.ANTI_ENTROPY_SESSIONS, "PendingTasks");
-      return activeCount + pendingCount != 0;
-    } catch (IOException ignored) {
-      LOG.warn(FAILED_TO_CONNECT_TO_USING_JMX, host, ignored);
-    } catch (InstanceNotFoundException e) {
-      // This happens if no repair has yet been run on the node
-      // The AntiEntropySessions object is created on the first repair
-      LOG.debug("No repair has run yet on the node. Ignoring exception.", e);
-      return false;
-    } catch (RuntimeException e) {
-      LOG.error(ERROR_GETTING_ATTR_JMX, e);
-    }
-    // If uncertain, assume it's running
-    return true;
+    return isRepairRunningPost22() || isValidationCompactionRunning();
   }
 
   /**
@@ -507,8 +484,7 @@ public final class JmxCassandraManagementProxy implements ICassandraManagementPr
     return true;
   }
 
-  @Override
-  public List<String> getRunningRepairMetricsPost22() {
+  private List<String> getRunningRepairMetricsPost22() {
     List<String> repairMbeans = Lists.newArrayList();
     try {
       // list all mbeans in search of one with the name Repair#??
