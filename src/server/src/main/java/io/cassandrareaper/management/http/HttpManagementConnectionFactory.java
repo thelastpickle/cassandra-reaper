@@ -126,7 +126,7 @@ public class HttpManagementConnectionFactory implements IManagementConnectionFac
       throw new ReaperException("Could not get PID for node " + node.getHostname());
     }
     DefaultApi apiClient = new DefaultApi(
-        new ApiClient().setBasePath("https://" + node.getHostname() + ":" + managementPort + rootPath));
+        new ApiClient().setBasePath("http://" + node.getHostname() + ":" + managementPort + rootPath));
 
     InstrumentedScheduledExecutorService statusTracker = new InstrumentedScheduledExecutorService(
         jobStatusPollerExecutor, metricRegistry);
