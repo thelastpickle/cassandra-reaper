@@ -284,8 +284,7 @@ public final class ClusterFacade {
    */
   public NodesStatus getNodesStatus(Cluster cluster) throws ReaperException {
     ICassandraManagementProxy cassandraManagementProxy = connect(cluster);
-    FailureDetectorProxy proxy = FailureDetectorProxy.create(cassandraManagementProxy);
-    return new NodesStatus(cassandraManagementProxy.getHost(), proxy.getAllEndpointsState(), proxy.getSimpleStates());
+    return cassandraManagementProxy.getNodesStatus();
   }
 
   /**

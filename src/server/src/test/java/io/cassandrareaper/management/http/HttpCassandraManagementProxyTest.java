@@ -20,9 +20,9 @@ package io.cassandrareaper.management.http;
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Snapshot;
 import io.cassandrareaper.core.Table;
-import io.cassandrareaper.management.ICassandraManagementProxy;
 import io.cassandrareaper.management.RepairStatusHandler;
 import io.cassandrareaper.management.http.models.JobStatusTracker;
+import io.cassandrareaper.resources.view.NodesStatus;
 
 import java.math.BigInteger;
 import java.net.InetSocketAddress;
@@ -331,6 +331,32 @@ public class HttpCassandraManagementProxyTest {
   }
 
   @Test
+  public void testGetNodesStatus() throws Exception {
+    DefaultApi mockClient = Mockito.mock(DefaultApi.class);
+    EndpointStates states = new EndpointStates();
+    // Only mocking minimal data here; for more detailed coverage, see NodesStatus' own unit tests.
+    states.addEntityItem(ImmutableMap.of(
+        "DC", "dc1",
+        "RACK", "rack1",
+        "ENDPOINT_IP", "10.0.0.1"
+    ));
+    when(mockClient.getEndpointStates()).thenReturn(states);
+
+    HttpCassandraManagementProxy proxy = mockProxy(mockClient);
+    NodesStatus nodesStatus = proxy.getNodesStatus();
+    NodesStatus.GossipInfo gossipInfo = nodesStatus.endpointStates.get(0);
+
+    assertThat(gossipInfo.sourceNode).isEqualTo("localhost"); // from address provided in mockProxy()
+    assertThat(gossipInfo.endpointNames).containsOnly("10.0.0.1");
+    assertThat(gossipInfo.endpoints.get("dc1").get("rack1"))
+        .extracting(s -> s.endpoint)
+        .containsOnly("10.0.0.1");
+
+    verify(mockClient).getEndpointStates();
+    verifyNoMoreInteractions(mockClient);
+  }
+
+  @Test
   public void testListTablesByKeyspace() throws Exception {
     DefaultApi mockClient = Mockito.mock(DefaultApi.class);
     when(mockClient.listKeyspaces(anyString())).thenReturn(ImmutableList.of(
@@ -501,28 +527,44 @@ public class HttpCassandraManagementProxyTest {
   @Test
   public void testGetLocalEndpoint() throws Exception {
     DefaultApi mockClient = Mockito.mock(DefaultApi.class);
-    ScheduledExecutorService executorService = mock(ScheduledExecutorService.class);
-    when(executorService.submit(any(Callable.class))).thenAnswer(i -> {
-      Callable<Object> callable = i.getArgument(0);
-      callable.call();
-      return ConcurrentUtils.constantFuture(null);
-    });
+    EndpointStates states = new EndpointStates();
+    states.addEntityItem(ImmutableMap.of(
+        "ENDPOINT_IP", "10.0.0.1",
+        "IS_LOCAL", "false"
+    ));
+    states.addEntityItem(ImmutableMap.of(
+        "ENDPOINT_IP", "10.0.0.2",
+        "IS_LOCAL", "true"
+    ));
+    when(mockClient.getEndpointStates()).thenReturn(states);
 
-    ICassandraManagementProxy mockProxyIp = new HttpCassandraManagementProxy(
-        null, "/", InetSocketAddress.createUnresolved("192.168.1.1", 8080), executorService, mockClient);
-    assertThat(mockProxyIp.getLocalEndpoint()).isEqualTo("192.168.1.1");
+    HttpCassandraManagementProxy proxy = mockProxy(mockClient);
+    String localEndpoint = proxy.getLocalEndpoint();
 
-    ICassandraManagementProxy mockProxyDns = new HttpCassandraManagementProxy(
-        null, "/", InetSocketAddress.createUnresolved("localhost", 8080), executorService, mockClient);
-    assertThat(mockProxyDns.getLocalEndpoint()).isEqualTo("127.0.0.1");
-
+    assertThat(localEndpoint).isEqualTo("10.0.0.2");
+    verify(mockClient).getEndpointStates();
+    verifyNoMoreInteractions(mockClient);
   }
 
   @Test
-  public void testGetUntranslatedHost() throws ReaperException {
+  public void testGetUntranslatedHost() throws Exception {
     DefaultApi mockClient = Mockito.mock(DefaultApi.class);
-    ICassandraManagementProxy proxy = mockProxy(mockClient);
-    assertThat(proxy.getUntranslatedHost()).isEqualTo("127.0.0.1");
-  }
+    EndpointStates states = new EndpointStates();
+    states.addEntityItem(ImmutableMap.of(
+        "ENDPOINT_IP", "10.0.0.1",
+        "IS_LOCAL", "false"
+    ));
+    states.addEntityItem(ImmutableMap.of(
+        "ENDPOINT_IP", "10.0.0.2",
+        "IS_LOCAL", "true"
+    ));
+    when(mockClient.getEndpointStates()).thenReturn(states);
 
+    HttpCassandraManagementProxy proxy = mockProxy(mockClient);
+    String untranslatedHost = proxy.getUntranslatedHost();
+
+    assertThat(untranslatedHost).isEqualTo("10.0.0.2");
+    verify(mockClient).getEndpointStates();
+    verifyNoMoreInteractions(mockClient);
+  }
 }
