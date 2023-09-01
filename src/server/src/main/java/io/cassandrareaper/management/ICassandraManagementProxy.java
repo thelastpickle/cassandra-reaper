@@ -134,8 +134,6 @@ public interface ICassandraManagementProxy {
 
   void removeRepairStatusHandler(int repairNo);
 
-  List<String> getRunningRepairMetricsPost22();
-
   // From StorageServiceMBean
   void clearSnapshot(String var1, String... var2) throws IOException;
 
