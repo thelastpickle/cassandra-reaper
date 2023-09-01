@@ -194,12 +194,6 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
     return true; // TODO: implement me.
   }
 
-
-  @Override
-  public List<String> getRunningRepairMetricsPost22() {
-    return null; // TODO: implement me.
-  }
-
   @Override
   public void cancelAllRepairs() {
     // TODO: implement me.
