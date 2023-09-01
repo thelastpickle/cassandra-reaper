@@ -274,7 +274,7 @@ public final class RepairRunnerTest {
       throw new AssertionError(ex);
     }
     final AtomicInteger repairAttempts = new AtomicInteger(1);
-    when(jmx.triggerRepair(any(), any(), any(), any(), any(), anyBoolean(), any(), any(), any(), anyInt()))
+    when(jmx.triggerRepair(any(), any(), any(), anyBoolean(), any(), any(), any(), anyInt()))
         .then(
             (invocation) -> {
               assertEquals(RepairSegment.State.STARTED,
@@ -285,7 +285,7 @@ public final class RepairRunnerTest {
                   new Thread() {
                     @Override
                     public void run() {
-                      ((RepairStatusHandler) invocation.getArgument(7))
+                      ((RepairStatusHandler) invocation.getArgument(5))
                           .handle(repairNumber,
                               Optional.of(ActiveRepairService.Status.STARTED),
                               Optional.empty(), null, jmx);
@@ -299,7 +299,7 @@ public final class RepairRunnerTest {
                   new Thread() {
                     @Override
                     public void run() {
-                      ((RepairStatusHandler) invocation.getArgument(7))
+                      ((RepairStatusHandler) invocation.getArgument(5))
                           .handle(
                               repairNumber,
                               Optional.of(ActiveRepairService.Status.STARTED),
@@ -307,7 +307,7 @@ public final class RepairRunnerTest {
                       assertEquals(
                           RepairSegment.State.RUNNING,
                           storage.getRepairSegmentDao().getRepairSegment(runId, segmentId).get().getState());
-                      ((RepairStatusHandler) invocation.getArgument(7))
+                      ((RepairStatusHandler) invocation.getArgument(5))
                           .handle(
                               repairNumber,
                               Optional.of(ActiveRepairService.Status.SESSION_SUCCESS),
@@ -315,7 +315,7 @@ public final class RepairRunnerTest {
                       assertEquals(
                           RepairSegment.State.DONE,
                           storage.getRepairSegmentDao().getRepairSegment(runId, segmentId).get().getState());
-                      ((RepairStatusHandler) invocation.getArgument(7))
+                      ((RepairStatusHandler) invocation.getArgument(5))
                           .handle(repairNumber,
                               Optional.of(ActiveRepairService.Status.FINISHED),
                               Optional.empty(), null, jmx);
@@ -426,7 +426,7 @@ public final class RepairRunnerTest {
       throw new AssertionError(ex);
     }
     final AtomicInteger repairAttempts = new AtomicInteger(1);
-    when(jmx.triggerRepair(any(), any(), any(), any(), any(), anyBoolean(), any(), any(), any(), anyInt()))
+    when(jmx.triggerRepair(any(), any(), any(), anyBoolean(), any(), any(), any(), anyInt()))
         .then(
             (invocation) -> {
               assertEquals(
@@ -438,7 +438,7 @@ public final class RepairRunnerTest {
                   new Thread() {
                     @Override
                     public void run() {
-                      ((RepairStatusHandler) invocation.getArgument(7))
+                      ((RepairStatusHandler) invocation.getArgument(5))
                           .handle(
                               repairNumber, Optional.empty(),
                               Optional.of(ProgressEventType.START), null, jmx);
@@ -452,21 +452,21 @@ public final class RepairRunnerTest {
                   new Thread() {
                     @Override
                     public void run() {
-                      ((RepairStatusHandler) invocation.getArgument(7))
+                      ((RepairStatusHandler) invocation.getArgument(5))
                           .handle(
                               repairNumber, Optional.empty(),
                               Optional.of(ProgressEventType.START), null, jmx);
                       assertEquals(
                           RepairSegment.State.RUNNING,
                           storage.getRepairSegmentDao().getRepairSegment(runId, segmentId).get().getState());
-                      ((RepairStatusHandler) invocation.getArgument(7))
+                      ((RepairStatusHandler) invocation.getArgument(5))
                           .handle(
                               repairNumber, Optional.empty(),
                               Optional.of(ProgressEventType.SUCCESS), null, jmx);
                       assertEquals(
                           RepairSegment.State.DONE,
                           storage.getRepairSegmentDao().getRepairSegment(runId, segmentId).get().getState());
-                      ((RepairStatusHandler) invocation.getArgument(7))
+                      ((RepairStatusHandler) invocation.getArgument(5))
                           .handle(
                               repairNumber, Optional.empty(),
                               Optional.of(ProgressEventType.COMPLETE), null, jmx);
@@ -594,7 +594,7 @@ public final class RepairRunnerTest {
         context.storage.getRepairRunDao());
     AtomicInteger repairNumberCounter = new AtomicInteger(1);
 
-    when(jmx.triggerRepair(any(), any(), any(), any(), any(), anyBoolean(), any(), any(), any(), anyInt()))
+    when(jmx.triggerRepair(any(), any(), any(), anyBoolean(), any(), any(), any(), anyInt()))
         .then(
             (invocation) -> {
               final int repairNumber = repairNumberCounter.getAndIncrement();
@@ -602,21 +602,21 @@ public final class RepairRunnerTest {
               new Thread() {
                 @Override
                 public void run() {
-                  ((RepairStatusHandler) invocation.getArgument(7))
+                  ((RepairStatusHandler) invocation.getArgument(5))
                       .handle(
                           repairNumber,
                           Optional.of(ActiveRepairService.Status.STARTED),
                           Optional.empty(),
                           null,
                           jmx);
-                  ((RepairStatusHandler) invocation.getArgument(7))
+                  ((RepairStatusHandler) invocation.getArgument(5))
                       .handle(
                           repairNumber,
                           Optional.of(ActiveRepairService.Status.SESSION_SUCCESS),
                           Optional.empty(),
                           null,
                           jmx);
-                  ((RepairStatusHandler) invocation.getArgument(7))
+                  ((RepairStatusHandler) invocation.getArgument(5))
                       .handle(
                           repairNumber,
                           Optional.of(ActiveRepairService.Status.FINISHED),
@@ -721,7 +721,7 @@ public final class RepairRunnerTest {
         1,
         context.storage.getRepairRunDao());
     AtomicInteger repairNumberCounter = new AtomicInteger(1);
-    when(jmx.triggerRepair(any(), any(), any(), any(), any(), anyBoolean(), any(), any(), any(), anyInt()))
+    when(jmx.triggerRepair(any(), any(), any(), anyBoolean(), any(), any(), any(), anyInt()))
         .then(
             (invocation) -> {
               final int repairNumber = repairNumberCounter.getAndIncrement();
@@ -729,21 +729,21 @@ public final class RepairRunnerTest {
               new Thread() {
                 @Override
                 public void run() {
-                  ((RepairStatusHandler) invocation.getArgument(7))
+                  ((RepairStatusHandler) invocation.getArgument(5))
                       .handle(
                           repairNumber,
                           Optional.of(ActiveRepairService.Status.STARTED),
                           Optional.empty(),
                           null,
                           jmx);
-                  ((RepairStatusHandler) invocation.getArgument(7))
+                  ((RepairStatusHandler) invocation.getArgument(5))
                       .handle(
                           repairNumber,
                           Optional.of(ActiveRepairService.Status.SESSION_SUCCESS),
                           Optional.empty(),
                           null,
                           jmx);
-                  ((RepairStatusHandler) invocation.getArgument(7))
+                  ((RepairStatusHandler) invocation.getArgument(5))
                       .handle(
                           repairNumber,
                           Optional.of(ActiveRepairService.Status.FINISHED),
@@ -921,28 +921,28 @@ public final class RepairRunnerTest {
         1,
         context.storage.getRepairRunDao());
     AtomicInteger repairNumberCounter = new AtomicInteger(1);
-    when(jmx.triggerRepair(any(), any(), any(), any(), any(), anyBoolean(), any(), any(), any(), anyInt()))
+    when(jmx.triggerRepair(any(), any(), any(), anyBoolean(), any(), any(), any(), anyInt()))
         .then(
             (invocation) -> {
               final int repairNumber = repairNumberCounter.getAndIncrement();
               new Thread() {
                 @Override
                 public void run() {
-                  ((RepairStatusHandler) invocation.getArgument(7))
+                  ((RepairStatusHandler) invocation.getArgument(5))
                       .handle(
                           repairNumber,
                           Optional.of(ActiveRepairService.Status.STARTED),
                           Optional.empty(),
                           null,
                           jmx);
-                  ((RepairStatusHandler) invocation.getArgument(7))
+                  ((RepairStatusHandler) invocation.getArgument(5))
                       .handle(
                           repairNumber,
                           Optional.of(ActiveRepairService.Status.SESSION_SUCCESS),
                           Optional.empty(),
                           null,
                           jmx);
-                  ((RepairStatusHandler) invocation.getArgument(7))
+                  ((RepairStatusHandler) invocation.getArgument(5))
                       .handle(
                           repairNumber,
                           Optional.of(ActiveRepairService.Status.FINISHED),
@@ -1119,28 +1119,28 @@ public final class RepairRunnerTest {
         1,
         context.storage.getRepairRunDao());
     AtomicInteger repairNumberCounter = new AtomicInteger(1);
-    when(jmx.triggerRepair(any(), any(), any(), any(), any(), anyBoolean(), any(), any(), any(), anyInt()))
+    when(jmx.triggerRepair(any(), any(), any(), anyBoolean(), any(), any(), any(), anyInt()))
         .then(
             (invocation) -> {
               final int repairNumber = repairNumberCounter.getAndIncrement();
               new Thread() {
                 @Override
                 public void run() {
-                  ((RepairStatusHandler) invocation.getArgument(7))
+                  ((RepairStatusHandler) invocation.getArgument(5))
                       .handle(
                           repairNumber,
                           Optional.of(ActiveRepairService.Status.STARTED),
                           Optional.empty(),
                           null,
                           jmx);
-                  ((RepairStatusHandler) invocation.getArgument(7))
+                  ((RepairStatusHandler) invocation.getArgument(5))
                       .handle(
                           repairNumber,
                           Optional.of(ActiveRepairService.Status.SESSION_SUCCESS),
                           Optional.empty(),
                           null,
                           jmx);
-                  ((RepairStatusHandler) invocation.getArgument(7))
+                  ((RepairStatusHandler) invocation.getArgument(5))
                       .handle(
                           repairNumber,
                           Optional.of(ActiveRepairService.Status.FINISHED),

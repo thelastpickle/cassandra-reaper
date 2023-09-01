@@ -56,6 +56,7 @@ import com.datastax.mgmtapi.client.invoker.ApiException;
 import com.datastax.mgmtapi.client.model.EndpointStates;
 import com.datastax.mgmtapi.client.model.Job;
 import com.datastax.mgmtapi.client.model.RepairRequest;
+import com.datastax.mgmtapi.client.model.RepairRequestResponse;
 import com.datastax.mgmtapi.client.model.SnapshotDetails;
 import com.datastax.mgmtapi.client.model.StatusChange;
 import com.datastax.mgmtapi.client.model.TakeSnapshotRequest;
@@ -196,7 +197,11 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
 
   @Override
   public void cancelAllRepairs() {
-    // TODO: implement me.
+    try {
+      apiClient.deleteRepairsV2();
+    } catch (ApiException ae) {
+      LOG.error("Failed to cancel all repairs", ae);
+    }
   }
 
   @Override
@@ -217,8 +222,6 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
 
   @Override
   public int triggerRepair(
-      BigInteger beginToken,
-      BigInteger endToken,
       String keyspace,
       RepairParallelism repairParallelism,
       Collection<String> columnFamilies,
@@ -231,7 +234,22 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
 
     String jobId;
     try {
-      jobId = apiClient.repair1(new RepairRequest());
+      RepairRequestResponse resp = apiClient.putRepairV2(
+          (new RepairRequest())
+              .fullRepair(fullRepair)
+              .keyspace(keyspace)
+              .tables(new ArrayList<>(columnFamilies))
+              .repairParallelism(RepairRequest.RepairParallelismEnum.fromValue(repairParallelism.getName()))
+              .repairThreadCount(repairThreadCount)
+              .associatedTokens(
+                  associatedTokens.stream().map(i ->
+                      (new com.datastax.mgmtapi.client.model.RingRange())
+                          .start(i.getStart().longValue())
+                          .end(i.getEnd().longValue())
+                ).collect(Collectors.toList())
+              )
+      );
+      jobId = resp.getRepairId();
     } catch (ApiException e) {
       throw new ReaperException(e);
     }

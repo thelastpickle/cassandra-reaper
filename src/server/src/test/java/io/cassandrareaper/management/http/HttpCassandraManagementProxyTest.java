@@ -22,9 +22,9 @@ import io.cassandrareaper.core.Table;
 import io.cassandrareaper.management.RepairStatusHandler;
 import io.cassandrareaper.management.http.models.JobStatusTracker;
 
-import java.math.BigInteger;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -34,6 +34,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import com.datastax.mgmtapi.client.api.DefaultApi;
 import com.datastax.mgmtapi.client.model.Job;
+import com.datastax.mgmtapi.client.model.RepairRequest;
+import com.datastax.mgmtapi.client.model.RepairRequestResponse;
 import com.datastax.mgmtapi.client.model.SnapshotDetails;
 import com.datastax.mgmtapi.client.model.StatusChange;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -51,6 +53,8 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -118,13 +122,15 @@ public class HttpCassandraManagementProxyTest {
   @Test
   public void testRepairProcessMapHandlers() throws Exception {
     DefaultApi mockClient = Mockito.mock(DefaultApi.class);
-    when(mockClient.repair1(any())).thenReturn("repair-123456789");
+    doReturn((new RepairRequestResponse()).repairId("repair-123456789")).when(mockClient).putRepairV2(any());
+    ScheduledExecutorService executorService = Mockito.mock(ScheduledExecutorService.class);
+    doReturn(ConcurrentUtils.constantFuture(null)).when(executorService).submit(any(Callable.class));
 
     HttpCassandraManagementProxy httpCassandraManagementProxy = mockProxy(mockClient);
 
     RepairStatusHandler repairStatusHandler = Mockito.mock(RepairStatusHandler.class);
 
-    int repairNo = httpCassandraManagementProxy.triggerRepair(BigInteger.ZERO, BigInteger.ONE, "ks",
+    int repairNo = httpCassandraManagementProxy.triggerRepair("ks",
         RepairParallelism.PARALLEL,
         Collections.singleton("table"), true, Collections.emptyList(), repairStatusHandler, Collections.emptyList(), 1);
 
@@ -146,10 +152,14 @@ public class HttpCassandraManagementProxyTest {
 
   @Test
   public void testNotificationsTracker() throws Exception {
-    DefaultApi mockClient = Mockito.mock(DefaultApi.class);
-    when(mockClient.repair1(any())).thenReturn("repair-123456789");
-
+    DefaultApi mockClient = mock(DefaultApi.class);
+    doReturn((new RepairRequestResponse()).repairId("repair-123456789")).when(mockClient).putRepairV2(any());
     HttpCassandraManagementProxy httpCassandraManagementProxy = mockProxy(mockClient);
+    HttpManagementConnectionFactory connectionFactory = Mockito.mock(HttpManagementConnectionFactory.class);
+
+    ScheduledExecutorService executorService = mock(ScheduledExecutorService.class);
+    doReturn(ConcurrentUtils.constantFuture(null)).when(executorService).submit(any(Callable.class));
+    when(connectionFactory.connectAny(any())).thenReturn(httpCassandraManagementProxy);
 
     // Since we don't have existing implementation of RepairStatusHandler interface, we'll create a small "mock
     // implementation" here to catch all the calls to the handler() method
@@ -157,10 +167,22 @@ public class HttpCassandraManagementProxyTest {
     RepairStatusHandler workAroundHandler = (repairNumber, status, progress, message, cassandraManagementProxy)
         -> callTimes.incrementAndGet();
 
-    int repairNo = httpCassandraManagementProxy.triggerRepair(BigInteger.ZERO, BigInteger.ONE, "ks",
+    int repairNo = httpCassandraManagementProxy.triggerRepair("ks",
         RepairParallelism.PARALLEL,
         Collections.singleton("table"), true, Collections.emptyList(), workAroundHandler,
         Collections.emptyList(), 1);
+
+    verify(mockClient).putRepairV2(eq(
+        (new RepairRequest())
+          .keyspace("ks")
+          .repairParallelism(RepairRequest.RepairParallelismEnum.PARALLEL)
+          .tables(Arrays.asList("table"))
+          .fullRepair(true)
+          .datacenters(null)
+          .repairThreadCount(1)
+          .associatedTokens(Collections.emptyList())
+        )
+    );
 
     // We want the execution to happen in the same thread for this test
     httpCassandraManagementProxy.repairStatusExecutors.put(repairNo, MoreExecutors.newDirectExecutorService());
@@ -243,4 +265,16 @@ public class HttpCassandraManagementProxyTest {
     return new HttpCassandraManagementProxy(
         null, "/", InetSocketAddress.createUnresolved("localhost", 8080), executorService, mockClient);
   }
+
+  @Test
+  public void testCancelAllRepairs() throws Exception {
+    DefaultApi mockClient = Mockito.mock(DefaultApi.class);
+    HttpCassandraManagementProxy httpCassandraManagementProxy = mockProxy(mockClient);
+
+    httpCassandraManagementProxy.cancelAllRepairs();
+    verify(mockClient).deleteRepairsV2();
+    verifyNoMoreInteractions(mockClient);
+  }
+
+
 }

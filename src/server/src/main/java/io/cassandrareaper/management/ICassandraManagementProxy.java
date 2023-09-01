@@ -118,8 +118,6 @@ public interface ICassandraManagementProxy {
    * @return Repair command number, or 0 if nothing to repair
    */
   int triggerRepair(
-      BigInteger beginToken,
-      BigInteger endToken,
       String keyspace,
       RepairParallelism repairParallelism,
       Collection<String> columnFamilies,

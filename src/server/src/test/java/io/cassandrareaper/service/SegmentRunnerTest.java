@@ -154,7 +154,7 @@ public final class SegmentRunnerTest {
     }
 
 
-    when(jmx.triggerRepair(any(), any(), any(), any(), any(), anyBoolean(), any(), any(), any(), anyInt()))
+    when(jmx.triggerRepair(any(), any(), any(), anyBoolean(), any(), any(), any(), anyInt()))
         .then(
             (invocation) -> {
               assertEquals(
@@ -166,7 +166,7 @@ public final class SegmentRunnerTest {
                       new Thread() {
                         @Override
                         public void run() {
-                          ((RepairStatusHandler) invocation.getArgument(7))
+                          ((RepairStatusHandler) invocation.getArgument(5))
                               .handle(
                                   1,
                                   Optional.of(ActiveRepairService.Status.STARTED),
@@ -276,7 +276,7 @@ public final class SegmentRunnerTest {
       throw new AssertionError(ex);
     }
 
-    when(jmx.triggerRepair(any(), any(), any(), any(), any(), anyBoolean(), any(), any(), any(), anyInt()))
+    when(jmx.triggerRepair(any(), any(), any(), anyBoolean(), any(), any(), any(), anyInt()))
         .then(
             (invocation) -> {
               assertEquals(
@@ -286,7 +286,7 @@ public final class SegmentRunnerTest {
               future.setValue(
                   executor.submit(
                       () -> {
-                        ((RepairStatusHandler) invocation.getArgument(7))
+                        ((RepairStatusHandler) invocation.getArgument(5))
                             .handle(
                                 1,
                                 Optional.of(ActiveRepairService.Status.STARTED),
@@ -300,7 +300,7 @@ public final class SegmentRunnerTest {
 
                         // test an unrelated repair. Should throw exception
                         try {
-                          ((RepairStatusHandler) invocation.getArgument(7))
+                          ((RepairStatusHandler) invocation.getArgument(5))
                               .handle(
                                   2,
                                   Optional.of(ActiveRepairService.Status.SESSION_FAILED),
@@ -311,7 +311,7 @@ public final class SegmentRunnerTest {
                         } catch (IllegalArgumentException ignore) {
                         }
 
-                        ((RepairStatusHandler) invocation.getArgument(7))
+                        ((RepairStatusHandler) invocation.getArgument(5))
                             .handle(
                                 1,
                                 Optional.of(ActiveRepairService.Status.SESSION_SUCCESS),
@@ -323,7 +323,7 @@ public final class SegmentRunnerTest {
                             RepairSegment.State.DONE,
                             storage.getRepairSegmentDao().getRepairSegment(runId, segmentId).get().getState());
 
-                        ((RepairStatusHandler) invocation.getArgument(7))
+                        ((RepairStatusHandler) invocation.getArgument(5))
                             .handle(
                                 1,
                                 Optional.of(ActiveRepairService.Status.FINISHED),
@@ -434,7 +434,7 @@ public final class SegmentRunnerTest {
     }
 
 
-    when(jmx.triggerRepair(any(), any(), any(), any(), any(), anyBoolean(), any(), any(), any(), anyInt()))
+    when(jmx.triggerRepair(any(), any(), any(), anyBoolean(), any(), any(), any(), anyInt()))
         .then(
             (invocation) -> {
               assertEquals(
@@ -444,7 +444,7 @@ public final class SegmentRunnerTest {
               future.setValue(
                   executor.submit(
                       () -> {
-                        ((RepairStatusHandler) invocation.getArgument(7))
+                        ((RepairStatusHandler) invocation.getArgument(5))
                             .handle(
                                 1,
                                 Optional.of(ActiveRepairService.Status.STARTED),
@@ -456,7 +456,7 @@ public final class SegmentRunnerTest {
                             RepairSegment.State.RUNNING,
                             storage.getRepairSegmentDao().getRepairSegment(runId, segmentId).get().getState());
 
-                        ((RepairStatusHandler) invocation.getArgument(7))
+                        ((RepairStatusHandler) invocation.getArgument(5))
                             .handle(
                                 1,
                                 Optional.of(ActiveRepairService.Status.SESSION_FAILED),
@@ -468,7 +468,7 @@ public final class SegmentRunnerTest {
                             RepairSegment.State.NOT_STARTED,
                             storage.getRepairSegmentDao().getRepairSegment(runId, segmentId).get().getState());
 
-                        ((RepairStatusHandler) invocation.getArgument(7))
+                        ((RepairStatusHandler) invocation.getArgument(5))
                             .handle(
                                 1,
                                 Optional.of(ActiveRepairService.Status.FINISHED),
@@ -581,7 +581,7 @@ public final class SegmentRunnerTest {
     }
 
 
-    when(jmx.triggerRepair(any(), any(), any(), any(), any(), anyBoolean(), any(), any(), any(), anyInt()))
+    when(jmx.triggerRepair(any(), any(), any(), anyBoolean(), any(), any(), any(), anyInt()))
         .then(
             invocation -> {
               assertEquals(
@@ -591,7 +591,7 @@ public final class SegmentRunnerTest {
               future.setValue(
                   executor.submit(
                       () -> {
-                        ((RepairStatusHandler) invocation.getArgument(7))
+                        ((RepairStatusHandler) invocation.getArgument(5))
                             .handle(
                                 1,
                                 Optional.of(ActiveRepairService.Status.STARTED),
@@ -599,7 +599,7 @@ public final class SegmentRunnerTest {
                                 "Repair command 1 has started",
                                 jmx);
 
-                        ((RepairStatusHandler) invocation.getArgument(7))
+                        ((RepairStatusHandler) invocation.getArgument(5))
                             .handle(
                                 1,
                                 Optional.of(ActiveRepairService.Status.FINISHED),
@@ -611,7 +611,7 @@ public final class SegmentRunnerTest {
                             RepairSegment.State.RUNNING,
                             storage.getRepairSegmentDao().getRepairSegment(runId, segmentId).get().getState());
 
-                        ((RepairStatusHandler) invocation.getArgument(7))
+                        ((RepairStatusHandler) invocation.getArgument(5))
                             .handle(
                                 1,
                                 Optional.of(ActiveRepairService.Status.SESSION_SUCCESS),
@@ -723,7 +723,7 @@ public final class SegmentRunnerTest {
     }
 
 
-    when(jmx.triggerRepair(any(), any(), any(), any(), any(), anyBoolean(), any(), any(), any(), anyInt()))
+    when(jmx.triggerRepair(any(), any(), any(), anyBoolean(), any(), any(), any(), anyInt()))
         .then(
             invocation -> {
               assertEquals(
@@ -733,7 +733,7 @@ public final class SegmentRunnerTest {
               future.setValue(
                   executor.submit(
                       () -> {
-                        ((RepairStatusHandler) invocation.getArgument(7))
+                        ((RepairStatusHandler) invocation.getArgument(5))
                             .handle(
                                 1,
                                 Optional.empty(),
@@ -741,7 +741,7 @@ public final class SegmentRunnerTest {
                                 "Repair command 1 has started",
                                 jmx);
 
-                        ((RepairStatusHandler) invocation.getArgument(7))
+                        ((RepairStatusHandler) invocation.getArgument(5))
                             .handle(
                                 1,
                                 Optional.empty(),
@@ -753,7 +753,7 @@ public final class SegmentRunnerTest {
                             RepairSegment.State.RUNNING,
                             storage.getRepairSegmentDao().getRepairSegment(runId, segmentId).get().getState());
 
-                        ((RepairStatusHandler) invocation.getArgument(7))
+                        ((RepairStatusHandler) invocation.getArgument(5))
                             .handle(
                                 1,
                                 Optional.empty(),
@@ -867,7 +867,7 @@ public final class SegmentRunnerTest {
     }
 
 
-    when(jmx.triggerRepair(any(), any(), any(), any(), any(), anyBoolean(), any(), any(), any(), anyInt()))
+    when(jmx.triggerRepair(any(), any(), any(), anyBoolean(), any(), any(), any(), anyInt()))
         .then(
             invocation -> {
               assertEquals(
@@ -877,7 +877,7 @@ public final class SegmentRunnerTest {
               future.setValue(
                   executor.submit(
                       () -> {
-                        ((RepairStatusHandler) invocation.getArgument(7))
+                        ((RepairStatusHandler) invocation.getArgument(5))
                             .handle(
                                 1,
                                 Optional.of(ActiveRepairService.Status.STARTED),
@@ -885,7 +885,7 @@ public final class SegmentRunnerTest {
                                 "Repair command 1 has started",
                                 jmx);
 
-                        ((RepairStatusHandler) invocation.getArgument(7))
+                        ((RepairStatusHandler) invocation.getArgument(5))
                             .handle(
                                 1,
                                 Optional.of(ActiveRepairService.Status.FINISHED),
@@ -897,7 +897,7 @@ public final class SegmentRunnerTest {
                             RepairSegment.State.RUNNING,
                             storage.getRepairSegmentDao().getRepairSegment(runId, segmentId).get().getState());
 
-                        ((RepairStatusHandler) invocation.getArgument(7))
+                        ((RepairStatusHandler) invocation.getArgument(5))
                             .handle(
                                 1,
                                 Optional.of(ActiveRepairService.Status.SESSION_FAILED),
@@ -1012,7 +1012,7 @@ public final class SegmentRunnerTest {
     }
 
 
-    when(jmx.triggerRepair(any(), any(), any(), any(), any(), anyBoolean(), any(), any(), any(), anyInt()))
+    when(jmx.triggerRepair(any(), any(), any(), anyBoolean(), any(), any(), any(), anyInt()))
         .then(
             invocation -> {
               assertEquals(
@@ -1022,7 +1022,7 @@ public final class SegmentRunnerTest {
               future.setValue(
                   executor.submit(
                       () -> {
-                        ((RepairStatusHandler) invocation.getArgument(7))
+                        ((RepairStatusHandler) invocation.getArgument(5))
                             .handle(
                                 1,
                                 Optional.empty(),
@@ -1030,7 +1030,7 @@ public final class SegmentRunnerTest {
                                 "Repair command 1 has started",
                                 jmx);
 
-                        ((RepairStatusHandler) invocation.getArgument(7))
+                        ((RepairStatusHandler) invocation.getArgument(5))
                             .handle(
                                 1,
                                 Optional.empty(),
@@ -1042,7 +1042,7 @@ public final class SegmentRunnerTest {
                             RepairSegment.State.RUNNING,
                             storage.getRepairSegmentDao().getRepairSegment(runId, segmentId).get().getState());
 
-                        ((RepairStatusHandler) invocation.getArgument(7))
+                        ((RepairStatusHandler) invocation.getArgument(5))
                             .handle(
                                 1,
                                 Optional.empty(),
@@ -1185,7 +1185,7 @@ public final class SegmentRunnerTest {
     }
 
 
-    when(jmx.triggerRepair(any(), any(), any(), any(), any(), anyBoolean(), any(), any(), any(), anyInt()))
+    when(jmx.triggerRepair(any(), any(), any(), anyBoolean(), any(), any(), any(), anyInt()))
         .thenThrow(new ReaperException("failure"));
 
     context.managementConnectionFactory = new JmxManagementConnectionFactory(context, new NoopCrypotograph()) {
@@ -1279,7 +1279,7 @@ public final class SegmentRunnerTest {
     }
 
 
-    when(jmx.triggerRepair(any(), any(), any(), any(), any(), anyBoolean(), any(), any(), any(), anyInt()))
+    when(jmx.triggerRepair(any(), any(), any(), anyBoolean(), any(), any(), any(), anyInt()))
         .thenReturn(0);
 
     context.managementConnectionFactory = new JmxManagementConnectionFactory(context, new NoopCrypotograph()) {
