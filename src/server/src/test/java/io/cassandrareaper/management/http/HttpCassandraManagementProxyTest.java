@@ -34,6 +34,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import com.datastax.mgmtapi.client.api.DefaultApi;
+import com.datastax.mgmtapi.client.invoker.ApiException;
 import com.datastax.mgmtapi.client.model.CompactRequest;
 import com.datastax.mgmtapi.client.model.Compaction;
 import com.datastax.mgmtapi.client.model.Job;
@@ -58,6 +59,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
@@ -320,6 +322,87 @@ public class HttpCassandraManagementProxyTest {
             "sstables", "sst3, sst4"
         )
     );
+    verifyNoMoreInteractions(mockClient);
+  }
+
+  @Test
+  public void testListTablesByKeyspace() throws Exception {
+    DefaultApi mockClient = Mockito.mock(DefaultApi.class);
+    when(mockClient.listKeyspaces(anyString())).thenReturn(ImmutableList.of(
+        "ks1",
+        "ks2"
+    ));
+
+    when(mockClient.listTables(Mockito.matches("ks1"))).thenReturn(ImmutableList.of(
+        "table1",
+        "table2"
+    ));
+
+    when(mockClient.listTables(Mockito.matches("ks2"))).thenReturn(ImmutableList.of(
+        "table3",
+        "table4"
+    ));
+
+    HttpCassandraManagementProxy proxy = mockProxy(mockClient);
+
+    Map<String, List<String>> tablesByKeyspace = proxy.listTablesByKeyspace();
+
+    verify(mockClient).listKeyspaces(anyString());
+    verify(mockClient).listTables("ks1");
+    verify(mockClient).listTables("ks2");
+    assertThat(tablesByKeyspace).containsExactlyInAnyOrderEntriesOf(
+        ImmutableMap.of(
+          "ks1", ImmutableList.of("table1", "table2"),
+          "ks2", ImmutableList.of("table3", "table4")
+        )
+    );
+
+    verifyNoMoreInteractions(mockClient);
+  }
+
+  @Test
+  public void testListTablesByKeyspacePartialFailure() throws Exception {
+    DefaultApi mockClient = Mockito.mock(DefaultApi.class);
+    when(mockClient.listKeyspaces(anyString())).thenReturn(ImmutableList.of(
+        "ks1",
+        "ks2"
+    ));
+
+    when(mockClient.listTables(Mockito.matches("ks1"))).thenThrow(new ApiException(500, "doh!"));
+
+    when(mockClient.listTables(Mockito.matches("ks2"))).thenReturn(ImmutableList.of(
+        "table3",
+        "table4"
+    ));
+
+    HttpCassandraManagementProxy proxy = mockProxy(mockClient);
+
+    Map<String, List<String>> tablesByKeyspace = proxy.listTablesByKeyspace();
+
+    verify(mockClient).listKeyspaces(anyString());
+    verify(mockClient).listTables("ks1");
+    verify(mockClient).listTables("ks2");
+    assertThat(tablesByKeyspace).containsExactlyInAnyOrderEntriesOf(
+        ImmutableMap.of(
+          "ks2", ImmutableList.of("table3", "table4")
+        )
+    );
+
+    verifyNoMoreInteractions(mockClient);
+  }
+
+  @Test
+  public void testListTablesByKeyspaceFailure() throws Exception {
+    DefaultApi mockClient = Mockito.mock(DefaultApi.class);
+    when(mockClient.listKeyspaces(anyString())).thenThrow(new ApiException(500, "Catastrophic failure"));
+
+    HttpCassandraManagementProxy proxy = mockProxy(mockClient);
+
+    Map<String, List<String>> tablesByKeyspace = proxy.listTablesByKeyspace();
+
+    verify(mockClient).listKeyspaces(anyString());
+    assertThat(tablesByKeyspace).isEmpty();
+
     verifyNoMoreInteractions(mockClient);
   }
 
