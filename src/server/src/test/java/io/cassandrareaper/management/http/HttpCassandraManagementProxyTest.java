@@ -17,6 +17,7 @@
 
 package io.cassandrareaper.management.http;
 
+import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Snapshot;
 import io.cassandrareaper.core.Table;
 import io.cassandrareaper.management.RepairStatusHandler;
@@ -360,7 +361,7 @@ public class HttpCassandraManagementProxyTest {
     verifyNoMoreInteractions(mockClient);
   }
 
-  @Test
+  @Test(expected = ReaperException.class)
   public void testListTablesByKeyspacePartialFailure() throws Exception {
     DefaultApi mockClient = Mockito.mock(DefaultApi.class);
     when(mockClient.listKeyspaces(anyString())).thenReturn(ImmutableList.of(
@@ -377,33 +378,17 @@ public class HttpCassandraManagementProxyTest {
 
     HttpCassandraManagementProxy proxy = mockProxy(mockClient);
 
-    Map<String, List<String>> tablesByKeyspace = proxy.listTablesByKeyspace();
-
-    verify(mockClient).listKeyspaces(anyString());
-    verify(mockClient).listTables("ks1");
-    verify(mockClient).listTables("ks2");
-    assertThat(tablesByKeyspace).containsExactlyInAnyOrderEntriesOf(
-        ImmutableMap.of(
-          "ks2", ImmutableList.of("table3", "table4")
-        )
-    );
-
-    verifyNoMoreInteractions(mockClient);
+    proxy.listTablesByKeyspace();
   }
 
-  @Test
+  @Test(expected = ReaperException.class)
   public void testListTablesByKeyspaceFailure() throws Exception {
     DefaultApi mockClient = Mockito.mock(DefaultApi.class);
     when(mockClient.listKeyspaces(anyString())).thenThrow(new ApiException(500, "Catastrophic failure"));
 
     HttpCassandraManagementProxy proxy = mockProxy(mockClient);
 
-    Map<String, List<String>> tablesByKeyspace = proxy.listTablesByKeyspace();
-
-    verify(mockClient).listKeyspaces(anyString());
-    assertThat(tablesByKeyspace).isEmpty();
-
-    verifyNoMoreInteractions(mockClient);
+    proxy.listTablesByKeyspace();
   }
 
   private static HttpCassandraManagementProxy mockProxy(DefaultApi mockClient) {

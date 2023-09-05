@@ -106,7 +106,7 @@ public interface ICassandraManagementProxy {
   /**
    * Checks if table exists in the cluster by instantiating a MBean for that table.
    */
-  Map<String, List<String>> listTablesByKeyspace();
+  Map<String, List<String>> listTablesByKeyspace() throws ReaperException;
 
 
   /**
