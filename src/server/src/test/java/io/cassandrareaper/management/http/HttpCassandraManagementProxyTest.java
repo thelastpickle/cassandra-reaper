@@ -19,6 +19,7 @@ package io.cassandrareaper.management.http;
 
 import io.cassandrareaper.core.Snapshot;
 import io.cassandrareaper.core.Table;
+import io.cassandrareaper.management.ICassandraManagementProxy;
 import io.cassandrareaper.management.RepairStatusHandler;
 import io.cassandrareaper.management.http.models.JobStatusTracker;
 
@@ -361,5 +362,50 @@ public class HttpCassandraManagementProxyTest {
         new BigInteger("4"));
   }
 
+  @Test
+  public void getEndpointToHostId() throws Exception {
+    DefaultApi mockClient = Mockito.mock(DefaultApi.class);
+    List<Map<String, String>> mockEntity = new ArrayList<>();
+    mockEntity.add(ImmutableMap.of(
+        "ENDPOINT_IP", "127.0.0.1",
+        "HOST_ID", "fakehostID1"
+      )
+    );
+    mockEntity.add(ImmutableMap.of(
+        "ENDPOINT_IP", "127.0.0.2",
+        "HOST_ID", "fakehostID2"
+      )
+    );
+    EndpointStates mockEndpointStates = new EndpointStates().entity(mockEntity);
+    when(mockClient.getEndpointStates()).thenReturn(mockEndpointStates);
+    mockProxy(mockClient);
+    assertThat(mockProxy(mockClient).getEndpointToHostId()).containsAllEntriesOf(
+        ImmutableMap.of(
+        "127.0.0.1", "fakehostID1",
+        "127.0.0.2", "fakehostID2"
+      )
+    );
+  }
+
+  @Test
+  public void testGetLocalEndpoint() throws Exception {
+    DefaultApi mockClient = Mockito.mock(DefaultApi.class);
+    ScheduledExecutorService executorService = mock(ScheduledExecutorService.class);
+    when(executorService.submit(any(Callable.class))).thenAnswer(i -> {
+      Callable<Object> callable = i.getArgument(0);
+      callable.call();
+      return ConcurrentUtils.constantFuture(null);
+    });
+
+    ICassandraManagementProxy mockProxyIp = new HttpCassandraManagementProxy(
+        null, "/", InetSocketAddress.createUnresolved("192.168.1.1", 8080), executorService, mockClient);
+    assertThat(mockProxyIp.getLocalEndpoint()).isEqualTo("192.168.1.1");
+
+    ICassandraManagementProxy mockProxyDns = new HttpCassandraManagementProxy(
+        null, "/", InetSocketAddress.createUnresolved("localhost", 8080), executorService, mockClient);
+    assertThat(mockProxyDns.getLocalEndpoint()).isEqualTo("127.0.0.1");
+
+
+  }
 
 }
