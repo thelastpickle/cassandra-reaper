@@ -22,6 +22,7 @@ import io.cassandrareaper.core.Table;
 import io.cassandrareaper.management.RepairStatusHandler;
 import io.cassandrareaper.management.http.models.JobStatusTracker;
 
+import java.math.BigInteger;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -36,6 +37,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import com.datastax.mgmtapi.client.api.DefaultApi;
 import com.datastax.mgmtapi.client.model.CompactRequest;
 import com.datastax.mgmtapi.client.model.Compaction;
+import com.datastax.mgmtapi.client.model.EndpointStates;
 import com.datastax.mgmtapi.client.model.Job;
 import com.datastax.mgmtapi.client.model.RepairRequest;
 import com.datastax.mgmtapi.client.model.RepairRequestResponse;
@@ -333,6 +335,30 @@ public class HttpCassandraManagementProxyTest {
 
     return new HttpCassandraManagementProxy(
         null, "/", InetSocketAddress.createUnresolved("localhost", 8080), executorService, mockClient);
+  }
+
+  @Test
+  public void testGetTokens() throws Exception {
+    DefaultApi mockClient = Mockito.mock(DefaultApi.class);
+    List<Map<String, String>> mockEntity = new ArrayList<>();
+    mockEntity.add(ImmutableMap.of(
+        "TOKENS", "1,2,3,4",
+        "IS_LOCAL", "true"
+      )
+    );
+    mockEntity.add(ImmutableMap.of(
+        "TOKENS", "5,6,7,8",
+        "IS_LOCAL", "false"
+      )
+    );
+    EndpointStates mockEndpointStates = new EndpointStates().entity(mockEntity);
+    when(mockClient.getEndpointStates()).thenReturn(mockEndpointStates);
+    mockProxy(mockClient);
+    assertThat(mockProxy(mockClient).getTokens()).containsOnly(
+        new BigInteger("1"),
+        new BigInteger("2"),
+        new BigInteger("3"),
+        new BigInteger("4"));
   }
 
 

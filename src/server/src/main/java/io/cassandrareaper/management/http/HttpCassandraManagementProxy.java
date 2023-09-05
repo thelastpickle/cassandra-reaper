@@ -108,7 +108,23 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
 
   @Override
   public List<BigInteger> getTokens() {
-    return null; // TODO: implement me.
+    EndpointStates endpointStates;
+    try {
+      endpointStates =  apiClient.getEndpointStates();
+      return Arrays.stream(endpointStates.getEntity().stream().filter(i ->
+              i.getOrDefault("IS_LOCAL", "false")
+              .equals("true")
+          )
+          .findFirst()
+          .orElseThrow(() -> new RuntimeException("Failed to find local endpoint"))
+          .get("TOKENS")
+          .split(","))
+          .map(strToken -> new BigInteger(strToken)).collect(Collectors.toList());
+
+    } catch (Exception e) {
+      LOG.error("Failed to retrieve endpoint states", e);
+      return Collections.emptyList();
+    }
   }
 
   @Override
@@ -428,6 +444,7 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
   // From StreamManagerMBean
   @Override
   public Set<CompositeData> getCurrentStreams() {
+    // TODO: implement me
     return new HashSet<CompositeData>();
   }
 
