@@ -205,8 +205,19 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
   }
 
   @Override
-  public Map<String, List<String>> listTablesByKeyspace() {
-    return null; // TODO: implement me.
+  public Map<String, List<String>> listTablesByKeyspace() throws ReaperException {
+    Map<String, List<String>> tablesByKeyspace = Maps.newHashMap();
+    try {
+      List<String> keyspaces = apiClient.listKeyspaces("");
+      for (String keyspace : keyspaces) {
+        List<String> tables = apiClient.listTables(keyspace);
+        tablesByKeyspace.put(keyspace, tables);
+      }
+    } catch (ApiException ae) {
+      LOG.warn("Failed to list keyspaces", ae);
+      throw new ReaperException(ae);
+    }
+    return Collections.unmodifiableMap(tablesByKeyspace);
   }
 
   @Override
