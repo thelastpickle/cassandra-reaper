@@ -518,7 +518,7 @@ public final class JmxCassandraManagementProxy implements ICassandraManagementPr
   }
 
   @Override
-  public Map<String, List<String>> listTablesByKeyspace() {
+  public Map<String, List<String>> listTablesByKeyspace() throws ReaperException {
     Map<String, List<String>> tablesByKeyspace = Maps.newHashMap();
     try {
       Set<ObjectName> beanSet = mbeanServer.queryNames(ObjectNames.COLUMN_FAMILIES, null);
