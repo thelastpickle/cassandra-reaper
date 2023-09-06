@@ -22,7 +22,6 @@ import io.cassandrareaper.core.Snapshot;
 import io.cassandrareaper.core.Table;
 import io.cassandrareaper.management.RepairStatusHandler;
 import io.cassandrareaper.management.http.models.JobStatusTracker;
-import jersey.repackaged.com.google.common.collect.Lists;
 
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
@@ -48,6 +47,7 @@ import com.datastax.mgmtapi.client.model.StatusChange;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.MoreExecutors;
 import org.apache.cassandra.repair.RepairParallelism;
 import org.apache.commons.lang3.concurrent.ConcurrentUtils;
@@ -393,6 +393,7 @@ public class HttpCassandraManagementProxyTest {
     proxy.listTablesByKeyspace();
   }
 
+  @Test
   public void testGetPartitioner() throws ApiException, ReaperException {
     DefaultApi mockClient = Mockito.mock(DefaultApi.class);
     List<Map<String, String>> entities = ImmutableList.of(
@@ -411,6 +412,7 @@ public class HttpCassandraManagementProxyTest {
     verifyNoMoreInteractions(mockClient);
   }
 
+  @Test(expected = ReaperException.class)
   public void testGetPartitionerNoEntity() throws ApiException, ReaperException {
     DefaultApi mockClient = Mockito.mock(DefaultApi.class);
     List<Map<String, String>> entities = Lists.newArrayList();
