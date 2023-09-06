@@ -43,6 +43,7 @@ import systems.composable.dropwizard.cassandra.network.AddressTranslatorFactory;
 
 public final class ReaperApplicationConfiguration extends Configuration {
 
+  public static final int DEFAULT_MGMT_API_METRICS_PORT = 9000;
   private static final int DEFAULT_SEGMENT_COUNT_PER_NODE = 64;
   private static final Integer DEFAULT_MAX_PENDING_COMPACTIONS = 20;
 
@@ -165,6 +166,9 @@ public final class ReaperApplicationConfiguration extends Configuration {
   @JsonProperty
   @Nullable
   private CryptographFactory cryptograph;
+
+  @JsonProperty
+  private Integer mgmtApiMetricsPort;
 
   public HttpManagement getHttpManagement() {
     return httpManagement;
@@ -503,6 +507,15 @@ public final class ReaperApplicationConfiguration extends Configuration {
 
   public void setCryptograph(@Nullable CryptographFactory cryptograph) {
     this.cryptograph = cryptograph;
+  }
+
+  public int getMgmtApiMetricsPort() {
+    return mgmtApiMetricsPort == null ? DEFAULT_MGMT_API_METRICS_PORT : mgmtApiMetricsPort;
+  }
+
+  @JsonProperty("mgmtApiMetricsPort")
+  public void setMgmtApiMetricsPort(int mgmtApiMetricsPort) {
+    this.mgmtApiMetricsPort = mgmtApiMetricsPort;
   }
 
   public enum DatacenterAvailability {

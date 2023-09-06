@@ -88,7 +88,7 @@ public interface ICassandraManagementProxy {
   /**
    * @return number of pending compactions on the node this proxy is connected to
    */
-  int getPendingCompactions() throws JMException;
+  int getPendingCompactions() throws ReaperException;
 
   Map<List<String>, List<String>> getRangeToEndpointMap(String keyspace) throws ReaperException;
 

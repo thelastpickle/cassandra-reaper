@@ -421,7 +421,7 @@ public final class JmxCassandraManagementProxy implements ICassandraManagementPr
   }
 
   @Override
-  public int getPendingCompactions() throws JMException {
+  public int getPendingCompactions() throws ReaperException {
     try {
       int pendingCount = (int) mbeanServer.getAttribute(ObjectNames.COMPACTIONS_PENDING, VALUE_ATTRIBUTE);
       return pendingCount;
@@ -434,8 +434,11 @@ public final class JmxCassandraManagementProxy implements ICassandraManagementPr
       return 0;
     } catch (RuntimeException e) {
       LOG.error(ERROR_GETTING_ATTR_JMX, e);
+    } catch (JMException e) {
+      LOG.error("Error getting pending compactions attribute from JMX", e);
+      throw new ReaperException(e);
     }
-    // If uncertain, assume it's running
+    // If uncertain, assume compactions are not running
     return 0;
   }
 
