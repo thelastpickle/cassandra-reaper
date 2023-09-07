@@ -368,8 +368,12 @@ public final class JmxCassandraManagementProxy implements ICassandraManagementPr
 
   @Override
   public String getPartitioner() throws ReaperException {
-    Preconditions.checkNotNull(ssProxy, "Looks like the proxy is not connected");
-    return ssProxy.getPartitionerName();
+    try {
+      Preconditions.checkNotNull(ssProxy, "Looks like the proxy is not connected");
+      return ssProxy.getPartitionerName();
+    } catch (RuntimeException e) {
+      throw new ReaperException(e);
+    }
   }
 
   @Override
