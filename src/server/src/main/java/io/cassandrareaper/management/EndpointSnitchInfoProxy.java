@@ -17,6 +17,8 @@
 
 package io.cassandrareaper.management;
 
+import io.cassandrareaper.ReaperException;
+
 import java.util.concurrent.ExecutionException;
 
 import com.google.common.cache.Cache;
@@ -40,7 +42,7 @@ public final class EndpointSnitchInfoProxy {
   }
 
 
-  public String getDataCenter() {
+  public String getDataCenter() throws ReaperException {
     return getDataCenter(proxy.getUntranslatedHost());
   }
 
