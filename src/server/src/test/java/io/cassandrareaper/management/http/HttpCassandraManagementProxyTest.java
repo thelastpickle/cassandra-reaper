@@ -49,6 +49,7 @@ import com.datastax.mgmtapi.client.model.StatusChange;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.MoreExecutors;
 import org.apache.cassandra.repair.RepairParallelism;
 import org.apache.commons.lang3.concurrent.ConcurrentUtils;
@@ -392,6 +393,48 @@ public class HttpCassandraManagementProxyTest {
     HttpCassandraManagementProxy proxy = mockProxy(mockClient);
 
     proxy.listTablesByKeyspace();
+  }
+
+  @Test
+  public void testGetPartitioner() throws ApiException, ReaperException {
+    DefaultApi mockClient = Mockito.mock(DefaultApi.class);
+    List<Map<String, String>> entities = ImmutableList.of(
+        ImmutableMap.of("PARTITIONER", "org.apache.cassandra.dht.Murmur3Partitioner")
+    );
+    EndpointStates endpointStatesMock = mock(EndpointStates.class);
+    when(endpointStatesMock.getEntity()).thenReturn(entities);
+    when(mockClient.getEndpointStates()).thenReturn(endpointStatesMock);
+
+    HttpCassandraManagementProxy proxy = mockProxy(mockClient);
+
+    String partitioner = proxy.getPartitioner();
+    verify(mockClient).getEndpointStates();
+    assertEquals("Partitioner didn't match the expected value",
+        "org.apache.cassandra.dht.Murmur3Partitioner", partitioner);
+    verifyNoMoreInteractions(mockClient);
+  }
+
+  @Test(expected = ReaperException.class)
+  public void testGetPartitionerNoEntity() throws ApiException, ReaperException {
+    DefaultApi mockClient = Mockito.mock(DefaultApi.class);
+    List<Map<String, String>> entities = Lists.newArrayList();
+    EndpointStates endpointStatesMock = mock(EndpointStates.class);
+    when(endpointStatesMock.getEntity()).thenReturn(entities);
+    when(mockClient.getEndpointStates()).thenReturn(endpointStatesMock);
+
+    HttpCassandraManagementProxy proxy = mockProxy(mockClient);
+
+    proxy.getPartitioner();
+  }
+
+  @Test(expected = ReaperException.class)
+  public void testGetPartitionerException() throws ApiException, ReaperException {
+    DefaultApi mockClient = Mockito.mock(DefaultApi.class);
+    when(mockClient.getEndpointStates()).thenThrow(new ApiException(500, "yikes!"));
+
+    HttpCassandraManagementProxy proxy = mockProxy(mockClient);
+
+    proxy.getPartitioner();
   }
 
   private static HttpCassandraManagementProxy mockProxy(DefaultApi mockClient) {

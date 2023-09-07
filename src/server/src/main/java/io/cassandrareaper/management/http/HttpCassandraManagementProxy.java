@@ -165,8 +165,15 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
   }
 
   @Override
-  public String getPartitioner() {
-    return null; // TODO: implement me.
+  public String getPartitioner() throws ReaperException {
+    EndpointStates endpointStates;
+    try {
+      endpointStates = apiClient.getEndpointStates();
+      return endpointStates.getEntity().get(0).get("PARTITIONER");
+    } catch (ApiException | RuntimeException e) {
+      LOG.error("Failed to retrieve partitioner", e);
+      throw new ReaperException(e);
+    }
   }
 
   @Override

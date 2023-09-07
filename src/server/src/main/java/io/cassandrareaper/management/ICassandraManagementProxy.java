@@ -82,7 +82,7 @@ public interface ICassandraManagementProxy {
   /**
    * @return full class name of Cassandra's partitioner.
    */
-  String getPartitioner();
+  String getPartitioner() throws ReaperException;
 
   /**
    * @return number of pending compactions on the node this proxy is connected to
