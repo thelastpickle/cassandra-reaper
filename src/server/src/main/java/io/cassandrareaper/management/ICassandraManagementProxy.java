@@ -179,7 +179,7 @@ public interface ICassandraManagementProxy {
     return version1.compareTo(version2);
   }
 
-  String getUntranslatedHost();
+  String getUntranslatedHost() throws ReaperException;
 
   static double parseHumanReadableSize(String readableSize) {
     int spaceNdx = readableSize.indexOf(" ");

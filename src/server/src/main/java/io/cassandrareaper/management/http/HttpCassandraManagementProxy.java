@@ -480,9 +480,9 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
   }
 
   @Override
-  public String getUntranslatedHost() {
-    //TODO: implement me
-    return "";
+  public String getUntranslatedHost() throws ReaperException {
+    // TODO: we eventually need to implement address translation.
+    return getLocalEndpoint();
   }
 
   private Job getJobStatus(String id) {
