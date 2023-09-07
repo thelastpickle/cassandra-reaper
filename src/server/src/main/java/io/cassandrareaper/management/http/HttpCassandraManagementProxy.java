@@ -46,7 +46,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-import javax.management.JMException;
 import javax.management.openmbean.CompositeData;
 import javax.validation.constraints.NotNull;
 
@@ -229,13 +228,13 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
   }
 
   @Override
-  public int getPendingCompactions() throws JMException {
+  public int getPendingCompactions() throws ReaperException {
     return 1; // TODO: implement me.
   }
 
   @Override
-  public boolean isRepairRunning() throws JMException {
-    return true; // TODO: implement me.
+  public boolean isRepairRunning() throws ReaperException {
+    return !jobTracker.isEmpty();
   }
 
   @Override

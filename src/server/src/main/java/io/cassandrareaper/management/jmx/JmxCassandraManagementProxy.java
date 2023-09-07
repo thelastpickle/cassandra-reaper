@@ -420,7 +420,7 @@ public final class JmxCassandraManagementProxy implements ICassandraManagementPr
   }
 
   @Override
-  public int getPendingCompactions() throws JMException {
+  public int getPendingCompactions() throws ReaperException {
     try {
       int pendingCount = (int) mbeanServer.getAttribute(ObjectNames.COMPACTIONS_PENDING, VALUE_ATTRIBUTE);
       return pendingCount;
@@ -433,14 +433,20 @@ public final class JmxCassandraManagementProxy implements ICassandraManagementPr
       return 0;
     } catch (RuntimeException e) {
       LOG.error(ERROR_GETTING_ATTR_JMX, e);
+    } catch (JMException e) {
+      throw new ReaperException(e);
     }
     // If uncertain, assume it's running
     return 0;
   }
 
   @Override
-  public boolean isRepairRunning() throws JMException {
-    return isRepairRunningPost22() || isValidationCompactionRunning();
+  public boolean isRepairRunning() throws ReaperException {
+    try {
+      return isRepairRunningPost22() || isValidationCompactionRunning();
+    } catch (JMException e) {
+      throw new ReaperException(e);
+    }
   }
 
   /**

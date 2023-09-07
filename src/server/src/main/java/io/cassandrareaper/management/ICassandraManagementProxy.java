@@ -31,7 +31,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
-import javax.management.JMException;
 import javax.management.openmbean.CompositeData;
 import javax.validation.constraints.NotNull;
 
@@ -87,7 +86,7 @@ public interface ICassandraManagementProxy {
   /**
    * @return number of pending compactions on the node this proxy is connected to
    */
-  int getPendingCompactions() throws JMException;
+  int getPendingCompactions() throws ReaperException;
 
   Map<List<String>, List<String>> getRangeToEndpointMap(String keyspace) throws ReaperException;
 
@@ -101,7 +100,7 @@ public interface ICassandraManagementProxy {
   /**
    * @return true if any repairs are running on the node.
    */
-  boolean isRepairRunning() throws JMException;
+  boolean isRepairRunning() throws ReaperException;
 
   /**
    * Checks if table exists in the cluster by instantiating a MBean for that table.
