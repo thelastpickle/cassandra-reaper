@@ -567,4 +567,26 @@ public class HttpCassandraManagementProxyTest {
     verify(mockClient).getEndpointStates();
     verifyNoMoreInteractions(mockClient);
   }
+
+  @Test
+  public void testGetDatacenter() throws Exception {
+    DefaultApi mockClient = Mockito.mock(DefaultApi.class);
+    EndpointStates states = new EndpointStates();
+    states.addEntityItem(ImmutableMap.of(
+        "ENDPOINT_IP", "10.0.0.1",
+        "DC", "mydc1"
+    ));
+    states.addEntityItem(ImmutableMap.of(
+        "ENDPOINT_IP", "10.0.0.2",
+        "DC", "mydc2"
+    ));
+    when(mockClient.getEndpointStates()).thenReturn(states);
+
+    HttpCassandraManagementProxy proxy = mockProxy(mockClient);
+    String datacenterString = proxy.getDatacenter("10.0.0.2");
+
+    assertThat(datacenterString).isEqualTo("mydc2");
+    verify(mockClient).getEndpointStates();
+    verifyNoMoreInteractions(mockClient);
+  }
 }
