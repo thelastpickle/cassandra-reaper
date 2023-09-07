@@ -20,9 +20,11 @@ package io.cassandrareaper.management.http;
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Snapshot;
 import io.cassandrareaper.core.Table;
+import io.cassandrareaper.management.ICassandraManagementProxy;
 import io.cassandrareaper.management.RepairStatusHandler;
 import io.cassandrareaper.management.http.models.JobStatusTracker;
 
+import java.math.BigInteger;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -38,6 +40,7 @@ import com.datastax.mgmtapi.client.api.DefaultApi;
 import com.datastax.mgmtapi.client.invoker.ApiException;
 import com.datastax.mgmtapi.client.model.CompactRequest;
 import com.datastax.mgmtapi.client.model.Compaction;
+import com.datastax.mgmtapi.client.model.EndpointStates;
 import com.datastax.mgmtapi.client.model.Job;
 import com.datastax.mgmtapi.client.model.RepairRequest;
 import com.datastax.mgmtapi.client.model.RepairRequestResponse;
@@ -403,5 +406,74 @@ public class HttpCassandraManagementProxyTest {
         null, "/", InetSocketAddress.createUnresolved("localhost", 8080), executorService, mockClient);
   }
 
+  @Test
+  public void testGetTokens() throws Exception {
+    DefaultApi mockClient = Mockito.mock(DefaultApi.class);
+    List<Map<String, String>> mockEntity = new ArrayList<>();
+    mockEntity.add(ImmutableMap.of(
+        "TOKENS", "1,2,3,4",
+        "IS_LOCAL", "true"
+      )
+    );
+    mockEntity.add(ImmutableMap.of(
+        "TOKENS", "5,6,7,8",
+        "IS_LOCAL", "false"
+      )
+    );
+    EndpointStates mockEndpointStates = new EndpointStates().entity(mockEntity);
+    when(mockClient.getEndpointStates()).thenReturn(mockEndpointStates);
+    mockProxy(mockClient);
+    assertThat(mockProxy(mockClient).getTokens()).containsOnly(
+        new BigInteger("1"),
+        new BigInteger("2"),
+        new BigInteger("3"),
+        new BigInteger("4"));
+  }
+
+  @Test
+  public void getEndpointToHostId() throws Exception {
+    DefaultApi mockClient = Mockito.mock(DefaultApi.class);
+    List<Map<String, String>> mockEntity = new ArrayList<>();
+    mockEntity.add(ImmutableMap.of(
+        "ENDPOINT_IP", "127.0.0.1",
+        "HOST_ID", "fakehostID1"
+      )
+    );
+    mockEntity.add(ImmutableMap.of(
+        "ENDPOINT_IP", "127.0.0.2",
+        "HOST_ID", "fakehostID2"
+      )
+    );
+    EndpointStates mockEndpointStates = new EndpointStates().entity(mockEntity);
+    when(mockClient.getEndpointStates()).thenReturn(mockEndpointStates);
+    mockProxy(mockClient);
+    assertThat(mockProxy(mockClient).getEndpointToHostId()).containsAllEntriesOf(
+        ImmutableMap.of(
+        "127.0.0.1", "fakehostID1",
+        "127.0.0.2", "fakehostID2"
+      )
+    );
+  }
+
+  @Test
+  public void testGetLocalEndpoint() throws Exception {
+    DefaultApi mockClient = Mockito.mock(DefaultApi.class);
+    ScheduledExecutorService executorService = mock(ScheduledExecutorService.class);
+    when(executorService.submit(any(Callable.class))).thenAnswer(i -> {
+      Callable<Object> callable = i.getArgument(0);
+      callable.call();
+      return ConcurrentUtils.constantFuture(null);
+    });
+
+    ICassandraManagementProxy mockProxyIp = new HttpCassandraManagementProxy(
+        null, "/", InetSocketAddress.createUnresolved("192.168.1.1", 8080), executorService, mockClient);
+    assertThat(mockProxyIp.getLocalEndpoint()).isEqualTo("192.168.1.1");
+
+    ICassandraManagementProxy mockProxyDns = new HttpCassandraManagementProxy(
+        null, "/", InetSocketAddress.createUnresolved("localhost", 8080), executorService, mockClient);
+    assertThat(mockProxyDns.getLocalEndpoint()).isEqualTo("127.0.0.1");
+
+
+  }
 
 }
