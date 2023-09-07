@@ -27,6 +27,7 @@ import io.cassandrareaper.service.RingRange;
 
 import java.io.IOException;
 import java.math.BigInteger;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
@@ -108,7 +109,23 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
 
   @Override
   public List<BigInteger> getTokens() {
-    return null; // TODO: implement me.
+    EndpointStates endpointStates;
+    try {
+      endpointStates = apiClient.getEndpointStates();
+      return Arrays.stream(endpointStates.getEntity().stream().filter(i ->
+                  i.getOrDefault("IS_LOCAL", "false")
+                      .equals("true")
+              )
+              .findFirst()
+              .orElseThrow(() -> new RuntimeException("Failed to find local endpoint"))
+              .get("TOKENS")
+              .split(","))
+          .map(strToken -> new BigInteger(strToken)).collect(Collectors.toList());
+
+    } catch (ApiException e) {
+      LOG.error("Failed to retrieve endpoint states", e);
+      return Collections.emptyList();
+    }
   }
 
   @Override
@@ -119,13 +136,32 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
   @NotNull
   @Override
   public String getLocalEndpoint() throws ReaperException {
-    return null; // TODO: implement me.
+    // TODO: validate that this works in all situations. I suspect that if any address translation is
+    // happening we'll see failures here, but address translation is not in scope in this phase.
+    // The logic is that host is either a DNS address, or an IP address. If it's a DNS address, we do a
+    // reverse lookup to get the IP.
+    try {
+      return InetAddress.getByName(host).toString().split("/")[1];
+    } catch (UnknownHostException e) {
+      throw new ReaperException(e);
+    }
   }
 
   @NotNull
   @Override
   public Map<String, String> getEndpointToHostId() {
-    return null; // TODO: implement me.
+    try {
+      return apiClient.getEndpointStates().getEntity().stream()
+          .collect(
+              Collectors.toMap(
+                  i -> i.get("ENDPOINT_IP"),
+                  i -> i.get("HOST_ID")
+              )
+          );
+    } catch (ApiException ae) {
+      LOG.error("Failed to retrieve endpoint states - does the HTTP proxy have connectivity?", ae);
+      return Collections.emptyMap();
+    }
   }
 
   @Override
@@ -257,7 +293,7 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
                       (new com.datastax.mgmtapi.client.model.RingRange())
                           .start(i.getStart().longValue())
                           .end(i.getEnd().longValue())
-                ).collect(Collectors.toList())
+                  ).collect(Collectors.toList())
               )
       );
       jobId = resp.getRepairId();
@@ -439,6 +475,7 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
   // From StreamManagerMBean
   @Override
   public Set<CompositeData> getCurrentStreams() {
+    // TODO: implement me
     return new HashSet<CompositeData>();
   }
 
