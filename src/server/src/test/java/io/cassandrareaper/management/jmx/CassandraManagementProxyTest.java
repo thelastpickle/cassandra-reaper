@@ -31,7 +31,7 @@ import static org.mockito.ArgumentMatchers.any;
 
 public final class CassandraManagementProxyTest {
 
-  public static JmxCassandraManagementProxy mockJmxProxyImpl() throws UnknownHostException {
+  public static JmxCassandraManagementProxy mockJmxProxyImpl() throws UnknownHostException, ReaperException {
     JmxCassandraManagementProxy impl = Mockito.mock(JmxCassandraManagementProxy.class);
     Mockito.when(impl.getUntranslatedHost()).thenReturn("test-host-" + new Random().nextInt());
     Mockito.when(impl.getDatacenter(any())).thenReturn("dc1");

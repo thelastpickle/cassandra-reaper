@@ -516,7 +516,13 @@ public class HttpCassandraManagementProxyTest {
         null, "/", InetSocketAddress.createUnresolved("localhost", 8080), executorService, mockClient);
     assertThat(mockProxyDns.getLocalEndpoint()).isEqualTo("127.0.0.1");
 
+  }
 
+  @Test
+  public void testGetUntranslatedHost() throws ReaperException {
+    DefaultApi mockClient = Mockito.mock(DefaultApi.class);
+    ICassandraManagementProxy proxy = mockProxy(mockClient);
+    assertThat(proxy.getUntranslatedHost()).isEqualTo("127.0.0.1");
   }
 
 }

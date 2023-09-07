@@ -832,7 +832,7 @@ public final class JmxCassandraManagementProxy implements ICassandraManagementPr
     return lastEventIdProxy;
   }
 
-  public String getUntranslatedHost() {
+  public String getUntranslatedHost() throws ReaperException {
     return hostBeforeTranslation;
   }
 
