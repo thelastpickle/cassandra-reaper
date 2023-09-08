@@ -749,7 +749,6 @@ public final class JmxCassandraManagementProxy implements ICassandraManagementPr
   /**
    * Cleanly shut down by un-registering the listener and closing the JMX connection.
    */
-  @Override
   public void close() {
     try {
       mbeanServer.removeNotificationListener(ObjectNames.STORAGE_SERVICE, this);
