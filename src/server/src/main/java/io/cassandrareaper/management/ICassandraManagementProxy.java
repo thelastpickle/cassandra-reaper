@@ -20,6 +20,7 @@ package io.cassandrareaper.management;
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Snapshot;
 import io.cassandrareaper.core.Table;
+import io.cassandrareaper.resources.view.NodesStatus;
 import io.cassandrareaper.service.RingRange;
 
 import java.io.IOException;
@@ -149,10 +150,7 @@ public interface ICassandraManagementProxy {
 
   List<Map<String, String>> getCompactions();
 
-  // From FailureDetectorMBean
-  String getAllEndpointStates();
-
-  Map<String, String> getSimpleStates();
+  NodesStatus getNodesStatus() throws ReaperException;
 
   // From EndpointSnitchInfoMBean
   String getDatacenter(String var1) throws UnknownHostException;
