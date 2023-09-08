@@ -23,11 +23,11 @@ import io.cassandrareaper.core.Table;
 import io.cassandrareaper.management.ICassandraManagementProxy;
 import io.cassandrareaper.management.RepairStatusHandler;
 import io.cassandrareaper.management.http.models.JobStatusTracker;
+import io.cassandrareaper.resources.view.NodesStatus;
 import io.cassandrareaper.service.RingRange;
 
 import java.io.IOException;
 import java.math.BigInteger;
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
@@ -136,14 +136,23 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
   @NotNull
   @Override
   public String getLocalEndpoint() throws ReaperException {
-    // TODO: validate that this works in all situations. I suspect that if any address translation is
-    // happening we'll see failures here, but address translation is not in scope in this phase.
-    // The logic is that host is either a DNS address, or an IP address. If it's a DNS address, we do a
-    // reverse lookup to get the IP.
     try {
-      return InetAddress.getByName(host).toString().split("/")[1];
-    } catch (UnknownHostException e) {
-      throw new ReaperException(e);
+      EndpointStates endpoints = apiClient.getEndpointStates();
+      if (endpoints == null) {
+        throw new ReaperException("No endpoint state data retrieved");
+      }
+      for (Map<String, String> state : endpoints.getEntity()) {
+        if ("true".equals(state.get("IS_LOCAL"))) {
+          String endpoint = state.get("ENDPOINT_IP");
+          if (endpoint == null) {
+            throw new ReaperException("Missing ENDPOINT_IP field in local endpoint state");
+          }
+          return endpoint;
+        }
+      }
+      throw new ReaperException("Could not find local endpoint state (IS_LOCAL=true)");
+    } catch (ApiException e) {
+      throw new ReaperException("Error getting local endpoint", e);
     }
   }
 
@@ -454,17 +463,17 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
     }
   }
 
-  // From FailureDetectorMBean
   @Override
-  public String getAllEndpointStates() {
-    // TODO: implement me.
-    return "";
-  }
-
-  @Override
-  public Map<String, String> getSimpleStates() {
-    // TODO: implement me.
-    return new HashMap<String, String>();
+  public NodesStatus getNodesStatus() throws ReaperException {
+    try {
+      EndpointStates endpoints = apiClient.getEndpointStates();
+      if (endpoints == null) {
+        throw new ReaperException("No endpoint state data retrieved.");
+      }
+      return new NodesStatus(getHost(), endpoints);
+    } catch (ApiException ae) {
+      throw new ReaperException("Failed to retrieve endpoint state data", ae);
+    }
   }
 
   // From EndpointSnitchInfoMBean
@@ -483,7 +492,8 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
 
   @Override
   public String getUntranslatedHost() throws ReaperException {
-    // TODO: we eventually need to implement address translation.
+    // TODO getLocalEndpoint returns the "internal" IP, figure out if we have to do any conversion here. If not, this
+    //  method can be inlined.
     return getLocalEndpoint();
   }
 

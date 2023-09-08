@@ -26,6 +26,7 @@ import io.cassandrareaper.core.Table;
 import io.cassandrareaper.crypto.Cryptograph;
 import io.cassandrareaper.management.ICassandraManagementProxy;
 import io.cassandrareaper.management.RepairStatusHandler;
+import io.cassandrareaper.resources.view.NodesStatus;
 import io.cassandrareaper.service.RingRange;
 
 import java.io.IOException;
@@ -978,13 +979,12 @@ public final class JmxCassandraManagementProxy implements ICassandraManagementPr
     getDiagnosticEventPersistenceMBean().disableEventPersistence(eventClass);
   }
 
-  // From FailureDetectorMBean
-  public String getAllEndpointStates() {
-    return getFailureDetectorMBean().getAllEndpointStates();
-  }
-
-  public Map<String, String> getSimpleStates() {
-    return getFailureDetectorMBean().getSimpleStates();
+  @Override
+  public NodesStatus getNodesStatus() {
+    return new NodesStatus(
+        getHost(),
+        getFailureDetectorMBean().getAllEndpointStates(),
+        getFailureDetectorMBean().getSimpleStates());
   }
 
   // From EndpointSnitchInfoMBean
