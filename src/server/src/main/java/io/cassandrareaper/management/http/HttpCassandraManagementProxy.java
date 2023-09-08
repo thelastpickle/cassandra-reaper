@@ -308,6 +308,7 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
           (new RepairRequest())
               .fullRepair(fullRepair)
               .keyspace(keyspace)
+              .notifications(true)
               .tables(new ArrayList<>(columnFamilies))
               .repairParallelism(RepairRequest.RepairParallelismEnum.fromValue(repairParallelism.getName()))
               .repairThreadCount(repairThreadCount)
