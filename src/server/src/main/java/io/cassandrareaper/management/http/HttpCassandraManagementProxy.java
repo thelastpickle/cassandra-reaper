@@ -318,7 +318,14 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
                       .end(i.getEnd().longValue())
               ).collect(Collectors.toList())
           );
-      LOG.info("Triggering repair with request: {}", req.toJson());
+      LOG.info("triggering repair with request.associatedTokens: {}", req.getAssociatedTokens());
+      LOG.info("triggering repair with request.datacenters: {}", req.getDatacenters());
+      LOG.info("triggering repair with request.fullRepair: {}", req.getFullRepair());
+      LOG.info("triggering repair with request.keyspace: {}", req.getKeyspace());
+      LOG.info("triggering repair with request.repairParallelism: {}", req.getRepairParallelism());
+      LOG.info("triggering repair with request.repairThreadCount: {}", req.getRepairThreadCount());
+      LOG.info("triggering repair with request.tables: {}", req.getTables());
+
       RepairRequestResponse resp = apiClient.putRepairV2(req);
       jobId = resp.getRepairId();
     } catch (ApiException e) {

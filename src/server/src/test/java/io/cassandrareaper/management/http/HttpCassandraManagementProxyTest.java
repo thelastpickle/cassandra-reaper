@@ -191,6 +191,7 @@ public class HttpCassandraManagementProxyTest {
                 .tables(Arrays.asList("table"))
                 .fullRepair(true)
                 .datacenters(null)
+                .notifications(true)
                 .repairThreadCount(1)
                 .associatedTokens(Collections.emptyList())
         )
