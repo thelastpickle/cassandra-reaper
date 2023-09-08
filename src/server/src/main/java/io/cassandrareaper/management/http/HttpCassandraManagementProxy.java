@@ -304,22 +304,22 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
 
     String jobId;
     try {
-      RepairRequestResponse resp = apiClient.putRepairV2(
-          (new RepairRequest())
-              .fullRepair(fullRepair)
-              .keyspace(keyspace)
-              .notifications(true)
-              .tables(new ArrayList<>(columnFamilies))
-              .repairParallelism(RepairRequest.RepairParallelismEnum.fromValue(repairParallelism.getName()))
-              .repairThreadCount(repairThreadCount)
-              .associatedTokens(
-                  associatedTokens.stream().map(i ->
-                      (new com.datastax.mgmtapi.client.model.RingRange())
-                          .start(i.getStart().longValue())
-                          .end(i.getEnd().longValue())
-                  ).collect(Collectors.toList())
-              )
-      );
+      RepairRequest req = (new RepairRequest())
+          .fullRepair(fullRepair)
+          .keyspace(keyspace)
+          .notifications(true)
+          .tables(new ArrayList<>(columnFamilies))
+          .repairParallelism(RepairRequest.RepairParallelismEnum.fromValue(repairParallelism.getName()))
+          .repairThreadCount(repairThreadCount)
+          .associatedTokens(
+              associatedTokens.stream().map(i ->
+                  (new com.datastax.mgmtapi.client.model.RingRange())
+                      .start(i.getStart().longValue())
+                      .end(i.getEnd().longValue())
+              ).collect(Collectors.toList())
+          );
+      LOG.info("Triggering repair with request: {}", req.toJson());
+      RepairRequestResponse resp = apiClient.putRepairV2(req);
       jobId = resp.getRepairId();
     } catch (ApiException e) {
       throw new ReaperException(e);
