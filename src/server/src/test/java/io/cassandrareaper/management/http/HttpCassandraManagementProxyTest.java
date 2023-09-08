@@ -470,7 +470,11 @@ public class HttpCassandraManagementProxyTest {
         new BigInteger("1"),
         new BigInteger("2"),
         new BigInteger("3"),
-        new BigInteger("4"));
+        new BigInteger("4"),
+        new BigInteger("5"),
+        new BigInteger("6"),
+        new BigInteger("7"),
+        new BigInteger("8"));
   }
 
   @Test
