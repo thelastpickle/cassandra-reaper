@@ -328,11 +328,6 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
   }
 
   @Override
-  public void close() {
-    // TODO: implement me.
-  }
-
-  @Override
   public List<String> getLiveNodes() throws ReaperException {
     try {
       List<String> liveNodes = new ArrayList<>();

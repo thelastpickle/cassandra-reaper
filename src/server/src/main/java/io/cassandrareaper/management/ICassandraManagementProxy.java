@@ -128,8 +128,6 @@ public interface ICassandraManagementProxy {
       int repairThreadCount)
       throws ReaperException;
 
-  void close();
-
   void removeRepairStatusHandler(int repairNo);
 
   // From StorageServiceMBean
