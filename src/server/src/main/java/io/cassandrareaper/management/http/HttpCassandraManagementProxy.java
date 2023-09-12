@@ -28,6 +28,7 @@ import io.cassandrareaper.service.RingRange;
 
 import java.io.IOException;
 import java.math.BigInteger;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
@@ -478,9 +479,24 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
 
   // From EndpointSnitchInfoMBean
   @Override
-  public String getDatacenter(String var1) throws UnknownHostException {
-    // TODO: implement me.
-    return "";
+  public String getDatacenter(String host) throws UnknownHostException {
+    // resolve the host to an IP address
+    String hostIP = InetAddress.getByName(host).getHostAddress();
+    try {
+      EndpointStates epStates = apiClient.getEndpointStates();
+      for (Map<String, String> stateMap : epStates.getEntity()) {
+        if (hostIP.equals(stateMap.get("ENDPOINT_IP"))) {
+          // we found the ENDPOINT_IP that matches the resolved hostIP, return its DC
+          return stateMap.get("DC");
+        }
+      }
+    } catch (ApiException e) {
+      LOG.error("Failed to get Datacenter from endpoint states", e);
+      throw new UnknownHostException(e.getMessage());
+    }
+    // Endpoint states did not have a mapping for ENDPOINT_IP that matches the resolved host IP
+    LOG.error("No endpoint states found for host: " + host + ", resolved IP: " + hostIP);
+    return null;
   }
 
   // From StreamManagerMBean
