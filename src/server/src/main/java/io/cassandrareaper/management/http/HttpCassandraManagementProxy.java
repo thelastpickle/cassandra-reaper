@@ -260,7 +260,8 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
 
   @Override
   public boolean isRepairRunning() throws JMException {
-    return true; // TODO: implement me.
+    return true; // TODO: implement me. This is low priority because it is used only in tests now. It should be
+    // removed longer term.
   }
 
   @Override
@@ -441,7 +442,7 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
 
   @Override
   public void takeColumnFamilySnapshot(String var1, String var2, String var3) throws IOException {
-    // TODO: implement me.
+    // TODO: implement me. This is low priority since it is not called anywhere. It should be removed longer term.
 
   }
 
@@ -514,7 +515,8 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
   // From StreamManagerMBean
   @Override
   public Set<CompositeData> getCurrentStreams() {
-    // TODO: implement me
+    // TODO: implement me. This is low priority since it is used only for display of stuff in the UI for
+    //  informational purposes. It should be implemented eventually.
     return new HashSet<CompositeData>();
   }
 
