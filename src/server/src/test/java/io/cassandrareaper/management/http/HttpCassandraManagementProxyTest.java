@@ -496,7 +496,11 @@ public class HttpCassandraManagementProxyTest {
         new BigInteger("1"),
         new BigInteger("2"),
         new BigInteger("3"),
-        new BigInteger("4"));
+        new BigInteger("4"),
+        new BigInteger("5"),
+        new BigInteger("6"),
+        new BigInteger("7"),
+        new BigInteger("8"));
   }
 
   @Test
@@ -586,6 +590,58 @@ public class HttpCassandraManagementProxyTest {
     String datacenterString = proxy.getDatacenter("10.0.0.2");
 
     assertThat(datacenterString).isEqualTo("mydc2");
+    verify(mockClient).getEndpointStates();
+    verifyNoMoreInteractions(mockClient);
+  }
+
+  @Test
+  public void testGetTokenToEndpointMap() throws Exception {
+    DefaultApi mockClient = Mockito.mock(DefaultApi.class);
+    EndpointStates states = new EndpointStates();
+    states.addEntityItem(ImmutableMap.of(
+        "ENDPOINT_IP", "10.0.0.1",
+        "TOKENS", "1,2"
+    ));
+    states.addEntityItem(ImmutableMap.of(
+        "ENDPOINT_IP", "10.0.0.2",
+        "TOKENS", "3,4"
+    ));
+
+    when(mockClient.getEndpointStates()).thenReturn(states);
+
+    HttpCassandraManagementProxy proxy = mockProxy(mockClient);
+    Map<String, String> expectedMap = ImmutableMap.of(
+        "1", "10.0.0.1",
+        "2", "10.0.0.1",
+        "3", "10.0.0.2",
+        "4", "10.0.0.2"
+    );
+    assertThat(proxy.getTokenToEndpointMap()).containsAllEntriesOf(expectedMap);
+    verify(mockClient).getEndpointStates();
+    verifyNoMoreInteractions(mockClient);
+  }
+
+  @Test
+  public void testgetEndpointToHostId() throws Exception {
+    DefaultApi mockClient = Mockito.mock(DefaultApi.class);
+    EndpointStates states = new EndpointStates();
+    states.addEntityItem(ImmutableMap.of(
+        "ENDPOINT_IP", "10.0.0.1",
+        "HOST_ID", "1"
+    ));
+    states.addEntityItem(ImmutableMap.of(
+        "ENDPOINT_IP", "10.0.0.2",
+        "HOST_ID", "2"
+    ));
+
+    when(mockClient.getEndpointStates()).thenReturn(states);
+
+    HttpCassandraManagementProxy proxy = mockProxy(mockClient);
+    Map<String, String> expectedMap = ImmutableMap.of(
+        "10.0.0.1", "1",
+        "10.0.0.2", "2"
+    );
+    assertThat(proxy.getEndpointToHostId()).containsAllEntriesOf(expectedMap);
     verify(mockClient).getEndpointStates();
     verifyNoMoreInteractions(mockClient);
   }
