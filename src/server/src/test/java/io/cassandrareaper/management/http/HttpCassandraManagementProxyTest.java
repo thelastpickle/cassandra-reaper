@@ -190,6 +190,7 @@ public class HttpCassandraManagementProxyTest {
                 .repairParallelism(RepairRequest.RepairParallelismEnum.PARALLEL)
                 .tables(Arrays.asList("table"))
                 .fullRepair(true)
+                .notifications(true)
                 .datacenters(null)
                 .repairThreadCount(1)
                 .associatedTokens(Collections.emptyList())
