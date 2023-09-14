@@ -191,13 +191,13 @@ public final class ClusterFacade {
   }
 
   /**
-   * Pre-heats JMX connections to all provided endpoints.
+   * Connects to either JMX or HTTP.
    * In EACH, LOCAL and ALL : connect directly to any available node
    * In SIDECAR : We skip that code path as we don’t need to pre-heat connections
    *
    * @param cluster   the cluster to connect to
    * @param endpoints the list of endpoints to connect to
-   * @return a JmxProxy object
+   * @return a ICassandraManagementProxy object
    * @throws ReaperException any runtime exception we catch
    */
   public ICassandraManagementProxy connectToManagementMechanism(Cluster cluster,
@@ -226,7 +226,7 @@ public final class ClusterFacade {
    * @param node the node to connect to
    * @return the cluster name
    * @throws ReaperException      any runtime exception we catch in the process
-   * @throws InterruptedException if the JMX connection gets interrupted
+   * @throws InterruptedException if the JMX/HTTP connection gets interrupted
    */
   public String getClusterName(Node node) throws ReaperException {
     return connect(node).getClusterName();
@@ -534,7 +534,7 @@ public final class ClusterFacade {
    * @throws MalformedObjectNameException ¯\_(ツ)_/¯
    * @throws ReflectionException          ¯\_(ツ)_/¯
    * @throws ReaperException              any runtime exception we catch in the process
-   * @throws InterruptedException         in case the JMX connection gets interrupted
+   * @throws InterruptedException         in case the JMX/HTTP connection fails
    * @throws IOException                  errors in parsing JSON encoded compaction objects
    */
   public CompactionStats listActiveCompactions(Node node)
@@ -543,8 +543,8 @@ public final class ClusterFacade {
     LOG.debug("Listing active compactions for node {}", node);
     String nodeDc = getDatacenter(node.getCluster().get(), node.getHostname());
     if (nodeIsDirectlyAccessible(nodeDc, node.getHostname())) {
-      LOG.debug("Yay!! Node {} in DC {} is accessible through JMX", node.getHostname(), nodeDc);
-      // We have direct JMX access to the node
+      LOG.debug("Yay!! Node {} in DC {} is accessible for management proxy", node.getHostname(), nodeDc);
+      // We have direct access to the node
       return listCompactionStatsDirect(node);
     } else {
       // We don't have access to the node through JMX, so we'll get data from the database
@@ -578,12 +578,12 @@ public final class ClusterFacade {
   }
 
   /**
-   * Checks if Reaper can access the target node through JMX directly.
+   * Checks if Reaper can access the target node through JMX/HTTP directly.
    * The result will depend on the chosen datacenterAvailability setting and the datacenter the node belongs to.
    *
    * @param nodeDc datacenter of the target node
    * @param node   the target node
-   * @return true if the node is supposedly accessible through JMX, otherwise false
+   * @return true if the node is supposedly accessible through JMX/HTTP, otherwise false
    */
   public boolean nodeIsDirectlyAccessible(String nodeDc, String node) {
     return DatacenterAvailability.ALL == context.config.getDatacenterAvailability()
@@ -613,7 +613,7 @@ public final class ClusterFacade {
   }
 
   /**
-   * Collect ClientRequest metrics through JMX on a specific node.
+   * Collect ClientRequest metrics through JMX/HTTP on a specific node.
    *
    * @param node the node to collect metrics on
    * @return the list of collected metrics
@@ -807,7 +807,7 @@ public final class ClusterFacade {
   }
 
   /**
-   * List ongoing streams on a specific node either through JMX or through the backend.
+   * List ongoing streams on a specific node either through JMX/HTTP or through the backend.
    *
    * @param node the node to get the streams from.
    * @return a set of streams
@@ -819,7 +819,7 @@ public final class ClusterFacade {
       throws ReaperException, InterruptedException, IOException {
     String nodeDc = getDatacenter(node.getCluster().get(), node.getHostname());
     if (nodeIsDirectlyAccessible(nodeDc, node.getHostname())) {
-      // We have direct JMX access to the node
+      // We have direct JMX/HTTP access to the node
       return listStreamsDirect(node);
     } else {
       // We don't have access to the node through JMX, so we'll get data from the database
@@ -866,7 +866,7 @@ public final class ClusterFacade {
    * In SIDECAR : We skip that code path as we don’t need to pre-heat connections
    *
    * @param cluster the cluster to connect to
-   * @return a JmxProxy object
+   * @return a ICassandraManagementProxy object
    * @throws ReaperException any runtime exception we catch
    */
   public ICassandraManagementProxy connect(Cluster cluster) throws ReaperException {
