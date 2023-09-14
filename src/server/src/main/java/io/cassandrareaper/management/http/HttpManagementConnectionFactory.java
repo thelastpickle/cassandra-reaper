@@ -25,6 +25,7 @@ import io.cassandrareaper.management.ICassandraManagementProxy;
 import io.cassandrareaper.management.IManagementConnectionFactory;
 
 import java.net.InetSocketAddress;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -51,7 +52,7 @@ public class HttpManagementConnectionFactory implements IManagementConnectionFac
   private final MetricRegistry metricRegistry;
   private final HostConnectionCounters hostConnectionCounters;
 
-  private ScheduledExecutorService jobStatusPollerExecutor;
+  private final ScheduledExecutorService jobStatusPollerExecutor;
 
   private final Set<String> accessibleDatacenters = Sets.newHashSet();
 
@@ -64,6 +65,7 @@ public class HttpManagementConnectionFactory implements IManagementConnectionFac
     this.jobStatusPollerExecutor = jobStatusPollerExecutor;
   }
 
+  @Override
   public ICassandraManagementProxy connectAny(Collection<Node> nodes) throws ReaperException {
     Preconditions.checkArgument(
         null != nodes && !nodes.isEmpty(), "no hosts provided to connectAny");
@@ -79,10 +81,11 @@ public class HttpManagementConnectionFactory implements IManagementConnectionFac
             ICassandraManagementProxy cassandraManagementProxy = connectImpl(node);
             getHostConnectionCounters().incrementSuccessfulConnections(node.getHostname());
             if (getHostConnectionCounters().getSuccessfulConnections(node.getHostname()) > 0) {
-              accessibleDatacenters.add(getDatacenter(node));
+              accessibleDatacenters.add(
+                  cassandraManagementProxy.getDatacenter(cassandraManagementProxy.getUntranslatedHost()));
             }
             return cassandraManagementProxy;
-          } catch (ReaperException | RuntimeException e) {
+          } catch (ReaperException | RuntimeException | UnknownHostException e) {
             getHostConnectionCounters().decrementSuccessfulConnections(node.getHostname());
             LOG.info("Unreachable host: ", e);
           } catch (InterruptedException expected) {
@@ -94,13 +97,9 @@ public class HttpManagementConnectionFactory implements IManagementConnectionFac
     throw new ReaperException("no host could be reached through HTTP");
   }
 
+  @Override
   public HostConnectionCounters getHostConnectionCounters() {
     return hostConnectionCounters;
-  }
-
-  private String getDatacenter(Node node) {
-    // TODO - implement me.
-    return "";
   }
 
   private void registerConnectionsGauge() {
@@ -120,7 +119,7 @@ public class HttpManagementConnectionFactory implements IManagementConnectionFac
   private ICassandraManagementProxy connectImpl(Node node)
       throws ReaperException, InterruptedException {
     Integer managementPort = 8080; // TODO - get this from the config.
-    String rootPath = "/"; // TODO - get this from the config.
+    String rootPath = ""; // TODO - get this from the config.
     Response pidResponse = getPid(node);
     if (pidResponse.getStatus() != 200) {
       throw new ReaperException("Could not get PID for node " + node.getHostname());
@@ -144,6 +143,7 @@ public class HttpManagementConnectionFactory implements IManagementConnectionFac
     return Response.ok().build();
   }
 
+  @Override
   public final Set<String> getAccessibleDatacenters() {
     return accessibleDatacenters;
   }
