@@ -40,6 +40,13 @@ be used only for testing purposes.
 This project is built on top of Dropwizard:
 http://dropwizard.io/
 
+Version compatibility 
+------------
+Reaper can be built using Java 8 or 11.  It is tested against Cassandra 3.11 and 4.0.  It is no longer tested against Cassandra 2.x.
+
+We have confirmed the Reaper UI will build with npm 5.6.0, node 10.0.0. 
+
+
 Dependencies
 ------------
 
