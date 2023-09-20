@@ -40,15 +40,17 @@ import com.codahale.metrics.InstrumentedScheduledExecutorService;
 import com.codahale.metrics.MetricRegistry;
 import com.datastax.mgmtapi.client.api.DefaultApi;
 import com.datastax.mgmtapi.client.invoker.ApiClient;
+import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class HttpManagementConnectionFactory implements IManagementConnectionFactory {
   private static final Logger LOG = LoggerFactory.getLogger(HttpManagementConnectionFactory.class);
-  private static final ConcurrentMap<String, ICassandraManagementProxy> HTTP_CONNECTIONS = Maps.newConcurrentMap();
+  private static final ConcurrentMap<String, HttpCassandraManagementProxy> HTTP_CONNECTIONS = Maps.newConcurrentMap();
   private final MetricRegistry metricRegistry;
   private final HostConnectionCounters hostConnectionCounters;
 
@@ -106,9 +108,9 @@ public class HttpManagementConnectionFactory implements IManagementConnectionFac
     try {
       if (!this.metricRegistry
           .getGauges()
-          .containsKey(MetricRegistry.name(HttpManagementConnectionFactory.class, "openHttoManagementConnections"))) {
+          .containsKey(MetricRegistry.name(HttpManagementConnectionFactory.class, "openHttpManagementConnections"))) {
         this.metricRegistry.register(
-            MetricRegistry.name(HttpManagementConnectionFactory.class, "openHttoManagementConnections"),
+            MetricRegistry.name(HttpManagementConnectionFactory.class, "openHttpManagementConnections"),
             (Gauge<Integer>) () -> HTTP_CONNECTIONS.size());
       }
     } catch (IllegalArgumentException e) {
@@ -124,18 +126,29 @@ public class HttpManagementConnectionFactory implements IManagementConnectionFac
     if (pidResponse.getStatus() != 200) {
       throw new ReaperException("Could not get PID for node " + node.getHostname());
     }
-    DefaultApi apiClient = new DefaultApi(
-        new ApiClient().setBasePath("http://" + node.getHostname() + ":" + managementPort + rootPath));
 
-    InstrumentedScheduledExecutorService statusTracker = new InstrumentedScheduledExecutorService(
-        jobStatusPollerExecutor, metricRegistry);
-    return new HttpCassandraManagementProxy(
-        metricRegistry,
-        rootPath,
-        new InetSocketAddress(node.getHostname(), managementPort),
-        statusTracker,
-        apiClient
-    );
+    String host = node.getHostname();
+
+    HTTP_CONNECTIONS.computeIfAbsent(host, new Function<String, HttpCassandraManagementProxy>() {
+      @Nullable
+      @Override
+      public HttpCassandraManagementProxy apply(@Nullable String hostName) {
+        DefaultApi apiClient = new DefaultApi(
+            new ApiClient().setBasePath("http://" + hostName + ":" + managementPort + rootPath));
+
+        InstrumentedScheduledExecutorService statusTracker = new InstrumentedScheduledExecutorService(
+            jobStatusPollerExecutor, metricRegistry);
+        return new HttpCassandraManagementProxy(
+            metricRegistry,
+            rootPath,
+            new InetSocketAddress(node.getHostname(), managementPort),
+            statusTracker,
+            apiClient
+        );
+      }
+    });
+
+    return HTTP_CONNECTIONS.get(host);
   }
 
   private Response getPid(Node node) {
