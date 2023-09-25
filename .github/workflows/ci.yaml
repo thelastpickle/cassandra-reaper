@@ -264,17 +264,13 @@ jobs:
     continue-on-error: ${{ matrix.experimental }}
     strategy:
       matrix:
-        cassandra-version: [ 'binary:3.11.11', 'binary:4.0.1' ]
-        storage-type: [ local ]
+        cassandra-version: [ 'binary:4.0.1' ]
+        storage-type: [ "ccm" ]
         test-type: [ "http-api" ]
         grim-max: [ 1 ]
         grim-min: [ 1 ]
         # all versions but trunk have the same cucumber options, but we can't declare that more effectively (yet)
         include:
-          - cassandra-version: 'binary:3.11.11'
-            cucumber-options: '--tags ~@cassandra_4_0_onwards --tags @http_management'
-            experimental: false
-            jdk-version: '8'
           - cassandra-version: 'binary:4.0.1'
             cucumber-options: '--tags @http_management'
             experimental: false
