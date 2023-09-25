@@ -269,6 +269,7 @@ public final class BasicSteps {
           String responseData = response.readEntity(String.class);
           Assertions.assertThat(responseData).isNotBlank();
           List<String> clusterNames = SimpleReaperClient.parseClusterNameListJSON(responseData);
+          System.out.println("reaper has no cluster in storage gets responseData " + responseData);
           if (!runner.getContext().config.isInSidecarMode()) {
             // Sidecar self registers clusters
             if (clusterNames.size() == 0) {

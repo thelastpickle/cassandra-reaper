@@ -141,8 +141,9 @@ case "${TEST_TYPE}" in
                     echo "ERROR: Environment variable STORAGE_TYPE is unspecified."
                     exit 1
                     ;;
-                "local")
+                "ccm")
                     mvn -B package -DskipTests
+                    ccm node1 cqlsh -e "DROP KEYSPACE reaper_db" || true
                     mvn -B org.jacoco:jacoco-maven-plugin:${JACOCO_VERSION}:prepare-agent surefire:test -DsurefireArgLine="-Xmx256m"  -Dtest=ReaperHttpIT -Dcucumber.options="$CUCUMBER_OPTIONS" org.jacoco:jacoco-maven-plugin:${JACOCO_VERSION}:report
                     ;;
                 *)
