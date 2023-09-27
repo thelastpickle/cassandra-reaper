@@ -18,6 +18,7 @@ echo "Starting Before Deploy step..."
 set -xe
 mkdir -p src/packages
 
+mvn package
 export VERSION=$(printf 'VER\t${project.version}' | mvn help:evaluate | grep '^VER' | cut -f2)
 echo "SHADED_JAR=cassandra-reaper-${VERSION}.tar.gz" >> $GITHUB_ENV
 
