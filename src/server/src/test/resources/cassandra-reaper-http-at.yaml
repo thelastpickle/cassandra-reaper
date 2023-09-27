@@ -1,5 +1,5 @@
-# Copyright 2014-2017 Spotify AB
-# Copyright 2016-2019 The Last Pickle Ltd
+# Copyright 2017-2017 Spotify AB
+# Copyright 2017-2019 The Last Pickle Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,11 +21,11 @@ repairIntensity: 0.95
 scheduleDaysBetween: 7
 repairRunThreadCount: 15
 hangingRepairTimeoutMins: 1
-storageType: memory
+storageType: cassandra
 incrementalRepair: false
 blacklistTwcsTables: true
-enableDynamicSeedList: false
 jmxConnectionTimeoutInSeconds: 10
+activateQueryLogger: true
 datacenterAvailability: LOCAL
 percentRepairedCheckIntervalMinutes: 1
 
@@ -56,23 +56,38 @@ jmxPorts:
   127.0.0.8: 7800
 
 jmxCredentials:
+  "test cluster":
+    username: cassandra
+    password: cassandra
   test:
     username: cassandra
     password: cassandrapassword
 
-# Config used to automatically add/remove sheduled repair for all keyspaces
-autoScheduling:
-  enabled: false
-  initialDelayPeriod: PT1M
-  periodBetweenPolls: PT10M
-  timeBeforeFirstSchedule: PT5M
-  scheduleSpreadPeriod: PT6H
-
-metrics:
-  frequency: 1 second
-  reporters:
-    - type: csv
-      file: target/dropwizard-metrics
+cassandra:
+  clusterName: "test"
+  contactPoints: ["127.0.0.1"]
+  keyspace: reaper_db
+  socketOptions:
+    connectTimeoutMillis: 20000
+    readTimeoutMillis: 40000
+  loadBalancingPolicy:
+    type: tokenAware
+    shuffleReplicas: true
+    subPolicy:
+      type: dcAwareRoundRobin
+      localDC: dc1
+      usedHostsPerRemoteDC: 0
+      allowRemoteDCsForLocalConsistencyLevel: false
+  poolingOptions:
+    idleTimeout: 5s
+    local:
+      coreConnections: 1
+      maxConnections: 4
+      maxRequestsPerConnection: 16
+    remote:
+      coreConnections: 0
+      maxConnections: 0
+      maxRequestsPerConnection: 0
 
 cryptograph:
   type: symmetric
