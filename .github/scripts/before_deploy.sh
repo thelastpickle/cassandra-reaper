@@ -38,8 +38,8 @@ then
     export GIT_HASH=$(git log --pretty=format:'%h' -n 1)
     #docker login -u $DOCKER_USER -p $DOCKER_PASS
     export REPO=thelastpickle/cassandra-reaper
-    #echo "DOCKER_TAGS=$REPO:latest,$REPO:$GIT_HASH" >> $GITHUB_ENV
-    echo "DOCKER_TAGS=$REPO:$GIT_HASH" >> $GITHUB_ENV
+    echo "DOCKER_TAG1=$REPO:master" >> $GITHUB_ENV
+    echo "DOCKER_TAG2=$REPO:$GIT_HASH" >> $GITHUB_ENV
     #mvn -B -pl src/server/ docker:build -Ddocker.directory=src/server/src/main/docker
     #docker tag cassandra-reaper:latest $REPO:master
     #docker push $REPO:master
@@ -63,7 +63,8 @@ then
     sudo mv cassandra-reaper-${VERSION}-release.tar.gz src/packages/
     #docker login -u $DOCKER_USER -p $DOCKER_PASS
     export REPO=thelastpickle/cassandra-reaper
-    echo "DOCKER_TAGS=$REPO:master,$REPO:$VERSION" >> $GITHUB_ENV
+    echo "DOCKER_TAG1=$REPO:master" >> $GITHUB_ENV
+    echo "DOCKER_TAG2=$REPO:$VERSION" >> $GITHUB_ENV
     #mvn -B -pl src/server/ docker:build -Ddocker.directory=src/server/src/main/docker
     #docker tag cassandra-reaper:latest $REPO:latest
     #docker push $REPO:latest

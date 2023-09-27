@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM adoptopenjdk/openjdk11:alpine
+FROM amazoncorretto:11.0.20-alpine
 
 ARG SHADED_JAR
 

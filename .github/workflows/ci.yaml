@@ -486,17 +486,7 @@ jobs:
         run: ./.github/scripts/before_deploy.sh
       - name: tags
         run: |
-          REPO=thelastpickle/cassandra-reaper
-          VERSION=$(printf 'VER\t${project.version}' | mvn help:evaluate | grep '^VER' | cut -f2)
-          GIT_HASH=$(git log --pretty=format:'%h' -n 1)
-          if [ "${GITHUB_REF}" = "refs/heads/arm64-images" ]
-          then
-            echo "TAG=$GIT_HASH" >> $GITHUB_ENV
-
-          else
-            echo "TAG=master" >> $GITHUB_ENV
-          fi
-          echo "Tag: ${{ env.TAG }}"
+          echo "Tags: ${{ env.DOCKER_TAG1 }} and ${{ env.DOCKER_TAG2 }}"
       - name: Build image and push
         id: docker_build
         uses: docker/build-push-action@v4
@@ -504,7 +494,7 @@ jobs:
           file: src/server/src/main/docker/Dockerfile
           context: src/server/
           push: true
-          tags: thelastpickle/cassandra-reaper:${{ env.TAG }}
+          tags: ${{ env.DOCKER_TAG1 }},${{ env.DOCKER_TAG2 }}
           platforms: linux/amd64,linux/arm64
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache
