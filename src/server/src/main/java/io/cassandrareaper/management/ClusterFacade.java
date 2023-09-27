@@ -115,7 +115,7 @@ public final class ClusterFacade {
   /**
    * The method makes the Scylla endpoint map compatible with the Cassandra ones
    *
-   * @param endpointMap map of endpoint returned by jmx client
+   * @param endpointMap map of endpoint returned by jmx/http client
    * @return a map of endpoints compatible with cassandra format
    */
   protected static Map<List<String>, List<String>>
@@ -547,8 +547,8 @@ public final class ClusterFacade {
       // We have direct access to the node
       return listCompactionStatsDirect(node);
     } else {
-      // We don't have access to the node through JMX, so we'll get data from the database
-      LOG.debug("Node {} in DC {} is not accessible through JMX", node.getHostname(), nodeDc);
+      // We don't have access to the node through jmx/http, so we'll get data from the database
+      LOG.debug("Node {} in DC {} is not accessible through jmx/http", node.getHostname(), nodeDc);
 
       String compactionsJson = ((IDistributedStorage) context.storage).getOperationsDao()
           .listOperations(node.getClusterName(), OpType.OP_COMPACTION, node.getHostname());
@@ -558,14 +558,14 @@ public final class ClusterFacade {
   }
 
   /**
-   * List running compactions on a specific node by connecting directly to it through JMX.
+   * List running compactions on a specific node by connecting directly to it through jmx/http.
    *
    * @param node the node to get the compactions from.
    * @return number of pending compactions and a list of active compactions
    * @throws MalformedObjectNameException ¯\_(ツ)_/¯
    * @throws ReflectionException          ¯\_(ツ)_/¯
    * @throws ReaperException              any runtime exception we catch in the process
-   * @throws InterruptedException         in case the JMX connection gets interrupted
+   * @throws InterruptedException         in case the jmx/http connection gets interrupted
    */
   public CompactionStats listCompactionStatsDirect(Node node)
       throws ReaperException, MalformedObjectNameException, ReflectionException {
@@ -822,8 +822,8 @@ public final class ClusterFacade {
       // We have direct JMX/HTTP access to the node
       return listStreamsDirect(node);
     } else {
-      // We don't have access to the node through JMX, so we'll get data from the database
-      LOG.debug("Node {} in DC {} is not accessible through JMX", node.getHostname(), nodeDc);
+      // We don't have access to the node through jmx/http, so we'll get data from the database
+      LOG.debug("Node {} in DC {} is not accessible through jmx/http", node.getHostname(), nodeDc);
 
       String streamsJson = ((IDistributedStorage) context.storage).getOperationsDao()
           .listOperations(node.getClusterName(), OpType.OP_STREAMING, node.getHostname());
