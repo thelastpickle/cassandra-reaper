@@ -492,7 +492,9 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           file: src/server/src/main/docker/Dockerfile
-          context: src/server/
+          context: .
+          build-args: |
+            SHADED_JAR=${{ env.SHADED_JAR }}
           push: true
           tags: ${{ env.DOCKER_TAG1 }},${{ env.DOCKER_TAG2 }}
           platforms: linux/amd64,linux/arm64

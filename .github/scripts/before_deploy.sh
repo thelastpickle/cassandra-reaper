@@ -19,6 +19,8 @@ set -xe
 mkdir -p src/packages
 
 export VERSION=$(printf 'VER\t${project.version}' | mvn help:evaluate | grep '^VER' | cut -f2)
+echo "SHADED_JAR=cassandra-reaper-${VERSION}.tar.gz" >> $GITHUB_ENV
+
 if [ "${GITHUB_REF}" = "refs/heads/arm64-images" ]
 then
     mkdir -p cassandra-reaper-master/server/target
