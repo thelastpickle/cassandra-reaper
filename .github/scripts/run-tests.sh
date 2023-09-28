@@ -147,7 +147,7 @@ case "${TEST_TYPE}" in
         docker-compose -f ./src/packaging/docker-build/docker-compose.yml build
         docker-compose -f ./src/packaging/docker-build/docker-compose.yml run build
         VERSION=$(printf 'VER\t${project.version}' | mvn help:evaluate | grep '^VER' | cut -f2)
-        docker build --build-arg SHADED_JAR=cassandra-reaper-${VERSION}.jar -f src/server/src/main/docker/Dockerfile -t thelastpickle/cassandra-reaper:latest .
+        docker build --build-arg SHADED_JAR=src/server/target/cassandra-reaper-${VERSION}.jar -f src/server/src/main/docker/Dockerfile -t cassandra-reaper:latest .
         docker images
 
         # Clear out Cassandra data before starting a new cluster
