@@ -500,6 +500,10 @@ jobs:
           platforms: linux/amd64,linux/arm64
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache
+      - name: Setup tmate session
+        if: "failure()"
+        uses: mxschmitt/action-tmate@v3
+        timeout-minutes: 30
     #- name: Locate deb and rpm packages for upload
     #  run: |
     #    REPO=reaper-deb
