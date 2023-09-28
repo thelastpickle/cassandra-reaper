@@ -17,8 +17,8 @@ name: CI
 
 on:
   push:
-#    branches:
-#      - master
+    branches:
+      - master
   pull_request:
   release:
     types:
@@ -46,405 +46,406 @@ jobs:
 
       - uses: codecov/codecov-action@v1
 
-  #docker-tests:
-  #  name: Docker Image Tests
-  #  needs: build
-  #  runs-on: ubuntu-20.04
-  #  strategy:
-  #    matrix:
-  #      storage-type: [cassandra]
-  #      test-type: [docker]
-  #  steps:
-  #    - name: Checkout
-  #      uses: actions/checkout@v3
-#
-  #    - name: Setup
-  #      uses: ./.github/actions/setup
-#
-  #    - name: Run Tests
-  #      run: ./.github/scripts/run-tests.sh
-  #      env:
-  #        TEST_TYPE: ${{ matrix.test-type }}
-#
-  #    - name: Setup tmate session
-  #      if: "failure()"
-  #      uses: mxschmitt/action-tmate@v3
-  #      timeout-minutes: 30
-#
-  #its-ccm-local:
-  #  name: Memory backends
-  #  needs: build
-  #  runs-on: ubuntu-20.04
-  #  continue-on-error: ${{ matrix.experimental }}
-  #  strategy:
-  #    matrix:
-  #      cassandra-version: [ "binary:1.2.19", "binary:2.0.17", 'binary:2.1.22', 'binary:2.2.19', 'binary:3.0.25', 'binary:3.11.11', 'binary:4.0.1' ]
-  #      storage-type: [local]
-  #      test-type: [ccm]
-  #      include:
-  #        # don't run against the following C* versions when using cassandra storage type
-  #        - cassandra-version: "binary:1.2.19"
-  #          cucumber-options: '--tags ~@cassandra_2_1_onwards --tags ~@cassandra_4_0_onwards --tags ~@cassandra_3_11_onwards'
-  #          experimental: false
-  #          jdk-version: '8'
-  #        - cassandra-version: "binary:2.0.17"
-  #          cucumber-options: '--tags ~@cassandra_2_1_onwards --tags ~@cassandra_4_0_onwards --tags ~@cassandra_3_11_onwards'
-  #          experimental: false
-  #          jdk-version: '8'
-  #        - cassandra-version: 'binary:2.1.22'
-  #          cucumber-options: '--tags ~@cassandra_4_0_onwards --tags ~@cassandra_3_11_onwards'
-  #          experimental: false
-  #          jdk-version: '8'
-  #        - cassandra-version: 'binary:2.2.19'
-  #          cucumber-options: '--tags ~@cassandra_4_0_onwards --tags ~@cassandra_3_11_onwards'
-  #          experimental: false
-  #          jdk-version: '8'
-  #        - cassandra-version: 'binary:3.0.25'
-  #          cucumber-options: '--tags ~@cassandra_4_0_onwards --tags ~@cassandra_3_11_onwards'
-  #          experimental: false
-  #          jdk-version: '8'
-  #        - cassandra-version: 'binary:3.11.11'
-  #          cucumber-options: '--tags ~@cassandra_4_0_onwards'
-  #          experimental: false
-  #          jdk-version: '8'
-  #        - cassandra-version: 'binary:4.0.1'
-  #          experimental: false
-  #          jdk-version: '11'
-  #        #- cassandra-version: 'github:apache/trunk'
-  #        #  experimental: true
-  #        #  jdk-version: '11'
-  #  steps:
-  #    - name: Checkout
-  #      uses: actions/checkout@v3
-#
-  #    - name: Setup
-  #      uses: ./.github/actions/setup
-#
-  #    - name: Install CCM
-  #      run: |
-  #        pip install pyyaml
-  #        pip install ccm
-#
-  #    - name: Setup CCM Cluster
-  #      run: ./.github/scripts/configure-ccm.sh
-  #      env:
-  #        TEST_TYPE: ${{ matrix.test-type }}
-  #        CASSANDRA_VERSION: ${{ matrix.cassandra-version }}
-  #        STORAGE_TYPE: ${{ matrix.storage-type }}
-  #        JDK_VERSION: ${{ matrix.jdk-version }}
-#
-  #    - name: Run Tests
-  #      run: ./.github/scripts/run-tests.sh
-  #      env:
-  #        TEST_TYPE: ${{ matrix.test-type }}
-  #        CASSANDRA_VERSION: ${{ matrix.cassandra-version }}
-  #        STORAGE_TYPE: ${{ matrix.storage-type }}
-  #        CUCUMBER_OPTIONS: ${{ matrix.cucumber-options }}
-  #        JDK_VERSION: ${{ matrix.jdk-version }}
-#
-  #    - uses: codecov/codecov-action@v1
-#
-  #    - name: Setup tmate session
-  #      if: "failure()"
-  #      uses: mxschmitt/action-tmate@v3
-  #      timeout-minutes: 30
-#
-  #its-ccm-cass:
-  #  needs: build
-  #  name: Cassandra backend
-  #  runs-on: ubuntu-20.04
-  #  continue-on-error: ${{ matrix.experimental }}
-  #  strategy:
-  #    matrix:
-  #      cassandra-version: [ 'binary:3.0.25', 'binary:3.11.11', 'binary:4.0.1']
-  #      storage-type: [cassandra]
-  #      test-type: [ccm]
-  #      include:
-  #        - cassandra-version: 'binary:3.0.25'
-  #          cucumber-options: '--tags ~@cassandra_4_0_onwards --tags ~@cassandra_3_11_onwards'
-  #          experimental: false
-  #          jdk-version: '8'
-  #        - cassandra-version: 'binary:3.11.11'
-  #          cucumber-options: '--tags ~@cassandra_4_0_onwards'
-  #          experimental: false
-  #          jdk-version: '8'
-  #        - cassandra-version: 'binary:4.0.1'
-  #          experimental: false
-  #          jdk-version: '11'
-  #        #- cassandra-version: 'github:apache/trunk'
-  #        #  experimental: true
-  #        #  jdk-version: '11'
-  #  steps:
-  #    - name: Checkout
-  #      uses: actions/checkout@v3
-#
-  #    - name: Setup
-  #      uses: ./.github/actions/setup
-#
-  #    - name: Install CCM
-  #      run: |
-  #        pip install pyyaml
-  #        pip install ccm
-#
-  #    - name: Setup CCM Cluster
-  #      run: ./.github/scripts/configure-ccm.sh
-  #      env:
-  #        TEST_TYPE: ${{ matrix.test-type }}
-  #        CASSANDRA_VERSION: ${{ matrix.cassandra-version }}
-  #        STORAGE_TYPE: ${{ matrix.storage-type }}
-  #        JDK_VERSION: ${{ matrix.jdk-version }}
-#
-  #    - name: Run Tests
-  #      run: ./.github/scripts/run-tests.sh
-  #      env:
-  #        TEST_TYPE: ${{ matrix.test-type }}
-  #        CASSANDRA_VERSION: ${{ matrix.cassandra-version }}
-  #        STORAGE_TYPE: ${{ matrix.storage-type }}
-  #        CUCUMBER_OPTIONS: ${{ matrix.cucumber-options }}
-  #        JDK_VERSION: ${{ matrix.jdk-version }}
-#
-  #    - uses: codecov/codecov-action@v1
-#
-  #    - name: Setup tmate session
-  #      if: "failure()"
-  #      uses: mxschmitt/action-tmate@v3
-  #      timeout-minutes: 30
-#
-  #its-sidecar:
-  #  needs: [docker-tests, its-ccm-local, its-ccm-cass]
-  #  name: Sidecar
-  #  runs-on: ubuntu-20.04
-  #  continue-on-error: ${{ matrix.experimental }}
-  #  strategy:
-  #    matrix:
-  #      cassandra-version: ['binary:3.0.25', 'binary:3.11.11', 'binary:4.0.1']
-  #      storage-type: [cassandra]
-  #      test-type: [sidecar]
-  #      grim-max: [1]
-  #      grim-min: [1]
-  #      # all versions but trunk have the same cucumber options, but we can't declare that more effectively (yet)
-  #      include:
-  #        - cassandra-version: 'binary:3.0.25'
-  #          cucumber-options: '--tags ~@cassandra_4_0_onwards --tags @sidecar --tags ~@cassandra_3_11_onwards'
-  #          experimental: false
-  #          jdk-version: '8'
-  #        - cassandra-version: 'binary:3.11.11'
-  #          cucumber-options: '--tags ~@cassandra_4_0_onwards --tags @sidecar'
-  #          experimental: false
-  #          jdk-version: '8'
-  #        - cassandra-version: 'binary:4.0.1'
-  #          cucumber-options: '--tags @sidecar'
-  #          experimental: false
-  #          jdk-version: '11'
-  #        #- cassandra-version: 'github:apache/trunk'
-  #        #  cucumber-options: '--tags @sidecar'
-  #        #  experimental: true
-  #        #  jdk-version: '11'
-  #  steps:
-  #    - name: Checkout
-  #      uses: actions/checkout@v3
-#
-  #    - name: Setup
-  #      uses: ./.github/actions/setup
-#
-  #    - name: Install CCM
-  #      run: |
-  #        pip install pyyaml
-  #        pip install ccm
-#
-  #    - name: Setup CCM Cluster
-  #      run: ./.github/scripts/configure-ccm.sh
-  #      env:
-  #        TEST_TYPE: ${{ matrix.test-type }}
-  #        CASSANDRA_VERSION: ${{ matrix.cassandra-version }}
-  #        STORAGE_TYPE: ${{ matrix.storage-type }}
-  #        JDK_VERSION: ${{ matrix.jdk-version }}
-#
-  #    - name: Run Tests
-  #      run: ./.github/scripts/run-tests.sh || ./.github/scripts/run-tests.sh
-  #      env:
-  #        TEST_TYPE: ${{ matrix.test-type }}
-  #        CASSANDRA_VERSION: ${{ matrix.cassandra-version }}
-  #        STORAGE_TYPE: ${{ matrix.storage-type }}
-  #        GRIM_MAX: ${{ matrix.grim-max }}
-  #        GRIM_MIN: ${{ matrix.grim-min }}
-  #        CUCUMBER_OPTIONS: ${{ matrix.cucumber-options }}
-  #        JDK_VERSION: ${{ matrix.jdk-version }}
-#
-  #    - uses: codecov/codecov-action@v1
-#
-  #its-each:
-  #  needs: [docker-tests, its-ccm-local, its-ccm-cass]
-  #  name: Each DC Availability
-  #  runs-on: ubuntu-20.04
-  #  continue-on-error: ${{ matrix.experimental }}
-  #  strategy:
-  #    matrix:
-  #      cassandra-version: ['binary:4.0.1']
-  #      storage-type: [cassandra]
-  #      test-type: [each]
-  #      grim-max: [1]
-  #      grim-min: [1]
-  #      # Reduced scope to shorten the integration test times
-  #      include:
-  #        - cassandra-version: 'binary:4.0.1'
-  #          cucumber-options: '--tags @sidecar'
-  #          experimental: false
-  #        #- cassandra-version: 'github:apache/trunk'
-  #        #  cucumber-options: '--tags @sidecar'
-  #        #  experimental: true
-  #  steps:
-  #    - name: Checkout
-  #      uses: actions/checkout@v3
-#
-  #    - name: Setup
-  #      uses: ./.github/actions/setup
-#
-  #    - name: Install CCM
-  #      run: |
-  #        pip install pyyaml
-  #        pip install ccm
-#
-  #    - name: Setup CCM Cluster
-  #      run: ./.github/scripts/configure-ccm.sh
-  #      env:
-  #        TEST_TYPE: ${{ matrix.test-type }}
-  #        CASSANDRA_VERSION: ${{ matrix.cassandra-version }}
-  #        STORAGE_TYPE: ${{ matrix.storage-type }}
-  #        JDK_VERSION: ${{ matrix.jdk-version }}
-#
-  #    - name: Run Tests
-  #      run: ./.github/scripts/run-tests.sh || ./.github/scripts/run-tests.sh
-  #      env:
-  #        TEST_TYPE: ${{ matrix.test-type }}
-  #        CASSANDRA_VERSION: ${{ matrix.cassandra-version }}
-  #        STORAGE_TYPE: ${{ matrix.storage-type }}
-  #        GRIM_MAX: ${{ matrix.grim-max }}
-  #        GRIM_MIN: ${{ matrix.grim-min }}
-  #        CUCUMBER_OPTIONS: ${{ matrix.cucumber-options }}
-  #        JDK_VERSION: ${{ matrix.jdk-version }}
-#
-  #    - uses: codecov/codecov-action@v1
-#
-  #its-distributed:
-  #  needs: [docker-tests, its-ccm-local, its-ccm-cass]
-  #  name: Distributed tests
-  #  runs-on: ubuntu-20.04
-  #  continue-on-error: ${{ matrix.experimental }}
-  #  strategy:
-  #    matrix:
-  #      cassandra-version: ['binary:3.0.25', 'binary:3.11.11', 'binary:4.0.1']
-  #      storage-type: [cassandra]
-  #      test-type: [ccm]
-  #      grim-max: [2]
-  #      grim-min: [2]
-  #      include:
-  #        - cassandra-version: 'binary:3.0.25'
-  #          cucumber-options: '--tags ~@cassandra_4_0_onwards --tags ~@cassandra_3_11_onwards'
-  #          experimental: false
-  #          jdk-version: '8'
-  #        - cassandra-version: 'binary:3.11.11'
-  #          cucumber-options: '--tags ~@cassandra_4_0_onwards'
-  #          experimental: false
-  #          jdk-version: '8'
-  #        - cassandra-version: 'binary:4.0.1'
-  #          experimental: false
-  #          jdk-version: '11'
-  #        #- cassandra-version: 'github:apache/trunk'
-  #        #  experimental: true
-  #        #  jdk-version: '11'
-  #  steps:
-  #    - name: Checkout
-  #      uses: actions/checkout@v3
-#
-  #    - name: Setup
-  #      uses: ./.github/actions/setup
-#
-  #    - name: Install CCM
-  #      run: |
-  #        pip install pyyaml
-  #        pip install ccm
-  #
-  #    - name: Setup CCM Cluster
-  #      run: ./.github/scripts/configure-ccm.sh
-  #      env:
-  #        TEST_TYPE: ${{ matrix.test-type }}
-  #        CASSANDRA_VERSION: ${{ matrix.cassandra-version }}
-  #        STORAGE_TYPE: ${{ matrix.storage-type }}
-  #        JDK_VERSION: ${{ matrix.jdk-version }}
-  #
-  #    - name: Run Tests
-  #      run: ./.github/scripts/run-tests.sh || ./.github/scripts/run-tests.sh
-  #      env:
-  #        TEST_TYPE: ${{ matrix.test-type }}
-  #        CASSANDRA_VERSION: ${{ matrix.cassandra-version }}
-  #        STORAGE_TYPE: ${{ matrix.storage-type }}
-  #        CUCUMBER_OPTIONS: ${{ matrix.cucumber-options }}
-  #        GRIM_MAX: ${{ matrix.grim-max }}
-  #        GRIM_MIN: ${{ matrix.grim-min }}
-  #        JDK_VERSION: ${{ matrix.jdk-version }}
-  #
-  #    - uses: codecov/codecov-action@v1
-  #
-  #
-  #its-flapping:
-  #  needs: [docker-tests, its-ccm-local, its-ccm-cass]
-  #  name: Flapping reapers
-  #  runs-on: ubuntu-20.04
-  #  continue-on-error: ${{ matrix.experimental }}
-  #  strategy:
-  #    matrix:
-  #      cassandra-version: ['binary:4.0.1']
-  #      storage-type: [cassandra]
-  #      test-type: [ccm]
-  #      grim-max: [4]
-  #      grim-min: [2]
-  #      cucumber-options: ['--tags ~@diag_event_subscriptions']
-  #      include:
-  #        # all versions but trunk need to exclude trunk tests
-  #        - cassandra-version: 'binary:4.0.1'
-  #          experimental: true
-  #          jdk-version: '11'
-  #        #- cassandra-version: 'github:apache/trunk'
-  #        #  experimental: true
-  #        #  jdk-version: '11'
-  #  steps:
-  #    - name: Checkout
-  #      uses: actions/checkout@v3
-  #
-  #    - name: Setup
-  #      uses: ./.github/actions/setup
-  #
-  #    - name: Install CCM
-  #      run: |
-  #        pip install pyyaml
-  #        pip install ccm
-  #
-  #    - name: Setup CCM Cluster
-  #      run: ./.github/scripts/configure-ccm.sh
-  #      env:
-  #        TEST_TYPE: ${{ matrix.test-type }}
-  #        CASSANDRA_VERSION: ${{ matrix.cassandra-version }}
-  #        STORAGE_TYPE: ${{ matrix.storage-type }}
-  #        JDK_VERSION: ${{ matrix.jdk-version }}
-  #
-  #    - name: Run Tests
-  #      run: |
-  #        ./.github/scripts/run-tests.sh || ./.github/scripts/run-tests.sh || ./.github/scripts/run-tests.sh
-  #      env:
-  #        TEST_TYPE: ${{ matrix.test-type }}
-  #        CASSANDRA_VERSION: ${{ matrix.cassandra-version }}
-  #        STORAGE_TYPE: ${{ matrix.storage-type }}
-  #        CUCUMBER_OPTIONS: ${{ matrix.cucumber-options }}
-  #        GRIM_MAX: ${{ matrix.grim-max }}
-  #        GRIM_MIN: ${{ matrix.grim-min }}
-  #        JDK_VERSION: ${{ matrix.jdk-version }}
-  #
-  #    - uses: codecov/codecov-action@v1
+  docker-tests:
+    name: Docker Image Tests
+    needs: build
+    runs-on: ubuntu-20.04
+    strategy:
+      matrix:
+        storage-type: [cassandra]
+        test-type: [docker]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Setup
+        uses: ./.github/actions/setup
+
+      - name: Run Tests
+        run: ./.github/scripts/run-tests.sh
+        env:
+          TEST_TYPE: ${{ matrix.test-type }}
+
+      - name: Setup tmate session
+        if: "failure()"
+        uses: mxschmitt/action-tmate@v3
+        timeout-minutes: 30
+
+  its-ccm-local:
+    name: Memory backends
+    needs: build
+    runs-on: ubuntu-20.04
+    continue-on-error: ${{ matrix.experimental }}
+    strategy:
+      matrix:
+        cassandra-version: [ "binary:1.2.19", "binary:2.0.17", 'binary:2.1.22', 'binary:2.2.19', 'binary:3.0.25', 'binary:3.11.11', 'binary:4.0.1' ]
+        storage-type: [local]
+        test-type: [ccm]
+        include:
+          # don't run against the following C* versions when using cassandra storage type
+          - cassandra-version: "binary:1.2.19"
+            cucumber-options: '--tags ~@cassandra_2_1_onwards --tags ~@cassandra_4_0_onwards --tags ~@cassandra_3_11_onwards'
+            experimental: false
+            jdk-version: '8'
+          - cassandra-version: "binary:2.0.17"
+            cucumber-options: '--tags ~@cassandra_2_1_onwards --tags ~@cassandra_4_0_onwards --tags ~@cassandra_3_11_onwards'
+            experimental: false
+            jdk-version: '8'
+          - cassandra-version: 'binary:2.1.22'
+            cucumber-options: '--tags ~@cassandra_4_0_onwards --tags ~@cassandra_3_11_onwards'
+            experimental: false
+            jdk-version: '8'
+          - cassandra-version: 'binary:2.2.19'
+            cucumber-options: '--tags ~@cassandra_4_0_onwards --tags ~@cassandra_3_11_onwards'
+            experimental: false
+            jdk-version: '8'
+          - cassandra-version: 'binary:3.0.25'
+            cucumber-options: '--tags ~@cassandra_4_0_onwards --tags ~@cassandra_3_11_onwards'
+            experimental: false
+            jdk-version: '8'
+          - cassandra-version: 'binary:3.11.11'
+            cucumber-options: '--tags ~@cassandra_4_0_onwards'
+            experimental: false
+            jdk-version: '8'
+          - cassandra-version: 'binary:4.0.1'
+            experimental: false
+            jdk-version: '11'
+          #- cassandra-version: 'github:apache/trunk'
+          #  experimental: true
+          #  jdk-version: '11'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Setup
+        uses: ./.github/actions/setup
+
+      - name: Install CCM
+        run: |
+          pip install pyyaml
+          pip install ccm
+
+      - name: Setup CCM Cluster
+        run: ./.github/scripts/configure-ccm.sh
+        env:
+          TEST_TYPE: ${{ matrix.test-type }}
+          CASSANDRA_VERSION: ${{ matrix.cassandra-version }}
+          STORAGE_TYPE: ${{ matrix.storage-type }}
+          JDK_VERSION: ${{ matrix.jdk-version }}
+
+      - name: Run Tests
+        run: ./.github/scripts/run-tests.sh
+        env:
+          TEST_TYPE: ${{ matrix.test-type }}
+          CASSANDRA_VERSION: ${{ matrix.cassandra-version }}
+          STORAGE_TYPE: ${{ matrix.storage-type }}
+          CUCUMBER_OPTIONS: ${{ matrix.cucumber-options }}
+          JDK_VERSION: ${{ matrix.jdk-version }}
+
+      - uses: codecov/codecov-action@v1
+
+      - name: Setup tmate session
+        if: "failure()"
+        uses: mxschmitt/action-tmate@v3
+        timeout-minutes: 30
+
+  its-ccm-cass:
+    needs: build
+    name: Cassandra backend
+    runs-on: ubuntu-20.04
+    continue-on-error: ${{ matrix.experimental }}
+    strategy:
+      matrix:
+        cassandra-version: [ 'binary:3.0.25', 'binary:3.11.11', 'binary:4.0.1']
+        storage-type: [cassandra]
+        test-type: [ccm]
+        include:
+          - cassandra-version: 'binary:3.0.25'
+            cucumber-options: '--tags ~@cassandra_4_0_onwards --tags ~@cassandra_3_11_onwards'
+            experimental: false
+            jdk-version: '8'
+          - cassandra-version: 'binary:3.11.11'
+            cucumber-options: '--tags ~@cassandra_4_0_onwards'
+            experimental: false
+            jdk-version: '8'
+          - cassandra-version: 'binary:4.0.1'
+            experimental: false
+            jdk-version: '11'
+          #- cassandra-version: 'github:apache/trunk'
+          #  experimental: true
+          #  jdk-version: '11'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Setup
+        uses: ./.github/actions/setup
+
+      - name: Install CCM
+        run: |
+          pip install pyyaml
+          pip install ccm
+
+      - name: Setup CCM Cluster
+        run: ./.github/scripts/configure-ccm.sh
+        env:
+          TEST_TYPE: ${{ matrix.test-type }}
+          CASSANDRA_VERSION: ${{ matrix.cassandra-version }}
+          STORAGE_TYPE: ${{ matrix.storage-type }}
+          JDK_VERSION: ${{ matrix.jdk-version }}
+
+      - name: Run Tests
+        run: ./.github/scripts/run-tests.sh
+        env:
+          TEST_TYPE: ${{ matrix.test-type }}
+          CASSANDRA_VERSION: ${{ matrix.cassandra-version }}
+          STORAGE_TYPE: ${{ matrix.storage-type }}
+          CUCUMBER_OPTIONS: ${{ matrix.cucumber-options }}
+          JDK_VERSION: ${{ matrix.jdk-version }}
+
+      - uses: codecov/codecov-action@v1
+
+      - name: Setup tmate session
+        if: "failure()"
+        uses: mxschmitt/action-tmate@v3
+        timeout-minutes: 30
+
+  its-sidecar:
+    needs: [docker-tests, its-ccm-local, its-ccm-cass]
+    name: Sidecar
+    runs-on: ubuntu-20.04
+    continue-on-error: ${{ matrix.experimental }}
+    strategy:
+      matrix:
+        cassandra-version: ['binary:3.0.25', 'binary:3.11.11', 'binary:4.0.1']
+        storage-type: [cassandra]
+        test-type: [sidecar]
+        grim-max: [1]
+        grim-min: [1]
+        # all versions but trunk have the same cucumber options, but we can't declare that more effectively (yet)
+        include:
+          - cassandra-version: 'binary:3.0.25'
+            cucumber-options: '--tags ~@cassandra_4_0_onwards --tags @sidecar --tags ~@cassandra_3_11_onwards'
+            experimental: false
+            jdk-version: '8'
+          - cassandra-version: 'binary:3.11.11'
+            cucumber-options: '--tags ~@cassandra_4_0_onwards --tags @sidecar'
+            experimental: false
+            jdk-version: '8'
+          - cassandra-version: 'binary:4.0.1'
+            cucumber-options: '--tags @sidecar'
+            experimental: false
+            jdk-version: '11'
+          #- cassandra-version: 'github:apache/trunk'
+          #  cucumber-options: '--tags @sidecar'
+          #  experimental: true
+          #  jdk-version: '11'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Setup
+        uses: ./.github/actions/setup
+
+      - name: Install CCM
+        run: |
+          pip install pyyaml
+          pip install ccm
+
+      - name: Setup CCM Cluster
+        run: ./.github/scripts/configure-ccm.sh
+        env:
+          TEST_TYPE: ${{ matrix.test-type }}
+          CASSANDRA_VERSION: ${{ matrix.cassandra-version }}
+          STORAGE_TYPE: ${{ matrix.storage-type }}
+          JDK_VERSION: ${{ matrix.jdk-version }}
+
+      - name: Run Tests
+        run: ./.github/scripts/run-tests.sh || ./.github/scripts/run-tests.sh
+        env:
+          TEST_TYPE: ${{ matrix.test-type }}
+          CASSANDRA_VERSION: ${{ matrix.cassandra-version }}
+          STORAGE_TYPE: ${{ matrix.storage-type }}
+          GRIM_MAX: ${{ matrix.grim-max }}
+          GRIM_MIN: ${{ matrix.grim-min }}
+          CUCUMBER_OPTIONS: ${{ matrix.cucumber-options }}
+          JDK_VERSION: ${{ matrix.jdk-version }}
+
+      - uses: codecov/codecov-action@v1
+
+  its-each:
+    needs: [docker-tests, its-ccm-local, its-ccm-cass]
+    name: Each DC Availability
+    runs-on: ubuntu-20.04
+    continue-on-error: ${{ matrix.experimental }}
+    strategy:
+      matrix:
+        cassandra-version: ['binary:4.0.1']
+        storage-type: [cassandra]
+        test-type: [each]
+        grim-max: [1]
+        grim-min: [1]
+        # Reduced scope to shorten the integration test times
+        include:
+          - cassandra-version: 'binary:4.0.1'
+            cucumber-options: '--tags @sidecar'
+            experimental: false
+          #- cassandra-version: 'github:apache/trunk'
+          #  cucumber-options: '--tags @sidecar'
+          #  experimental: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Setup
+        uses: ./.github/actions/setup
+
+      - name: Install CCM
+        run: |
+          pip install pyyaml
+          pip install ccm
+
+      - name: Setup CCM Cluster
+        run: ./.github/scripts/configure-ccm.sh
+        env:
+          TEST_TYPE: ${{ matrix.test-type }}
+          CASSANDRA_VERSION: ${{ matrix.cassandra-version }}
+          STORAGE_TYPE: ${{ matrix.storage-type }}
+          JDK_VERSION: ${{ matrix.jdk-version }}
+
+      - name: Run Tests
+        run: ./.github/scripts/run-tests.sh || ./.github/scripts/run-tests.sh
+        env:
+          TEST_TYPE: ${{ matrix.test-type }}
+          CASSANDRA_VERSION: ${{ matrix.cassandra-version }}
+          STORAGE_TYPE: ${{ matrix.storage-type }}
+          GRIM_MAX: ${{ matrix.grim-max }}
+          GRIM_MIN: ${{ matrix.grim-min }}
+          CUCUMBER_OPTIONS: ${{ matrix.cucumber-options }}
+          JDK_VERSION: ${{ matrix.jdk-version }}
+
+      - uses: codecov/codecov-action@v1
+
+  its-distributed:
+    needs: [docker-tests, its-ccm-local, its-ccm-cass]
+    name: Distributed tests
+    runs-on: ubuntu-20.04
+    continue-on-error: ${{ matrix.experimental }}
+    strategy:
+      matrix:
+        cassandra-version: ['binary:3.0.25', 'binary:3.11.11', 'binary:4.0.1']
+        storage-type: [cassandra]
+        test-type: [ccm]
+        grim-max: [2]
+        grim-min: [2]
+        include:
+          - cassandra-version: 'binary:3.0.25'
+            cucumber-options: '--tags ~@cassandra_4_0_onwards --tags ~@cassandra_3_11_onwards'
+            experimental: false
+            jdk-version: '8'
+          - cassandra-version: 'binary:3.11.11'
+            cucumber-options: '--tags ~@cassandra_4_0_onwards'
+            experimental: false
+            jdk-version: '8'
+          - cassandra-version: 'binary:4.0.1'
+            experimental: false
+            jdk-version: '11'
+          #- cassandra-version: 'github:apache/trunk'
+          #  experimental: true
+          #  jdk-version: '11'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Setup
+        uses: ./.github/actions/setup
+
+      - name: Install CCM
+        run: |
+          pip install pyyaml
+          pip install ccm
+  
+      - name: Setup CCM Cluster
+        run: ./.github/scripts/configure-ccm.sh
+        env:
+          TEST_TYPE: ${{ matrix.test-type }}
+          CASSANDRA_VERSION: ${{ matrix.cassandra-version }}
+          STORAGE_TYPE: ${{ matrix.storage-type }}
+          JDK_VERSION: ${{ matrix.jdk-version }}
+  
+      - name: Run Tests
+        run: ./.github/scripts/run-tests.sh || ./.github/scripts/run-tests.sh
+        env:
+          TEST_TYPE: ${{ matrix.test-type }}
+          CASSANDRA_VERSION: ${{ matrix.cassandra-version }}
+          STORAGE_TYPE: ${{ matrix.storage-type }}
+          CUCUMBER_OPTIONS: ${{ matrix.cucumber-options }}
+          GRIM_MAX: ${{ matrix.grim-max }}
+          GRIM_MIN: ${{ matrix.grim-min }}
+          JDK_VERSION: ${{ matrix.jdk-version }}
+  
+      - uses: codecov/codecov-action@v1
+  
+  
+  its-flapping:
+    needs: [docker-tests, its-ccm-local, its-ccm-cass]
+    name: Flapping reapers
+    runs-on: ubuntu-20.04
+    continue-on-error: ${{ matrix.experimental }}
+    strategy:
+      matrix:
+        cassandra-version: ['binary:4.0.1']
+        storage-type: [cassandra]
+        test-type: [ccm]
+        grim-max: [4]
+        grim-min: [2]
+        cucumber-options: ['--tags ~@diag_event_subscriptions']
+        include:
+          # all versions but trunk need to exclude trunk tests
+          - cassandra-version: 'binary:4.0.1'
+            experimental: true
+            jdk-version: '11'
+          #- cassandra-version: 'github:apache/trunk'
+          #  experimental: true
+          #  jdk-version: '11'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+  
+      - name: Setup
+        uses: ./.github/actions/setup
+  
+      - name: Install CCM
+        run: |
+          pip install pyyaml
+          pip install ccm
+  
+      - name: Setup CCM Cluster
+        run: ./.github/scripts/configure-ccm.sh
+        env:
+          TEST_TYPE: ${{ matrix.test-type }}
+          CASSANDRA_VERSION: ${{ matrix.cassandra-version }}
+          STORAGE_TYPE: ${{ matrix.storage-type }}
+          JDK_VERSION: ${{ matrix.jdk-version }}
+  
+      - name: Run Tests
+        run: |
+          ./.github/scripts/run-tests.sh || ./.github/scripts/run-tests.sh || ./.github/scripts/run-tests.sh
+        env:
+          TEST_TYPE: ${{ matrix.test-type }}
+          CASSANDRA_VERSION: ${{ matrix.cassandra-version }}
+          STORAGE_TYPE: ${{ matrix.storage-type }}
+          CUCUMBER_OPTIONS: ${{ matrix.cucumber-options }}
+          GRIM_MAX: ${{ matrix.grim-max }}
+          GRIM_MIN: ${{ matrix.grim-min }}
+          JDK_VERSION: ${{ matrix.jdk-version }}
+  
+      - uses: codecov/codecov-action@v1
 
   release:
     name: Release Reaper
-    #needs: [its-distributed, its-flapping, its-sidecar, its-each]
+    needs: [its-distributed, its-flapping, its-sidecar, its-each]
+    if: startsWith(github.ref, 'refs/heads/master') || startsWith(github.ref, 'refs/tag')
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout
@@ -500,92 +501,88 @@ jobs:
           platforms: linux/amd64,linux/arm64
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache
-      - name: Setup tmate session
-        if: "failure()"
-        uses: mxschmitt/action-tmate@v3
-        timeout-minutes: 30
-    #- name: Locate deb and rpm packages for upload
-    #  run: |
-    #    REPO=reaper-deb
-    #    PACKAGE=cassandra-reaper
-    #    VERSION=$(printf 'VER\t${project.version}' | mvn help:evaluate | grep '^VER' | cut -f2)
-    #    if [ "${GITHUB_REF}" = "refs/heads/master" ]
-    #    then
-    #      echo "BETA_RELEASE=yes" >> $GITHUB_ENV
-    #    else
-    #      echo "BETA_RELEASE=no" >> $GITHUB_ENV
-    #    fi
+      - name: Locate deb and rpm packages for upload
+        run: |
+          REPO=reaper-deb
+          PACKAGE=cassandra-reaper
+          VERSION=$(printf 'VER\t${project.version}' | mvn help:evaluate | grep '^VER' | cut -f2)
+          if [ "${GITHUB_REF}" = "refs/heads/master" ]
+          then
+            echo "BETA_RELEASE=yes" >> $GITHUB_ENV
+          else
+            echo "BETA_RELEASE=no" >> $GITHUB_ENV
+          fi
 
-    #    debReleaseFile=$(ls src/packages/*.deb |grep ${VERSION})
-    #    rpmReleaseFile=$(ls src/packages/*.rpm)
-    #    echo "DEB_RELEASE_FILE=${debReleaseFile}" >> $GITHUB_ENV
-    #    echo "RPM_RELEASE_FILE=${rpmReleaseFile}" >> $GITHUB_ENV
+          debReleaseFile=$(ls src/packages/*.deb |grep ${VERSION})
+          rpmReleaseFile=$(ls src/packages/*.rpm)
+          echo "DEB_RELEASE_FILE=${debReleaseFile}" >> $GITHUB_ENV
+          echo "RPM_RELEASE_FILE=${rpmReleaseFile}" >> $GITHUB_ENV
 
-    #- name: Upload artifacts to GitHub Release
-    #  uses: fnkr/github-action-ghr@v1
-    #  if: github.event_name == 'release' && github.event.action == 'published'
-    #  env:
-    #    GHR_PATH: src/packages
-    #    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Upload artifacts to GitHub Release
+        uses: fnkr/github-action-ghr@v1
+        if: github.event_name == 'release' && github.event.action == 'published'
+        env:
+          GHR_PATH: src/packages
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-    ### Stable releases
-    #- name: Push Debian to Cloudsmith
-    #  id: push-deb
-    #  if: ${{ env.BETA_RELEASE == 'no' }}
-    #  uses: cloudsmith-io/action@master
-    #  with:
-    #    api-key: ${{ secrets.CLOUDSMITH_API_KEY }}
-    #    command: 'push'
-    #    format: 'deb'
-    #    owner: 'thelastpickle'
-    #    repo: 'reaper'
-    #    distro: 'any-distro'
-    #    release: 'any-version'
-    #    republish: 'true'
-    #    file: ${{ env.DEB_RELEASE_FILE }}
+      ## Stable releases
+      - name: Push Debian to Cloudsmith
+        id: push-deb
+        if: ${{ env.BETA_RELEASE == 'no' }}
+        uses: cloudsmith-io/action@master
+        with:
+          api-key: ${{ secrets.CLOUDSMITH_API_KEY }}
+          command: 'push'
+          format: 'deb'
+          owner: 'thelastpickle'
+          repo: 'reaper'
+          distro: 'any-distro'
+          release: 'any-version'
+          republish: 'true'
+          file: ${{ env.DEB_RELEASE_FILE }}
 
-    #- name: Push RPM to Cloudsmith
-    #  id: push-rpm
-    #  if: ${{ env.BETA_RELEASE == 'no' }}
-    #  uses: cloudsmith-io/action@master
-    #  with:
-    #    api-key: ${{ secrets.CLOUDSMITH_API_KEY }}
-    #    command: "push"
-    #    format: "rpm"
-    #    owner: 'thelastpickle'
-    #    repo: 'reaper'
-    #    distro: 'any-distro'
-    #    release: 'any-version'
-    #    republish: 'true'
-    #    file: ${{ env.RPM_RELEASE_FILE }}
+      - name: Push RPM to Cloudsmith
+        id: push-rpm
+        if: ${{ env.BETA_RELEASE == 'no' }}
+        uses: cloudsmith-io/action@master
+        with:
+          api-key: ${{ secrets.CLOUDSMITH_API_KEY }}
+          command: "push"
+          format: "rpm"
+          owner: 'thelastpickle'
+          repo: 'reaper'
+          distro: 'any-distro'
+          release: 'any-version'
+          republish: 'true'
+          file: ${{ env.RPM_RELEASE_FILE }}
 
-    ### Beta releases
-    #- name: Push Debian Beta to Cloudsmith
-    #  id: push-beta-deb
-    #  if: ${{ env.BETA_RELEASE == 'yes' }}
-    #  uses: cloudsmith-io/action@master
-    #  with:
-    #    api-key: ${{ secrets.CLOUDSMITH_API_KEY }}
-    #    command: 'push'
-    #    format: 'deb'
-    #    owner: 'thelastpickle'
-    #    repo: 'reaper-beta'
-    #    distro: 'any-distro'
-    #    release: 'any-version'
-    #    republish: 'true'
-    #    file: ${{ env.DEB_RELEASE_FILE }}
+      ## Beta releases
+      - name: Push Debian Beta to Cloudsmith
+        id: push-beta-deb
+        if: ${{ env.BETA_RELEASE == 'yes' }}
+        uses: cloudsmith-io/action@master
+        with:
+          api-key: ${{ secrets.CLOUDSMITH_API_KEY }}
+          command: 'push'
+          format: 'deb'
+          owner: 'thelastpickle'
+          repo: 'reaper-beta'
+          distro: 'any-distro'
+          release: 'any-version'
+          republish: 'true'
+          file: ${{ env.DEB_RELEASE_FILE }}
 
-    #- name: Push RPM Beta to Cloudsmith
-    #  id: push-beta-rpm
-    #  if: ${{ env.BETA_RELEASE == 'yes' }}
-    #  uses: cloudsmith-io/action@master
-    #  with:
-    #    api-key: ${{ secrets.CLOUDSMITH_API_KEY }}
-    #    command: "push"
-    #    format: "rpm"
-    #    owner: 'thelastpickle'
-    #    repo: 'reaper-beta'
-    #    distro: 'any-distro'
-    #    release: 'any-version'
-    #    republish: 'true'
-    #    file: ${{ env.RPM_RELEASE_FILE }}
+      - name: Push RPM Beta to Cloudsmith
+        id: push-beta-rpm
+        if: ${{ env.BETA_RELEASE == 'yes' }}
+        uses: cloudsmith-io/action@master
+        with:
+          api-key: ${{ secrets.CLOUDSMITH_API_KEY }}
+          command: "push"
+          format: "rpm"
+          owner: 'thelastpickle'
+          repo: 'reaper-beta'
+          distro: 'any-distro'
+          release: 'any-version'
+          republish: 'true'
+          file: ${{ env.RPM_RELEASE_FILE }}
