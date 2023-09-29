@@ -78,7 +78,7 @@ jobs:
     continue-on-error: ${{ matrix.experimental }}
     strategy:
       matrix:
-        cassandra-version: [ 'binary:3.0.25', 'binary:3.11.11', 'binary:4.0.1' ]
+        cassandra-version: [ 'binary:3.0.25', 'binary:3.11.16', 'binary:4.0.1' ]
         storage-type: [local]
         test-type: [ccm]
         include:
@@ -87,7 +87,7 @@ jobs:
             cucumber-options: '--tags ~@cassandra_4_0_onwards --tags ~@cassandra_3_11_onwards'
             experimental: false
             jdk-version: '8'
-          - cassandra-version: 'binary:3.11.11'
+          - cassandra-version: 'binary:3.11.16'
             cucumber-options: '--tags ~@cassandra_4_0_onwards'
             experimental: false
             jdk-version: '8'
@@ -140,7 +140,7 @@ jobs:
     continue-on-error: ${{ matrix.experimental }}
     strategy:
       matrix:
-        cassandra-version: [ 'binary:3.0.25', 'binary:3.11.11', 'binary:4.0.1']
+        cassandra-version: [ 'binary:3.0.25', 'binary:3.11.16', 'binary:4.0.1']
         storage-type: [cassandra]
         test-type: [ccm]
         include:
@@ -148,7 +148,7 @@ jobs:
             cucumber-options: '--tags ~@cassandra_4_0_onwards --tags ~@cassandra_3_11_onwards'
             experimental: false
             jdk-version: '8'
-          - cassandra-version: 'binary:3.11.11'
+          - cassandra-version: 'binary:3.11.16'
             cucumber-options: '--tags ~@cassandra_4_0_onwards'
             experimental: false
             jdk-version: '8'
@@ -201,7 +201,7 @@ jobs:
     continue-on-error: ${{ matrix.experimental }}
     strategy:
       matrix:
-        cassandra-version: ['binary:3.0.25', 'binary:3.11.11', 'binary:4.0.1']
+        cassandra-version: ['binary:3.0.25', 'binary:3.11.16', 'binary:4.0.1']
         storage-type: [cassandra]
         test-type: [sidecar]
         grim-max: [1]
@@ -212,7 +212,7 @@ jobs:
             cucumber-options: '--tags ~@cassandra_4_0_onwards --tags @sidecar --tags ~@cassandra_3_11_onwards'
             experimental: false
             jdk-version: '8'
-          - cassandra-version: 'binary:3.11.11'
+          - cassandra-version: 'binary:3.11.16'
             cucumber-options: '--tags ~@cassandra_4_0_onwards --tags @sidecar'
             experimental: false
             jdk-version: '8'
@@ -264,7 +264,7 @@ jobs:
     continue-on-error: ${{ matrix.experimental }}
     strategy:
       matrix:
-        cassandra-version: [ 'binary:4.0.1' ]
+        cassandra-version: [ 'binary:4.0.1', 'binary:3.11.16' ]
         storage-type: [ "ccm" ]
         test-type: [ "http-api" ]
         grim-max: [ 1 ]
@@ -275,6 +275,10 @@ jobs:
             cucumber-options: '--tags @http_management'
             experimental: false
             jdk-version: '11'
+          - cassandra-version: 'binary:3.11.16'
+            cucumber-options: '--tags ~@cassandra_4_0_onwards'
+            experimental: false
+            jdk-version: '8'
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -368,7 +372,7 @@ jobs:
     continue-on-error: ${{ matrix.experimental }}
     strategy:
       matrix:
-        cassandra-version: ['binary:3.0.25', 'binary:3.11.11', 'binary:4.0.1']
+        cassandra-version: ['binary:3.0.25', 'binary:3.11.16', 'binary:4.0.1']
         storage-type: [cassandra]
         test-type: [ccm]
         grim-max: [2]
@@ -378,7 +382,7 @@ jobs:
             cucumber-options: '--tags ~@cassandra_4_0_onwards --tags ~@cassandra_3_11_onwards'
             experimental: false
             jdk-version: '8'
-          - cassandra-version: 'binary:3.11.11'
+          - cassandra-version: 'binary:3.11.16'
             cucumber-options: '--tags ~@cassandra_4_0_onwards'
             experimental: false
             jdk-version: '8'
