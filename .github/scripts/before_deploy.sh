@@ -60,6 +60,6 @@ then
     tar czf cassandra-reaper-${VERSION}-release.tar.gz cassandra-reaper-${VERSION}/
     sudo mv cassandra-reaper-${VERSION}-release.tar.gz src/packages/
     export REPO=thelastpickle/cassandra-reaper
-    echo "DOCKER_TAG1=$REPO:master" >> $GITHUB_ENV
+    echo "DOCKER_TAG1=$REPO:latest" >> $GITHUB_ENV
     echo "DOCKER_TAG2=$REPO:$VERSION" >> $GITHUB_ENV
 fi

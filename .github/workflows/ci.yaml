@@ -364,7 +364,7 @@ jobs:
         run: |
           pip install pyyaml
           pip install ccm
-  
+
       - name: Setup CCM Cluster
         run: ./.github/scripts/configure-ccm.sh
         env:
@@ -372,7 +372,7 @@ jobs:
           CASSANDRA_VERSION: ${{ matrix.cassandra-version }}
           STORAGE_TYPE: ${{ matrix.storage-type }}
           JDK_VERSION: ${{ matrix.jdk-version }}
-  
+
       - name: Run Tests
         run: ./.github/scripts/run-tests.sh || ./.github/scripts/run-tests.sh
         env:
@@ -383,10 +383,10 @@ jobs:
           GRIM_MAX: ${{ matrix.grim-max }}
           GRIM_MIN: ${{ matrix.grim-min }}
           JDK_VERSION: ${{ matrix.jdk-version }}
-  
+
       - uses: codecov/codecov-action@v1
-  
-  
+
+
   its-flapping:
     needs: [docker-tests, its-ccm-local, its-ccm-cass]
     name: Flapping reapers
@@ -411,15 +411,15 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-  
+
       - name: Setup
         uses: ./.github/actions/setup
-  
+
       - name: Install CCM
         run: |
           pip install pyyaml
           pip install ccm
-  
+
       - name: Setup CCM Cluster
         run: ./.github/scripts/configure-ccm.sh
         env:
@@ -427,7 +427,7 @@ jobs:
           CASSANDRA_VERSION: ${{ matrix.cassandra-version }}
           STORAGE_TYPE: ${{ matrix.storage-type }}
           JDK_VERSION: ${{ matrix.jdk-version }}
-  
+
       - name: Run Tests
         run: |
           ./.github/scripts/run-tests.sh || ./.github/scripts/run-tests.sh || ./.github/scripts/run-tests.sh
@@ -439,7 +439,7 @@ jobs:
           GRIM_MAX: ${{ matrix.grim-max }}
           GRIM_MIN: ${{ matrix.grim-min }}
           JDK_VERSION: ${{ matrix.jdk-version }}
-  
+
       - uses: codecov/codecov-action@v1
 
   release:
@@ -457,7 +457,7 @@ jobs:
       - name: Compute version number
         run: |
           VERSION=$(printf 'VER\t${project.version}' | mvn help:evaluate | grep '^VER' | cut -f2)
-          if [ "${GITHUB_REF}" = "refs/heads/arm64-images" ]
+          if [ "${GITHUB_REF}" = "refs/heads/master" ]
             then
                 # We're building a beta version
                 VERSION=$(printf 'VER\t${project.version}' | mvn help:evaluate | grep '^VER' | cut -f2)
