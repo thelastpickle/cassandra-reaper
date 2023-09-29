@@ -499,18 +499,6 @@
                     <buildArgs>
                         <SHADED_JAR>cassandra-reaper-${project.version}.jar</SHADED_JAR>
                     </buildArgs>
-                    <resources>
-                        <resource>
-                            <targetPath>/</targetPath>
-                            <directory>${project.build.directory}</directory>
-                            <include>cassandra-reaper-${project.version}.jar</include>
-                        </resource>
-                        <resource>
-                            <targetPath>/</targetPath>
-                            <directory>${project.basedir}/../packaging/bin/</directory>
-                            <include>spreaper</include>
-                        </resource>
-                    </resources>
                 </configuration>
             </plugin>
             <plugin>
