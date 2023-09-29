@@ -19,6 +19,10 @@ set -xe
 mkdir -p src/packages
 
 export VERSION=$(printf 'VER\t${project.version}' | mvn help:evaluate | grep '^VER' | cut -f2)
+
+# Used for the docker image build
+echo "SHADED_JAR=src/server/target/cassandra-reaper-${VERSION}.jar" >> $GITHUB_ENV
+
 if [ "${GITHUB_REF}" = "refs/heads/master" ]
 then
     mkdir -p cassandra-reaper-master/server/target
@@ -36,13 +40,9 @@ then
     tar czf cassandra-reaper-${VERSION}.tar.gz cassandra-reaper-master/
     sudo mv cassandra-reaper-${VERSION}.tar.gz src/packages/
     export GIT_HASH=$(git log --pretty=format:'%h' -n 1)
-    docker login -u $DOCKER_USER -p $DOCKER_PASS
     export REPO=thelastpickle/cassandra-reaper
-    mvn -B -pl src/server/ docker:build -Ddocker.directory=src/server/src/main/docker
-    docker tag cassandra-reaper:latest $REPO:master
-    docker push $REPO:master
-    docker tag cassandra-reaper:latest $REPO:$GIT_HASH
-    docker push $REPO:$GIT_HASH
+    echo "DOCKER_TAG1=$REPO:master" >> $GITHUB_ENV
+    echo "DOCKER_TAG2=$REPO:$GIT_HASH" >> $GITHUB_ENV
 fi
 if [[ ${GITHUB_REF} == "refs/tags"* ]]
 then
@@ -59,11 +59,7 @@ then
     cd ../..
     tar czf cassandra-reaper-${VERSION}-release.tar.gz cassandra-reaper-${VERSION}/
     sudo mv cassandra-reaper-${VERSION}-release.tar.gz src/packages/
-    docker login -u $DOCKER_USER -p $DOCKER_PASS
     export REPO=thelastpickle/cassandra-reaper
-    mvn -B -pl src/server/ docker:build -Ddocker.directory=src/server/src/main/docker
-    docker tag cassandra-reaper:latest $REPO:latest
-    docker push $REPO:latest
-    docker tag cassandra-reaper:latest $REPO:$VERSION
-    docker push $REPO:$VERSION
+    echo "DOCKER_TAG1=$REPO:latest" >> $GITHUB_ENV
+    echo "DOCKER_TAG2=$REPO:$VERSION" >> $GITHUB_ENV
 fi
