@@ -23,6 +23,7 @@ import io.cassandrareaper.core.Node;
 import io.cassandrareaper.management.MetricsProxy;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -36,6 +37,8 @@ import javax.management.JMException;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+
+import okhttp3.HttpUrl;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
@@ -79,39 +82,41 @@ public final class HttpMetricsProxy implements MetricsProxy {
   @Override
   public List<GenericMetric> collectTpStats() throws JMException, IOException {
     // Collect all metrics and filter out the ones that are not thread pool metrics
-    return collectMetrics(Optional.of(THREAD_POOL_METRICS_PREFIX), Optional.empty());
+    return collectMetrics(THREAD_POOL_METRICS_PREFIX, Optional.empty());
   }
 
   @Override
   public List<GenericMetric> collectDroppedMessages() throws JMException, IOException {
-    // Not mandatory for our first iteration.
-    return collectMetrics(Optional.of(DROPPED_MESSAGES_METRICS_PREFIX), Optional.empty());
+    return collectMetrics(DROPPED_MESSAGES_METRICS_PREFIX, Optional.empty());
   }
 
   @Override
   public List<GenericMetric> collectLatencyMetrics() throws JMException, IOException {
-    // Not mandatory for our first iteration.
-    return collectMetrics(Optional.of(CLIENT_REQUEST_LATENCY_METRICS_PREFIX), Optional.empty());
+    return collectMetrics(CLIENT_REQUEST_LATENCY_METRICS_PREFIX, Optional.empty());
   }
 
   @Override
   public List<GenericMetric> collectGenericMetrics() throws JMException, IOException {
     // Not mandatory for our first iteration.
-    throw new UnsupportedOperationException("Not implemented");
+    return Collections.emptyList();
   }
 
   @Override
   public List<GenericMetric> collectPercentRepairedMetrics(String keyspaceName)
       throws JMException, IOException {
-    return collectMetrics(Optional.of(PERCENT_REPAIRED_METRICS_PREFIX), Optional.of(keyspaceName));
+    return collectMetrics(PERCENT_REPAIRED_METRICS_PREFIX, Optional.of(keyspaceName));
   }
 
   private List<GenericMetric> collectMetrics(
-      Optional<String> metricNamePrefix, Optional<String> keyspaceName) throws IOException {
-    String url = String.format("http://%s:%s/metrics", proxy.getHost(), proxy.getMetricsPort());
-    if (metricNamePrefix.isPresent()) {
-      url += "?name=" + metricNamePrefix.get();
-    }
+      String metricNamePrefix, Optional<String> keyspaceName) throws IOException {
+    HttpUrl url = new HttpUrl.Builder()
+        .scheme("http")
+        .host(proxy.getHost())
+        .port(proxy.getMetricsPort())
+        .addPathSegment("metrics")
+        .addQueryParameter("name", metricNamePrefix)
+        .build();
+
     LOG.debug("Collecting metrics from {}", url);
     Request request = new Request.Builder()
         .url(url)
@@ -123,7 +128,7 @@ public final class HttpMetricsProxy implements MetricsProxy {
       }
       metrics = response.body().string();
       LOG.debug("Got metrics: {}", metrics);
-      return parsePrometheusMetrics(metricNamePrefix.get(), metrics, keyspaceName);
+      return parsePrometheusMetrics(metricNamePrefix, metrics, keyspaceName);
     }
   }
 
@@ -132,7 +137,7 @@ public final class HttpMetricsProxy implements MetricsProxy {
     List<GenericMetric> genericMetrics;
     try {
       genericMetrics
-          = collectMetrics(Optional.of(TPSTATS_PENDING_METRIC_NAME), Optional.empty());
+          = collectMetrics(TPSTATS_PENDING_METRIC_NAME, Optional.empty());
     } catch (IOException e) {
       throw new ReaperException("Error collecting metrics", e);
     }

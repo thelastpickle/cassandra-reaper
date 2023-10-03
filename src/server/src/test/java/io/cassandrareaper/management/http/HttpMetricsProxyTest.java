@@ -282,6 +282,7 @@ public class HttpMetricsProxyTest {
 
     HttpCassandraManagementProxy httpManagementProxy = Mockito.mock(HttpCassandraManagementProxy.class);
     when(httpManagementProxy.getMetricsPort()).thenReturn(9000);
+    when(httpManagementProxy.getHost()).thenReturn("172.18.0.3");
 
     Node node = Node.builder()
           .withHostname("172.18.0.3")
@@ -324,6 +325,7 @@ public class HttpMetricsProxyTest {
     when(response.body()).thenReturn(responseBody);
 
     HttpCassandraManagementProxy httpManagementProxy = Mockito.mock(HttpCassandraManagementProxy.class);
+    when(httpManagementProxy.getHost()).thenReturn("172.18.0.3");
     when(httpManagementProxy.getMetricsPort()).thenReturn(9000);
 
     Node node = Node.builder()
