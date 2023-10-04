@@ -53,6 +53,7 @@ public class HttpManagementConnectionFactory implements IManagementConnectionFac
   private static final ConcurrentMap<String, HttpCassandraManagementProxy> HTTP_CONNECTIONS = Maps.newConcurrentMap();
   private final MetricRegistry metricRegistry;
   private final HostConnectionCounters hostConnectionCounters;
+  private final int metricsPort;
 
   private final ScheduledExecutorService jobStatusPollerExecutor;
 
@@ -63,6 +64,7 @@ public class HttpManagementConnectionFactory implements IManagementConnectionFac
     this.metricRegistry
         = context.metricRegistry == null ? new MetricRegistry() : context.metricRegistry;
     hostConnectionCounters = new HostConnectionCounters(metricRegistry);
+    this.metricsPort = context.config.getMgmtApiMetricsPort();
     registerConnectionsGauge();
     this.jobStatusPollerExecutor = jobStatusPollerExecutor;
   }
@@ -143,11 +145,12 @@ public class HttpManagementConnectionFactory implements IManagementConnectionFac
             rootPath,
             new InetSocketAddress(node.getHostname(), managementPort),
             statusTracker,
-            apiClient
+            apiClient,
+            metricsPort,
+            node
         );
       }
     });
-
     return HTTP_CONNECTIONS.get(host);
   }
 

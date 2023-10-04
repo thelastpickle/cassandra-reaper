@@ -101,9 +101,9 @@ Feature: Using Reaper
     Then reaper has the last added cluster in storage
     And the seed node has vnodes
     And reaper has 0 scheduled repairs for the last added cluster
-#    And we can collect the tpstats from a seed node # TODO: get this passing by implementing getPendingCompactions in HttpManagementProxy.
-#    And we can collect the dropped messages stats from a seed node
-#    And we can collect the client request metrics from a seed node
+    And we can collect the tpstats from a seed node
+    And we can collect the dropped messages stats from a seed node
+    And we can collect the client request metrics from a seed node
     When a new daily "full" repair schedule is added for the last added cluster and keyspace "booya"
     Then reaper has 1 scheduled repairs for the last added cluster
     Then reaper has 1 scheduled repairs for the last added cluster
@@ -181,26 +181,25 @@ Feature: Using Reaper
     Then reaper has no longer the last added cluster in storage
   ${cucumber.upgrade-versions}
 
-#    TODO: reinstate this test once metrics are implemented for HTTP.
-#  @sidecar
-#  @all_nodes_reachable
-#  @cassandra_3_11_onwards
-#  @http_management
-#  Scenario Outline: Add a scheduled incremental repair and collect percent repaired metrics
-#    Given that reaper <version> is running
-#    And reaper has no cluster in storage
-#    When an add-cluster request is made to reaper
-#    Then reaper has the last added cluster in storage
-#    And reaper has 0 scheduled repairs for cluster called "test"
-#    When a new daily "incremental" repair schedule is added for "test" and keyspace "test_keyspace3"
-#    Then reaper has 1 scheduled repairs for cluster called "test"
-#    Then reaper has 1 scheduled repairs for cluster called "test"
-#    And percent repaired metrics get collected for the existing schedule
-#    And deleting cluster called "test" fails
-#    When all added schedules are deleted for the last added cluster
-#    And the last added cluster is deleted
-#    Then reaper has no longer the last added cluster in storage
-#  ${cucumber.upgrade-versions}
+  @sidecar
+  @all_nodes_reachable
+  @cassandra_3_11_onwards
+  @http_management
+  Scenario Outline: Add a scheduled incremental repair and collect percent repaired metrics
+    Given that reaper <version> is running
+    And reaper has no cluster in storage
+    When an add-cluster request is made to reaper
+    Then reaper has the last added cluster in storage
+    And reaper has 0 scheduled repairs for cluster called "test"
+    When a new daily "incremental" repair schedule is added for "test" and keyspace "test_keyspace3"
+    Then reaper has 1 scheduled repairs for cluster called "test"
+    Then reaper has 1 scheduled repairs for cluster called "test"
+    And percent repaired metrics get collected for the existing schedule
+    And deleting cluster called "test" fails
+    When all added schedules are deleted for the last added cluster
+    And the last added cluster is deleted
+    Then reaper has no longer the last added cluster in storage
+  ${cucumber.upgrade-versions}
 
   @sidecar
   @cassandra_3_11_onwards

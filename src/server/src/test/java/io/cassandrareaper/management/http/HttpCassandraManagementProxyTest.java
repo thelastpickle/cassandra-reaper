@@ -17,7 +17,10 @@
 
 package io.cassandrareaper.management.http;
 
+import io.cassandrareaper.ReaperApplicationConfiguration;
 import io.cassandrareaper.ReaperException;
+import io.cassandrareaper.core.GenericMetric;
+import io.cassandrareaper.core.Node;
 import io.cassandrareaper.core.Snapshot;
 import io.cassandrareaper.core.Table;
 import io.cassandrareaper.management.RepairStatusHandler;
@@ -36,6 +39,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import com.codahale.metrics.MetricRegistry;
 import com.datastax.mgmtapi.client.api.DefaultApi;
 import com.datastax.mgmtapi.client.invoker.ApiException;
 import com.datastax.mgmtapi.client.model.CompactRequest;
@@ -464,7 +468,7 @@ public class HttpCassandraManagementProxyTest {
     proxy.getPartitioner();
   }
 
-  private static HttpCassandraManagementProxy mockProxy(DefaultApi mockClient) {
+  public static HttpCassandraManagementProxy mockProxy(DefaultApi mockClient) {
     ScheduledExecutorService executorService = mock(ScheduledExecutorService.class);
     when(executorService.submit(any(Callable.class))).thenAnswer(i -> {
       Callable<Object> callable = i.getArgument(0);
@@ -473,7 +477,13 @@ public class HttpCassandraManagementProxyTest {
     });
 
     return new HttpCassandraManagementProxy(
-        null, "/", InetSocketAddress.createUnresolved("localhost", 8080), executorService, mockClient);
+        null,
+        "/",
+        InetSocketAddress.createUnresolved("localhost", 8080),
+        executorService,
+        mockClient,
+        ReaperApplicationConfiguration.DEFAULT_MGMT_API_METRICS_PORT,
+        Mockito.mock(Node.class));
   }
 
   @Test
@@ -645,5 +655,113 @@ public class HttpCassandraManagementProxyTest {
     assertThat(proxy.getEndpointToHostId()).containsAllEntriesOf(expectedMap);
     verify(mockClient).getEndpointStates();
     verifyNoMoreInteractions(mockClient);
+  }
+
+  @Test
+  public void testGetPendingCompactions() throws ReaperException {
+    DefaultApi mockClient = Mockito.mock(DefaultApi.class);
+    HttpMetricsProxy metricsProxy = Mockito.mock(HttpMetricsProxy.class);
+
+    GenericMetric m1 = GenericMetric.builder()
+        .withMetricDomain("org.apache.cassandra.metrics")
+        .withMetricType("ThreadPools")
+        .withMetricScope("CompactionExecutor")
+        .withMetricName("PendingTasks")
+        .withValue(5)
+        .build();
+
+    GenericMetric m2 = GenericMetric.builder()
+        .withMetricDomain("org.apache.cassandra.metrics")
+        .withMetricType("ThreadPools")
+        .withMetricScope("TPC")
+        .withMetricName("PendingTasks")
+        .withValue(10)
+        .build();
+
+    GenericMetric m3 = GenericMetric.builder()
+        .withMetricDomain("org.apache.cassandra.metrics")
+        .withMetricType("ThreadPools")
+        .withMetricScope("ValidationExecutor")
+        .withMetricName("PendingTasks")
+        .withValue(10)
+        .build();
+
+    when(metricsProxy.collectTpPendingTasks()).thenReturn(Arrays.asList(m1, m2, m3));
+    HttpCassandraManagementProxy proxy
+        = new HttpCassandraManagementProxy(
+            Mockito.mock(MetricRegistry.class),
+            "/",
+            Mockito.mock(InetSocketAddress.class),
+            Mockito.mock(ScheduledExecutorService.class),
+            mockClient,
+            ReaperApplicationConfiguration.DEFAULT_MGMT_API_METRICS_PORT,
+            Mockito.mock(Node.class),
+            metricsProxy);
+
+    assertEquals("Number of pending compactions isn't the expected value", 5, proxy.getPendingCompactions());
+  }
+
+
+  @Test(expected = ReaperException.class)
+  public void testGetPendingCompactionsNotFound() throws ReaperException {
+    DefaultApi mockClient = Mockito.mock(DefaultApi.class);
+    HttpMetricsProxy metricsProxy = Mockito.mock(HttpMetricsProxy.class);
+
+    GenericMetric m1 = GenericMetric.builder()
+        .withMetricDomain("org.apache.cassandra.metrics")
+        .withMetricType("ThreadPools")
+        .withMetricScope("AntiCompactionExecutor")
+        .withMetricName("PendingTasks")
+        .withValue(5)
+        .build();
+
+    GenericMetric m2 = GenericMetric.builder()
+        .withMetricDomain("org.apache.cassandra.metrics")
+        .withMetricType("ThreadPools")
+        .withMetricScope("TPC")
+        .withMetricName("PendingTasks")
+        .withValue(10)
+        .build();
+
+    GenericMetric m3 = GenericMetric.builder()
+        .withMetricDomain("org.apache.cassandra.metrics")
+        .withMetricType("ThreadPools")
+        .withMetricScope("ValidationExecutor")
+        .withMetricName("PendingTasks")
+        .withValue(10)
+        .build();
+
+    when(metricsProxy.collectTpPendingTasks()).thenReturn(Arrays.asList(m1, m2, m3));
+    HttpCassandraManagementProxy proxy
+        = new HttpCassandraManagementProxy(
+            Mockito.mock(MetricRegistry.class),
+            "/",
+            Mockito.mock(InetSocketAddress.class),
+            Mockito.mock(ScheduledExecutorService.class),
+            mockClient,
+            ReaperApplicationConfiguration.DEFAULT_MGMT_API_METRICS_PORT,
+            Mockito.mock(Node.class),
+            metricsProxy);
+
+    proxy.getPendingCompactions();
+  }
+
+  @Test(expected = ReaperException.class)
+  public void testGetPendingCompactionsFail() throws ReaperException {
+    DefaultApi mockClient = Mockito.mock(DefaultApi.class);
+    HttpMetricsProxy metricsProxy = Mockito.mock(HttpMetricsProxy.class);
+
+    when(metricsProxy.collectTpPendingTasks()).thenThrow(new ReaperException("Failed to collect metrics"));
+    HttpCassandraManagementProxy proxy
+        = new HttpCassandraManagementProxy(
+            Mockito.mock(MetricRegistry.class),
+            "/",
+            Mockito.mock(InetSocketAddress.class),
+            Mockito.mock(ScheduledExecutorService.class),
+            mockClient,
+            ReaperApplicationConfiguration.DEFAULT_MGMT_API_METRICS_PORT,
+            Mockito.mock(Node.class),
+            metricsProxy);
+    proxy.getPendingCompactions();
   }
 }

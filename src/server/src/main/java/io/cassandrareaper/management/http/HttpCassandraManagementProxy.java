@@ -18,6 +18,8 @@
 package io.cassandrareaper.management.http;
 
 import io.cassandrareaper.ReaperException;
+import io.cassandrareaper.core.GenericMetric;
+import io.cassandrareaper.core.Node;
 import io.cassandrareaper.core.Snapshot;
 import io.cassandrareaper.core.Table;
 import io.cassandrareaper.management.ICassandraManagementProxy;
@@ -66,6 +68,7 @@ import com.datastax.mgmtapi.client.model.TokenRangeToEndpointResponse;
 import com.datastax.mgmtapi.client.model.TokenRangeToEndpoints;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Maps;
+
 import org.apache.cassandra.repair.RepairParallelism;
 import org.apache.cassandra.utils.progress.ProgressEventType;
 import org.slf4j.Logger;
@@ -80,6 +83,9 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
   final String rootPath;
   final InetSocketAddress endpoint;
   final DefaultApi apiClient;
+  final int metricsPort;
+  final Node node;
+  final HttpMetricsProxy metricsProxy;
 
   final ConcurrentMap<Integer, RepairStatusHandler> repairStatusHandlers = Maps.newConcurrentMap();
   final ConcurrentMap<String, JobStatusTracker> jobTracker = Maps.newConcurrentMap();
@@ -92,14 +98,42 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
                                       String rootPath,
                                       InetSocketAddress endpoint,
                                       ScheduledExecutorService executor,
-                                      DefaultApi apiClient
+                                      DefaultApi apiClient,
+                                      int metricsPort,
+                                      Node node
   ) {
     this.host = endpoint.getHostString();
     this.metricRegistry = metricRegistry;
     this.rootPath = rootPath;
     this.endpoint = endpoint;
     this.apiClient = apiClient;
+    this.metricsPort = metricsPort;
     this.statusTracker = executor;
+    this.node = node;
+    this.metricsProxy = HttpMetricsProxy.create(this, node);
+
+    // TODO Perhaps the poll interval should be configurable through context.config ?
+    this.scheduleJobPoller(DEFAULT_POLL_INTERVAL_IN_MILLISECONDS);
+  }
+
+  public HttpCassandraManagementProxy(MetricRegistry metricRegistry,
+                                      String rootPath,
+                                      InetSocketAddress endpoint,
+                                      ScheduledExecutorService executor,
+                                      DefaultApi apiClient,
+                                      int metricsPort,
+                                      Node node,
+                                      HttpMetricsProxy metricsProxy
+  ) {
+    this.host = endpoint.getHostString();
+    this.metricRegistry = metricRegistry;
+    this.rootPath = rootPath;
+    this.endpoint = endpoint;
+    this.apiClient = apiClient;
+    this.metricsPort = metricsPort;
+    this.statusTracker = executor;
+    this.node = node;
+    this.metricsProxy = metricsProxy;
 
     // TODO Perhaps the poll interval should be configurable through context.config ?
     this.scheduleJobPoller(DEFAULT_POLL_INTERVAL_IN_MILLISECONDS);
@@ -108,6 +142,10 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
   @Override
   public String getHost() {
     return host;
+  }
+
+  public int getMetricsPort() {
+    return metricsPort;
   }
 
   @Override
@@ -255,8 +293,15 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
   }
 
   @Override
-  public int getPendingCompactions() throws JMException {
-    return 1; // TODO: implement me.
+  public int getPendingCompactions() throws ReaperException {
+    List<GenericMetric> tpStatsMetrics = metricsProxy.collectTpPendingTasks();
+    for (GenericMetric metric : tpStatsMetrics) {
+      if (metric.getMetricName().equals("PendingTasks")
+          && metric.getMetricScope().equals("CompactionExecutor")) {
+        return (int) metric.getValue();
+      }
+    }
+    throw new ReaperException("Failed to retrieve pending compactions");
   }
 
   @Override

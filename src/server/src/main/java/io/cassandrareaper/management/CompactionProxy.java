@@ -17,6 +17,7 @@
 
 package io.cassandrareaper.management;
 
+import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Compaction;
 
 import java.io.IOException;
@@ -26,7 +27,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicReference;
-import javax.management.JMException;
 import javax.management.MalformedObjectNameException;
 import javax.management.ReflectionException;
 
@@ -95,7 +95,7 @@ public final class CompactionProxy {
   public Integer getPendingCompactions() {
     try {
       return proxy.getPendingCompactions();
-    } catch (JMException e) {
+    } catch (ReaperException e) {
       LOG.warn("Could not fetch pending compactions from {}", proxy.getHost(), e);
       return -1;
     }

@@ -32,7 +32,6 @@ import io.cassandrareaper.core.Snapshot;
 import io.cassandrareaper.core.StreamSession;
 import io.cassandrareaper.core.Table;
 import io.cassandrareaper.core.ThreadPoolStat;
-import io.cassandrareaper.management.jmx.JmxMetricsProxy;
 import io.cassandrareaper.resources.view.NodesStatus;
 import io.cassandrareaper.service.RingRange;
 import io.cassandrareaper.storage.IDistributedStorage;
@@ -596,7 +595,7 @@ public final class ClusterFacade {
 
   public List<GenericMetric> collectGenericMetrics(Node node) throws ReaperException {
     try {
-      return MetricsProxy.create(connect(node)).collectGenericMetrics(node);
+      return MetricsProxy.create(connect(node), node).collectGenericMetrics();
     } catch (JMException | IOException e) {
       LOG.error("Failed collecting metrics for host {}", node, e);
       throw new ReaperException(e);
@@ -605,7 +604,7 @@ public final class ClusterFacade {
 
   public List<GenericMetric> collectPercentRepairedMetrics(Node node, String keyspaceName) throws ReaperException {
     try {
-      return MetricsProxy.create(connect(node)).collectPercentRepairedMetrics(node, keyspaceName);
+      return MetricsProxy.create(connect(node), node).collectPercentRepairedMetrics(keyspaceName);
     } catch (JMException | IOException e) {
       LOG.error("Failed collecting metrics for host {}", node, e);
       throw new ReaperException(e);
@@ -623,8 +622,8 @@ public final class ClusterFacade {
     try {
       String nodeDc = getDatacenter(node.getCluster().get(), node.getHostname());
       if (nodeIsDirectlyAccessible(nodeDc, node.getHostname())) {
-        MetricsProxy metricsProxy = MetricsProxy.create(connect(node));
-        return convertToMetricsHistogram(metricsProxy.collectLatencyMetrics(node));
+        MetricsProxy metricsProxy = MetricsProxy.create(connect(node), node);
+        return convertToMetricsHistogram(metricsProxy.collectLatencyMetrics());
       } else {
         // We look for metrics in the last two time based partitions to make sure we get a result
         return convertToMetricsHistogram(((IDistributedStorage) context.storage)
@@ -652,8 +651,8 @@ public final class ClusterFacade {
     try {
       String nodeDc = getDatacenter(node.getCluster().get(), node.getHostname());
       if (nodeIsDirectlyAccessible(nodeDc, node.getHostname())) {
-        MetricsProxy proxy = MetricsProxy.create(connect(node));
-        return convertToDroppedMessages(proxy.collectDroppedMessages(node));
+        MetricsProxy proxy = MetricsProxy.create(connect(node), node);
+        return convertToDroppedMessages(proxy.collectDroppedMessages());
       } else {
         return convertToDroppedMessages(((IDistributedStorage) context.storage)
             .getMetrics(
@@ -677,7 +676,7 @@ public final class ClusterFacade {
     for (Entry<String, List<GenericMetric>> pool : metricsByScope.entrySet()) {
       DroppedMessages.Builder builder = DroppedMessages.builder().withName(pool.getKey());
       for (GenericMetric stat : pool.getValue()) {
-        builder = JmxMetricsProxy.updateGenericMetricAttribute(stat, builder);
+        builder = MetricsProxy.updateGenericMetricAttribute(stat, builder);
       }
       droppedMessages.add(builder.build());
     }
@@ -695,9 +694,11 @@ public final class ClusterFacade {
     try {
       String nodeDc = getDatacenter(node.getCluster().get(), node.getHostname());
       if (nodeIsDirectlyAccessible(nodeDc, node.getHostname())) {
-        MetricsProxy proxy = MetricsProxy.create(connect(node));
-        return convertToThreadPoolStats(proxy.collectTpStats(node));
+        MetricsProxy proxy = MetricsProxy.create(connect(node), node);
+        return convertToThreadPoolStats(proxy.collectTpStats());
       } else {
+        Preconditions.checkState(context.storage instanceof IDistributedStorage,
+            "Storage must be IDistributedStorage to collect tpstats from storage");
         return convertToThreadPoolStats(((IDistributedStorage) context.storage)
             .getMetrics(
                 node.getClusterName(),
@@ -720,7 +721,7 @@ public final class ClusterFacade {
     for (Entry<String, List<GenericMetric>> pool : metricsByScope.entrySet()) {
       ThreadPoolStat.Builder builder = ThreadPoolStat.builder().withName(pool.getKey());
       for (GenericMetric stat : pool.getValue()) {
-        builder = JmxMetricsProxy.updateGenericMetricAttribute(stat, builder);
+        builder = MetricsProxy.updateGenericMetricAttribute(stat, builder);
       }
       tpstats.add(builder.build());
     }
@@ -747,7 +748,7 @@ public final class ClusterFacade {
             .withName(metricByScope.getKey())
             .withType(metricByName.getKey());
         for (GenericMetric stat : metricByName.getValue()) {
-          builder = JmxMetricsProxy.updateGenericMetricAttribute(stat, builder);
+          builder = MetricsProxy.updateGenericMetricAttribute(stat, builder);
         }
         histograms.add(builder.build());
       }
