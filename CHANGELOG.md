@@ -1,5 +1,8 @@
 ## Change Log
 
+### 3.3.4 (2023/10/05 15:30 +00:00)
+- [#1418](https://github.com/thelastpickle/cassandra-reaper/pull/1418) Build arm64 images (#1418) (@adejanovski)
+
 ### 3.3.3 (2023/07/20 07:30 +00:00)
 - [#1320](https://github.com/thelastpickle/cassandra-reaper/pull/1320) Fix cluster name check in repair concurrency control (#1320) (@adejanovski)
 
