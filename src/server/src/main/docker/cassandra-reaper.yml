@@ -80,3 +80,6 @@ server:
       bindHost: ${REAPER_SERVER_ADMIN_BIND_HOST}
   requestLog:
     appenders: []
+
+httpManagement:
+  enabled: ${REAPER_HTTP_MANAGEMENT_ENABLE}
