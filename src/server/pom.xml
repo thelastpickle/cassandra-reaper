@@ -274,7 +274,7 @@
         <dependency>
             <groupId>io.k8ssandra</groupId>
             <artifactId>datastax-mgmtapi-client-openapi</artifactId>
-            <version>0.1.0-a1e5b6e</version>
+            <version>0.1.0-2f15d16</version>
         </dependency>
         <!--test scope -->
 
