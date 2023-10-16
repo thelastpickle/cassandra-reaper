@@ -1,5 +1,8 @@
 ## Change Log
 
+### Unreleased
+- [#1326] Epic to cover implementation of a new Reaper HTTP management proxy, to be used as an alternative to the current JMX implementation.
+
 ### 3.3.3 (2023/07/20 07:30 +00:00)
 - [#1320](https://github.com/thelastpickle/cassandra-reaper/pull/1320) Fix cluster name check in repair concurrency control (#1320) (@adejanovski)
 
