@@ -78,36 +78,20 @@ jobs:
     continue-on-error: ${{ matrix.experimental }}
     strategy:
       matrix:
-        cassandra-version: [ "binary:1.2.19", "binary:2.0.17", 'binary:2.1.22', 'binary:2.2.19', 'binary:3.0.25', 'binary:3.11.11', 'binary:4.0.1' ]
+        cassandra-version: [ 'binary:3.0.25', 'binary:3.11.16', 'binary:4.0.6' ]
         storage-type: [local]
         test-type: [ccm]
         include:
           # don't run against the following C* versions when using cassandra storage type
-          - cassandra-version: "binary:1.2.19"
-            cucumber-options: '--tags ~@cassandra_2_1_onwards --tags ~@cassandra_4_0_onwards --tags ~@cassandra_3_11_onwards'
-            experimental: false
-            jdk-version: '8'
-          - cassandra-version: "binary:2.0.17"
-            cucumber-options: '--tags ~@cassandra_2_1_onwards --tags ~@cassandra_4_0_onwards --tags ~@cassandra_3_11_onwards'
-            experimental: false
-            jdk-version: '8'
-          - cassandra-version: 'binary:2.1.22'
-            cucumber-options: '--tags ~@cassandra_4_0_onwards --tags ~@cassandra_3_11_onwards'
-            experimental: false
-            jdk-version: '8'
-          - cassandra-version: 'binary:2.2.19'
-            cucumber-options: '--tags ~@cassandra_4_0_onwards --tags ~@cassandra_3_11_onwards'
-            experimental: false
-            jdk-version: '8'
           - cassandra-version: 'binary:3.0.25'
             cucumber-options: '--tags ~@cassandra_4_0_onwards --tags ~@cassandra_3_11_onwards'
             experimental: false
             jdk-version: '8'
-          - cassandra-version: 'binary:3.11.11'
+          - cassandra-version: 'binary:3.11.16'
             cucumber-options: '--tags ~@cassandra_4_0_onwards'
             experimental: false
             jdk-version: '8'
-          - cassandra-version: 'binary:4.0.1'
+          - cassandra-version: 'binary:4.0.6'
             experimental: false
             jdk-version: '11'
           #- cassandra-version: 'github:apache/trunk'
@@ -156,7 +140,7 @@ jobs:
     continue-on-error: ${{ matrix.experimental }}
     strategy:
       matrix:
-        cassandra-version: [ 'binary:3.0.25', 'binary:3.11.11', 'binary:4.0.1']
+        cassandra-version: [ 'binary:3.0.25', 'binary:3.11.16', 'binary:4.0.6']
         storage-type: [cassandra]
         test-type: [ccm]
         include:
@@ -164,11 +148,11 @@ jobs:
             cucumber-options: '--tags ~@cassandra_4_0_onwards --tags ~@cassandra_3_11_onwards'
             experimental: false
             jdk-version: '8'
-          - cassandra-version: 'binary:3.11.11'
+          - cassandra-version: 'binary:3.11.16'
             cucumber-options: '--tags ~@cassandra_4_0_onwards'
             experimental: false
             jdk-version: '8'
-          - cassandra-version: 'binary:4.0.1'
+          - cassandra-version: 'binary:4.0.6'
             experimental: false
             jdk-version: '11'
           #- cassandra-version: 'github:apache/trunk'
@@ -217,7 +201,7 @@ jobs:
     continue-on-error: ${{ matrix.experimental }}
     strategy:
       matrix:
-        cassandra-version: ['binary:3.0.25', 'binary:3.11.11', 'binary:4.0.1']
+        cassandra-version: ['binary:3.0.25', 'binary:3.11.16', 'binary:4.0.6']
         storage-type: [cassandra]
         test-type: [sidecar]
         grim-max: [1]
@@ -228,11 +212,11 @@ jobs:
             cucumber-options: '--tags ~@cassandra_4_0_onwards --tags @sidecar --tags ~@cassandra_3_11_onwards'
             experimental: false
             jdk-version: '8'
-          - cassandra-version: 'binary:3.11.11'
+          - cassandra-version: 'binary:3.11.16'
             cucumber-options: '--tags ~@cassandra_4_0_onwards --tags @sidecar'
             experimental: false
             jdk-version: '8'
-          - cassandra-version: 'binary:4.0.1'
+          - cassandra-version: 'binary:4.0.6'
             cucumber-options: '--tags @sidecar'
             experimental: false
             jdk-version: '11'
@@ -273,6 +257,71 @@ jobs:
 
       - uses: codecov/codecov-action@v1
 
+  its-http-management:
+    needs: [ build ]
+    name: HTTP Management
+    runs-on: ubuntu-20.04
+    continue-on-error: ${{ matrix.experimental }}
+    strategy:
+      matrix:
+        cassandra-version: [ 'binary:4.0.6', 'binary:3.11.16' ]
+        storage-type: [ "ccm" ]
+        test-type: [ "http-api" ]
+        grim-max: [ 1 ]
+        grim-min: [ 1 ]
+        # all versions but trunk have the same cucumber options, but we can't declare that more effectively (yet)
+        include:
+          - cassandra-version: 'binary:3.11.16'
+            cucumber-options: '--tags ~@cassandra_4_0_onwards --tags @http_management'
+            experimental: false
+            jdk-version: '8'
+          - cassandra-version: 'binary:4.0.6'
+            cucumber-options: '--tags @http_management'
+            experimental: false
+            jdk-version: '11'
+          - cassandra-version: 'binary:3.11.16'
+            cucumber-options: '--tags ~@cassandra_4_0_onwards'
+            experimental: false
+            jdk-version: '8'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Setup
+        uses: ./.github/actions/setup
+
+      - name: Install CCM
+        run: |
+          pip install pyyaml
+          pip install ccm
+
+      - name: Setup CCM Cluster
+        run: ./.github/scripts/configure-ccm.sh
+        env:
+          TEST_TYPE: ${{ matrix.test-type }}
+          CASSANDRA_VERSION: ${{ matrix.cassandra-version }}
+          STORAGE_TYPE: ${{ matrix.storage-type }}
+          JDK_VERSION: ${{ matrix.jdk-version }}
+
+      - name: Run Tests
+        run: ./.github/scripts/run-tests.sh
+        env:
+          TEST_TYPE: ${{ matrix.test-type }}
+          CASSANDRA_VERSION: ${{ matrix.cassandra-version }}
+          STORAGE_TYPE: ${{ matrix.storage-type }}
+          GRIM_MAX: ${{ matrix.grim-max }}
+          GRIM_MIN: ${{ matrix.grim-min }}
+          CUCUMBER_OPTIONS: ${{ matrix.cucumber-options }}
+          JDK_VERSION: ${{ matrix.jdk-version }}
+      
+      # Add a tmate action to debug failures. 
+      - name: Setup tmate session
+        if: ${{ failure() }}
+        uses: mxschmitt/action-tmate@v3
+        timeout-minutes: 30
+
+      - uses: codecov/codecov-action@v1
+
   its-each:
     needs: [docker-tests, its-ccm-local, its-ccm-cass]
     name: Each DC Availability
@@ -280,14 +329,14 @@ jobs:
     continue-on-error: ${{ matrix.experimental }}
     strategy:
       matrix:
-        cassandra-version: ['binary:4.0.1']
+        cassandra-version: ['binary:4.0.6']
         storage-type: [cassandra]
         test-type: [each]
         grim-max: [1]
         grim-min: [1]
         # Reduced scope to shorten the integration test times
         include:
-          - cassandra-version: 'binary:4.0.1'
+          - cassandra-version: 'binary:4.0.6'
             cucumber-options: '--tags @sidecar'
             experimental: false
           #- cassandra-version: 'github:apache/trunk'
@@ -333,7 +382,7 @@ jobs:
     continue-on-error: ${{ matrix.experimental }}
     strategy:
       matrix:
-        cassandra-version: ['binary:3.0.25', 'binary:3.11.11', 'binary:4.0.1']
+        cassandra-version: ['binary:3.0.25', 'binary:3.11.16', 'binary:4.0.6']
         storage-type: [cassandra]
         test-type: [ccm]
         grim-max: [2]
@@ -343,11 +392,11 @@ jobs:
             cucumber-options: '--tags ~@cassandra_4_0_onwards --tags ~@cassandra_3_11_onwards'
             experimental: false
             jdk-version: '8'
-          - cassandra-version: 'binary:3.11.11'
+          - cassandra-version: 'binary:3.11.16'
             cucumber-options: '--tags ~@cassandra_4_0_onwards'
             experimental: false
             jdk-version: '8'
-          - cassandra-version: 'binary:4.0.1'
+          - cassandra-version: 'binary:4.0.6'
             experimental: false
             jdk-version: '11'
           #- cassandra-version: 'github:apache/trunk'
@@ -386,7 +435,6 @@ jobs:
 
       - uses: codecov/codecov-action@v1
 
-
   its-flapping:
     needs: [docker-tests, its-ccm-local, its-ccm-cass]
     name: Flapping reapers
@@ -394,7 +442,7 @@ jobs:
     continue-on-error: ${{ matrix.experimental }}
     strategy:
       matrix:
-        cassandra-version: ['binary:4.0.1']
+        cassandra-version: ['binary:4.0.6']
         storage-type: [cassandra]
         test-type: [ccm]
         grim-max: [4]
@@ -402,7 +450,7 @@ jobs:
         cucumber-options: ['--tags ~@diag_event_subscriptions']
         include:
           # all versions but trunk need to exclude trunk tests
-          - cassandra-version: 'binary:4.0.1'
+          - cassandra-version: 'binary:4.0.6'
             experimental: true
             jdk-version: '11'
           #- cassandra-version: 'github:apache/trunk'

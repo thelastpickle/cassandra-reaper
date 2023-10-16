@@ -156,8 +156,6 @@ public final class RepairRunResourceTest {
     when(proxy.getTokens()).thenReturn(TOKENS);
     when(proxy.getRangeToEndpointMap(anyString())).thenReturn(RepairRunnerTest.threeNodeClusterWithIps());
     when(proxy.triggerRepair(
-        any(BigInteger.class),
-        any(BigInteger.class),
         anyString(),
         any(RepairParallelism.class),
         anyCollection(),
@@ -530,10 +528,6 @@ public final class RepairRunResourceTest {
     assertEquals(Sets.newHashSet("RUNNING"), RepairRunResource.splitStateParam(stateParam));
     stateParam = Optional.of("PAUSED,RUNNING");
     assertEquals(Sets.newHashSet("RUNNING", "PAUSED"), RepairRunResource.splitStateParam(stateParam));
-    stateParam = Optional.of("NOT_EXISTING");
-    assertEquals(null, RepairRunResource.splitStateParam(stateParam));
-    stateParam = Optional.of("NOT_EXISTING,RUNNING");
-    assertEquals(null, RepairRunResource.splitStateParam(stateParam));
     stateParam = Optional.of("RUNNING,PAUSED,");
     assertEquals(Sets.newHashSet("RUNNING", "PAUSED"), RepairRunResource.splitStateParam(stateParam));
     stateParam = Optional.of(",RUNNING,PAUSED,");

@@ -269,6 +269,7 @@ public final class BasicSteps {
           String responseData = response.readEntity(String.class);
           Assertions.assertThat(responseData).isNotBlank();
           List<String> clusterNames = SimpleReaperClient.parseClusterNameListJSON(responseData);
+          System.out.println("reaper has no cluster in storage gets responseData " + responseData);
           if (!runner.getContext().config.isInSidecarMode()) {
             // Sidecar self registers clusters
             if (clusterNames.size() == 0) {
@@ -2028,9 +2029,10 @@ public final class BasicSteps {
 
             String responseData = response.readEntity(String.class);
             if (Response.Status.OK.getStatusCode() == response.getStatus() && StringUtils.isNotBlank(responseData)) {
+              LOG.info("Got tpstats response from {}: {}", seed, responseData);
               List<ThreadPoolStat> tpstats = SimpleReaperClient.parseTpStatJSON(responseData);
               if (tpstats.isEmpty()) {
-                LOG.error("Got empty response from {}", seed);
+                LOG.error("Got empty TPStats response from {}", seed);
               }
               long readStageTotal = tpstats.stream().filter(tpstat -> tpstat.getName().equals("ReadStage")).count();
 
@@ -2071,17 +2073,35 @@ public final class BasicSteps {
             if (Response.Status.OK.getStatusCode() == response.getStatus() && StringUtils.isNotBlank(responseData)) {
               List<DroppedMessages> dropped = SimpleReaperClient.parseDroppedMessagesJSON(responseData);
               if (dropped.isEmpty()) {
-                LOG.error("Got empty response from {}", seed);
+                LOG.error("Got empty DroppedMessages response from {}", seed);
+                return false;
               }
 
+              // flag to search for READ_REQ metrics for C* 4.0+ in case READ metrics aren't present
+              boolean lookForLegacyReadMetric = true;
               long readDroppedTotal = dropped.stream()
                   .filter(drop -> "READ".equals(drop.getName()))
                   .count();
+              // if the total dropped messages is 0, it may be that READ metrics aren't present. Look for READ_REQ
+              if (readDroppedTotal == 0L) {
+                lookForLegacyReadMetric = false;
+                readDroppedTotal = dropped.stream()
+                    .filter(drop -> "READ_REQ".equals(drop.getName()))
+                    .count();
+              }
 
-              long readDroppedCount = dropped.stream()
-                  .filter(drop -> "READ".equals(drop.getName()))
-                  .filter(drop -> drop.getCount() >= 0)
-                  .count();
+              long readDroppedCount;
+              if (lookForLegacyReadMetric) {
+                readDroppedCount = dropped.stream()
+                    .filter(drop -> "READ".equals(drop.getName()))
+                    .filter(drop -> drop.getCount() >= 0)
+                    .count();
+              } else {
+                readDroppedCount = dropped.stream()
+                    .filter(drop -> "READ_REQ".equals(drop.getName()))
+                    .filter(drop -> drop.getCount() >= 0)
+                    .count();
+              }
 
               collected.compareAndSet(false, 1 == readDroppedTotal && 1 == readDroppedCount);
             }
@@ -2113,7 +2133,7 @@ public final class BasicSteps {
             if (Response.Status.OK.getStatusCode() == response.getStatus() && StringUtils.isNotBlank(responseData)) {
               List<MetricsHistogram> metrics = SimpleReaperClient.parseClientRequestMetricsJSON(responseData);
               if (metrics.isEmpty()) {
-                LOG.error("Got empty response from {}", seed);
+                LOG.error("Got empty ClientRequestLatency response from {}", seed);
               }
               long writeMetrics = metrics.stream().filter(metric -> metric.getName().startsWith("Write")).count();
               collected.compareAndSet(false, 1 <= writeMetrics);

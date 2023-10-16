@@ -67,11 +67,10 @@ case "${TEST_TYPE}" in
         echo "ERROR: Environment variable TEST_TYPE is unspecified."
         exit 1
         ;;
-    "ccm"|"upgrade"|"elassandra")
+    "ccm"|"upgrade"|"elassandra"|"http-api")
         mkdir -p ~/.local
         cp ./.github/files/jmxremote.password ~/.local/jmxremote.password
         chmod 400 ~/.local/jmxremote.password
-        ls -lrt /opt/hostedtoolcache/
         for jdk in /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/8*/; 
         do 
           sudo chmod 777 "${jdk/}"x64/jre/lib/management/jmxremote.access
@@ -116,5 +115,3 @@ case "${TEST_TYPE}" in
     *)
         echo "Skipping, no actions for TEST_TYPE=${TEST_TYPE}."
 esac
-
-

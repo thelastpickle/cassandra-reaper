@@ -29,6 +29,27 @@ function set_java_home() {
     done
 }
 
+add_management_api () {
+   if [[ ! -L /tmp/datastax-mgmtapi-agent.jar ]]; then
+     # Do some fancy pom.xml parsing to figure out which version of the Management API client we are using
+     MGMT_API_VERSION=`mvn dependency:tree -f src/server/pom.xml |grep datastax-mgmtapi-client-openapi|cut -d ":" -f 4`
+     # Download the Management API bundle
+     mvn dependency:copy -Dartifact=io.k8ssandra:datastax-mgmtapi-server:$MGMT_API_VERSION -f src/server/pom.xml -DoutputDirectory=/tmp -Dmdep.stripVersion=true -Dmdep.overWriteReleases=true
+     # Unzip the agent for the version of Cassandra
+     if [[ "$CASSANDRA_VERSION" == *"3.11"* ]]; then
+        mvn dependency:copy -Dartifact=io.k8ssandra:datastax-mgmtapi-agent-3.x:$MGMT_API_VERSION -f src/server/pom.xml -DoutputDirectory=/tmp -Dmdep.stripVersion=true -Dmdep.overWriteReleases=true
+        ln -s /tmp/datastax-mgmtapi-agent-3.x.jar /tmp/datastax-mgmtapi-agent.jar
+     elif [[ "$CASSANDRA_VERSION" == *"4.0"* ]]; then
+        mvn dependency:copy -Dartifact=io.k8ssandra:datastax-mgmtapi-agent-4.x:$MGMT_API_VERSION -f src/server/pom.xml -DoutputDirectory=/tmp -Dmdep.stripVersion=true -Dmdep.overWriteReleases=true
+        ln -s /tmp/datastax-mgmtapi-agent-4.x.jar /tmp/datastax-mgmtapi-agent.jar
+     elif [[ "$CASSANDRA_VERSION" == *"4.1"* ]]; then
+        mvn dependency:copy -Dartifact=io.k8ssandra:datastax-mgmtapi-agent-4.1.x:$MGMT_API_VERSION -f src/server/pom.xml -DoutputDirectory=/tmp -Dmdep.stripVersion=true -Dmdep.overWriteReleases=true
+        ln -s /tmp/datastax-mgmtapi-agent-4.1.x.jar /tmp/datastax-mgmtapi-agent.jar
+     fi
+   fi
+  echo "JVM_OPTS=\"\$JVM_OPTS -javaagent:/tmp/datastax-mgmtapi-agent.jar\"" >> ~/.ccm/test/node$1/conf/cassandra-env.sh
+}
+
 case "${TEST_TYPE}" in
     "")
         echo "ERROR: Environment variable TEST_TYPE is unspecified."
@@ -80,6 +101,57 @@ case "${TEST_TYPE}" in
         esac
 
         ;;
+    "http-api")
+            mvn --version -B
+            ps uax | grep cass
+            # dependending on the version of cassandra, we may need to use a different jdk
+            set_java_home ${JDK_VERSION}
+            # Add in  Management API agent jarfile
+            for i in `seq 1 2` ; do
+              add_management_api $i
+              mkdir -p /tmp/log/cassandra$i/ && touch /tmp/log/cassandra$i/stdout.log
+            done
+            ccm start -v --no-wait --skip-wait-other-notice || true
+            echo "${TEST_TYPE}" | grep -q ccm && sleep 30 || sleep 120
+            ccm status
+            ccm node1 nodetool -- -u cassandra -pw cassandrapassword status
+            # Stop CCM now so we can restart it with Management API
+            ccm stop
+            # Start Management API
+            MGMT_API_LOG_DIR=/tmp/log/cassandra1 bash -c 'nohup java -jar /tmp/datastax-mgmtapi-server.jar --db-socket=/tmp/db1.sock --host=unix:///tmp/mgmtapi1.sock --host=http://127.0.0.1:8080 --db-home=`dirname ~/.ccm/test/node1`/node1 &'
+            MGMT_API_LOG_DIR=/tmp/log/cassandra2 bash -c 'nohup java -jar /tmp/datastax-mgmtapi-server.jar --db-socket=/tmp/db2.sock --host=unix:///tmp/mgmtapi2.sock --host=http://127.0.0.2:8080 --db-home=`dirname ~/.ccm/test/node2`/node2 &'
+            # wait for Cassandra to be ready
+            for i in `seq 1 30` ; do
+                # keep curl from exiting with non-zero
+                HTTPCODE1=`curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8080/api/v0/probes/readiness` || true
+                HTTPCODE2=`curl -s -o /dev/null -w "%{http_code}" http://127.0.0.2:8080/api/v0/probes/readiness` || true
+                if [ "${HTTPCODE1}" != "200" -o "${HTTPCODE2}" != "200" ]
+                then
+                    echo "Cassandra not ready yet. Sleeping.... $i"
+                else
+                    echo "Cassandra started via Management API successfully"
+                    break
+                fi
+                sleep 5
+            done
+            # Reaper requires JDK11 for compilation
+            set_java_home 11
+            case "${STORAGE_TYPE}" in
+                "")
+                    echo "ERROR: Environment variable STORAGE_TYPE is unspecified."
+                    exit 1
+                    ;;
+                "ccm")
+                    mvn -B package -DskipTests
+                    ccm node1 cqlsh -e "DROP KEYSPACE reaper_db" || true
+                    mvn -B org.jacoco:jacoco-maven-plugin:${JACOCO_VERSION}:prepare-agent surefire:test -DsurefireArgLine="-Xmx256m"  -Dtest=ReaperHttpIT -Dcucumber.options="$CUCUMBER_OPTIONS" org.jacoco:jacoco-maven-plugin:${JACOCO_VERSION}:report
+                    ;;
+                *)
+                    echo "Skipping, no actions for STORAGE_TYPE=${STORAGE_TYPE}."
+                    ;;
+            esac
+
+            ;;
     "sidecar")
         mvn --version -B
         mvn -B package -DskipTests

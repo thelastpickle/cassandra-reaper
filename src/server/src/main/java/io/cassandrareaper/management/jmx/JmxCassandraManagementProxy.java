@@ -21,10 +21,12 @@ import io.cassandrareaper.ReaperApplicationConfiguration.Jmxmp;
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.JmxCredentials;
+import io.cassandrareaper.core.Snapshot;
 import io.cassandrareaper.core.Table;
 import io.cassandrareaper.crypto.Cryptograph;
 import io.cassandrareaper.management.ICassandraManagementProxy;
 import io.cassandrareaper.management.RepairStatusHandler;
+import io.cassandrareaper.resources.view.NodesStatus;
 import io.cassandrareaper.service.RingRange;
 
 import java.io.IOException;
@@ -107,7 +109,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 
-public final class JmxCassandraManagementProxy implements ICassandraManagementProxy, NotificationListener  {
+public final class JmxCassandraManagementProxy implements ICassandraManagementProxy, NotificationListener {
 
   private static final Logger LOG = LoggerFactory.getLogger(ICassandraManagementProxy.class);
 
@@ -366,9 +368,13 @@ public final class JmxCassandraManagementProxy implements ICassandraManagementPr
   }
 
   @Override
-  public String getPartitioner() {
-    Preconditions.checkNotNull(ssProxy, "Looks like the proxy is not connected");
-    return ssProxy.getPartitionerName();
+  public String getPartitioner() throws ReaperException {
+    try {
+      Preconditions.checkNotNull(ssProxy, "Looks like the proxy is not connected");
+      return ssProxy.getPartitionerName();
+    } catch (RuntimeException e) {
+      throw new ReaperException(e);
+    }
   }
 
   @Override
@@ -415,7 +421,7 @@ public final class JmxCassandraManagementProxy implements ICassandraManagementPr
   }
 
   @Override
-  public int getPendingCompactions() throws JMException {
+  public int getPendingCompactions() throws ReaperException {
     try {
       int pendingCount = (int) mbeanServer.getAttribute(ObjectNames.COMPACTIONS_PENDING, VALUE_ATTRIBUTE);
       return pendingCount;
@@ -428,37 +434,17 @@ public final class JmxCassandraManagementProxy implements ICassandraManagementPr
       return 0;
     } catch (RuntimeException e) {
       LOG.error(ERROR_GETTING_ATTR_JMX, e);
+    } catch (JMException e) {
+      LOG.error("Error getting pending compactions attribute from JMX", e);
+      throw new ReaperException(e);
     }
-    // If uncertain, assume it's running
+    // If uncertain, assume compactions are not running
     return 0;
   }
 
   @Override
   public boolean isRepairRunning() throws JMException {
-    return isRepairRunningPre22() || isRepairRunningPost22() || isValidationCompactionRunning();
-  }
-
-  /**
-   * @return true if any repairs are running on the node.
-   */
-  private boolean isRepairRunningPre22() throws JMException {
-    // Check if AntiEntropySession is actually running on the node
-    try {
-      int activeCount = (Integer) mbeanServer.getAttribute(ObjectNames.ANTI_ENTROPY_SESSIONS, "ActiveCount");
-      long pendingCount = (Long) mbeanServer.getAttribute(ObjectNames.ANTI_ENTROPY_SESSIONS, "PendingTasks");
-      return activeCount + pendingCount != 0;
-    } catch (IOException ignored) {
-      LOG.warn(FAILED_TO_CONNECT_TO_USING_JMX, host, ignored);
-    } catch (InstanceNotFoundException e) {
-      // This happens if no repair has yet been run on the node
-      // The AntiEntropySessions object is created on the first repair
-      LOG.debug("No repair has run yet on the node. Ignoring exception.", e);
-      return false;
-    } catch (RuntimeException e) {
-      LOG.error(ERROR_GETTING_ATTR_JMX, e);
-    }
-    // If uncertain, assume it's running
-    return true;
+    return isRepairRunningPost22() || isValidationCompactionRunning();
   }
 
   /**
@@ -506,8 +492,7 @@ public final class JmxCassandraManagementProxy implements ICassandraManagementPr
     return true;
   }
 
-  @Override
-  public List<String> getRunningRepairMetricsPost22() {
+  private List<String> getRunningRepairMetricsPost22() {
     List<String> repairMbeans = Lists.newArrayList();
     try {
       // list all mbeans in search of one with the name Repair#??
@@ -541,7 +526,7 @@ public final class JmxCassandraManagementProxy implements ICassandraManagementPr
   }
 
   @Override
-  public Map<String, List<String>> listTablesByKeyspace() {
+  public Map<String, List<String>> listTablesByKeyspace() throws ReaperException {
     Map<String, List<String>> tablesByKeyspace = Maps.newHashMap();
     try {
       Set<ObjectName> beanSet = mbeanServer.queryNames(ObjectNames.COLUMN_FAMILIES, null);
@@ -568,8 +553,6 @@ public final class JmxCassandraManagementProxy implements ICassandraManagementPr
 
   @Override
   public int triggerRepair(
-      BigInteger beginToken,
-      BigInteger endToken,
       String keyspace,
       RepairParallelism repairParallelism,
       Collection<String> columnFamilies,
@@ -585,12 +568,10 @@ public final class JmxCassandraManagementProxy implements ICassandraManagementPr
     final boolean canUseDatacenterAware = ICassandraManagementProxy.versionCompare(cassandraVersion, "2.0.12") >= 0;
 
     String msg = String.format(
-        "Triggering repair of range (%s,%s] for keyspace \"%s\" on "
+        "Triggering repair for keyspace \"%s\" on "
             + "host %s, with repair parallelism %s, in cluster with Cassandra "
             + "version '%s' (can use DATACENTER_AWARE '%s'), "
             + "for column families: %s",
-        beginToken.toString(),
-        endToken.toString(),
         keyspace,
         this.host,
         repairParallelism,
@@ -607,34 +588,14 @@ public final class JmxCassandraManagementProxy implements ICassandraManagementPr
     }
     try {
       int repairNo;
-      if (cassandraVersion.startsWith("2.0") || cassandraVersion.startsWith("1.")) {
-        repairNo = triggerRepairPre2dot1(
-            repairParallelism,
-            keyspace,
-            columnFamilies,
-            beginToken,
-            endToken,
-            datacenters.size() > 0 ? datacenters : null);
-      } else if (cassandraVersion.startsWith("2.1")) {
-        repairNo = triggerRepair2dot1(
-            fullRepair,
-            repairParallelism,
-            keyspace,
-            columnFamilies,
-            beginToken,
-            endToken,
-            cassandraVersion,
-            datacenters.size() > 0 ? datacenters : null);
-      } else {
-        repairNo = triggerRepairPost2dot2(
-            fullRepair,
-            repairParallelism,
-            keyspace,
-            columnFamilies,
-            datacenters,
-            associatedTokens,
-            repairThreadCount);
-      }
+      repairNo = triggerRepairPost2dot2(
+          fullRepair,
+          repairParallelism,
+          keyspace,
+          columnFamilies,
+          datacenters,
+          associatedTokens,
+          repairThreadCount);
       repairStatusExecutors.putIfAbsent(repairNo, Executors.newSingleThreadExecutor());
       repairStatusHandlers.putIfAbsent(repairNo, repairStatusHandler);
       return repairNo;
@@ -679,89 +640,6 @@ public final class JmxCassandraManagementProxy implements ICassandraManagementPr
     options.put(RepairOption.DATACENTERS_KEY, StringUtils.join(datacenters, ","));
     // options.put(RepairOption.HOSTS_KEY, StringUtils.join(specificHosts, ","));
     return ssProxy.repairAsync(keyspace, options);
-  }
-
-  private int triggerRepair2dot1(
-      boolean fullRepair,
-      RepairParallelism repairParallelism,
-      String keyspace,
-      Collection<String> columnFamilies,
-      BigInteger beginToken,
-      BigInteger endToken,
-      String cassandraVersion,
-      Collection<String> datacenters) {
-
-    if (fullRepair) {
-      // full repair
-      if (repairParallelism.equals(RepairParallelism.DATACENTER_AWARE)) {
-        return ssProxy
-            .forceRepairRangeAsync(
-                beginToken.toString(),
-                endToken.toString(),
-                keyspace,
-                repairParallelism.ordinal(),
-                datacenters,
-                cassandraVersion.startsWith("2.2") ? new HashSet<>() : null,
-                fullRepair,
-                columnFamilies.toArray(new String[columnFamilies.size()]));
-      }
-      boolean snapshotRepair = repairParallelism.equals(RepairParallelism.SEQUENTIAL);
-
-      return ssProxy
-          .forceRepairRangeAsync(
-              beginToken.toString(),
-              endToken.toString(),
-              keyspace,
-              snapshotRepair
-                  ? RepairParallelism.SEQUENTIAL.ordinal()
-                  : RepairParallelism.PARALLEL.ordinal(),
-              datacenters,
-              cassandraVersion.startsWith("2.2") ? new HashSet<>() : null,
-              fullRepair,
-              columnFamilies.toArray(new String[columnFamilies.size()]));
-    }
-
-    // incremental repair
-    return ssProxy
-        .forceRepairAsync(
-            keyspace,
-            Boolean.FALSE,
-            Boolean.FALSE,
-            Boolean.FALSE,
-            fullRepair,
-            columnFamilies.toArray(new String[columnFamilies.size()]));
-  }
-
-  private int triggerRepairPre2dot1(
-      RepairParallelism repairParallelism,
-      String keyspace,
-      Collection<String> columnFamilies,
-      BigInteger beginToken,
-      BigInteger endToken,
-      Collection<String> datacenters) {
-
-    // Cassandra 1.2 and 2.0 compatibility
-    if (repairParallelism.equals(RepairParallelism.DATACENTER_AWARE)) {
-      return ((StorageServiceMBean20) ssProxy)
-          .forceRepairRangeAsync(
-              beginToken.toString(),
-              endToken.toString(),
-              keyspace,
-              repairParallelism.ordinal(),
-              datacenters,
-              null,
-              columnFamilies.toArray(new String[columnFamilies.size()]));
-    }
-    boolean snapshotRepair = repairParallelism.equals(RepairParallelism.SEQUENTIAL);
-
-    return ((StorageServiceMBean20) ssProxy)
-        .forceRepairRangeAsync(
-            beginToken.toString(),
-            endToken.toString(),
-            keyspace,
-            snapshotRepair,
-            false,
-            columnFamilies.toArray(new String[columnFamilies.size()]));
   }
 
   /**
@@ -875,7 +753,6 @@ public final class JmxCassandraManagementProxy implements ICassandraManagementPr
   /**
    * Cleanly shut down by un-registering the listener and closing the JMX connection.
    */
-  @Override
   public void close() {
     try {
       mbeanServer.removeNotificationListener(ObjectNames.STORAGE_SERVICE, this);
@@ -958,7 +835,7 @@ public final class JmxCassandraManagementProxy implements ICassandraManagementPr
     return lastEventIdProxy;
   }
 
-  public String getUntranslatedHost() {
+  public String getUntranslatedHost() throws ReaperException {
     return hostBeforeTranslation;
   }
 
@@ -986,8 +863,69 @@ public final class JmxCassandraManagementProxy implements ICassandraManagementPr
     this.getStorageServiceMBean().clearSnapshot(var1, var2);
   }
 
-  public Map<String, TabularData> getSnapshotDetails() {
+  private Map<String, TabularData> getSnapshotDetails() {
+
     return this.getStorageServiceMBean().getSnapshotDetails();
+
+  }
+
+  public List<Snapshot> listSnapshots() throws UnsupportedOperationException {
+    List<Snapshot> snapshots = Lists.newArrayList();
+
+    String cassandraVersion = getCassandraVersion();
+    if (ICassandraManagementProxy.versionCompare(cassandraVersion, "2.1.0") < 0) {
+      // 2.0 and prior do not allow to list snapshots
+      throw new UnsupportedOperationException(
+          "Snapshot listing is not supported in Cassandra 2.0 and prior.");
+    }
+
+    Map<String, TabularData> snapshotDetails = Collections.emptyMap();
+    try {
+      snapshotDetails = getSnapshotDetails();
+    } catch (RuntimeException ex) {
+      LOG.warn("failed getting snapshots details from " + getClusterName(), ex);
+    }
+
+    if (snapshotDetails.isEmpty()) {
+      LOG.debug("There are no snapshots on host {}", getHost());
+      return snapshots;
+    }
+    // display column names only once
+    final List<String> indexNames
+        = snapshotDetails.entrySet().iterator().next().getValue().getTabularType().getIndexNames();
+
+    for (final Map.Entry<String, TabularData> snapshotDetail : snapshotDetails.entrySet()) {
+      Set<?> values = snapshotDetail.getValue().keySet();
+      for (Object eachValue : values) {
+        int index = 0;
+        Snapshot.Builder snapshotBuilder = Snapshot.builder().withHost(getHost());
+        final List<?> valueList = (List<?>) eachValue;
+        for (Object value : valueList) {
+          switch (indexNames.get(index)) {
+            case "Snapshot name":
+              snapshotBuilder.withName((String) value);
+              break;
+            case "Keyspace name":
+              snapshotBuilder.withKeyspace((String) value);
+              break;
+            case "Column family name":
+              snapshotBuilder.withTable((String) value);
+              break;
+            case "True size":
+              snapshotBuilder.withTrueSize(ICassandraManagementProxy.parseHumanReadableSize((String) value));
+              break;
+            case "Size on disk":
+              snapshotBuilder.withSizeOnDisk(ICassandraManagementProxy.parseHumanReadableSize((String) value));
+              break;
+            default:
+              break;
+          }
+          index++;
+        }
+        snapshots.add(snapshotBuilder.withClusterName(getClusterName()).build());
+      }
+    }
+    return snapshots;
   }
 
   public void takeSnapshot(String var1, String... var2) throws IOException {
@@ -1002,9 +940,10 @@ public final class JmxCassandraManagementProxy implements ICassandraManagementPr
     return this.getStorageServiceMBean().getTokenToEndpointMap();
   }
 
-  public void forceKeyspaceCompaction(boolean var1, String var2, String... var3) throws IOException, ExecutionException,
+  public void forceKeyspaceCompaction(boolean splitOutput, String keyspaceName, String... columnFamilies) throws
+      IOException, ExecutionException,
       InterruptedException {
-    this.getStorageServiceMBean().forceKeyspaceCompaction(var1, var2, var3);
+    this.getStorageServiceMBean().forceKeyspaceCompaction(splitOutput, keyspaceName, columnFamilies);
   }
 
   // From MBeanServerConnection
@@ -1043,13 +982,12 @@ public final class JmxCassandraManagementProxy implements ICassandraManagementPr
     getDiagnosticEventPersistenceMBean().disableEventPersistence(eventClass);
   }
 
-  // From FailureDetectorMBean
-  public String getAllEndpointStates() {
-    return getFailureDetectorMBean().getAllEndpointStates();
-  }
-
-  public Map<String, String> getSimpleStates() {
-    return getFailureDetectorMBean().getSimpleStates();
+  @Override
+  public NodesStatus getNodesStatus() {
+    return new NodesStatus(
+        getHost(),
+        getFailureDetectorMBean().getAllEndpointStates(),
+        getFailureDetectorMBean().getSimpleStates());
   }
 
   // From EndpointSnitchInfoMBean

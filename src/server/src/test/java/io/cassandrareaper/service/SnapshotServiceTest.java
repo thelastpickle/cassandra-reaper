@@ -105,7 +105,7 @@ public final class SnapshotServiceTest {
     ICassandraManagementProxy proxy = (ICassandraManagementProxy) mock(
         Class.forName("io.cassandrareaper.management.jmx.JmxCassandraManagementProxy"));
     when(proxy.getCassandraVersion()).thenReturn("2.1.0");
-    when(proxy.getSnapshotDetails()).thenReturn(Collections.emptyMap());
+    when(proxy.listSnapshots()).thenReturn(Collections.emptyList());
 
     AppContext cxt = new AppContext();
     cxt.config = TestRepairConfiguration.defaultConfig();
@@ -119,7 +119,7 @@ public final class SnapshotServiceTest {
         .listSnapshots(Node.builder().withHostname("127.0.0.1").build());
 
     Assertions.assertThat(result).isEmpty();
-    verify(proxy, times(1)).getSnapshotDetails();
+    verify(proxy, times(1)).listSnapshots();
   }
 
   @Test

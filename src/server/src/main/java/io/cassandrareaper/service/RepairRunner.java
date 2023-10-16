@@ -570,7 +570,7 @@ final class RepairRunner implements Runnable {
       ICassandraManagementProxy coordinator,
       RepairSegment segment,
       Map<String, String> dcByNode,
-      UUID segmentId) {
+      UUID segmentId) throws ReaperException {
 
     Collection<String> nodes = getNodesInvolvedInSegment(dcByNode);
     LOG.debug("Nodes involved in segment {}: {}", segmentId, nodes);

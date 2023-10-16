@@ -318,8 +318,6 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
             context.storage.getRepairSegmentDao().updateRepairSegment(segment);
 
             repairNo = coordinator.triggerRepair(
-                segment.getStartToken(),
-                segment.getEndToken(),
                 keyspace,
                 validationParallelism,
                 tablesToRepair,

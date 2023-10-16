@@ -25,38 +25,51 @@ import io.cassandrareaper.management.ICassandraManagementProxy;
 import io.cassandrareaper.management.IManagementConnectionFactory;
 
 import java.net.InetSocketAddress;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ScheduledExecutorService;
 import javax.ws.rs.core.Response;
 
 import com.codahale.metrics.Gauge;
+import com.codahale.metrics.InstrumentedScheduledExecutorService;
 import com.codahale.metrics.MetricRegistry;
+import com.datastax.mgmtapi.client.api.DefaultApi;
+import com.datastax.mgmtapi.client.invoker.ApiClient;
+import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class HttpManagementConnectionFactory implements IManagementConnectionFactory {
   private static final Logger LOG = LoggerFactory.getLogger(HttpManagementConnectionFactory.class);
-  private static final ConcurrentMap<String, ICassandraManagementProxy> HTTP_CONNECTIONS = Maps.newConcurrentMap();
+  private static final ConcurrentMap<String, HttpCassandraManagementProxy> HTTP_CONNECTIONS = Maps.newConcurrentMap();
   private final MetricRegistry metricRegistry;
   private final HostConnectionCounters hostConnectionCounters;
+  private final int metricsPort;
+
+  private final ScheduledExecutorService jobStatusPollerExecutor;
 
   private final Set<String> accessibleDatacenters = Sets.newHashSet();
 
   // Constructor for HttpManagementConnectionFactory
-  public HttpManagementConnectionFactory(AppContext context) {
+  public HttpManagementConnectionFactory(AppContext context, ScheduledExecutorService jobStatusPollerExecutor) {
     this.metricRegistry
         = context.metricRegistry == null ? new MetricRegistry() : context.metricRegistry;
     hostConnectionCounters = new HostConnectionCounters(metricRegistry);
+    this.metricsPort = context.config.getMgmtApiMetricsPort();
     registerConnectionsGauge();
+    this.jobStatusPollerExecutor = jobStatusPollerExecutor;
   }
 
+  @Override
   public ICassandraManagementProxy connectAny(Collection<Node> nodes) throws ReaperException {
     Preconditions.checkArgument(
         null != nodes && !nodes.isEmpty(), "no hosts provided to connectAny");
@@ -72,10 +85,11 @@ public class HttpManagementConnectionFactory implements IManagementConnectionFac
             ICassandraManagementProxy cassandraManagementProxy = connectImpl(node);
             getHostConnectionCounters().incrementSuccessfulConnections(node.getHostname());
             if (getHostConnectionCounters().getSuccessfulConnections(node.getHostname()) > 0) {
-              accessibleDatacenters.add(getDatacenter(node));
+              accessibleDatacenters.add(
+                  cassandraManagementProxy.getDatacenter(cassandraManagementProxy.getUntranslatedHost()));
             }
             return cassandraManagementProxy;
-          } catch (ReaperException | RuntimeException e) {
+          } catch (ReaperException | RuntimeException | UnknownHostException e) {
             getHostConnectionCounters().decrementSuccessfulConnections(node.getHostname());
             LOG.info("Unreachable host: ", e);
           } catch (InterruptedException expected) {
@@ -87,22 +101,18 @@ public class HttpManagementConnectionFactory implements IManagementConnectionFac
     throw new ReaperException("no host could be reached through HTTP");
   }
 
+  @Override
   public HostConnectionCounters getHostConnectionCounters() {
     return hostConnectionCounters;
-  }
-
-  private String getDatacenter(Node node) {
-    // TODO - implement me.
-    return "";
   }
 
   private void registerConnectionsGauge() {
     try {
       if (!this.metricRegistry
           .getGauges()
-          .containsKey(MetricRegistry.name(HttpManagementConnectionFactory.class, "openHttoManagementConnections"))) {
+          .containsKey(MetricRegistry.name(HttpManagementConnectionFactory.class, "openHttpManagementConnections"))) {
         this.metricRegistry.register(
-            MetricRegistry.name(HttpManagementConnectionFactory.class, "openHttoManagementConnections"),
+            MetricRegistry.name(HttpManagementConnectionFactory.class, "openHttpManagementConnections"),
             (Gauge<Integer>) () -> HTTP_CONNECTIONS.size());
       }
     } catch (IllegalArgumentException e) {
@@ -112,17 +122,36 @@ public class HttpManagementConnectionFactory implements IManagementConnectionFac
 
   private ICassandraManagementProxy connectImpl(Node node)
       throws ReaperException, InterruptedException {
-    Integer managementPort = 9999; // TODO - get this from the config.
-    String rootPath = "/"; // TODO - get this from the config.
+    Integer managementPort = 8080; // TODO - get this from the config.
+    String rootPath = ""; // TODO - get this from the config.
     Response pidResponse = getPid(node);
     if (pidResponse.getStatus() != 200) {
       throw new ReaperException("Could not get PID for node " + node.getHostname());
     }
-    return new HttpCassandraManagementProxy(
-        metricRegistry,
-        rootPath,
-        new InetSocketAddress(node.getHostname(), managementPort)
-    );
+
+    String host = node.getHostname();
+
+    HTTP_CONNECTIONS.computeIfAbsent(host, new Function<String, HttpCassandraManagementProxy>() {
+      @Nullable
+      @Override
+      public HttpCassandraManagementProxy apply(@Nullable String hostName) {
+        DefaultApi apiClient = new DefaultApi(
+            new ApiClient().setBasePath("http://" + hostName + ":" + managementPort + rootPath));
+
+        InstrumentedScheduledExecutorService statusTracker = new InstrumentedScheduledExecutorService(
+            jobStatusPollerExecutor, metricRegistry);
+        return new HttpCassandraManagementProxy(
+            metricRegistry,
+            rootPath,
+            new InetSocketAddress(node.getHostname(), managementPort),
+            statusTracker,
+            apiClient,
+            metricsPort,
+            node
+        );
+      }
+    });
+    return HTTP_CONNECTIONS.get(host);
   }
 
   private Response getPid(Node node) {
@@ -130,6 +159,7 @@ public class HttpManagementConnectionFactory implements IManagementConnectionFac
     return Response.ok().build();
   }
 
+  @Override
   public final Set<String> getAccessibleDatacenters() {
     return accessibleDatacenters;
   }

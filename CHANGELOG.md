@@ -1,5 +1,9 @@
 ## Change Log
 
+
+### Unreleased
+- [#1326] Epic to cover implementation of a new Reaper HTTP management proxy, to be used as an alternative to the current JMX implementation.
+
 ### 3.3.4 (2023/10/05 15:30 +00:00)
 - [#1418](https://github.com/thelastpickle/cassandra-reaper/pull/1418) Build arm64 images (#1418) (@adejanovski)
 

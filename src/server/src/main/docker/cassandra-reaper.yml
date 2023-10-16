@@ -29,6 +29,7 @@ repairManagerSchedulingIntervalSeconds: ${REAPER_REPAIR_MANAGER_SCHEDULING_INTER
 jmxConnectionTimeoutInSeconds: ${REAPER_JMX_CONNECTION_TIMEOUT_IN_SECONDS}
 useAddressTranslator: ${REAPER_USE_ADDRESS_TRANSLATOR}
 maxParallelRepairs: ${REAPER_MAX_PARALLEL_REPAIRS}
+mgmtApiMetricsPort: ${REAPER_MGMT_API_METRICS_PORT}
 
 # datacenterAvailability has three possible values: ALL | LOCAL | EACH
 # the correct value to use depends on whether jmx ports to C* nodes in remote datacenters are accessible
@@ -79,3 +80,7 @@ server:
       bindHost: ${REAPER_SERVER_ADMIN_BIND_HOST}
   requestLog:
     appenders: []
+
+httpManagement:
+  enabled: ${REAPER_HTTP_MANAGEMENT_ENABLE}
+
