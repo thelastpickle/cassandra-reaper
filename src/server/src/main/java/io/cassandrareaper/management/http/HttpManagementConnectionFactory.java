@@ -91,9 +91,9 @@ public class HttpManagementConnectionFactory implements IManagementConnectionFac
             return cassandraManagementProxy;
           } catch (ReaperException | RuntimeException | UnknownHostException e) {
             getHostConnectionCounters().decrementSuccessfulConnections(node.getHostname());
-            LOG.info("Unreachable host: ", e);
+            LOG.info(String.format("Unreachable host. Hostname: %s", node.getHostname()), e);
           } catch (InterruptedException expected) {
-            LOG.trace("Expected exception", expected);
+            LOG.trace(String.format("Expected exception. Hostname: %s", node.getHostname()), expected);
           }
         }
       }
@@ -135,8 +135,9 @@ public class HttpManagementConnectionFactory implements IManagementConnectionFac
       @Nullable
       @Override
       public HttpCassandraManagementProxy apply(@Nullable String hostName) {
-        DefaultApi apiClient = new DefaultApi(
-            new ApiClient().setBasePath("http://" + hostName + ":" + managementPort + rootPath));
+        String basePath = "http://" + hostName + ":" + managementPort + rootPath;
+        LOG.info("Creating HTTP client with base path: '{}'", basePath);
+        DefaultApi apiClient = new DefaultApi(new ApiClient().setBasePath(basePath));
 
         InstrumentedScheduledExecutorService statusTracker = new InstrumentedScheduledExecutorService(
             jobStatusPollerExecutor, metricRegistry);
