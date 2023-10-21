@@ -167,6 +167,7 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
       return Collections.emptyList();
     } catch (Exception e) {
       LOG.error("Failed to retrieve endpoint states", e);
+      return Collections.emptyList();
     }
   }
 
