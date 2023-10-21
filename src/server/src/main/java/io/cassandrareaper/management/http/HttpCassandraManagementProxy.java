@@ -585,7 +585,7 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
   public String getUntranslatedHost() throws ReaperException {
     // TODO getLocalEndpoint returns the "internal" IP, figure out if we have to do any conversion here. If not, this
     //  method can be inlined.
-    return getLocalEndpoint();
+    return host;
   }
 
   private Job getJobStatus(String id) {
