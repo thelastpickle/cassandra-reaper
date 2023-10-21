@@ -577,7 +577,7 @@ public class HttpCassandraManagementProxyTest {
     HttpCassandraManagementProxy proxy = mockProxy(mockClient);
     String untranslatedHost = proxy.getUntranslatedHost();
 
-    assertThat(untranslatedHost).isEqualTo("10.0.0.2");
+    assertThat(untranslatedHost).isEqualTo("localhost");
     verify(mockClient).getEndpointStates();
     verifyNoMoreInteractions(mockClient);
   }
