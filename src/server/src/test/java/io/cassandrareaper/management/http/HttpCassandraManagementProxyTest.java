@@ -563,22 +563,9 @@ public class HttpCassandraManagementProxyTest {
   @Test
   public void testGetUntranslatedHost() throws Exception {
     DefaultApi mockClient = Mockito.mock(DefaultApi.class);
-    EndpointStates states = new EndpointStates();
-    states.addEntityItem(ImmutableMap.of(
-        "ENDPOINT_IP", "10.0.0.1",
-        "IS_LOCAL", "false"
-    ));
-    states.addEntityItem(ImmutableMap.of(
-        "ENDPOINT_IP", "10.0.0.2",
-        "IS_LOCAL", "true"
-    ));
-    when(mockClient.getEndpointStates()).thenReturn(states);
-
     HttpCassandraManagementProxy proxy = mockProxy(mockClient);
     String untranslatedHost = proxy.getUntranslatedHost();
-
     assertThat(untranslatedHost).isEqualTo("localhost");
-    verify(mockClient).getEndpointStates();
     verifyNoMoreInteractions(mockClient);
   }
 
