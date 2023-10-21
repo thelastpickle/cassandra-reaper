@@ -154,8 +154,11 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
       EndpointStates endpointStates = apiClient.getEndpointStates();
       List<BigInteger> tokenList = new ArrayList<>();
       endpointStates.getEntity().forEach((Map<String, String> states) -> {
-        for (String token : states.get("TOKENS").split(",")) {
-          tokenList.add(new BigInteger(token));
+        // Stargate nodes are part of the endpoint states but do not have tokens
+        if (!isCoordinatorNode(states)) {
+          for (String token : states.get("TOKENS").split(",")) {
+            tokenList.add(new BigInteger(token));
+          }
         }
       });
       // sort the list
@@ -405,7 +408,9 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
       List<String> liveNodes = new ArrayList<>();
       EndpointStates endpoints = apiClient.getEndpointStates();
       for (Map<String, String> states : endpoints.getEntity()) {
-        if (states.containsKey("IS_ALIVE") && Boolean.parseBoolean(states.get("IS_ALIVE"))) {
+        if (states.containsKey("IS_ALIVE")
+            && Boolean.parseBoolean(states.get("IS_ALIVE"))
+            && !isCoordinatorNode(states)) {
           liveNodes.add(states.get("ENDPOINT_IP"));
         }
       }
@@ -499,8 +504,11 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
       Map<String, String> tokenMap = new HashMap<>();
       for (Map<String, String> states : epStates.getEntity()) {
         String ip = states.get("ENDPOINT_IP");
-        for (String token : states.get("TOKENS").split(",")) {
-          tokenMap.put(token, ip);
+        // Stargate nodes are part of the endpoint states but do not have tokens
+        if (!isCoordinatorNode(states)) {
+          for (String token : states.get("TOKENS").split(",")) {
+            tokenMap.put(token, ip);
+          }
         }
       }
       return tokenMap;
@@ -636,5 +644,11 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
         }
       }
     };
+  }
+
+  // Coordinator nodes such as Stargate instances do not have tokens
+  @VisibleForTesting
+  static boolean isCoordinatorNode(Map<String, String> endpointState) {
+    return endpointState.getOrDefault("TOKENS", "null").equals("null");
   }
 }

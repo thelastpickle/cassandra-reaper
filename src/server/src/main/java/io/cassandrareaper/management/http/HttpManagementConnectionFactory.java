@@ -91,7 +91,7 @@ public class HttpManagementConnectionFactory implements IManagementConnectionFac
             return cassandraManagementProxy;
           } catch (ReaperException | RuntimeException | UnknownHostException e) {
             getHostConnectionCounters().decrementSuccessfulConnections(node.getHostname());
-            LOG.info("Unreachable host: ", e);
+            LOG.info("Unreachable host: {}", node.getHostname(), e);
           } catch (InterruptedException expected) {
             LOG.trace("Expected exception", expected);
           }

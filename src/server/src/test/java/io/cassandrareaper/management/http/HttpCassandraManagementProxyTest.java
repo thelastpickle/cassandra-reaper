@@ -32,6 +32,7 @@ import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -64,6 +65,7 @@ import org.mockito.Mockito;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -487,7 +489,6 @@ public class HttpCassandraManagementProxyTest {
 
   @Test
   public void testGetTokens() throws Exception {
-    DefaultApi mockClient = Mockito.mock(DefaultApi.class);
     List<Map<String, String>> mockEntity = new ArrayList<>();
     mockEntity.add(ImmutableMap.of(
         "TOKENS", "1,2,3,4",
@@ -499,7 +500,17 @@ public class HttpCassandraManagementProxyTest {
         "IS_LOCAL", "false"
       )
     );
+    mockEntity.add(ImmutableMap.of(
+        "TOKENS", "null",
+        "IS_LOCAL", "false"
+      )
+    );
+    mockEntity.add(ImmutableMap.of(
+        "IS_LOCAL", "false"
+      )
+    );
     EndpointStates mockEndpointStates = new EndpointStates().entity(mockEntity);
+    DefaultApi mockClient = Mockito.mock(DefaultApi.class);
     when(mockClient.getEndpointStates()).thenReturn(mockEndpointStates);
     mockProxy(mockClient);
     assertThat(mockProxy(mockClient).getTokens()).containsOnly(
@@ -762,5 +773,29 @@ public class HttpCassandraManagementProxyTest {
             Mockito.mock(Node.class),
             metricsProxy);
     proxy.getPendingCompactions();
+  }
+
+  @Test
+  //Test when endpoint state contains TOKENS and it is not null
+  public void testIsCoordinatorNode_WhenTokensNonNull() {
+    HashMap<String, String> endpointState = new HashMap<String, String>();
+    endpointState.put("TOKENS", "12345");
+    assertFalse(HttpCassandraManagementProxy.isCoordinatorNode(endpointState));
+  }
+
+  @Test
+  //Test when endpoint state contains TOKENS and it is null
+  public void testIsCoordinatorNode_WhenTokensNull() {
+    HashMap<String, String> endpointState = new HashMap<String, String>();
+    endpointState.put("TOKENS", "null");
+    assertTrue(HttpCassandraManagementProxy.isCoordinatorNode(endpointState));
+  }
+
+  @Test
+  //Test when endpoint state does not contain TOKENS
+  public void testIsCoordinatorNode_NoTokens() {
+    HashMap<String, String> endpointState = new HashMap<String, String>();
+    endpointState.put("OTHER", "value");
+    assertTrue(HttpCassandraManagementProxy.isCoordinatorNode(endpointState));
   }
 }
