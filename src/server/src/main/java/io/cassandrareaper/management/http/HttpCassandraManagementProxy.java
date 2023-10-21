@@ -153,6 +153,7 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
     try {
       EndpointStates endpointStates = apiClient.getEndpointStates();
       List<BigInteger> tokenList = new ArrayList<>();
+      LOG.info("Retrieved endpoint states: {}", endpointStates.getEntity());
       endpointStates.getEntity().forEach((Map<String, String> states) -> {
         for (String token : states.get("TOKENS").split(",")) {
           tokenList.add(new BigInteger(token));
@@ -164,6 +165,8 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
     } catch (ApiException e) {
       LOG.error("Failed to retrieve endpoint states", e);
       return Collections.emptyList();
+    } catch (Exception e) {
+      LOG.error("Failed to retrieve endpoint states", e);
     }
   }
 
