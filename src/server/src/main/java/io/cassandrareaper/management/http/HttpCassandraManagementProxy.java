@@ -408,9 +408,9 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
       List<String> liveNodes = new ArrayList<>();
       EndpointStates endpoints = apiClient.getEndpointStates();
       for (Map<String, String> states : endpoints.getEntity()) {
-        if (states.containsKey("IS_ALIVE")
-            && Boolean.parseBoolean(states.get("IS_ALIVE"))
-            && !isCoordinatorNode(states)) {
+        if (!isCoordinatorNode(states)
+            && states.containsKey("IS_ALIVE")
+            && Boolean.parseBoolean(states.get("IS_ALIVE"))) {
           liveNodes.add(states.get("ENDPOINT_IP"));
         }
       }
