@@ -78,7 +78,8 @@ import static io.cassandrareaper.metrics.MetricNameUtils.cleanId;
 import static io.cassandrareaper.metrics.MetricNameUtils.cleanName;
 
 final class RepairRunner implements Runnable {
-
+  // Maximum timeout that adaptive schedules will get tuned to.
+  public static final int MAX_TIMEOUT_IN_MINS = 24 * 60;
   private static final Logger LOG = LoggerFactory.getLogger(RepairRunner.class);
   private static final ExecutorService METRICS_GRABBER_EXECUTOR = Executors.newFixedThreadPool(10);
   // Threshold over which adaptive schedules will get tuned for more segments.
@@ -405,7 +406,7 @@ final class RepairRunner implements Runnable {
       addSegmentsPerNodeToScheduleForUnit();
     } else if ((int) percentExtendedSegments <= PERCENT_EXTENDED_THRESHOLD && percentExtendedSegments >= 1) {
       // The number of extended segments is moderate and timeout should be extended
-      raiseTimeoutOfUnit();
+      raiseTimeoutOfUnit(Math.min(MAX_TIMEOUT_IN_MINS, repairUnit.getTimeout() * 2));
     } else if (percentExtendedSegments == 0 && maxSegmentDuration < SEGMENT_DURATION_FOR_REDUCTION_THRESHOLD) {
       // Segments are being executed very fast so segment count could be lowered
       reduceSegmentsPerNodeToScheduleForUnit();
@@ -429,9 +430,12 @@ final class RepairRunner implements Runnable {
   }
 
   @VisibleForTesting
-  void raiseTimeoutOfUnit() {
+  void raiseTimeoutOfUnit(int newTimeout) {
     // Build updated repair unit
-    RepairUnit updatedUnit = repairUnit.with().timeout(repairUnit.getTimeout() * 2).build(repairUnit.getId());
+    RepairUnit updatedUnit
+        = repairUnit.with()
+          .timeout(newTimeout)
+          .build(repairUnit.getId());
 
     // update unit with new timeout
     context.storage.getRepairUnitDao().updateRepairUnit(updatedUnit);
