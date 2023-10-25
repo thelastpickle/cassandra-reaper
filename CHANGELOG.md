@@ -1,8 +1,11 @@
 ## Change Log
 
 
-### Unreleased
-- [#1326] Epic to cover implementation of a new Reaper HTTP management proxy, to be used as an alternative to the current JMX implementation.
+### 3.4.0 (2023/10/25 08:12 +00:00)
+- [#1433](https://github.com/thelastpickle/cassandra-reaper/pull/1433) Filter out Stargate/coordinator nodes from calls to get live nodes or list tokens (#1433) (@adejanovski)
+- [3912a6c](https://github.com/thelastpickle/cassandra-reaper/commit/3912a6c7c80e3c5b1b962e6babae97701614f798) Update Management API cleint to v0.1.70 (@emerkle826)
+- [#1428](https://github.com/thelastpickle/cassandra-reaper/pull/1428) Add default REAPER_HTTP_MANAGEMENT_ENABLE="false" value to Docker environment (@Miles-Garnsey)
+- [#1356](https://github.com/thelastpickle/cassandra-reaper/pull/1356) HTTP Management Proxy Implementation (#1356) (@Miles-Garnsey)
 
 ### 3.3.4 (2023/10/05 15:30 +00:00)
 - [#1418](https://github.com/thelastpickle/cassandra-reaper/pull/1418) Build arm64 images (#1418) (@adejanovski)
