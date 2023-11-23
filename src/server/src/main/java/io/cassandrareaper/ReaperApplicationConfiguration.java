@@ -44,6 +44,7 @@ import systems.composable.dropwizard.cassandra.network.AddressTranslatorFactory;
 public final class ReaperApplicationConfiguration extends Configuration {
 
   public static final int DEFAULT_MGMT_API_METRICS_PORT = 9000;
+  private static final int DEFAULT_MGMT_API_PORT = 8080;
   private static final int DEFAULT_SEGMENT_COUNT_PER_NODE = 64;
   private static final Integer DEFAULT_MAX_PENDING_COMPACTIONS = 20;
 
@@ -166,9 +167,6 @@ public final class ReaperApplicationConfiguration extends Configuration {
   @JsonProperty
   @Nullable
   private CryptographFactory cryptograph;
-
-  @JsonProperty
-  private Integer mgmtApiMetricsPort;
 
   public HttpManagement getHttpManagement() {
     return httpManagement;
@@ -509,15 +507,6 @@ public final class ReaperApplicationConfiguration extends Configuration {
     this.cryptograph = cryptograph;
   }
 
-  public int getMgmtApiMetricsPort() {
-    return mgmtApiMetricsPort == null ? DEFAULT_MGMT_API_METRICS_PORT : mgmtApiMetricsPort;
-  }
-
-  @JsonProperty("mgmtApiMetricsPort")
-  public void setMgmtApiMetricsPort(int mgmtApiMetricsPort) {
-    this.mgmtApiMetricsPort = mgmtApiMetricsPort;
-  }
-
   public enum DatacenterAvailability {
     /* We require direct JMX access to all nodes across all datacenters */
     ALL,
@@ -721,9 +710,46 @@ public final class ReaperApplicationConfiguration extends Configuration {
     @JsonProperty
     private Boolean enabled = false;
 
+    @JsonProperty
+    private String keystore;
+
+    @JsonProperty
+    private String trustStore;
+
+    @JsonProperty
+    private Integer mgmtApiMetricsPort;
+
+    @JsonProperty
+    private Integer managementApiPort;
+
     public Boolean isEnabled() {
       return enabled;
     }
     // TODO: Add ports and root paths here.
+
+    public String getKeystore() {
+      return keystore;
+    }
+
+    public String getTrustStore() {
+      return trustStore;
+    }
+
+    public int getMgmtApiMetricsPort() {
+      return mgmtApiMetricsPort == null ? DEFAULT_MGMT_API_METRICS_PORT : mgmtApiMetricsPort;
+    }
+
+    public void setManagementApiPort(Integer managementApiPort) {
+      this.managementApiPort = managementApiPort;
+    }
+
+    public Integer getManagementApiPort() {
+      return managementApiPort == null ? DEFAULT_MGMT_API_PORT : managementApiPort;
+    }
+
+    @JsonProperty("mgmtApiMetricsPort")
+    public void setMgmtApiMetricsPort(int mgmtApiMetricsPort) {
+      this.mgmtApiMetricsPort = mgmtApiMetricsPort;
+    }
   }
 }
