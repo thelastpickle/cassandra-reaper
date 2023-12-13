@@ -64,8 +64,6 @@ const Cluster = CreateReactClass({
           },
           error: function(data) {
             console.error(this.component.props.name + " failed.");
-            this.component.setState({clusterStatuses: setTimeout(this.component._refreshClusterStatus, 30000)});
-
           }
       });
   },
