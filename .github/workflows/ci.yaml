@@ -108,6 +108,7 @@ jobs:
         run: |
           pip install pyyaml
           pip install ccm
+          pip install setuptools
 
       - name: Setup CCM Cluster
         run: ./.github/scripts/configure-ccm.sh
