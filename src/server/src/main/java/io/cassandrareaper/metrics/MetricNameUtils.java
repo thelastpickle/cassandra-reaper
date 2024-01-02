@@ -27,16 +27,16 @@ public final class MetricNameUtils {
   }
 
   public static String cleanName(String name) {
-    return name.replaceAll("[^A-Za-z0-9]", "");
+    return name.replaceAll("[^A-Za-z0-9\\-_]", "");
   }
 
   public static String cleanId(UUID uuid) {
-    return uuid.toString().replaceAll("-", "");
+    return uuid.toString();
   }
 
   public static String cleanHostName(String hostname) {
     return Optional.ofNullable(hostname).orElse("null")
-        .replace('.', 'x')
-        .replaceAll("[^A-Za-z0-9]", "");
+        .replace('.', '-')
+        .replaceAll("[^A-Za-z0-9\\-_]", "");
   }
 }
