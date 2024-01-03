@@ -38,5 +38,5 @@ runs:
       - name: Setup Python
         uses: actions/setup-python@v1
         with:
-          python-version: '3.x'
+          python-version: '3.11'
           architecture: 'x64'
