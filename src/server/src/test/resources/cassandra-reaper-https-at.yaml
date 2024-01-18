@@ -94,5 +94,5 @@ cryptograph:
 
 httpManagement:
   enabled: true
-  keystore: keystore.jks
-  trustStore: truststore.jks
+  keystore: .github/files/keystore.jks
+  trustStore: .github/files/truststore.jks
