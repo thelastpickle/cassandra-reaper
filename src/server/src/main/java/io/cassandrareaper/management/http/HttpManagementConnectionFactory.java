@@ -150,6 +150,7 @@ public class HttpManagementConnectionFactory implements IManagementConnectionFac
     Integer managementPort = config.getHttpManagement().getManagementApiPort();
     String rootPath = ""; // TODO - get this from the config.
 
+    LOG.info("Wanting to create new connection to " + node.getHostname());
     return HTTP_CONNECTIONS.computeIfAbsent(node.getHostname(), new Function<String, HttpCassandraManagementProxy>() {
       @Nullable
       @Override
@@ -161,6 +162,7 @@ public class HttpManagementConnectionFactory implements IManagementConnectionFac
 
         String protocol = "http";
         if (useMtls) {
+          LOG.info("Using TLS connections");
           // We have to split TrustManagers to its own function to please OkHttpClient
           TrustManager[] trustManagers;
           SSLContext sslContext;
@@ -168,11 +170,14 @@ public class HttpManagementConnectionFactory implements IManagementConnectionFac
             trustManagers = getTrustManagers();
             sslContext = createSslContext(trustManagers);
           } catch (ReaperException e) {
+            LOG.error("Failed to create SSLContext: " + e.getLocalizedMessage(), e);
             throw new RuntimeException(e);
           }
           clientBuilder.sslSocketFactory(sslContext.getSocketFactory(), (X509TrustManager) trustManagers[0]);
           protocol = "https";
         }
+
+        LOG.info("Building new client with protocol: " + protocol);
 
         OkHttpClient okHttpClient = clientBuilder
             .build();

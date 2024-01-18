@@ -32,6 +32,9 @@ logging:
   level: WARN
   appenders:
     - type: console
+    - type: file
+      logFormat: &quot;%-6level [%t] %logger{5} - %msg %n&quot;
+      currentLogFilename: /tmp/log/reaper.log
 
 server:
   type: default
