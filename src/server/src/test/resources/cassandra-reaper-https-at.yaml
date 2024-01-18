@@ -101,5 +101,5 @@ cryptograph:
 
 httpManagement:
   enabled: true
-  keystore: .github/files/keystore.jks
-  trustStore: .github/files/truststore.jks
+  keystore: /home/runner/work/cassandra-reaper/cassandra-reaper/.github/files/keystore.jks
+  trustStore: /home/runner/work/cassandra-reaper/cassandra-reaper/.github/files/truststore.jks
