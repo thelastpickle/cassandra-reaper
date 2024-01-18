@@ -34,6 +34,11 @@ logging:
     - type: console
     - type: file
       currentLogFilename: /tmp/log/reaper.log
+      threshold: ALL
+      archive: true
+      archivedFileCount: 5
+      timeZone: UTC
+      archivedLogFilenamePattern: /tmp/log/reaper-%d.log
 
 server:
   type: default
