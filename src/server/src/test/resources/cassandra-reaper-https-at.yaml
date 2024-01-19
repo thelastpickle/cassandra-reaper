@@ -29,7 +29,7 @@ datacenterAvailability: LOCAL
 percentRepairedCheckIntervalMinutes: 1
 
 logging:
-  level: WARN
+  level: DEBUG
   appenders:
     - type: console
     - type: file

@@ -319,7 +319,7 @@ jobs:
       - name: Prepare a unique name for logs
         if: ${{ failure() }}
         run: |
-          name = ${{ matrix.test-type }}-${{ matrix.cassandra-version }}
+          name=${{ matrix.test-type }}-${{ matrix.cassandra-version }}
           # The option to enable + in sed regexps differs by OS so we avoid it
           name=$(echo -n "$name" | sed -e 's/[ \t:\/\\"<>|*?]/-/g' -e 's/--*/-/g')
           echo "ARTIFACT_NAME=$name" >> $GITHUB_ENV
