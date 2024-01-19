@@ -314,7 +314,15 @@ jobs:
           GRIM_MIN: ${{ matrix.grim-min }}
           CUCUMBER_OPTIONS: ${{ matrix.cucumber-options }}
           JDK_VERSION: ${{ matrix.jdk-version }}
-      
+
+      # Update logs
+      - name: Archive logs
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: reaper-http-logs-${{ matrix.cassandra-version }}
+          path: /tmp/log
+
       # Add a tmate action to debug failures. 
       - name: Setup tmate session
         if: ${{ failure() }}
