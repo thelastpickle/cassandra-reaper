@@ -714,7 +714,7 @@ public final class ReaperApplicationConfiguration extends Configuration {
     private String keystore;
 
     @JsonProperty
-    private String trustStore;
+    private String truststore;
 
     @JsonProperty
     private Integer mgmtApiMetricsPort;
@@ -731,7 +731,7 @@ public final class ReaperApplicationConfiguration extends Configuration {
       return keystore;
     }
 
-    public String getTrustStore() {
+    public String getTruststore() {
       return trustStore;
     }
 

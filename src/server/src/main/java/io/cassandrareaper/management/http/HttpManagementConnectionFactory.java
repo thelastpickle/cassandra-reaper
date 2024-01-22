@@ -226,7 +226,7 @@ public class HttpManagementConnectionFactory implements IManagementConnectionFac
   }
 
   private TrustManager[] getTrustManagers() throws ReaperException {
-    Path trustStorePath = Paths.get(config.getHttpManagement().getTrustStore());
+    Path trustStorePath = Paths.get(config.getHttpManagement().getTruststore());
     try (InputStream tsIs = Files.newInputStream(trustStorePath, StandardOpenOption.READ)) {
       KeyStore trustStore = KeyStore.getInstance(KeyStore.getDefaultType());
       trustStore.load(tsIs, KEYSTORE_PASSWORD);
