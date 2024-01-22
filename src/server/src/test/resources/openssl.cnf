@@ -63,6 +63,16 @@ string_mask = utf8only
 
 # req_extensions = v3_req # The extensions to add to a certificate request
 
+req_extensions = req_ext
+
+[ req_ext ]
+subjectAltName          = @alt_names
+
+[alt_names]
+DNS.1   = localhost
+IP.1 = 127.0.0.1
+IP.2 = 127.0.0.2
+
 [ req_distinguished_name ]
 countryName			= Country Name (2 letter code)
 countryName_default		= AU

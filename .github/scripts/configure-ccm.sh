@@ -25,9 +25,9 @@ function set_java_home() {
     else
         export CASSANDRA_USE_JDK11=false
     fi
-    for jdk in /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/${major_version}*/; 
+    for jdk in /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/${major_version}*/*/;
     do 
-        export JAVA_HOME="${jdk/}"x64/
+        export JAVA_HOME="${jdk/}"
         echo "JAVA_HOME is set to $JAVA_HOME"
         export JAVA_TOOL_OPTIONS="-Dcom.sun.jndi.rmiURLParsing=legacy"
     done
@@ -71,10 +71,10 @@ case "${TEST_TYPE}" in
         mkdir -p ~/.local
         cp ./.github/files/jmxremote.password ~/.local/jmxremote.password
         chmod 400 ~/.local/jmxremote.password
-        for jdk in /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/8*/; 
-        do 
-          sudo chmod 777 "${jdk/}"x64/jre/lib/management/jmxremote.access
-          echo "cassandra     readwrite" >> "${jdk/}"x64/jre/lib/management/jmxremote.access
+        for jdk in /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/8*/*/;
+        do
+          sudo chmod 777 "${jdk/}"jre/lib/management/jmxremote.access
+          echo "cassandra     readwrite" >> "${jdk/}"jre/lib/management/jmxremote.access
         done
         if [[ ! -z $ELASSANDRA_VERSION ]]; then
           ccm create test -v file:elassandra-${ELASSANDRA_VERSION}.tar.gz

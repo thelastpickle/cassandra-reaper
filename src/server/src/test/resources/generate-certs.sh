@@ -13,31 +13,29 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Copied from management-api, modified for reaper to create JKS files also
-
 # Generate a new, self-signed root CA
+echo "--- Generating self-signed root CA and key"
 openssl req -extensions v3_ca -new -x509 -days 36500 -nodes -subj "/CN=NettyTestRoot" -newkey rsa:2048 -sha512 -out mutual_auth_ca.pem -keyout mutual_auth_ca.key
 
-# Generate a certificate/key for the server
-openssl req -new -keyout mutual_auth_server.key -nodes -newkey rsa:2048 -subj "/CN=NettyTestServer" | \
-openssl x509 -req -CAkey mutual_auth_ca.key -CA mutual_auth_ca.pem -days 36500 -set_serial $RANDOM -sha512 -out mutual_auth_server.crt
+# Generate request certificate file
+echo "--- Generating server certificate/key"
+openssl req -new -keyout mutual_auth_server.key -nodes -newkey rsa:2048 -subj "/CN=NettyTestServer"
+openssl req -new -sha256 -key mutual_auth_server.key --subj "/CN=NettyTestServer" -reqexts SAN -extensions SAN -config <(cat /etc/ssl/openssl.cnf <(printf "[SAN]\nsubjectAltName=DNS:localhost,IP:127.0.0.1,IP:127.0.0.2")) -out mutual_auth_server.csr
+openssl x509 -req -days 1825 -CAkey mutual_auth_ca.key -CA mutual_auth_ca.pem -CAcreateserial -extensions SAN -extfile <(cat /etc/ssl/openssl.cnf <(printf "\n[SAN]\nsubjectAltName=DNS:localhost,IP:127.0.0.1,IP:127.0.0.2")) -in mutual_auth_server.csr -out mutual_auth_server.crt
 
-# Generate a valid intermediate CA which will be used to sign the client certificate
-openssl req -new -keyout mutual_auth_intermediate_ca.key -nodes -newkey rsa:2048 -out mutual_auth_intermediate_ca.key
-openssl req -new -sha512 -key mutual_auth_intermediate_ca.key -subj "/CN=NettyTestIntermediate" -out intermediate.csr
-openssl x509 -req -days 1825 -in intermediate.csr -extfile openssl.cnf -extensions v3_ca -CA mutual_auth_ca.pem -CAkey mutual_auth_ca.key -set_serial $RANDOM -out mutual_auth_intermediate_ca.pem
+# Generate a client certificate/key
+echo "--- Generating client certificate/key"
+openssl req -new -config openssl.cnf -keyout mutual_auth_client.key -nodes -newkey rsa:2048 -subj "/CN=NettyTestClient/UID=Client"  | \
+openssl x509 -req -extfile openssl.cnf -extensions v3_ca -CAkey mutual_auth_ca.key -CA mutual_auth_ca.pem -days 36500 -set_serial $RANDOM -sha512 -out mutual_auth_client.crt
 
-# Generate a client certificate signed by the intermediate CA
-openssl req -new -keyout mutual_auth_client.key -nodes -newkey rsa:2048 -subj "/CN=NettyTestClient/UID=Client" | \
-openssl x509 -req -CAkey mutual_auth_intermediate_ca.key -CA mutual_auth_intermediate_ca.pem -days 36500 -set_serial $RANDOM -sha512 -out mutual_auth_client.crt
+# Create truststore from the CA
+echo "--- Creating truststore"
+rm -f truststore.jks
+keytool -importcert -storetype jks -alias server_auth -keystore truststore.jks -file mutual_auth_server.crt -storepass changeit -noprompt
 
-# Append
-cat mutual_auth_intermediate_ca.pem mutual_auth_ca.pem > mutual_auth_client_cert_chain.pem
-
-# Modify to PKCS12 and JKS for Reaper (use password changeit)
-openssl pkcs12 -export -out mutual_auth_client_cert_chain.pkcs12 -inkey mutual_auth_intermediate_ca.key -in mutual_auth_client_cert_chain.pem
-openssl pkcs12 -export -out mutual_auth_client.pkcs12 -inkey mutual_auth_client.key -in mutual_auth_client.crt
-
-# Use password changeit
-keytool -importkeystore -srckeystore mutual_auth_client_cert_chain.pkcs12 -srcstoretype pkcs12 -destkeystore truststore.jks -deststoretype JKS
-keytool -importkeystore -srckeystore mutual_auth_client.pkcs12 -srcstoretype pkcs12 -destkeystore keystore.jks -deststoretype JKS
+# Create the keystore from private key
+echo "--- Create client keystore"
+rm -f keystore.jks
+cat mutual_auth_client.key mutual_auth_ca.pem mutual_auth_client.crt > mutual_auth_client_chain.crt
+openssl pkcs12 -export -in mutual_auth_client_chain.crt -out mutual_auth_client_chain.p12 -password pass:"changeit" -name mutual_auth_client -noiter -nomaciter
+keytool -importkeystore -srckeystore mutual_auth_client_chain.p12 -srcstoretype pkcs12 -destkeystore keystore.jks -deststoretype JKS -storepass changeit -srcstorepass changeit
