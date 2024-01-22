@@ -83,4 +83,6 @@ server:
 
 httpManagement:
   enabled: ${REAPER_HTTP_MANAGEMENT_ENABLE}
+  keystore: ${REAPER_HTTP_MANAGEMENT_KEYSTORE_PATH}
+  truststore: ${REAPER_HTTP_MANAGEMENT_TRUSTSTORE_PATH}
 
