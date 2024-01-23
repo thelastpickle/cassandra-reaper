@@ -732,7 +732,7 @@ public final class ReaperApplicationConfiguration extends Configuration {
     }
 
     public String getTruststore() {
-      return trustStore;
+      return truststore;
     }
 
     public int getMgmtApiMetricsPort() {
