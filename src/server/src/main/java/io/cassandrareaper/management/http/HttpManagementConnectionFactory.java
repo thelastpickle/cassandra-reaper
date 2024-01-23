@@ -46,11 +46,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ScheduledExecutorService;
-import javax.net.ssl.KeyManagerFactory;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.TrustManagerFactory;
-import javax.net.ssl.X509TrustManager;
+import javax.net.ssl.*;
 import javax.ws.rs.core.Response;
 
 import com.codahale.metrics.Gauge;
@@ -150,7 +146,7 @@ public class HttpManagementConnectionFactory implements IManagementConnectionFac
     Integer managementPort = config.getHttpManagement().getManagementApiPort();
     String rootPath = ""; // TODO - get this from the config.
 
-    LOG.info("Wanting to create new connection to " + node.getHostname());
+    LOG.trace("Wanting to create new connection to " + node.getHostname());
     return HTTP_CONNECTIONS.computeIfAbsent(node.getHostname(), new Function<String, HttpCassandraManagementProxy>() {
       @Nullable
       @Override
@@ -162,7 +158,7 @@ public class HttpManagementConnectionFactory implements IManagementConnectionFac
 
         String protocol = "http";
         if (useMtls) {
-          LOG.info("Using TLS connections");
+          LOG.debug("Using TLS connection to " + node.getHostname());
           // We have to split TrustManagers to its own function to please OkHttpClient
           TrustManager[] trustManagers;
           SSLContext sslContext;
@@ -174,10 +170,9 @@ public class HttpManagementConnectionFactory implements IManagementConnectionFac
             throw new RuntimeException(e);
           }
           clientBuilder.sslSocketFactory(sslContext.getSocketFactory(), (X509TrustManager) trustManagers[0]);
+          clientBuilder.hostnameVerifier((hostname, session) -> true); // We don't want subjectAltNames verification
           protocol = "https";
         }
-
-        LOG.info("Building new client with protocol: " + protocol);
 
         OkHttpClient okHttpClient = clientBuilder
             .build();
