@@ -21,9 +21,9 @@ set -xe
 
 function set_java_home() {
     major_version=$1
-    for jdk in /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/${major_version}*/; 
+    for jdk in /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/${major_version}*/*/;
     do 
-        export JAVA_HOME="${jdk/}"x64/
+        export JAVA_HOME="${jdk/}"
         echo "JAVA_HOME is set to $JAVA_HOME"
         export JAVA_TOOL_OPTIONS="-Dcom.sun.jndi.rmiURLParsing=legacy"
     done
@@ -118,8 +118,9 @@ case "${TEST_TYPE}" in
             # Stop CCM now so we can restart it with Management API
             ccm stop
             # Start Management API
-            MGMT_API_LOG_DIR=/tmp/log/cassandra1 bash -c 'nohup java -jar /tmp/datastax-mgmtapi-server.jar --db-socket=/tmp/db1.sock --host=unix:///tmp/mgmtapi1.sock --host=http://127.0.0.1:8080 --db-home=`dirname ~/.ccm/test/node1`/node1 &'
-            MGMT_API_LOG_DIR=/tmp/log/cassandra2 bash -c 'nohup java -jar /tmp/datastax-mgmtapi-server.jar --db-socket=/tmp/db2.sock --host=unix:///tmp/mgmtapi2.sock --host=http://127.0.0.2:8080 --db-home=`dirname ~/.ccm/test/node2`/node2 &'
+            CERT_DIR=/home/runner/work/cassandra-reaper/cassandra-reaper/.github/files
+            MGMT_API_LOG_DIR=/tmp/log/cassandra1 MGMT_API_TLS_CA_CERT_FILE=$CERT_DIR/mutual_auth_ca.pem MGMT_API_TLS_CERT_FILE=$CERT_DIR/mutual_auth_server.crt MGMT_API_TLS_KEY_FILE=$CERT_DIR/mutual_auth_server.key bash -c 'nohup java -jar /tmp/datastax-mgmtapi-server.jar --tlscacert=$MGMT_API_TLS_CA_CERT_FILE --tlscert=$MGMT_API_TLS_CERT_FILE --tlskey=$MGMT_API_TLS_KEY_FILE --db-socket=/tmp/db1.sock --host=unix:///tmp/mgmtapi1.sock --host=http://127.0.0.1:8080 --db-home=`dirname ~/.ccm/test/node1`/node1 > /tmp/log/cassandra1/mgmt.out 2>&1 &'
+            MGMT_API_LOG_DIR=/tmp/log/cassandra2 MGMT_API_TLS_CA_CERT_FILE=$CERT_DIR/mutual_auth_ca.pem MGMT_API_TLS_CERT_FILE=$CERT_DIR/mutual_auth_server.crt MGMT_API_TLS_KEY_FILE=$CERT_DIR/mutual_auth_server.key bash -c 'nohup java -jar /tmp/datastax-mgmtapi-server.jar --tlscacert=$MGMT_API_TLS_CA_CERT_FILE --tlscert=$MGMT_API_TLS_CERT_FILE --tlskey=$MGMT_API_TLS_KEY_FILE --db-socket=/tmp/db2.sock --host=unix:///tmp/mgmtapi2.sock --host=http://127.0.0.2:8080 --db-home=`dirname ~/.ccm/test/node2`/node2 > /tmp/log/cassandra2/mgmt.out 2>&1 &'
             # wait for Cassandra to be ready
             for i in `seq 1 30` ; do
                 # keep curl from exiting with non-zero

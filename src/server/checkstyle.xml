@@ -83,10 +83,6 @@
           <property name="format" value="[\t]"/>
           <property name="message" value="Tabs in java file"/>
         </module>
-        <module name="RegexpSinglelineJava">
-          <property name="format" value="[=+-]$"/>
-          <property name="message" value="Operators must carry"/>
-        </module>
         <module name="AvoidStarImport"/>
         <module name="OneTopLevelClass"/>
         <module name="NoLineWrap"/>

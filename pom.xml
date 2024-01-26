@@ -200,6 +200,9 @@
                 <exclude>**/*.access</exclude>
                 <exclude>**/*.password</exclude>
                 <exclude>**/*.txt</exclude>
+                <exclude>**/*.crt</exclude>
+                <exclude>**/*.key</exclude>
+                <exclude>**/*.pem</exclude>
                 <exclude>src/packaging/**</exclude>
                 <exclude>codecov.yml</exclude>
               </excludes>

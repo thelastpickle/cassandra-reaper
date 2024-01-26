@@ -314,7 +314,23 @@ jobs:
           GRIM_MIN: ${{ matrix.grim-min }}
           CUCUMBER_OPTIONS: ${{ matrix.cucumber-options }}
           JDK_VERSION: ${{ matrix.jdk-version }}
-      
+
+      # Upload logs
+      - name: Prepare a unique name for logs
+        if: ${{ failure() }}
+        run: |
+          name=${{ matrix.test-type }}-${{ matrix.cassandra-version }}
+          # The option to enable + in sed regexps differs by OS so we avoid it
+          name=$(echo -n "$name" | sed -e 's/[ \t:\/\\"<>|*?]/-/g' -e 's/--*/-/g')
+          echo "ARTIFACT_NAME=$name" >> $GITHUB_ENV
+
+      - name: Archive logs
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: reaper-logs-${{ env.ARTIFACT_NAME }}
+          path: /tmp/log
+
       # Add a tmate action to debug failures. 
       - name: Setup tmate session
         if: ${{ failure() }}
