@@ -17,6 +17,16 @@
 
 package io.cassandrareaper.management.http;
 
+import com.codahale.metrics.Gauge;
+import com.codahale.metrics.InstrumentedScheduledExecutorService;
+import com.codahale.metrics.MetricRegistry;
+import com.datastax.mgmtapi.client.api.DefaultApi;
+import com.datastax.mgmtapi.client.invoker.ApiClient;
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Function;
+import com.google.common.base.Preconditions;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperApplicationConfiguration;
 import io.cassandrareaper.ReaperException;
@@ -24,15 +34,30 @@ import io.cassandrareaper.core.Node;
 import io.cassandrareaper.management.HostConnectionCounters;
 import io.cassandrareaper.management.ICassandraManagementProxy;
 import io.cassandrareaper.management.IManagementConnectionFactory;
+import okhttp3.OkHttpClient;
+import org.jetbrains.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.TrustManagerFactory;
+import javax.net.ssl.X509TrustManager;
+import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
+import java.nio.file.StandardWatchEventKinds;
+import java.nio.file.WatchEvent;
+import java.nio.file.WatchKey;
+import java.nio.file.WatchService;
 import java.security.KeyManagementException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
@@ -45,28 +70,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import javax.net.ssl.KeyManagerFactory;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.TrustManagerFactory;
-import javax.net.ssl.X509TrustManager;
-import javax.ws.rs.core.Response;
-
-import com.codahale.metrics.Gauge;
-import com.codahale.metrics.InstrumentedScheduledExecutorService;
-import com.codahale.metrics.MetricRegistry;
-import com.datastax.mgmtapi.client.api.DefaultApi;
-import com.datastax.mgmtapi.client.invoker.ApiClient;
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Function;
-import com.google.common.base.Preconditions;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
-import okhttp3.OkHttpClient;
-import org.jetbrains.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class HttpManagementConnectionFactory implements IManagementConnectionFactory {
   private static final char[] KEYSTORE_PASSWORD = "changeit".toCharArray();
@@ -88,6 +94,13 @@ public class HttpManagementConnectionFactory implements IManagementConnectionFac
     this.config = context.config;
     registerConnectionsGauge();
     this.jobStatusPollerExecutor = jobStatusPollerExecutor;
+    if(context.config.getHttpManagement().getKeystore() != null && !context.config.getHttpManagement().getKeystore().isEmpty()) {
+        try {
+            createSSLWatcher();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
   }
 
   @Override
@@ -152,7 +165,6 @@ public class HttpManagementConnectionFactory implements IManagementConnectionFac
 
     LOG.trace("Wanting to create new connection to " + node.getHostname());
     return HTTP_CONNECTIONS.computeIfAbsent(node.getHostname(), new Function<String, HttpCassandraManagementProxy>() {
-      @Nullable
       @Override
       public HttpCassandraManagementProxy apply(@Nullable String hostName) {
         ReaperApplicationConfiguration.HttpManagement httpConfig = config.getHttpManagement();
@@ -237,7 +249,68 @@ public class HttpManagementConnectionFactory implements IManagementConnectionFac
     } catch (IOException | NoSuchAlgorithmException | KeyStoreException | CertificateException e) {
       throw new ReaperException(e);
     }
+  }
 
+  @VisibleForTesting
+  void createSSLWatcher() throws IOException {
+    WatchService watchService = FileSystems.getDefault().newWatchService();
+    Path trustStorePath = Paths.get(config.getHttpManagement().getTruststore());
+    Path keyStorePath = Paths.get(config.getHttpManagement().getKeystore());
+    Path keystoreParent = trustStorePath.getParent();
+    Path trustStoreParent = keyStorePath.getParent();
+
+    keystoreParent.register(
+            watchService,
+            StandardWatchEventKinds.ENTRY_CREATE,
+            StandardWatchEventKinds.ENTRY_DELETE,
+            StandardWatchEventKinds.ENTRY_MODIFY);
+
+    if(!keystoreParent.equals(trustStoreParent)) {
+      trustStoreParent.register(
+              watchService,
+              StandardWatchEventKinds.ENTRY_CREATE,
+              StandardWatchEventKinds.ENTRY_DELETE,
+              StandardWatchEventKinds.ENTRY_MODIFY);
+    }
+
+    ExecutorService executorService = Executors.newSingleThreadExecutor();
+    executorService.execute(
+            () -> {
+              while (true) {
+                try {
+                  WatchKey key = watchService.take();
+                  List<WatchEvent<?>> events = key.pollEvents();
+                  boolean reloadNeeded = false;
+                  for (WatchEvent<?> event : events) {
+                    WatchEvent.Kind<?> kind = event.kind();
+
+                    WatchEvent<java.nio.file.Path> ev = (WatchEvent<Path>) event;
+                    Path eventFilename = ev.context();
+
+                    if (keystoreParent.resolve(eventFilename).equals(keyStorePath)
+                            || trustStoreParent.resolve(eventFilename).equals(trustStorePath)) {
+                      // Something in the TLS has been modified.. recreate HTTP connections
+                      reloadNeeded = true;
+                    }
+                  }
+                  if (!key.reset()) {
+                    // The watched directories have disappeared..
+                    break;
+                  }
+                  if (reloadNeeded) {
+                    LOG.info("Detected change in the SSL/TLS certificates, reloading.");
+                    clearHttpConnections();
+                  }
+                } catch (InterruptedException e) {
+                  LOG.error("Filesystem watcher received InterruptedException", e);
+                }
+              }
+            });
+  }
+
+  private void clearHttpConnections() {
+    // Clearing this causes the connectImpl() to recreate new SSLContext
+    HTTP_CONNECTIONS.clear();
   }
 
   private Response getPid(Node node) {
