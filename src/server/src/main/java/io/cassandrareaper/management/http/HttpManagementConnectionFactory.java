@@ -280,6 +280,7 @@ public class HttpManagementConnectionFactory implements IManagementConnectionFac
         () -> {
           while (true) {
             try {
+              clearHttpConnections();
               WatchKey key = watchService.take();
               List<WatchEvent<?>> events = key.pollEvents();
               boolean reloadNeeded = false;
@@ -310,7 +311,8 @@ public class HttpManagementConnectionFactory implements IManagementConnectionFac
         });
   }
 
-  private void clearHttpConnections() {
+  @VisibleForTesting
+  void clearHttpConnections() {
     // Clearing this causes the connectImpl() to recreate new SSLContext
     HTTP_CONNECTIONS.clear();
   }
