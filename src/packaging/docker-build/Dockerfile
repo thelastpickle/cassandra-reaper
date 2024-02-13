@@ -37,6 +37,7 @@ RUN apt-get update \
         rpm \
         ruby-dev \
     && mvn --version \
+    && gem install dotenv -v 2.8.1 \
     && gem install fpm \
     && npm install -g bower
 
