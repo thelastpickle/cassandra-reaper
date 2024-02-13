@@ -33,6 +33,7 @@ import javax.validation.constraints.NotNull;
 import javax.ws.rs.DefaultValue;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.annotations.VisibleForTesting;
 import io.dropwizard.Configuration;
 import io.dropwizard.client.HttpClientConfiguration;
 import org.apache.cassandra.repair.RepairParallelism;
@@ -733,6 +734,21 @@ public final class ReaperApplicationConfiguration extends Configuration {
 
     public String getTruststore() {
       return truststore;
+    }
+
+    @VisibleForTesting
+    public void setEnabled(Boolean enabled) {
+      this.enabled = enabled;
+    }
+
+    @VisibleForTesting
+    public void setKeystore(String keystore) {
+      this.keystore = keystore;
+    }
+
+    @VisibleForTesting
+    public void setTruststore(String truststore) {
+      this.truststore = truststore;
     }
 
     public int getMgmtApiMetricsPort() {
