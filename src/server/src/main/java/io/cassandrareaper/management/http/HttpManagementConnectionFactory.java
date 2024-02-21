@@ -152,7 +152,7 @@ public class HttpManagementConnectionFactory implements IManagementConnectionFac
             (Gauge<Integer>) HTTP_CONNECTIONS::size);
       }
     } catch (IllegalArgumentException e) {
-      LOG.warn("Cannot create openHttoManagementConnections metric gauge", e);
+      LOG.warn("Cannot create openHttpManagementConnections metric gauge", e);
     }
   }
 

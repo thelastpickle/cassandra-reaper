@@ -648,7 +648,7 @@ public class HttpCassandraManagementProxyTest {
   }
 
   @Test
-  public void testgetEndpointToHostId() throws Exception {
+  public void testGetEndpointToHostId() throws Exception {
     DefaultApi mockClient = Mockito.mock(DefaultApi.class);
     EndpointStates states = new EndpointStates();
     states.addEntityItem(ImmutableMap.of(
