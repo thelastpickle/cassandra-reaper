@@ -18,6 +18,8 @@ JACOCO_VERSION="0.8.6"
 REAPER_ENCRYPTION_KEY="SECRET_KEY"
 
 set -xe
+# dont run tests just yet...
+exit 1
 
 function set_java_home() {
     major_version=$1
