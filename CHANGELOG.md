@@ -1,5 +1,13 @@
 ## Change Log
 
+### 3.5.0 (2024/02/22 08:49 +00:00)
+- [#1467](https://github.com/thelastpickle/cassandra-reaper/pull/1467) Add dotenv dependency to the build image (#1467) (@adejanovski)
+- [#1466](https://github.com/thelastpickle/cassandra-reaper/pull/1466) Watch the keystore and truststore directories for changes (#1466) (@burmanm)
+- [#1415](https://github.com/thelastpickle/cassandra-reaper/pull/1415) Add mTLS settings to ApiClient (#1415) (@burmanm)
+- [#1459](https://github.com/thelastpickle/cassandra-reaper/pull/1459) Fix webui login not working in some cases (#1459) (@adejanovski)
+- [#1453](https://github.com/thelastpickle/cassandra-reaper/pull/1453) Pin CI to python 3.11 (#1453) (@adejanovski)
+- [#1267](https://github.com/thelastpickle/cassandra-reaper/pull/1267) Don't strip dash and underscore from metrics' tags (#1267) (@max-melentyev)
+- [#1443](https://github.com/thelastpickle/cassandra-reaper/pull/1443) Remove duplicated `setTimeout` in `error` callback (#1443) (@upsilon2gamma)
 
 ### 3.4.0 (2023/10/25 08:12 +00:00)
 - [#1433](https://github.com/thelastpickle/cassandra-reaper/pull/1433) Filter out Stargate/coordinator nodes from calls to get live nodes or list tokens (#1433) (@adejanovski)
