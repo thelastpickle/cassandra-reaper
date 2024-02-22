@@ -177,7 +177,7 @@ public final class RepairManager implements AutoCloseable {
       Collection<RepairRun> pausedRepairRuns = repairRunDao.getRepairRunsWithState(RepairRun.RunState.PAUSED);
       abortAllRunningSegmentsWithNoLeader(runningRepairRuns);
       abortAllRunningSegmentsInKnownPausedRepairRuns(pausedRepairRuns);
-      resumeUnkownRunningRepairRuns(runningRepairRuns);
+      resumeUnknownRunningRepairRuns(runningRepairRuns);
       resumeUnknownPausedRepairRuns(pausedRepairRuns);
     } catch (RuntimeException e) {
       throw new ReaperException(e);
@@ -199,7 +199,7 @@ public final class RepairManager implements AutoCloseable {
         });
   }
 
-  private void resumeUnkownRunningRepairRuns(Collection<RepairRun> runningRepairRuns) throws ReaperException {
+  private void resumeUnknownRunningRepairRuns(Collection<RepairRun> runningRepairRuns) throws ReaperException {
     try {
       repairRunnersLock.lock();
       for (RepairRun repairRun : runningRepairRuns) {
@@ -247,7 +247,7 @@ public final class RepairManager implements AutoCloseable {
       pausedRepairRuns
           .stream()
           .filter((pausedRepairRun) -> (!repairRunners.containsKey(pausedRepairRun.getId())))
-          // add "paused" repair run to this reaper instance, so it can be visualised in UI
+          // add "paused" repair run to this reaper instance, so it can be visualized in UI
           .forEachOrdered((pausedRepairRun) -> startRunner(pausedRepairRun));
     } finally {
       repairRunnersLock.unlock();
