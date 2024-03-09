@@ -352,7 +352,7 @@ Defines the amount of days to wait between scheduling new repairs. The value con
 
 Type: *Integer*
 
-Default: *16*
+Default: *64*
 
 Defines the default amount of repair segments to create for newly registered Cassandra repair runs, for each node in the cluster. When running a repair run by Reaper, each segment is repaired separately by the Reaper process, until all the segments in a token ring are repaired. The count might be slightly off the defined value, as clusters residing in multiple data centers require additional small token ranges in addition to the expected. This value can be overwritten when executing a repair run via Reaper.
 
