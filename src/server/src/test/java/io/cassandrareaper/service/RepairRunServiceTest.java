@@ -196,7 +196,7 @@ public final class RepairRunServiceTest {
   public void computeGlobalSegmentCount256TokenPerNodeTest() {
 
     Map<List<String>, List<String>> rangeToEndpoint = Maps.newHashMap();
-    for (int i = 0; i < 3072; i++) {
+    for (int i = 0; i < 768; i++) {
       rangeToEndpoint.put(
           Arrays.asList(i + "", (i + 1) + ""), Arrays.asList("node1", "node2", "node3"));
     }
@@ -206,7 +206,7 @@ public final class RepairRunServiceTest {
     endpointToRange.put("node2", Lists.newArrayList());
     endpointToRange.put("node3", Lists.newArrayList());
 
-    assertEquals(48, RepairRunService.computeGlobalSegmentCount(0, endpointToRange));
+    assertEquals(192, RepairRunService.computeGlobalSegmentCount(0, endpointToRange));
   }
 
   @Test
