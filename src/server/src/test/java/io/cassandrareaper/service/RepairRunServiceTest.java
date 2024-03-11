@@ -189,7 +189,7 @@ public final class RepairRunServiceTest {
     endpointToRange.put("node2", Lists.newArrayList());
     endpointToRange.put("node3", Lists.newArrayList());
 
-    assertEquals(48, RepairRunService.computeGlobalSegmentCount(0, endpointToRange));
+    assertEquals(192, RepairRunService.computeGlobalSegmentCount(0, endpointToRange));
   }
 
   @Test
@@ -206,7 +206,7 @@ public final class RepairRunServiceTest {
     endpointToRange.put("node2", Lists.newArrayList());
     endpointToRange.put("node3", Lists.newArrayList());
 
-    assertEquals(48, RepairRunService.computeGlobalSegmentCount(0, endpointToRange));
+    assertEquals(192, RepairRunService.computeGlobalSegmentCount(0, endpointToRange));
   }
 
   @Test

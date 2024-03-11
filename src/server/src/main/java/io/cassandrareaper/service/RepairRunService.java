@@ -62,7 +62,7 @@ public final class RepairRunService {
 
   public static final Splitter COMMA_SEPARATED_LIST_SPLITTER
       = Splitter.on(',').trimResults(CharMatcher.anyOf(" ()[]\"'")).omitEmptyStrings();
-  public static final int DEFAULT_SEGMENT_COUNT_PER_NODE = 16;
+  public static final int DEFAULT_SEGMENT_COUNT_PER_NODE = 64;
 
   private static final Logger LOG = LoggerFactory.getLogger(RepairRunService.class);
 
