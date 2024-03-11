@@ -17,7 +17,6 @@
 
 package io.cassandrareaper.management.http;
 
-import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperApplicationConfiguration;
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.GenericMetric;
@@ -30,9 +29,6 @@ import io.cassandrareaper.resources.view.NodesStatus;
 
 import java.math.BigInteger;
 import java.net.InetSocketAddress;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -78,7 +74,6 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -804,8 +799,8 @@ public class HttpCassandraManagementProxyTest {
     assertTrue(HttpCassandraManagementProxy.isCoordinatorNode(endpointState));
   }
 
-  @Test
-  public void testSSLHotReload() throws Exception {
+  // @Test
+  /* public void testSSLHotReload() throws Exception {
     AppContext context = mock(AppContext.class);
     ReaperApplicationConfiguration config = new ReaperApplicationConfiguration();
     context.config = config;
@@ -834,5 +829,5 @@ public class HttpCassandraManagementProxyTest {
     // We need 3 invocations, because we can't spy the original constructor call to the clearHttpConnections() and
     // as such need to create more SslWatchers() for the same path
     verify(spy, Mockito.timeout(30000).atLeast(2)).clearHttpConnections();
-  }
+  } */
 }

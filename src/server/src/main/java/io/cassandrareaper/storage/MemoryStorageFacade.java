@@ -23,6 +23,7 @@ import io.cassandrareaper.storage.cluster.IClusterDao;
 import io.cassandrareaper.storage.cluster.MemoryClusterDao;
 import io.cassandrareaper.storage.events.IEventsDao;
 import io.cassandrareaper.storage.events.MemoryEventsDao;
+import io.cassandrareaper.storage.memory.MemoryStorageRoot;
 import io.cassandrareaper.storage.metrics.MemoryMetricsDao;
 import io.cassandrareaper.storage.repairrun.IRepairRunDao;
 import io.cassandrareaper.storage.repairrun.MemoryRepairRunDao;
@@ -35,9 +36,12 @@ import io.cassandrareaper.storage.repairunit.MemoryRepairUnitDao;
 import io.cassandrareaper.storage.snapshot.ISnapshotDao;
 import io.cassandrareaper.storage.snapshot.MemorySnapshotDao;
 
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.UUID;
 
+import org.eclipse.store.storage.embedded.types.EmbeddedStorage;
+import org.eclipse.store.storage.embedded.types.EmbeddedStorageManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,12 +52,16 @@ import org.slf4j.LoggerFactory;
 public final class MemoryStorageFacade implements IStorageDao {
 
   private static final Logger LOG = LoggerFactory.getLogger(MemoryStorageFacade.class);
+  public final MemoryStorageRoot memoryStorageRoot;
+  public final EmbeddedStorageManager embeddedStorage;
   private final MemoryRepairSegmentDao memRepairSegment = new MemoryRepairSegmentDao(this);
-  private final MemoryRepairUnitDao memoryRepairUnitDao = new MemoryRepairUnitDao();
-  private final MemoryRepairRunDao memoryRepairRunDao = new MemoryRepairRunDao(memRepairSegment, memoryRepairUnitDao);
-  private final MemoryRepairScheduleDao memRepairScheduleDao = new MemoryRepairScheduleDao(memoryRepairUnitDao);
-  private final MemoryEventsDao memEventsDao = new MemoryEventsDao();
+  private final MemoryRepairUnitDao memoryRepairUnitDao = new MemoryRepairUnitDao(this);
+  private final MemoryRepairRunDao memoryRepairRunDao =
+      new MemoryRepairRunDao(this, memRepairSegment, memoryRepairUnitDao);
+  private final MemoryRepairScheduleDao memRepairScheduleDao = new MemoryRepairScheduleDao(this, memoryRepairUnitDao);
+  private final MemoryEventsDao memEventsDao = new MemoryEventsDao(this);
   private final MemoryClusterDao memClusterDao = new MemoryClusterDao(
+      this,
       memoryRepairUnitDao,
       memoryRepairRunDao,
       memRepairScheduleDao,
@@ -61,6 +69,29 @@ public final class MemoryStorageFacade implements IStorageDao {
   );
   private final MemorySnapshotDao memSnapshotDao = new MemorySnapshotDao();
   private final MemoryMetricsDao memMetricsDao = new MemoryMetricsDao();
+
+  public MemoryStorageFacade(String persistenceStoragePath) {
+    LOG.info("Using memory storage backend. Persistence storage path: {}", persistenceStoragePath);
+    this.embeddedStorage = EmbeddedStorage.start(Paths.get(persistenceStoragePath));
+    if (embeddedStorage.root() == null) {
+      LOG.info("Creating new data storage");
+      this.memoryStorageRoot = new MemoryStorageRoot();
+      embeddedStorage.setRoot(this.memoryStorageRoot);
+    } else {
+      LOG.info("Loading existing data from persistence storage");
+      this.memoryStorageRoot = (MemoryStorageRoot) embeddedStorage.root();
+      LOG.info("Loaded {} clusters: {}",
+          memoryStorageRoot.getClusters().size(), memoryStorageRoot.getClusters().keySet());
+      memoryStorageRoot.getClusters().entrySet().stream().forEach(entry -> {
+        Cluster cluster = entry.getValue();
+        LOG.info("Loaded cluster: {} / seeds: {}", cluster.getName(), cluster.getSeedHosts());
+      });
+    }
+  }
+
+  public MemoryStorageFacade() {
+    this("/tmp/" + UUID.randomUUID().toString());
+  }
 
   @Override
   public boolean isStorageConnected() {
@@ -89,7 +120,7 @@ public final class MemoryStorageFacade implements IStorageDao {
 
   @Override
   public void stop() {
-    // no-op
+    embeddedStorage.shutdown();
   }
 
   @Override
@@ -127,4 +158,11 @@ public final class MemoryStorageFacade implements IStorageDao {
     return this.memClusterDao;
   }
 
+  public synchronized void persistChanges() {
+    LOG.info("Persisting changes to storage");
+    MemoryStorageRoot root = (MemoryStorageRoot) embeddedStorage.root();
+    this.embeddedStorage.setRoot(root);
+    embeddedStorage.storeRoot();
+  }
 }
+

@@ -18,32 +18,31 @@
 package io.cassandrareaper.storage.events;
 
 import io.cassandrareaper.core.DiagEventSubscription;
+import io.cassandrareaper.storage.MemoryStorageFacade;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentMap;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Maps;
 
 public class MemoryEventsDao implements IEventsDao {
-  private final ConcurrentMap<UUID, DiagEventSubscription> subscriptionsById = Maps.newConcurrentMap();
+  private final MemoryStorageFacade storage;
 
-  public MemoryEventsDao() {
-
+  public MemoryEventsDao(MemoryStorageFacade storage) {
+    this.storage = storage;
   }
 
   @Override
   public Collection<DiagEventSubscription> getEventSubscriptions() {
-    return subscriptionsById.values();
+    return storage.memoryStorageRoot.subscriptionsById.values();
   }
 
   @Override
   public Collection<DiagEventSubscription> getEventSubscriptions(String clusterName) {
     Preconditions.checkNotNull(clusterName);
     Collection<DiagEventSubscription> ret = new ArrayList<DiagEventSubscription>();
-    for (DiagEventSubscription sub : subscriptionsById.values()) {
+    for (DiagEventSubscription sub : storage.memoryStorageRoot.subscriptionsById.values()) {
       if (sub.getCluster().equals(clusterName)) {
         ret.add(sub);
       }
@@ -53,8 +52,8 @@ public class MemoryEventsDao implements IEventsDao {
 
   @Override
   public DiagEventSubscription getEventSubscription(UUID id) {
-    if (subscriptionsById.containsKey(id)) {
-      return subscriptionsById.get(id);
+    if (storage.memoryStorageRoot.subscriptionsById.containsKey(id)) {
+      return storage.memoryStorageRoot.subscriptionsById.get(id);
     }
     throw new IllegalArgumentException("No event subscription with id " + id);
   }
@@ -62,12 +61,15 @@ public class MemoryEventsDao implements IEventsDao {
   @Override
   public DiagEventSubscription addEventSubscription(DiagEventSubscription subscription) {
     Preconditions.checkArgument(subscription.getId().isPresent());
-    subscriptionsById.put(subscription.getId().get(), subscription);
+    storage.memoryStorageRoot.subscriptionsById.put(subscription.getId().get(), subscription);
+    storage.persistChanges();
     return subscription;
   }
 
   @Override
   public boolean deleteEventSubscription(UUID id) {
-    return subscriptionsById.remove(id) != null;
+    boolean result = storage.memoryStorageRoot.subscriptionsById.remove(id) != null;
+    storage.persistChanges();
+    return result;
   }
 }

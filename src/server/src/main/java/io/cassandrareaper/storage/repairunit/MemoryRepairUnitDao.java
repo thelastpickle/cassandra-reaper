@@ -18,20 +18,19 @@
 package io.cassandrareaper.storage.repairunit;
 
 import io.cassandrareaper.core.RepairUnit;
+import io.cassandrareaper.storage.MemoryStorageFacade;
 
 import java.util.Optional;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentMap;
 
 import com.datastax.driver.core.utils.UUIDs;
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Maps;
 
 public class MemoryRepairUnitDao implements IRepairUnitDao {
-  public final ConcurrentMap<UUID, RepairUnit> repairUnits = Maps.newConcurrentMap();
-  public final ConcurrentMap<RepairUnit.Builder, RepairUnit> repairUnitsByKey = Maps.newConcurrentMap();
+  private final MemoryStorageFacade storage;
 
-  public MemoryRepairUnitDao() {
+  public MemoryRepairUnitDao(MemoryStorageFacade storage) {
+    this.storage = storage;
   }
 
   /**
@@ -48,27 +47,29 @@ public class MemoryRepairUnitDao implements IRepairUnitDao {
       return existing.get();
     } else {
       RepairUnit newRepairUnit = repairUnit.build(UUIDs.timeBased());
-      repairUnits.put(newRepairUnit.getId(), newRepairUnit);
-      repairUnitsByKey.put(repairUnit, newRepairUnit);
+      storage.memoryStorageRoot.repairUnits.put(newRepairUnit.getId(), newRepairUnit);
+      storage.memoryStorageRoot.repairUnitsByKey.put(repairUnit, newRepairUnit);
+      storage.persistChanges();
       return newRepairUnit;
     }
   }
 
   @Override
   public void updateRepairUnit(RepairUnit updatedRepairUnit) {
-    repairUnits.put(updatedRepairUnit.getId(), updatedRepairUnit);
-    repairUnitsByKey.put(updatedRepairUnit.with(), updatedRepairUnit);
+    storage.memoryStorageRoot.repairUnits.put(updatedRepairUnit.getId(), updatedRepairUnit);
+    storage.memoryStorageRoot.repairUnitsByKey.put(updatedRepairUnit.with(), updatedRepairUnit);
+    storage.persistChanges();
   }
 
   @Override
   public RepairUnit getRepairUnit(UUID id) {
-    RepairUnit unit = repairUnits.get(id);
+    RepairUnit unit = storage.memoryStorageRoot.repairUnits.get(id);
     Preconditions.checkArgument(null != unit);
     return unit;
   }
 
   @Override
   public Optional<RepairUnit> getRepairUnit(RepairUnit.Builder params) {
-    return Optional.ofNullable(repairUnitsByKey.get(params));
+    return Optional.ofNullable(storage.memoryStorageRoot.repairUnitsByKey.get(params));
   }
 }
