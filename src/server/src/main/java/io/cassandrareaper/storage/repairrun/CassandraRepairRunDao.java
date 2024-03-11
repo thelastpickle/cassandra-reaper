@@ -395,15 +395,18 @@ public class CassandraRepairRunDao implements IRepairRunDao {
                 )
         )
     );
+
     // Defuture the repair_run rows and build the strongly typed RepairRun objects from the contents.
     return repairRunFutures
         .stream()
         .map(
             row -> {
               Row extractedRow = row.getUninterruptibly().one();
-              return buildRepairRunFromRow(extractedRow, extractedRow.getUUID("id"));
+              return (extractedRow == null)
+                      ? (null)
+                      : (buildRepairRunFromRow(extractedRow, extractedRow.getUUID("id")));
             }
-        ).collect(Collectors.toList());
+        ).filter(x -> x != null).collect(Collectors.toList());
   }
 
   @Override
