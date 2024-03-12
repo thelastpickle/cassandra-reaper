@@ -14,6 +14,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Expect k8s credentials to be stored in:
+# - ${REAPER_JMX_CREDENTIALS_K8S_PATH}/cluster/username
+# - ${REAPER_JMX_CREDENTIALS_K8S_PATH}/cluster/password
+# This is the default behavior when using k8s secrets, refs:
+# - https://kubernetes.io/docs/concepts/configuration/secret/#using-secrets-as-files-from-a-pod
+# - https://kubernetes.io/docs/concepts/configuration/secret/#consuming-secret-values-from-volumes
+if [ ! -z "${REAPER_JMX_CREDENTIALS_K8S_PATH}" ]; then
+    for d in $(find "${REAPER_JMX_CREDENTIALS_K8S_PATH}" -type d -depth 1) ; do
+	CLUSTER=$(basename $d)
+	USERNAME=$(cat "${d}/username")
+	PASSWORD=$(cat "${d}/password")
+	if [ ! -z "${REAPER_JMX_CREDENTIALS}" ]; then
+	    REAPER_JMX_CREDENTIALS+=","
+	fi
+	# Add to the existing ${REAPER_JMX_CREDENTIALS} chain of credentials,
+	# so that both ways of specifying passwords are compatible.
+	REAPER_JMX_CREDENTIALS+="${USERNAME}:${PASSWORD}@${CLUSTER}"
+    done
+fi
+
 # we expect the jmx credentials to be a comma-separated list of 'user:password@cluster' entries
 if [ ! -z "${REAPER_JMX_CREDENTIALS}" ]; then
 
@@ -40,6 +60,26 @@ EOT
 fi
 
 
+# Expect k8s credentials to be stored in:
+# - ${REAPER_JMX_AUTH_K8S_PATH}/username
+# - ${REAPER_JMX_AUTH_K8S_PATH}/password
+if [ ! -z "${REAPER_JMX_AUTH_K8S_PATH}" ]; then
+    # Override any existing env var, if using kubernetes-style secrets,
+    # it overides the default behavior.
+    if [ -f "${REAPER_JMX_AUTH_K8S_PATH}/username" ] ; then
+        REAPER_JMX_AUTH_USERNAME=$(cat "${REAPER_JMX_AUTH_K8S_PATH}/username")
+    else
+	echo "k8s username file ${REAPER_JMX_AUTH_K8S_PATH}/username not found"
+	exit 1
+    fi
+    if [ -f "${REAPER_JMX_AUTH_K8S_PATH}/password" ] ; then
+        REAPER_JMX_AUTH_PASSWORD=$(cat "${REAPER_JMX_AUTH_K8S_PATH}/password")
+    else
+	echo "k8s password file ${REAPER_JMX_AUTH_K8S_PATH}/password not found"
+	exit 1
+    fi
+fi
+
 if [ ! -z "${REAPER_JMX_AUTH_USERNAME}" ]; then
 cat <<EOT >> /etc/cassandra-reaper/cassandra-reaper.yml
 jmxAuth:
@@ -47,6 +87,19 @@ jmxAuth:
   password: "$(echo "${REAPER_JMX_AUTH_PASSWORD}" | sed 's/"/\\"/g')"
 EOT
 
+fi
+
+# Expect k8s credentials (password only, no user) to be in:
+# - ${CRYPTO_SYSTEM_PROPERTY_SECRET_K8S_PATH}/password
+if [ ! -z "${CRYPTO_SYSTEM_PROPERTY_SECRET_K8S_PATH}" ]; then
+    # Override existing env var, if using kubernetes-style secrets,
+    # it overides the default behavior.
+    if [ -f "${CRYPTO_SYSTEM_PROPERTY_SECRET_K8S_PATH}/password" ] ; then
+        CRYPTO_SYSTEM_PROPERTY_SECRET=$(cat "${CRYPTO_SYSTEM_PROPERTY_SECRET_K8S_PATH}/password")
+    else
+        echo "k8s system property secret file ${CRYPTO_SYSTEM_PROPERTY_SECRET_K8S_PATH}/password not found"
+	exit 1
+    fi
 fi
 
 if [ ! -z "${CRYPTO_SYSTEM_PROPERTY_SECRET}" ]; then
