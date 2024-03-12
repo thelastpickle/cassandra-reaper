@@ -15,7 +15,7 @@
 --
 -- Add a table to control the number of concurrent repairs
 
-CREATE TABLE running_repairs(
+CREATE TABLE IF NOT EXISTS running_repairs(
      repair_id uuid,
      node text,
      reaper_instance_host text,
