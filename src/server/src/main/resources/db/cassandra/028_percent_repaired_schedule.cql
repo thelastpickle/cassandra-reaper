@@ -15,7 +15,7 @@
 --
 -- Add a table to store the percent repaired metrics for incremental repair schedules
 
-CREATE TABLE percent_repaired_by_schedule(
+CREATE TABLE IF NOT EXISTS percent_repaired_by_schedule(
      cluster_name text,
      repair_schedule_id uuid,
      time_bucket text,
