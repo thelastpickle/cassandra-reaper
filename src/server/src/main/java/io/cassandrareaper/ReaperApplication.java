@@ -58,6 +58,7 @@ import javax.servlet.DispatcherType;
 import javax.servlet.FilterRegistration;
 
 import com.codahale.metrics.InstrumentedScheduledExecutorService;
+import com.fasterxml.jackson.datatype.joda.JodaModule;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
@@ -127,7 +128,7 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
   public void initialize(Bootstrap<ReaperApplicationConfiguration> bootstrap) {
     bootstrap.addCommand(new ReaperDbMigrationCommand("schema-migration", "Performs database schema migrations"));
     bootstrap.addBundle(new AssetsBundle("/assets/", "/webui", "index.html"));
-    bootstrap.getObjectMapper().registerModule(new JavaTimeModule());
+    bootstrap.getObjectMapper().registerModule(new JavaTimeModule()).registerModule(new JodaModule());
 
     // enable using environment variables in yml files
     final SubstitutingSourceProvider envSourceProvider = new SubstitutingSourceProvider(
