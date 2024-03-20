@@ -41,7 +41,7 @@ deb: prepare
 	fpm -s dir -t deb -a all -n reaper -v $(VERSION) --pre-install debian/preinstall.sh --post-install debian/postinstall.sh -C build .
 
 rpm: prepare
-	fpm -s dir -t rpm -a all -n reaper -v $(VERSION) --pre-install redhat/preinstall.sh --post-install redhat/postinstall.sh --config-files /etc/cassandra-reaper/cassandra-reaper.yaml -C build .
+	fpm -s dir -t rpm --rpm-digest sha256 -a all -n reaper -v $(VERSION) --pre-install redhat/preinstall.sh --post-install redhat/postinstall.sh --config-files /etc/cassandra-reaper/cassandra-reaper.yaml -C build .
 
 all: package deb rpm
 
