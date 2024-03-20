@@ -60,7 +60,6 @@ import javax.management.ReflectionException;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.cache.Cache;
@@ -68,6 +67,7 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.ExecutionError;
+import io.dropwizard.jackson.Jackson;
 import org.apache.commons.lang3.tuple.Pair;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
@@ -180,8 +180,9 @@ public final class ClusterFacade {
 
   private static <T> T parseJson(String json, TypeReference<T> ref) throws IOException {
     try {
-      ObjectMapper mapper = new ObjectMapper();
-      mapper.registerModule(new Jdk8Module());
+      // ObjectMapper mapper = new ObjectMapper();
+      // mapper.registerModule(new Jdk8Module());
+      ObjectMapper mapper = Jackson.newObjectMapper();
       return mapper.readValue(json, ref);
     } catch (IOException e) {
       LOG.error("Error parsing json", e);

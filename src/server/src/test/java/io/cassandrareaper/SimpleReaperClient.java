@@ -46,6 +46,7 @@ import javax.ws.rs.core.Response;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.joda.JodaModule;
 import com.google.common.collect.Maps;
 
 import org.slf4j.Logger;
@@ -127,7 +128,7 @@ public final class SimpleReaperClient {
 
   private static <T> T parseJSON(String json, TypeReference<T> ref) {
     try {
-      return new ObjectMapper().readValue(json, ref);
+      return new ObjectMapper().registerModule(new JodaModule()).readValue(json, ref);
     } catch (IOException e) {
       LOG.error("error parsing json", e);
       throw new RuntimeException(e);
