@@ -17,6 +17,7 @@
 
 package io.cassandrareaper.core;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
@@ -113,6 +114,21 @@ public final class RepairSchedule extends EditableRepairSchedule {
   @Override
   public String toString() {
     return String.format("%s[%s]", getClass().getSimpleName(), id.toString());
+  }
+
+  public String toPrintableString() {
+    StringBuilder buf = new StringBuilder();
+    buf.append("ID: ").append(this.id)
+        .append(", Repair Unit ID: ").append(this.repairUnitId)
+        .append(", State: ").append(this.state)
+        .append(", Run History: ").append(Arrays.toString(this.runHistory.toArray()))
+        .append(", Creation Time: ").append(this.creationTime)
+        .append(", Pause Time: ").append(this.pauseTime)
+        .append(", Next Activation: ").append(this.nextActivation)
+        .append(", Last Run: ").append(this.lastRun)
+        .append(", Owner: ").append(this.owner)
+        .append(", Days between: ").append(this.daysBetween);
+    return buf.toString();
   }
 
   public enum State {

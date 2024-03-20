@@ -53,15 +53,13 @@ public class MemoryClusterDao implements IClusterDao {
 
   @Override
   public Collection<Cluster> getClusters() {
-    return storage.memoryStorageRoot.getClusters().values();
+    return storage.getClusters().values();
   }
 
   @Override
   public boolean addCluster(Cluster cluster) {
     assert addClusterAssertions(cluster);
-    Cluster existing = storage.memoryStorageRoot.addCluster(cluster);
-    storage.embeddedStorage.storeAll(storage.memoryStorageRoot.getClusters());
-    storage.persistChanges();
+    Cluster existing = storage.addCluster(cluster);
     return existing == null;
   }
 
@@ -100,8 +98,8 @@ public class MemoryClusterDao implements IClusterDao {
   @Override
   public Cluster getCluster(String clusterName) {
     Preconditions.checkArgument(
-          storage.memoryStorageRoot.getClusters().containsKey(clusterName), "no such cluster: %s", clusterName);
-    return storage.memoryStorageRoot.getClusters().get(clusterName);
+          storage.getClusters().containsKey(clusterName), "no such cluster: %s", clusterName);
+    return storage.getClusters().get(clusterName);
   }
 
   @Override
@@ -117,18 +115,16 @@ public class MemoryClusterDao implements IClusterDao {
           .filter(subscription -> subscription.getId().isPresent())
           .forEach(subscription -> memEventsDao.deleteEventSubscription(subscription.getId().get()));
 
-    storage.memoryStorageRoot.repairUnits.values().stream()
+    storage.getRepairUnits().stream()
           .filter((unit) -> unit.getClusterName().equals(clusterName))
           .forEach((unit) -> {
             assert memoryRepairRunDao.getRepairRunsForUnit(
                   unit.getId()).isEmpty() : StringUtils.join(memoryRepairRunDao.getRepairRunsForUnit(unit.getId())
             );
-            storage.memoryStorageRoot.repairUnits.remove(unit.getId());
-            storage.memoryStorageRoot.repairUnitsByKey.remove(unit.with());
+            storage.removeRepairUnit(Optional.ofNullable(unit.with()), unit.getId());
           });
 
-    Cluster removed = storage.memoryStorageRoot.removeCluster(clusterName);
-    storage.persistChanges();
+    Cluster removed = storage.removeCluster(clusterName);
     return removed;
   }
 }

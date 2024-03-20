@@ -35,14 +35,14 @@ public class MemoryEventsDao implements IEventsDao {
 
   @Override
   public Collection<DiagEventSubscription> getEventSubscriptions() {
-    return storage.memoryStorageRoot.subscriptionsById.values();
+    return storage.getSubscriptionsById().values();
   }
 
   @Override
   public Collection<DiagEventSubscription> getEventSubscriptions(String clusterName) {
     Preconditions.checkNotNull(clusterName);
     Collection<DiagEventSubscription> ret = new ArrayList<DiagEventSubscription>();
-    for (DiagEventSubscription sub : storage.memoryStorageRoot.subscriptionsById.values()) {
+    for (DiagEventSubscription sub : storage.getSubscriptionsById().values()) {
       if (sub.getCluster().equals(clusterName)) {
         ret.add(sub);
       }
@@ -52,8 +52,8 @@ public class MemoryEventsDao implements IEventsDao {
 
   @Override
   public DiagEventSubscription getEventSubscription(UUID id) {
-    if (storage.memoryStorageRoot.subscriptionsById.containsKey(id)) {
-      return storage.memoryStorageRoot.subscriptionsById.get(id);
+    if (storage.getSubscriptionsById().containsKey(id)) {
+      return storage.getSubscriptionsById().get(id);
     }
     throw new IllegalArgumentException("No event subscription with id " + id);
   }
@@ -61,15 +61,13 @@ public class MemoryEventsDao implements IEventsDao {
   @Override
   public DiagEventSubscription addEventSubscription(DiagEventSubscription subscription) {
     Preconditions.checkArgument(subscription.getId().isPresent());
-    storage.memoryStorageRoot.subscriptionsById.put(subscription.getId().get(), subscription);
-    storage.persistChanges();
+    storage.getSubscriptionsById().put(subscription.getId().get(), subscription);
     return subscription;
   }
 
   @Override
   public boolean deleteEventSubscription(UUID id) {
-    boolean result = storage.memoryStorageRoot.subscriptionsById.remove(id) != null;
-    storage.persistChanges();
+    boolean result = storage.getSubscriptionsById().remove(id) != null;
     return result;
   }
 }

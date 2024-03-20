@@ -41,35 +41,31 @@ public class MemoryRepairUnitDao implements IRepairUnitDao {
    */
 
   @Override
-  public RepairUnit addRepairUnit(RepairUnit.Builder repairUnit) {
-    Optional<RepairUnit> existing = getRepairUnit(repairUnit);
-    if (existing.isPresent() && repairUnit.incrementalRepair == existing.get().getIncrementalRepair()) {
+  public RepairUnit addRepairUnit(RepairUnit.Builder repairUnitBuilder) {
+    Optional<RepairUnit> existing = getRepairUnit(repairUnitBuilder);
+    if (existing.isPresent() && repairUnitBuilder.incrementalRepair == existing.get().getIncrementalRepair()) {
       return existing.get();
     } else {
-      RepairUnit newRepairUnit = repairUnit.build(UUIDs.timeBased());
-      storage.memoryStorageRoot.repairUnits.put(newRepairUnit.getId(), newRepairUnit);
-      storage.memoryStorageRoot.repairUnitsByKey.put(repairUnit, newRepairUnit);
-      storage.persistChanges();
+      RepairUnit newRepairUnit = repairUnitBuilder.build(UUIDs.timeBased());
+      storage.addRepairUnit(Optional.ofNullable(repairUnitBuilder), newRepairUnit);
       return newRepairUnit;
     }
   }
 
   @Override
   public void updateRepairUnit(RepairUnit updatedRepairUnit) {
-    storage.memoryStorageRoot.repairUnits.put(updatedRepairUnit.getId(), updatedRepairUnit);
-    storage.memoryStorageRoot.repairUnitsByKey.put(updatedRepairUnit.with(), updatedRepairUnit);
-    storage.persistChanges();
+    storage.addRepairUnit(Optional.ofNullable(updatedRepairUnit.with()), updatedRepairUnit);
   }
 
   @Override
   public RepairUnit getRepairUnit(UUID id) {
-    RepairUnit unit = storage.memoryStorageRoot.repairUnits.get(id);
+    RepairUnit unit = storage.getRepairUnitById(id);
     Preconditions.checkArgument(null != unit);
     return unit;
   }
 
   @Override
-  public Optional<RepairUnit> getRepairUnit(RepairUnit.Builder params) {
-    return Optional.ofNullable(storage.memoryStorageRoot.repairUnitsByKey.get(params));
+  public Optional<RepairUnit> getRepairUnit(RepairUnit.Builder repairUnitBuilder) {
+    return Optional.ofNullable(storage.getRepairUnitByKey(repairUnitBuilder));
   }
 }

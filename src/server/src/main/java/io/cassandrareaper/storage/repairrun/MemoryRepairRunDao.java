@@ -99,9 +99,8 @@ public class MemoryRepairRunDao implements IRepairRunDao {
   @Override
   public RepairRun addRepairRun(RepairRun.Builder repairRun, Collection<RepairSegment.Builder> newSegments) {
     RepairRun newRepairRun = repairRun.build(UUIDs.timeBased());
-    storage.memoryStorageRoot.repairRuns.put(newRepairRun.getId(), newRepairRun);
+    storage.addRepairRun(newRepairRun);
     memRepairSegment.addRepairSegments(newSegments, newRepairRun.getId());
-    storage.persistChanges();
     return newRepairRun;
   }
 
@@ -115,22 +114,23 @@ public class MemoryRepairRunDao implements IRepairRunDao {
     if (!getRepairRun(repairRun.getId()).isPresent()) {
       return false;
     } else {
-      storage.memoryStorageRoot.repairRuns.put(repairRun.getId(), repairRun);
-      storage.persistChanges();
+      storage.addRepairRun(repairRun);
       return true;
     }
   }
 
 
   public Optional<RepairRun> getRepairRun(UUID id) {
-    return Optional.ofNullable(storage.memoryStorageRoot.repairRuns.get(id));
+    return storage.getRepairRunById(id);
   }
 
 
   public List<RepairRun> getRepairRunsForCluster(String clusterName, Optional<Integer> limit) {
     List<RepairRun> foundRepairRuns = new ArrayList<RepairRun>();
     TreeMap<UUID, RepairRun> reverseOrder = new TreeMap<UUID, RepairRun>(Collections.reverseOrder());
-    reverseOrder.putAll(storage.memoryStorageRoot.repairRuns);
+    storage.getRepairRuns().forEach(repairRun -> {
+      reverseOrder.put(repairRun.getId(), repairRun);
+    });
     for (RepairRun repairRun : reverseOrder.values()) {
       if (repairRun.getClusterName().equalsIgnoreCase(clusterName)) {
         foundRepairRuns.add(repairRun);
@@ -144,8 +144,7 @@ public class MemoryRepairRunDao implements IRepairRunDao {
 
 
   public List<RepairRun> getRepairRunsForClusterPrioritiseRunning(String clusterName, Optional<Integer> limit) {
-    List<RepairRun> foundRepairRuns = storage.memoryStorageRoot.repairRuns
-        .values()
+    List<RepairRun> foundRepairRuns = storage.getRepairRuns()
         .stream()
         .filter(
             row -> row.getClusterName().equals(clusterName.toLowerCase(Locale.ROOT))).collect(Collectors.toList()
@@ -157,7 +156,7 @@ public class MemoryRepairRunDao implements IRepairRunDao {
 
   public Collection<RepairRun> getRepairRunsForUnit(UUID repairUnitId) {
     List<RepairRun> foundRepairRuns = new ArrayList<RepairRun>();
-    for (RepairRun repairRun : storage.memoryStorageRoot.repairRuns.values()) {
+    for (RepairRun repairRun : storage.getRepairRuns()) {
       if (repairRun.getRepairUnitId().equals(repairUnitId)) {
         foundRepairRuns.add(repairRun);
       }
@@ -168,7 +167,7 @@ public class MemoryRepairRunDao implements IRepairRunDao {
 
   public Collection<RepairRun> getRepairRunsWithState(RepairRun.RunState runState) {
     List<RepairRun> foundRepairRuns = new ArrayList<RepairRun>();
-    for (RepairRun repairRun : storage.memoryStorageRoot.repairRuns.values()) {
+    for (RepairRun repairRun : storage.getRepairRuns()) {
       if (repairRun.getRunState() == runState) {
         foundRepairRuns.add(repairRun);
       }
@@ -178,7 +177,7 @@ public class MemoryRepairRunDao implements IRepairRunDao {
 
 
   public Optional<RepairRun> deleteRepairRun(UUID id) {
-    RepairRun deletedRun = storage.memoryStorageRoot.repairRuns.remove(id);
+    RepairRun deletedRun = storage.removeRepairRun(id);
     if (deletedRun != null) {
       if (memRepairSegment.getSegmentAmountForRepairRunWithState(id, RepairSegment.State.RUNNING) == 0) {
         memRepairSegment.deleteRepairSegmentsForRun(id);
@@ -195,7 +194,7 @@ public class MemoryRepairRunDao implements IRepairRunDao {
 
   public SortedSet<UUID> getRepairRunIdsForCluster(String clusterName, Optional<Integer> limit) {
     SortedSet<UUID> repairRunIds = Sets.newTreeSet((u0, u1) -> (int) (u0.timestamp() - u1.timestamp()));
-    for (RepairRun repairRun : storage.memoryStorageRoot.repairRuns.values()) {
+    for (RepairRun repairRun : storage.getRepairRuns()) {
       if (repairRun.getClusterName().equalsIgnoreCase(clusterName)) {
         repairRunIds.add(repairRun.getId());
       }

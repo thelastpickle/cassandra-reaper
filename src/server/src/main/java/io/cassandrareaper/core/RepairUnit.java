@@ -94,6 +94,15 @@ public final class RepairUnit {
     return timeout;
   }
 
+  @Override
+  public String toString() {
+    StringBuilder buf = new StringBuilder();
+    buf.append("ID: ").append(this.id)
+        .append(", Cluster name: ").append(this.clusterName)
+        .append(", Keyspace name: ").append(this.keyspaceName);
+    return buf.toString();
+  }
+
   public Builder with() {
     return new Builder(this);
   }
