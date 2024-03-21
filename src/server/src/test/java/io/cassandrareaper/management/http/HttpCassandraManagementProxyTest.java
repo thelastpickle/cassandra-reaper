@@ -811,8 +811,8 @@ public class HttpCassandraManagementProxyTest {
     context.config = config;
 
     Path tempDirectory = Files.createTempDirectory("reload-test");
-    Path ks = Paths.get("/home/runner/work/cassandra-reaper/cassandra-reaper/.github/files/keystore.jks");
-    Path ts = Paths.get("/home/runner/work/cassandra-reaper/cassandra-reaper/.github/files/truststore.jks");
+    Path ks = Paths.get("../../.github/files/keystore.jks");
+    Path ts = Paths.get("../../.github/files/truststore.jks");
 
     Path tsCopy =
         Files.copy(ts, tempDirectory.resolve(ts.getFileName()));
