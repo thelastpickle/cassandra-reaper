@@ -183,7 +183,6 @@ public final class ClusterFacade {
     try {
       ObjectMapper mapper = new ObjectMapper();
       mapper.registerModule(new Jdk8Module()).registerModule(new JodaModule());
-      // ObjectMapper mapper = Jackson.newObjectMapper();
       return mapper.readValue(json, ref);
     } catch (IOException e) {
       LOG.error("Error parsing json", e);
