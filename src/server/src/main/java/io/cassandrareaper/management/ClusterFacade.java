@@ -61,6 +61,7 @@ import javax.management.ReflectionException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
+import com.fasterxml.jackson.datatype.joda.JodaModule;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.cache.Cache;
@@ -181,7 +182,7 @@ public final class ClusterFacade {
   private static <T> T parseJson(String json, TypeReference<T> ref) throws IOException {
     try {
       ObjectMapper mapper = new ObjectMapper();
-      mapper.registerModule(new Jdk8Module());
+      mapper.registerModule(new Jdk8Module()).registerModule(new JodaModule());
       return mapper.readValue(json, ref);
     } catch (IOException e) {
       LOG.error("Error parsing json", e);
