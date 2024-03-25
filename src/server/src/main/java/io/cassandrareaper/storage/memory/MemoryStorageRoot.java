@@ -23,7 +23,6 @@ import io.cassandrareaper.core.RepairSchedule;
 import io.cassandrareaper.core.RepairSegment;
 import io.cassandrareaper.core.RepairUnit;
 
-import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -152,26 +151,10 @@ public final class MemoryStorageRoot {
     return this.subscriptionsById;
   }
 
-  @Override
-  public String toString() {
+  public static String toString(RepairSegment segment) {
     StringBuilder buf = new StringBuilder();
-    buf.append("Clusters: [");
-    clusters.entrySet().stream().forEach(entry -> {
-      Cluster cluster = entry.getValue();
-      buf.append(cluster.getName()).append("(").append(Arrays.toString(cluster.getSeedHosts().toArray())).append("),");
-    });
-    buf.append("], Repair Schedules: [");
-    repairSchedules.entrySet().stream().forEach(entry -> {
-      RepairSchedule schedule = entry.getValue();
-      buf.append(schedule.toPrintableString()).append(",");
-    });
-    buf.append("], Repair Runs: [");
-    repairRuns.entrySet().stream().forEach(entry -> {
-      RepairRun run = entry.getValue();
-      buf.append(run).append("(State: ").append(run.getRunState()).append(", Tables: ")
-          .append(Arrays.toString(run.getTables().toArray())).append("),");
-    });
-    buf.append("]");
+    buf.append("RepairSegment ID: ").append(segment.getId())
+        .append(", Token range: ").append(segment.getTokenRange());
     return buf.toString();
   }
 }

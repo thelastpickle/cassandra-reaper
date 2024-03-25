@@ -74,7 +74,7 @@ public class MemoryRepairSegmentDao implements IRepairSegmentDao {
 
   @Override
   public Optional<RepairSegment> getRepairSegment(UUID runId, UUID segmentId) {
-    return Optional.ofNullable(memoryStorageFacade.getRepairSegmentById(runId));
+    return Optional.ofNullable(memoryStorageFacade.getRepairSegmentById(segmentId));
   }
 
   @Override

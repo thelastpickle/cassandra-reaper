@@ -42,6 +42,7 @@ import io.cassandrareaper.storage.snapshot.ISnapshotDao;
 import io.cassandrareaper.storage.snapshot.MemorySnapshotDao;
 
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -50,6 +51,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.eclipse.serializer.persistence.types.PersistenceFieldEvaluator;
 import org.eclipse.store.storage.embedded.types.EmbeddedStorage;
 import org.eclipse.store.storage.embedded.types.EmbeddedStorageManager;
 import org.slf4j.Logger;
@@ -62,6 +64,12 @@ import org.slf4j.LoggerFactory;
 public final class MemoryStorageFacade implements IStorageDao {
 
   private static final Logger LOG = LoggerFactory.getLogger(MemoryStorageFacade.class);
+
+  /** Field evaluator to find transient attributes. This is needed to deal with persisting Guava collections objects
+   * that sometimes use the transient keyword for some of their implementation's backing stores**/
+  private static final PersistenceFieldEvaluator TRANSIENT_FIELD_EVALUATOR =
+      (clazz, field) -> !field.getName().startsWith("_");
+
   private final EmbeddedStorageManager embeddedStorage;
   private final MemoryStorageRoot memoryStorageRoot;
   private final MemoryRepairSegmentDao memRepairSegment = new MemoryRepairSegmentDao(this);
@@ -82,7 +90,13 @@ public final class MemoryStorageFacade implements IStorageDao {
 
   public MemoryStorageFacade(String persistenceStoragePath) {
     LOG.info("Using memory storage backend. Persistence storage path: {}", persistenceStoragePath);
-    this.embeddedStorage = EmbeddedStorage.start(Paths.get(persistenceStoragePath));
+    this.embeddedStorage = EmbeddedStorage.Foundation(Paths.get(persistenceStoragePath))
+        .onConnectionFoundation(
+            c -> {
+              c.setFieldEvaluatorPersistable(TRANSIENT_FIELD_EVALUATOR);
+            }
+        ).createEmbeddedStorageManager();
+    this.embeddedStorage.start();
     if (this.embeddedStorage.root() == null) {
       LOG.info("Creating new data storage");
       this.memoryStorageRoot = new MemoryStorageRoot();
@@ -96,7 +110,10 @@ public final class MemoryStorageFacade implements IStorageDao {
         Cluster cluster = entry.getValue();
         LOG.info("Loaded cluster: {} / seeds: {}", cluster.getName(), cluster.getSeedHosts());
       });
-      LOG.info("MemoryStorageRoot: {}", this.memoryStorageRoot);
+      this.memoryStorageRoot.getRepairSegments().entrySet().stream().forEach(entry -> {
+        LOG.info("RepairSegment Token Ranges: {}",
+            Arrays.toString(entry.getValue().getTokenRange().getTokenRanges().toArray()));
+      });
     }
   }
 
@@ -218,6 +235,7 @@ public final class MemoryStorageFacade implements IStorageDao {
   }
 
   public RepairRun addRepairRun(RepairRun run) {
+    LOG.info("Adding RepairRun ID: {}", run.getId());
     RepairRun newRun = this.memoryStorageRoot.addRepairRun(run);
     this.persist(this.memoryStorageRoot.getRepairRuns());
     return newRun;
@@ -260,13 +278,15 @@ public final class MemoryStorageFacade implements IStorageDao {
 
   // RepairSegment operations
   public RepairSegment addRepairSegment(RepairSegment segment) {
+    LOG.info("Adding RepairSegment Token Ranges: {}",
+        Arrays.toString(segment.getTokenRange().getTokenRanges().toArray()));
     final RepairSegment newSegment = this.memoryStorageRoot.addRepairSegment(segment);
     // also add the segment by RunId
     UUID repairSegmentRunId = segment.getRunId();
     LinkedHashMap<UUID, RepairSegment> segmentsByRunId =
         this.memoryStorageRoot.getRepairSegmentsByRunId().get(repairSegmentRunId);
     if (segmentsByRunId == null) {
-      segmentsByRunId = new LinkedHashMap<UUID, RepairSegment>();
+      segmentsByRunId = new LinkedHashMap<>();
       this.memoryStorageRoot.getRepairSegmentsByRunId().put(repairSegmentRunId, segmentsByRunId);
     }
     segmentsByRunId.put(segment.getId(), segment);

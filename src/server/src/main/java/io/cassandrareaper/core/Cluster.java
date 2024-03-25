@@ -21,7 +21,6 @@ import java.time.LocalDate;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import com.google.common.base.Preconditions;
 
@@ -168,7 +167,7 @@ public final class Cluster implements Comparable<Cluster> {
 
     public Builder withSeedHosts(Set<String> seedHosts) {
       Preconditions.checkArgument(!seedHosts.isEmpty());
-      this.seedHosts = seedHosts.stream().collect(Collectors.toSet());
+      this.seedHosts = seedHosts;
       return this;
     }
 
