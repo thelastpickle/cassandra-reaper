@@ -58,7 +58,9 @@ public final class InitializeStorage {
     LOG.info("Initializing the database and performing schema migrations");
 
     if ("memory".equalsIgnoreCase(config.getStorageType())) {
-      storage = new MemoryStorageFacade();
+      Preconditions.checkArgument(config.getPersistenceStoragePath() != null,
+          "persistenceStoragePath is required for memory storage type");
+      storage = new MemoryStorageFacade(config.getPersistenceStoragePath());
     } else if (Lists.newArrayList("cassandra", "astra").contains(config.getStorageType())) {
       CassandraStorageFacade.CassandraMode mode = config.getStorageType().equals("cassandra")
           ? CassandraStorageFacade.CassandraMode.CASSANDRA

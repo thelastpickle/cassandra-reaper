@@ -18,6 +18,7 @@
 package io.cassandrareaper.storage.cluster;
 
 import io.cassandrareaper.core.Cluster;
+import io.cassandrareaper.storage.MemoryStorageFacade;
 import io.cassandrareaper.storage.events.MemoryEventsDao;
 import io.cassandrareaper.storage.repairrun.MemoryRepairRunDao;
 import io.cassandrareaper.storage.repairschedule.MemoryRepairScheduleDao;
@@ -27,39 +28,38 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.ConcurrentMap;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Maps;
 import org.apache.commons.lang3.StringUtils;
 
 public class MemoryClusterDao implements IClusterDao {
-  public final ConcurrentMap<String, Cluster> clusters = Maps.newConcurrentMap();
-  private final MemoryRepairUnitDao memoryRepairUnitDao;
+
   private final MemoryRepairRunDao memoryRepairRunDao;
   private final MemoryRepairScheduleDao memRepairScheduleDao;
+  private final MemoryStorageFacade storage;
 
   private final MemoryEventsDao memEventsDao;
 
-  public MemoryClusterDao(MemoryRepairUnitDao memoryRepairUnitDao,
+  public MemoryClusterDao(MemoryStorageFacade storage,
+                          MemoryRepairUnitDao memoryRepairUnitDao,
                           MemoryRepairRunDao memoryRepairRunDao,
                           MemoryRepairScheduleDao memRepairScheduleDao,
                           MemoryEventsDao memEventsDao) {
-    this.memoryRepairUnitDao = memoryRepairUnitDao;
     this.memoryRepairRunDao = memoryRepairRunDao;
     this.memRepairScheduleDao = memRepairScheduleDao;
     this.memEventsDao = memEventsDao;
+    this.storage = storage;
   }
 
   @Override
   public Collection<Cluster> getClusters() {
-    return clusters.values();
+    return storage.getClusters().values();
   }
 
   @Override
   public boolean addCluster(Cluster cluster) {
     assert addClusterAssertions(cluster);
-    Cluster existing = clusters.put(cluster.getName(), cluster);
+    Cluster existing = storage.addCluster(cluster);
     return existing == null;
   }
 
@@ -97,8 +97,9 @@ public class MemoryClusterDao implements IClusterDao {
 
   @Override
   public Cluster getCluster(String clusterName) {
-    Preconditions.checkArgument(clusters.containsKey(clusterName), "no such cluster: %s", clusterName);
-    return clusters.get(clusterName);
+    Preconditions.checkArgument(
+          storage.getClusters().containsKey(clusterName), "no such cluster: %s", clusterName);
+    return storage.getClusters().get(clusterName);
   }
 
   @Override
@@ -114,16 +115,16 @@ public class MemoryClusterDao implements IClusterDao {
           .filter(subscription -> subscription.getId().isPresent())
           .forEach(subscription -> memEventsDao.deleteEventSubscription(subscription.getId().get()));
 
-    memoryRepairUnitDao.repairUnits.values().stream()
+    storage.getRepairUnits().stream()
           .filter((unit) -> unit.getClusterName().equals(clusterName))
           .forEach((unit) -> {
             assert memoryRepairRunDao.getRepairRunsForUnit(
                   unit.getId()).isEmpty() : StringUtils.join(memoryRepairRunDao.getRepairRunsForUnit(unit.getId())
             );
-            memoryRepairUnitDao.repairUnits.remove(unit.getId());
-            memoryRepairUnitDao.repairUnitsByKey.remove(unit.with());
+            storage.removeRepairUnit(Optional.ofNullable(unit.with()), unit.getId());
           });
 
-    return clusters.remove(clusterName);
+    Cluster removed = storage.removeCluster(clusterName);
+    return removed;
   }
 }

@@ -21,6 +21,7 @@ package io.cassandrareaper.storage.repairschedule;
 import io.cassandrareaper.core.RepairSchedule;
 import io.cassandrareaper.core.RepairUnit;
 import io.cassandrareaper.resources.view.RepairScheduleStatus;
+import io.cassandrareaper.storage.MemoryStorageFacade;
 import io.cassandrareaper.storage.repairunit.MemoryRepairUnitDao;
 
 import java.util.ArrayList;
@@ -28,38 +29,37 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
 
 import com.datastax.driver.core.utils.UUIDs;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 
 public class MemoryRepairScheduleDao implements IRepairScheduleDao {
-  public final ConcurrentMap<UUID, RepairSchedule> repairSchedules = Maps.newConcurrentMap();
 
   private final MemoryRepairUnitDao memoryRepairUnitDao;
+  private final MemoryStorageFacade storage;
 
-  public MemoryRepairScheduleDao(MemoryRepairUnitDao memoryRepairUnitDao) {
+  public MemoryRepairScheduleDao(MemoryStorageFacade storage, MemoryRepairUnitDao memoryRepairUnitDao) {
     this.memoryRepairUnitDao = memoryRepairUnitDao;
+    this.storage = storage;
   }
 
   @Override
   public RepairSchedule addRepairSchedule(RepairSchedule.Builder repairSchedule) {
     RepairSchedule newRepairSchedule = repairSchedule.build(UUIDs.timeBased());
-    repairSchedules.put(newRepairSchedule.getId(), newRepairSchedule);
+    storage.addRepairSchedule(newRepairSchedule);
     return newRepairSchedule;
   }
 
   @Override
   public Optional<RepairSchedule> getRepairSchedule(UUID id) {
-    return Optional.ofNullable(repairSchedules.get(id));
+    return storage.getRepairScheduleById(id);
   }
 
   @Override
   public Collection<RepairSchedule> getRepairSchedulesForCluster(String clusterName) {
     Collection<RepairSchedule> foundRepairSchedules = new ArrayList<RepairSchedule>();
-    for (RepairSchedule repairSchedule : repairSchedules.values()) {
+    for (RepairSchedule repairSchedule : storage.getRepairSchedules()) {
       RepairUnit repairUnit = memoryRepairUnitDao.getRepairUnit(repairSchedule.getRepairUnitId());
       if (repairUnit.getClusterName().equals(clusterName)) {
         foundRepairSchedules.add(repairSchedule);
@@ -80,7 +80,7 @@ public class MemoryRepairScheduleDao implements IRepairScheduleDao {
   @Override
   public Collection<RepairSchedule> getRepairSchedulesForKeyspace(String keyspaceName) {
     Collection<RepairSchedule> foundRepairSchedules = new ArrayList<RepairSchedule>();
-    for (RepairSchedule repairSchedule : repairSchedules.values()) {
+    for (RepairSchedule repairSchedule : storage.getRepairSchedules()) {
       RepairUnit repairUnit = memoryRepairUnitDao.getRepairUnit(repairSchedule.getRepairUnitId());
       if (repairUnit.getKeyspaceName().equals(keyspaceName)) {
         foundRepairSchedules.add(repairSchedule);
@@ -92,7 +92,7 @@ public class MemoryRepairScheduleDao implements IRepairScheduleDao {
   @Override
   public Collection<RepairSchedule> getRepairSchedulesForClusterAndKeyspace(String clusterName, String keyspaceName) {
     Collection<RepairSchedule> foundRepairSchedules = new ArrayList<RepairSchedule>();
-    for (RepairSchedule repairSchedule : repairSchedules.values()) {
+    for (RepairSchedule repairSchedule : storage.getRepairSchedules()) {
       RepairUnit repairUnit = memoryRepairUnitDao.getRepairUnit(repairSchedule.getRepairUnitId());
       if (repairUnit.getClusterName().equals(clusterName) && repairUnit.getKeyspaceName().equals(keyspaceName)) {
         foundRepairSchedules.add(repairSchedule);
@@ -103,15 +103,15 @@ public class MemoryRepairScheduleDao implements IRepairScheduleDao {
 
   @Override
   public Collection<RepairSchedule> getAllRepairSchedules() {
-    return repairSchedules.values();
+    return storage.getRepairSchedules();
   }
 
   @Override
   public boolean updateRepairSchedule(RepairSchedule newRepairSchedule) {
-    if (repairSchedules.get(newRepairSchedule.getId()) == null) {
+    if (storage.getRepairScheduleById(newRepairSchedule.getId()) == null) {
       return false;
     } else {
-      repairSchedules.put(newRepairSchedule.getId(), newRepairSchedule);
+      storage.addRepairSchedule(newRepairSchedule);
       return true;
     }
   }
@@ -129,7 +129,7 @@ public class MemoryRepairScheduleDao implements IRepairScheduleDao {
 
   @Override
   public Optional<RepairSchedule> deleteRepairSchedule(UUID id) {
-    RepairSchedule deletedSchedule = repairSchedules.remove(id);
+    RepairSchedule deletedSchedule = storage.removeRepairSchedule(id);
     if (deletedSchedule != null) {
       deletedSchedule = deletedSchedule.with().state(RepairSchedule.State.DELETED).build(id);
     }
