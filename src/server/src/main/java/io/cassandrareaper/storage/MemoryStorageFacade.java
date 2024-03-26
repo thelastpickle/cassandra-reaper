@@ -103,15 +103,9 @@ public final class MemoryStorageFacade implements IStorageDao {
     } else {
       LOG.info("Loading existing data from persistence storage");
       this.memoryStorageRoot = (MemoryStorageRoot) this.embeddedStorage.root();
-      LOG.info("Loaded {} clusters: {}",
-          this.memoryStorageRoot.getClusters().size(), this.memoryStorageRoot.getClusters().keySet());
       this.memoryStorageRoot.getClusters().entrySet().stream().forEach(entry -> {
         Cluster cluster = entry.getValue();
         LOG.info("Loaded cluster: {} / seeds: {}", cluster.getName(), cluster.getSeedHosts());
-      });
-      this.memoryStorageRoot.getRepairSegments().entrySet().stream().forEach(entry -> {
-        LOG.info("RepairSegment Token Ranges: {}",
-            Arrays.toString(entry.getValue().getTokenRange().getTokenRanges().toArray()));
       });
     }
   }
@@ -127,17 +121,17 @@ public final class MemoryStorageFacade implements IStorageDao {
   }
 
   private boolean addClusterAssertions(Cluster cluster) {
-    return this.memClusterDao.addClusterAssertions(cluster);
+    return memClusterDao.addClusterAssertions(cluster);
   }
 
   @Override
   public List<PercentRepairedMetric> getPercentRepairedMetrics(String clusterName, UUID repairScheduleId, Long since) {
-    return this.memMetricsDao.getPercentRepairedMetrics(clusterName, repairScheduleId, since);
+    return memMetricsDao.getPercentRepairedMetrics(clusterName, repairScheduleId, since);
   }
 
   @Override
   public void storePercentRepairedMetric(PercentRepairedMetric metric) {
-    this.memMetricsDao.storePercentRepairedMetric(metric);
+    memMetricsDao.storePercentRepairedMetric(metric);
   }
 
   @Override
