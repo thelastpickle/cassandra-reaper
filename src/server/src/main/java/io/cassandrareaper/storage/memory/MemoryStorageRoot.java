@@ -23,7 +23,6 @@ import io.cassandrareaper.core.RepairSchedule;
 import io.cassandrareaper.core.RepairSegment;
 import io.cassandrareaper.core.RepairUnit;
 
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
@@ -32,7 +31,6 @@ import com.google.common.collect.Maps;
 
 
 public final class MemoryStorageRoot {
-  private final ConcurrentMap<UUID, LinkedHashMap<UUID, RepairSegment>> repairSegmentsByRunId = Maps.newConcurrentMap();
   private final ConcurrentMap<UUID, RepairSegment> repairSegments = Maps.newConcurrentMap();
   private final ConcurrentMap<UUID, RepairUnit> repairUnits = Maps.newConcurrentMap();
   private final ConcurrentMap<RepairUnit.Builder, RepairUnit> repairUnitsByKey = Maps.newConcurrentMap();
@@ -76,10 +74,6 @@ public final class MemoryStorageRoot {
   }
 
   // RepairSegment operations
-  public Map<UUID, LinkedHashMap<UUID, RepairSegment>> getRepairSegmentsByRunId() {
-    return this.repairSegmentsByRunId;
-  }
-
   public Map<UUID, RepairSegment> getRepairSegments() {
     return this.repairSegments;
   }

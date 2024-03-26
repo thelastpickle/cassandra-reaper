@@ -44,12 +44,11 @@ import io.cassandrareaper.storage.snapshot.MemorySnapshotDao;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.eclipse.serializer.persistence.types.PersistenceFieldEvaluator;
 import org.eclipse.store.storage.embedded.types.EmbeddedStorage;
@@ -281,29 +280,13 @@ public final class MemoryStorageFacade implements IStorageDao {
     LOG.info("Adding RepairSegment Token Ranges: {}",
         Arrays.toString(segment.getTokenRange().getTokenRanges().toArray()));
     final RepairSegment newSegment = this.memoryStorageRoot.addRepairSegment(segment);
-    // also add the segment by RunId
-    UUID repairSegmentRunId = segment.getRunId();
-    LinkedHashMap<UUID, RepairSegment> segmentsByRunId =
-        this.memoryStorageRoot.getRepairSegmentsByRunId().get(repairSegmentRunId);
-    if (segmentsByRunId == null) {
-      segmentsByRunId = new LinkedHashMap<>();
-      this.memoryStorageRoot.getRepairSegmentsByRunId().put(repairSegmentRunId, segmentsByRunId);
-    }
-    segmentsByRunId.put(segment.getId(), segment);
-    this.persist(this.memoryStorageRoot.getRepairSegments(), this.memoryStorageRoot.getRepairSegmentsByRunId());
+    this.persist(this.memoryStorageRoot.getRepairSegments());
     return newSegment;
   }
 
   public RepairSegment removeRepairSegment(UUID id) {
     RepairSegment segment = this.memoryStorageRoot.removeRepairSegment(id);
-    // also remove the segment from the byRunId map
-    UUID repairSegmentRunId = segment.getRunId();
-    LinkedHashMap<UUID, RepairSegment> segmentsByRunId =
-        this.memoryStorageRoot.getRepairSegmentsByRunId().get(repairSegmentRunId);
-    if (segmentsByRunId != null) {
-      segmentsByRunId.remove(segment.getId());
-    }
-    this.persist(this.memoryStorageRoot.getRepairSegments(), this.memoryStorageRoot.getRepairSegmentsByRunId());
+    this.persist(this.memoryStorageRoot.getRepairSegments());
     return segment;
   }
 
@@ -312,10 +295,8 @@ public final class MemoryStorageFacade implements IStorageDao {
   }
 
   public Collection<RepairSegment> getRepairSegmentsByRunId(UUID runId) {
-    if (this.memoryStorageRoot.getRepairSegmentsByRunId().containsKey(runId)) {
-      return this.memoryStorageRoot.getRepairSegmentsByRunId().get(runId).values();
-    }
-    return Collections.EMPTY_LIST;
+    return this.memoryStorageRoot.getRepairSegments().values().stream()
+        .filter(segment -> segment.getRunId().equals(runId)).collect(Collectors.toSet());
   }
 
   // RepairSubscription operations
