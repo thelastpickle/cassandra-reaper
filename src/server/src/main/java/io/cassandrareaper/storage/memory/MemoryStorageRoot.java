@@ -25,19 +25,17 @@ import io.cassandrareaper.core.RepairUnit;
 
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-import com.google.common.collect.Maps;
-
-
 public final class MemoryStorageRoot {
-  private final ConcurrentMap<UUID, RepairSegment> repairSegments = Maps.newConcurrentMap();
-  private final ConcurrentMap<UUID, RepairUnit> repairUnits = Maps.newConcurrentMap();
-  private final ConcurrentMap<RepairUnit.Builder, RepairUnit> repairUnitsByKey = Maps.newConcurrentMap();
-  private final ConcurrentMap<UUID, RepairRun> repairRuns = Maps.newConcurrentMap();
-  private final ConcurrentMap<UUID, RepairSchedule> repairSchedules = Maps.newConcurrentMap();
-  private final ConcurrentMap<UUID, DiagEventSubscription> subscriptionsById = Maps.newConcurrentMap();
-  private final ConcurrentMap<String, Cluster> clusters = Maps.newConcurrentMap();
+  private final ConcurrentMap<UUID, RepairSegment> repairSegments = new ConcurrentHashMap<>();
+  private final ConcurrentMap<UUID, RepairUnit> repairUnits = new ConcurrentHashMap<>();
+  private final ConcurrentMap<RepairUnit.Builder, RepairUnit> repairUnitsByKey = new ConcurrentHashMap<>();
+  private final ConcurrentMap<UUID, RepairRun> repairRuns = new ConcurrentHashMap<>();
+  private final ConcurrentMap<UUID, RepairSchedule> repairSchedules = new ConcurrentHashMap<>();
+  private final ConcurrentMap<UUID, DiagEventSubscription> subscriptionsById = new ConcurrentHashMap<>();
+  private final ConcurrentMap<String, Cluster> clusters = new ConcurrentHashMap<>();
 
   public MemoryStorageRoot() {
     super();

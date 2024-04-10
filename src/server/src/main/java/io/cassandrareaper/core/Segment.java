@@ -24,10 +24,10 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
-import com.google.common.collect.ImmutableMap;
 
 @JsonDeserialize(builder = Segment.Builder.class)
 public final class Segment {
@@ -38,7 +38,7 @@ public final class Segment {
 
   RingRange baseRange;
   List<RingRange> tokenRanges;
-  Map<String, String> replicas;
+  Map<String, String> replicas = new ConcurrentHashMap<>();
 
   private Segment(Builder builder) {
     this.tokenRanges = builder.tokenRanges;
@@ -46,9 +46,9 @@ public final class Segment {
     if (builder.baseRange != null) {
       this.baseRange = builder.baseRange;
     }
-    this.replicas = builder.replicas != null
-        ? ImmutableMap.copyOf(builder.replicas)
-        : null;
+    if (builder.replicas != null) {
+      this.replicas.putAll(builder.replicas);
+    }
   }
 
   public RingRange getBaseRange() {

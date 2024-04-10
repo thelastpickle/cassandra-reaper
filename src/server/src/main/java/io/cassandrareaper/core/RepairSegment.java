@@ -20,13 +20,13 @@ package io.cassandrareaper.core;
 import java.math.BigInteger;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import javax.annotation.Nullable;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableMap;
 import org.joda.time.DateTime;
 
 @JsonDeserialize(builder = RepairSegment.Builder.class)
@@ -43,7 +43,7 @@ public final class RepairSegment {
   private final String coordinatorHost;
   private final DateTime startTime;
   private final DateTime endTime;
-  private final Map<String, String> replicas;
+  private final Map<String, String> replicas = new ConcurrentHashMap<>();
   // hostID field is only ever populated for incremental repairs. For full repairs it is always null.
   private final UUID hostID;
 
@@ -58,9 +58,9 @@ public final class RepairSegment {
     this.coordinatorHost = builder.coordinatorHost;
     this.startTime = builder.startTime;
     this.endTime = builder.endTime;
-    this.replicas = builder.replicas != null
-        ? ImmutableMap.copyOf(builder.replicas)
-        : null;
+    if (builder.replicas != null) {
+      this.replicas.putAll(builder.replicas);
+    }
     this.hostID = builder.hostID;
   }
 

@@ -42,7 +42,6 @@ import io.cassandrareaper.storage.snapshot.ISnapshotDao;
 import io.cassandrareaper.storage.snapshot.MemorySnapshotDao;
 
 import java.nio.file.Paths;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -180,8 +179,15 @@ public final class MemoryStorageFacade implements IStorageDao {
   }
 
   private void persist(Object... objects) {
-    this.embeddedStorage.storeAll(objects);
-    this.embeddedStorage.storeRoot();
+    synchronized (memoryStorageRoot) {
+      try {
+        this.embeddedStorage.storeAll(objects);
+        this.embeddedStorage.storeRoot();
+      } catch (Throwable ex) {
+        ex.printStackTrace();
+        throw ex;
+      }
+    }
   }
 
   // Cluster operations
@@ -228,7 +234,6 @@ public final class MemoryStorageFacade implements IStorageDao {
   }
 
   public RepairRun addRepairRun(RepairRun run) {
-    LOG.info("Adding RepairRun ID: {}", run.getId());
     RepairRun newRun = this.memoryStorageRoot.addRepairRun(run);
     this.persist(this.memoryStorageRoot.getRepairRuns());
     return newRun;
@@ -271,8 +276,6 @@ public final class MemoryStorageFacade implements IStorageDao {
 
   // RepairSegment operations
   public RepairSegment addRepairSegment(RepairSegment segment) {
-    LOG.info("Adding RepairSegment Token Ranges: {}",
-        Arrays.toString(segment.getTokenRange().getTokenRanges().toArray()));
     final RepairSegment newSegment = this.memoryStorageRoot.addRepairSegment(segment);
     this.persist(this.memoryStorageRoot.getRepairSegments());
     return newSegment;
