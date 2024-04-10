@@ -102,10 +102,6 @@ public final class MemoryStorageFacade implements IStorageDao {
     } else {
       LOG.info("Loading existing data from persistence storage");
       this.memoryStorageRoot = (MemoryStorageRoot) this.embeddedStorage.root();
-      this.memoryStorageRoot.getClusters().entrySet().stream().forEach(entry -> {
-        Cluster cluster = entry.getValue();
-        LOG.info("Loaded cluster: {} / seeds: {}", cluster.getName(), cluster.getSeedHosts());
-      });
     }
   }
 
@@ -183,8 +179,8 @@ public final class MemoryStorageFacade implements IStorageDao {
       try {
         this.embeddedStorage.storeAll(objects);
         this.embeddedStorage.storeRoot();
-      } catch (Throwable ex) {
-        ex.printStackTrace();
+      } catch (RuntimeException ex) {
+        LOG.error("Failed persisting Reaper state to disk", ex);
         throw ex;
       }
     }
