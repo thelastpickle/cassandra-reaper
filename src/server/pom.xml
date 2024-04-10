@@ -31,7 +31,8 @@
     <properties>
         <dropwizard.version>2.1.12</dropwizard.version>
         <jersey.version>2.35</jersey.version>
-        <logback.version>1.2.9</logback.version>
+        <logback.version>1.5.4</logback.version>
+        <logback.access.version>1.4.9</logback.access.version>
         <cxf.version>3.4.5</cxf.version>
         <shiro.version>1.12.0</shiro.version>
         <prometheus.version>0.12.0</prometheus.version>
@@ -73,7 +74,7 @@
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-access</artifactId>
-            <version>${logback.version}</version>
+            <version>${logback.access.version}</version>
         </dependency>
         <dependency>
             <groupId>ch.qos.logback</groupId>
@@ -165,7 +166,7 @@
         <dependency>
             <groupId>org.yaml</groupId>
             <artifactId>snakeyaml</artifactId>
-            <version>1.29</version>
+            <version>2.2</version>
         </dependency>
         <dependency>
             <groupId>io.netty</groupId>
@@ -244,7 +245,7 @@
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-configuration2</artifactId>
-            <version>2.1</version>
+            <version>2.10.1</version>
         </dependency>
         <dependency>
             <groupId>io.jsonwebtoken</groupId>
@@ -291,6 +292,12 @@
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
             <version>4.13.2</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.vintage</groupId>
+            <artifactId>junit-vintage-engine</artifactId>
+            <version>5.9.3</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -662,7 +669,7 @@
             <plugin>
               <groupId>org.apache.maven.plugins</groupId>
               <artifactId>maven-surefire-plugin</artifactId>
-              <version>2.22.2</version>
+              <version>3.2.5</version>
               <inherited>true</inherited>
               <configuration>
                   <systemPropertyVariables>
