@@ -18,20 +18,19 @@
 package io.cassandrareaper.storage.repairunit;
 
 import io.cassandrareaper.core.RepairUnit;
+import io.cassandrareaper.storage.MemoryStorageFacade;
 
 import java.util.Optional;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentMap;
 
 import com.datastax.driver.core.utils.UUIDs;
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Maps;
 
 public class MemoryRepairUnitDao implements IRepairUnitDao {
-  public final ConcurrentMap<UUID, RepairUnit> repairUnits = Maps.newConcurrentMap();
-  public final ConcurrentMap<RepairUnit.Builder, RepairUnit> repairUnitsByKey = Maps.newConcurrentMap();
+  private final MemoryStorageFacade storage;
 
-  public MemoryRepairUnitDao() {
+  public MemoryRepairUnitDao(MemoryStorageFacade storage) {
+    this.storage = storage;
   }
 
   /**
@@ -42,33 +41,31 @@ public class MemoryRepairUnitDao implements IRepairUnitDao {
    */
 
   @Override
-  public RepairUnit addRepairUnit(RepairUnit.Builder repairUnit) {
-    Optional<RepairUnit> existing = getRepairUnit(repairUnit);
-    if (existing.isPresent() && repairUnit.incrementalRepair == existing.get().getIncrementalRepair()) {
+  public RepairUnit addRepairUnit(RepairUnit.Builder repairUnitBuilder) {
+    Optional<RepairUnit> existing = getRepairUnit(repairUnitBuilder);
+    if (existing.isPresent() && repairUnitBuilder.incrementalRepair == existing.get().getIncrementalRepair()) {
       return existing.get();
     } else {
-      RepairUnit newRepairUnit = repairUnit.build(UUIDs.timeBased());
-      repairUnits.put(newRepairUnit.getId(), newRepairUnit);
-      repairUnitsByKey.put(repairUnit, newRepairUnit);
+      RepairUnit newRepairUnit = repairUnitBuilder.build(UUIDs.timeBased());
+      storage.addRepairUnit(Optional.ofNullable(repairUnitBuilder), newRepairUnit);
       return newRepairUnit;
     }
   }
 
   @Override
   public void updateRepairUnit(RepairUnit updatedRepairUnit) {
-    repairUnits.put(updatedRepairUnit.getId(), updatedRepairUnit);
-    repairUnitsByKey.put(updatedRepairUnit.with(), updatedRepairUnit);
+    storage.addRepairUnit(Optional.ofNullable(updatedRepairUnit.with()), updatedRepairUnit);
   }
 
   @Override
   public RepairUnit getRepairUnit(UUID id) {
-    RepairUnit unit = repairUnits.get(id);
+    RepairUnit unit = storage.getRepairUnitById(id);
     Preconditions.checkArgument(null != unit);
     return unit;
   }
 
   @Override
-  public Optional<RepairUnit> getRepairUnit(RepairUnit.Builder params) {
-    return Optional.ofNullable(repairUnitsByKey.get(params));
+  public Optional<RepairUnit> getRepairUnit(RepairUnit.Builder repairUnitBuilder) {
+    return Optional.ofNullable(storage.getRepairUnitByKey(repairUnitBuilder));
   }
 }

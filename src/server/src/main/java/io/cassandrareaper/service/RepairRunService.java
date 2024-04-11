@@ -50,7 +50,6 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Splitter;
 import com.google.common.base.Supplier;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.apache.cassandra.repair.RepairParallelism;
 import org.slf4j.Logger;
@@ -146,7 +145,7 @@ public final class RepairRunService {
 
   @VisibleForTesting
   static Map<String, List<RingRange>> buildEndpointToRangeMap(Map<List<String>, List<String>> rangeToEndpoint) {
-    Map<String, List<RingRange>> endpointToRange = Maps.newHashMap();
+    Map<String, List<RingRange>> endpointToRange = new ConcurrentHashMap<>();
 
     for (Entry<List<String>, List<String>> entry : rangeToEndpoint.entrySet()) {
       RingRange range = new RingRange(entry.getKey().toArray(new String[entry.getKey().size()]));
@@ -163,7 +162,7 @@ public final class RepairRunService {
   @VisibleForTesting
   static Map<List<String>, List<RingRange>> buildReplicasToRangeMap(
       Map<List<String>, List<String>> rangeToEndpoint) {
-    Map<List<String>, List<RingRange>> replicasToRange = Maps.newHashMap();
+    Map<List<String>, List<RingRange>> replicasToRange = new ConcurrentHashMap<>();
 
     for (Entry<List<String>, List<String>> entry : rangeToEndpoint.entrySet()) {
       RingRange range = new RingRange(entry.getKey().toArray(new String[entry.getKey().size()]));
@@ -369,7 +368,7 @@ public final class RepairRunService {
         ICassandraManagementProxy jmxConnection = clusterFacade.connect(cluster);
         // when hosts are coming up or going down, this method can throw an UndeclaredThrowableException
         Collection<String> nodes = clusterFacade.tokenRangeToEndpoint(cluster, keyspace, segment);
-        Map<String, String> dcByNode = Maps.newHashMap();
+        Map<String, String> dcByNode = new ConcurrentHashMap<>();
         nodes.forEach(node -> dcByNode.put(node, EndpointSnitchInfoProxy.create(jmxConnection).getDataCenter(node)));
         if (repairUnit.getDatacenters().isEmpty()) {
           return dcByNode;
@@ -393,7 +392,7 @@ public final class RepairRunService {
   @VisibleForTesting
   Map<String, RingRange> getClusterNodes(Cluster targetCluster, RepairUnit repairUnit) throws ReaperException {
     ConcurrentHashMap<String, RingRange> nodesWithRanges = new ConcurrentHashMap<>();
-    Map<List<String>, List<String>> rangeToEndpoint = Maps.newHashMap();
+    Map<List<String>, List<String>> rangeToEndpoint = new ConcurrentHashMap<>();
 
     try {
       rangeToEndpoint

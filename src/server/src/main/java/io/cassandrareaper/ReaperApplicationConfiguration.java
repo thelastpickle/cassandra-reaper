@@ -169,6 +169,10 @@ public final class ReaperApplicationConfiguration extends Configuration {
   @Nullable
   private CryptographFactory cryptograph;
 
+  @JsonProperty
+  @Nullable
+  private String persistenceStoragePath;
+
   public HttpManagement getHttpManagement() {
     return httpManagement;
   }
@@ -506,6 +510,15 @@ public final class ReaperApplicationConfiguration extends Configuration {
 
   public void setCryptograph(@Nullable CryptographFactory cryptograph) {
     this.cryptograph = cryptograph;
+  }
+
+  public void setPersistenceStoragePath(@Nullable String persistenceStoragePath) {
+    this.persistenceStoragePath = persistenceStoragePath;
+  }
+
+  @Nullable
+  public String getPersistenceStoragePath() {
+    return persistenceStoragePath;
   }
 
   public enum DatacenterAvailability {

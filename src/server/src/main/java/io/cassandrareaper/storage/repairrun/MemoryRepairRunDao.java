@@ -23,6 +23,7 @@ import io.cassandrareaper.core.RepairSegment;
 import io.cassandrareaper.core.RepairUnit;
 import io.cassandrareaper.resources.view.RepairRunStatus;
 import io.cassandrareaper.service.RepairRunService;
+import io.cassandrareaper.storage.MemoryStorageFacade;
 import io.cassandrareaper.storage.repairsegment.MemoryRepairSegmentDao;
 import io.cassandrareaper.storage.repairunit.MemoryRepairUnitDao;
 
@@ -35,24 +36,26 @@ import java.util.Optional;
 import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
 
 import com.datastax.driver.core.utils.UUIDs;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.joda.time.DateTime;
 
 public class MemoryRepairRunDao implements IRepairRunDao {
-  public final ConcurrentMap<UUID, RepairRun> repairRuns = Maps.newConcurrentMap();
   private final MemoryRepairSegmentDao memRepairSegment;
   private final MemoryRepairUnitDao memoryRepairUnitDao;
+  private final MemoryStorageFacade storage;
 
 
-  public MemoryRepairRunDao(MemoryRepairSegmentDao memRepairSegment, MemoryRepairUnitDao memoryRepairUnitDao) {
+  public MemoryRepairRunDao(
+      MemoryStorageFacade storage,
+      MemoryRepairSegmentDao memRepairSegment,
+       MemoryRepairUnitDao memoryRepairUnitDao) {
     this.memRepairSegment = memRepairSegment;
     this.memoryRepairUnitDao = memoryRepairUnitDao;
+    this.storage = storage;
   }
 
   @Override
@@ -96,7 +99,7 @@ public class MemoryRepairRunDao implements IRepairRunDao {
   @Override
   public RepairRun addRepairRun(RepairRun.Builder repairRun, Collection<RepairSegment.Builder> newSegments) {
     RepairRun newRepairRun = repairRun.build(UUIDs.timeBased());
-    repairRuns.put(newRepairRun.getId(), newRepairRun);
+    storage.addRepairRun(newRepairRun);
     memRepairSegment.addRepairSegments(newSegments, newRepairRun.getId());
     return newRepairRun;
   }
@@ -111,21 +114,23 @@ public class MemoryRepairRunDao implements IRepairRunDao {
     if (!getRepairRun(repairRun.getId()).isPresent()) {
       return false;
     } else {
-      repairRuns.put(repairRun.getId(), repairRun);
+      storage.addRepairRun(repairRun);
       return true;
     }
   }
 
 
   public Optional<RepairRun> getRepairRun(UUID id) {
-    return Optional.ofNullable(repairRuns.get(id));
+    return storage.getRepairRunById(id);
   }
 
 
   public List<RepairRun> getRepairRunsForCluster(String clusterName, Optional<Integer> limit) {
     List<RepairRun> foundRepairRuns = new ArrayList<RepairRun>();
     TreeMap<UUID, RepairRun> reverseOrder = new TreeMap<UUID, RepairRun>(Collections.reverseOrder());
-    reverseOrder.putAll(repairRuns);
+    storage.getRepairRuns().forEach(repairRun -> {
+      reverseOrder.put(repairRun.getId(), repairRun);
+    });
     for (RepairRun repairRun : reverseOrder.values()) {
       if (repairRun.getClusterName().equalsIgnoreCase(clusterName)) {
         foundRepairRuns.add(repairRun);
@@ -139,8 +144,7 @@ public class MemoryRepairRunDao implements IRepairRunDao {
 
 
   public List<RepairRun> getRepairRunsForClusterPrioritiseRunning(String clusterName, Optional<Integer> limit) {
-    List<RepairRun> foundRepairRuns = repairRuns
-        .values()
+    List<RepairRun> foundRepairRuns = storage.getRepairRuns()
         .stream()
         .filter(
             row -> row.getClusterName().equals(clusterName.toLowerCase(Locale.ROOT))).collect(Collectors.toList()
@@ -152,7 +156,7 @@ public class MemoryRepairRunDao implements IRepairRunDao {
 
   public Collection<RepairRun> getRepairRunsForUnit(UUID repairUnitId) {
     List<RepairRun> foundRepairRuns = new ArrayList<RepairRun>();
-    for (RepairRun repairRun : repairRuns.values()) {
+    for (RepairRun repairRun : storage.getRepairRuns()) {
       if (repairRun.getRepairUnitId().equals(repairUnitId)) {
         foundRepairRuns.add(repairRun);
       }
@@ -163,7 +167,7 @@ public class MemoryRepairRunDao implements IRepairRunDao {
 
   public Collection<RepairRun> getRepairRunsWithState(RepairRun.RunState runState) {
     List<RepairRun> foundRepairRuns = new ArrayList<RepairRun>();
-    for (RepairRun repairRun : repairRuns.values()) {
+    for (RepairRun repairRun : storage.getRepairRuns()) {
       if (repairRun.getRunState() == runState) {
         foundRepairRuns.add(repairRun);
       }
@@ -173,7 +177,7 @@ public class MemoryRepairRunDao implements IRepairRunDao {
 
 
   public Optional<RepairRun> deleteRepairRun(UUID id) {
-    RepairRun deletedRun = repairRuns.remove(id);
+    RepairRun deletedRun = storage.removeRepairRun(id);
     if (deletedRun != null) {
       if (memRepairSegment.getSegmentAmountForRepairRunWithState(id, RepairSegment.State.RUNNING) == 0) {
         memRepairSegment.deleteRepairSegmentsForRun(id);
@@ -190,7 +194,7 @@ public class MemoryRepairRunDao implements IRepairRunDao {
 
   public SortedSet<UUID> getRepairRunIdsForCluster(String clusterName, Optional<Integer> limit) {
     SortedSet<UUID> repairRunIds = Sets.newTreeSet((u0, u1) -> (int) (u0.timestamp() - u1.timestamp()));
-    for (RepairRun repairRun : repairRuns.values()) {
+    for (RepairRun repairRun : storage.getRepairRuns()) {
       if (repairRun.getClusterName().equalsIgnoreCase(clusterName)) {
         repairRunIds.add(repairRun.getId());
       }

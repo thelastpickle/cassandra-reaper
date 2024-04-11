@@ -18,11 +18,17 @@
 package io.cassandrareaper.storage;
 
 import io.cassandrareaper.core.Cluster;
+import io.cassandrareaper.core.DiagEventSubscription;
 import io.cassandrareaper.core.PercentRepairedMetric;
+import io.cassandrareaper.core.RepairRun;
+import io.cassandrareaper.core.RepairSchedule;
+import io.cassandrareaper.core.RepairSegment;
+import io.cassandrareaper.core.RepairUnit;
 import io.cassandrareaper.storage.cluster.IClusterDao;
 import io.cassandrareaper.storage.cluster.MemoryClusterDao;
 import io.cassandrareaper.storage.events.IEventsDao;
 import io.cassandrareaper.storage.events.MemoryEventsDao;
+import io.cassandrareaper.storage.memory.MemoryStorageRoot;
 import io.cassandrareaper.storage.metrics.MemoryMetricsDao;
 import io.cassandrareaper.storage.repairrun.IRepairRunDao;
 import io.cassandrareaper.storage.repairrun.MemoryRepairRunDao;
@@ -35,9 +41,17 @@ import io.cassandrareaper.storage.repairunit.MemoryRepairUnitDao;
 import io.cassandrareaper.storage.snapshot.ISnapshotDao;
 import io.cassandrareaper.storage.snapshot.MemorySnapshotDao;
 
+import java.nio.file.Paths;
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
+import org.eclipse.serializer.persistence.types.PersistenceFieldEvaluator;
+import org.eclipse.store.storage.embedded.types.EmbeddedStorage;
+import org.eclipse.store.storage.embedded.types.EmbeddedStorageManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,12 +62,22 @@ import org.slf4j.LoggerFactory;
 public final class MemoryStorageFacade implements IStorageDao {
 
   private static final Logger LOG = LoggerFactory.getLogger(MemoryStorageFacade.class);
+
+  /** Field evaluator to find transient attributes. This is needed to deal with persisting Guava collections objects
+   * that sometimes use the transient keyword for some of their implementation's backing stores**/
+  private static final PersistenceFieldEvaluator TRANSIENT_FIELD_EVALUATOR =
+      (clazz, field) -> !field.getName().startsWith("_");
+
+  private final EmbeddedStorageManager embeddedStorage;
+  private final MemoryStorageRoot memoryStorageRoot;
   private final MemoryRepairSegmentDao memRepairSegment = new MemoryRepairSegmentDao(this);
-  private final MemoryRepairUnitDao memoryRepairUnitDao = new MemoryRepairUnitDao();
-  private final MemoryRepairRunDao memoryRepairRunDao = new MemoryRepairRunDao(memRepairSegment, memoryRepairUnitDao);
-  private final MemoryRepairScheduleDao memRepairScheduleDao = new MemoryRepairScheduleDao(memoryRepairUnitDao);
-  private final MemoryEventsDao memEventsDao = new MemoryEventsDao();
+  private final MemoryRepairUnitDao memoryRepairUnitDao = new MemoryRepairUnitDao(this);
+  private final MemoryRepairRunDao memoryRepairRunDao =
+      new MemoryRepairRunDao(this, memRepairSegment, memoryRepairUnitDao);
+  private final MemoryRepairScheduleDao memRepairScheduleDao = new MemoryRepairScheduleDao(this, memoryRepairUnitDao);
+  private final MemoryEventsDao memEventsDao = new MemoryEventsDao(this);
   private final MemoryClusterDao memClusterDao = new MemoryClusterDao(
+      this,
       memoryRepairUnitDao,
       memoryRepairRunDao,
       memRepairScheduleDao,
@@ -61,6 +85,29 @@ public final class MemoryStorageFacade implements IStorageDao {
   );
   private final MemorySnapshotDao memSnapshotDao = new MemorySnapshotDao();
   private final MemoryMetricsDao memMetricsDao = new MemoryMetricsDao();
+
+  public MemoryStorageFacade(String persistenceStoragePath) {
+    LOG.info("Using memory storage backend. Persistence storage path: {}", persistenceStoragePath);
+    this.embeddedStorage = EmbeddedStorage.Foundation(Paths.get(persistenceStoragePath))
+        .onConnectionFoundation(
+            c -> {
+              c.setFieldEvaluatorPersistable(TRANSIENT_FIELD_EVALUATOR);
+            }
+        ).createEmbeddedStorageManager();
+    this.embeddedStorage.start();
+    if (this.embeddedStorage.root() == null) {
+      LOG.info("Creating new data storage");
+      this.memoryStorageRoot = new MemoryStorageRoot();
+      this.embeddedStorage.setRoot(this.memoryStorageRoot);
+    } else {
+      LOG.info("Loading existing data from persistence storage");
+      this.memoryStorageRoot = (MemoryStorageRoot) this.embeddedStorage.root();
+    }
+  }
+
+  public MemoryStorageFacade() {
+    this("/tmp/" + UUID.randomUUID().toString());
+  }
 
   @Override
   public boolean isStorageConnected() {
@@ -89,7 +136,7 @@ public final class MemoryStorageFacade implements IStorageDao {
 
   @Override
   public void stop() {
-    // no-op
+    this.embeddedStorage.shutdown();
   }
 
   @Override
@@ -127,4 +174,126 @@ public final class MemoryStorageFacade implements IStorageDao {
     return this.memClusterDao;
   }
 
+  private void persist(Object... objects) {
+    synchronized (memoryStorageRoot) {
+      try {
+        this.embeddedStorage.storeAll(objects);
+        this.embeddedStorage.storeRoot();
+      } catch (RuntimeException ex) {
+        LOG.error("Failed persisting Reaper state to disk", ex);
+        throw ex;
+      }
+    }
+  }
+
+  // Cluster operations
+  public Map<String, Cluster> getClusters() {
+    return this.memoryStorageRoot.getClusters();
+  }
+
+  public Cluster addCluster(Cluster cluster) {
+    Cluster newCluster = this.memoryStorageRoot.addCluster(cluster);
+    this.persist(memoryStorageRoot.getClusters());
+    return newCluster;
+  }
+
+  public Cluster removeCluster(String clusterName) {
+    Cluster cluster =  this.memoryStorageRoot.removeCluster(clusterName);
+    this.persist(memoryStorageRoot.getClusters());
+    return cluster;
+  }
+
+  // RepairSchedule operations
+  public RepairSchedule addRepairSchedule(RepairSchedule schedule) {
+    RepairSchedule newSchedule = this.memoryStorageRoot.addRepairSchedule(schedule);
+    this.persist(this.memoryStorageRoot.getRepairSchedules());
+    return newSchedule;
+  }
+
+  public RepairSchedule removeRepairSchedule(UUID id) {
+    RepairSchedule schedule = this.memoryStorageRoot.removeRepairSchedule(id);
+    this.persist(this.memoryStorageRoot.getRepairSchedules());
+    return schedule;
+  }
+
+  public Optional<RepairSchedule> getRepairScheduleById(UUID id) {
+    return Optional.ofNullable(this.memoryStorageRoot.getRepairScheduleById(id));
+  }
+
+  public Collection<RepairSchedule> getRepairSchedules() {
+    return this.memoryStorageRoot.getRepairSchedules().values();
+  }
+
+  // RepairRun operations
+  public Collection<RepairRun> getRepairRuns() {
+    return this.memoryStorageRoot.getRepairRuns().values();
+  }
+
+  public RepairRun addRepairRun(RepairRun run) {
+    RepairRun newRun = this.memoryStorageRoot.addRepairRun(run);
+    this.persist(this.memoryStorageRoot.getRepairRuns());
+    return newRun;
+  }
+
+  public RepairRun removeRepairRun(UUID id) {
+    RepairRun run = this.memoryStorageRoot.removeRepairRun(id);
+    this.persist(this.memoryStorageRoot.getRepairRuns());
+    return run;
+  }
+
+  public Optional<RepairRun> getRepairRunById(UUID id) {
+    return Optional.ofNullable(this.memoryStorageRoot.getRepairRunById(id));
+  }
+
+  // RepairUnit operations
+  public Collection<RepairUnit> getRepairUnits() {
+    return this.memoryStorageRoot.getRepairUnits().values();
+  }
+
+  public RepairUnit addRepairUnit(Optional<RepairUnit.Builder> key, RepairUnit unit) {
+    RepairUnit newUnit = this.memoryStorageRoot.addRepairUnit(key.get(), unit);
+    this.persist(this.memoryStorageRoot.getRepairUnits(), this.memoryStorageRoot.getRepairUnitsByKey());
+    return newUnit;
+  }
+
+  public RepairUnit removeRepairUnit(Optional<RepairUnit.Builder> key, UUID id) {
+    RepairUnit unit = this.memoryStorageRoot.removeRepairUnit(key.get(), id);
+    this.persist(this.memoryStorageRoot.getRepairUnits(), this.memoryStorageRoot.getRepairUnitsByKey());
+    return unit;
+  }
+
+  public RepairUnit getRepairUnitById(UUID id) {
+    return this.memoryStorageRoot.getrRepairUnitById(id);
+  }
+
+  public RepairUnit getRepairUnitByKey(RepairUnit.Builder key) {
+    return this.memoryStorageRoot.getRepairUnitByKey(key);
+  }
+
+  // RepairSegment operations
+  public RepairSegment addRepairSegment(RepairSegment segment) {
+    final RepairSegment newSegment = this.memoryStorageRoot.addRepairSegment(segment);
+    this.persist(this.memoryStorageRoot.getRepairSegments());
+    return newSegment;
+  }
+
+  public RepairSegment removeRepairSegment(UUID id) {
+    RepairSegment segment = this.memoryStorageRoot.removeRepairSegment(id);
+    this.persist(this.memoryStorageRoot.getRepairSegments());
+    return segment;
+  }
+
+  public RepairSegment getRepairSegmentById(UUID id) {
+    return this.memoryStorageRoot.getRepairSegmentById(id);
+  }
+
+  public Collection<RepairSegment> getRepairSegmentsByRunId(UUID runId) {
+    return this.memoryStorageRoot.getRepairSegments().values().stream()
+        .filter(segment -> segment.getRunId().equals(runId)).collect(Collectors.toSet());
+  }
+
+  // RepairSubscription operations
+  public Map<UUID, DiagEventSubscription> getSubscriptionsById() {
+    return this.memoryStorageRoot.getSubscriptionsById();
+  }
 }

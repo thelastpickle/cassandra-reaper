@@ -30,9 +30,9 @@ import io.cassandrareaper.resources.view.NodesStatus;
 
 import java.math.BigInteger;
 import java.net.InetSocketAddress;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -811,8 +811,13 @@ public class HttpCassandraManagementProxyTest {
     context.config = config;
 
     Path tempDirectory = Files.createTempDirectory("reload-test");
-    Path ks = Paths.get("/home/runner/work/cassandra-reaper/cassandra-reaper/.github/files/keystore.jks");
-    Path ts = Paths.get("/home/runner/work/cassandra-reaper/cassandra-reaper/.github/files/truststore.jks");
+    // handle running tests locally vs. via GitHub actions
+    // Path ks = Paths.get("/home/runner/work/cassandra-reaper/cassandra-reaper/.github/files/keystore.jks");
+    // Path ts = Paths.get("/home/runner/work/cassandra-reaper/cassandra-reaper/.github/files/truststore.jks");
+    // use relative paths as we are likely running locally
+    Path projectRoot = FileSystems.getDefault().getPath("..", "..", "..");
+    Path ks = projectRoot.resolve(".github/files/keystore.jks");
+    Path ts = projectRoot.resolve(".github/files/truststore.jks");
 
     Path tsCopy =
         Files.copy(ts, tempDirectory.resolve(ts.getFileName()));
