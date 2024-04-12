@@ -31,8 +31,7 @@
     <properties>
         <dropwizard.version>2.1.12</dropwizard.version>
         <jersey.version>2.35</jersey.version>
-        <logback.version>1.5.4</logback.version>
-        <logback.access.version>1.4.9</logback.access.version>
+        <logback.version>1.3.14</logback.version>
         <cxf.version>3.4.5</cxf.version>
         <shiro.version>1.12.0</shiro.version>
         <prometheus.version>0.12.0</prometheus.version>
@@ -74,7 +73,7 @@
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-access</artifactId>
-            <version>${logback.access.version}</version>
+            <version>${logback.version}</version>
         </dependency>
         <dependency>
             <groupId>ch.qos.logback</groupId>
