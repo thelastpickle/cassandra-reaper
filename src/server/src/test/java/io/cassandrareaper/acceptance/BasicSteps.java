@@ -2426,7 +2426,7 @@ public final class BasicSteps {
               new DiagEventSubscription(
                   Optional.empty(),
                   s.getCluster(),
-                  Optional.of(s.getDescription()),
+                  Optional.ofNullable(s.getDescription()),
                   s.getNodes(),
                   s.getEvents(),
                   s.getExportSse(),
