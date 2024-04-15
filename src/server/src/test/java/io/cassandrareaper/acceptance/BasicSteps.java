@@ -2417,7 +2417,9 @@ public final class BasicSteps {
           .collect(Collectors.toList());
 
       Assertions.assertThat(testContext.getRetrievedEventSubscriptions().size()).isEqualTo(expected.size());
-
+      testContext.getRetrievedEventSubscriptions().forEach(sub -> {
+        LOG.warn("DEBUG DEBUG: DiagEventSubscription:\n{}", java.util.Objects.toString(sub));
+      });
       List<DiagEventSubscription> lastRetrieved = testContext.getRetrievedEventSubscriptions()
           .stream()
           .map(s ->
