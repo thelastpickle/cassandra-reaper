@@ -67,6 +67,7 @@ import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.MoreExecutors;
 import org.apache.cassandra.repair.RepairParallelism;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
@@ -744,7 +745,8 @@ final class RepairRunner implements Runnable {
             public void onFailure(Throwable throwable) {
               LOG.error("Executing SegmentRunner failed", throwable);
             }
-          });
+          },
+          MoreExecutors.directExecutor());
     } catch (ReaperException ex) {
       LOG.error("Executing SegmentRunner failed", ex);
     }

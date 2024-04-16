@@ -77,3 +77,5 @@ accessControl:
 cryptograph:
   type: symmetric
   systemPropertySecret: REAPER_ENCRYPTION_KEY
+
+persistenceStoragePath: /tmp/reaper/storage/
