@@ -56,7 +56,7 @@ public class CassandraEventsDao implements IEventsDao {
     return new DiagEventSubscription(
         Optional.of(row.getUUID("id")),
         row.getString("cluster"),
-        Optional.of(row.getString("description")),
+        Optional.ofNullable(row.getString("description")),
         row.getSet("nodes", String.class),
         row.getSet("events", String.class),
         row.getBool("export_sse"),
