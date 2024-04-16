@@ -98,4 +98,11 @@ fi
 # END cassandra persistence options
 
     ;;
+    "memory")
+# BEGIN cassandra persistence options
+cat <<EOT >> /etc/cassandra-reaper/cassandra-reaper.yml
+persistenceStoragePath: ${REAPER_MEMORY_STORAGE_DIRECTORY}
+
+EOT
+    ;;
 esac

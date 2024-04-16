@@ -47,6 +47,7 @@ if [ "$1" = 'cassandra-reaper' ]; then
             ${JAVA_OPTS} \
             -Xms${REAPER_HEAP_SIZE} \
             -Xmx${REAPER_HEAP_SIZE} \
+            -Djava.io.tmpdir=${REAPER_TMP_DIRECTORY} \
             -cp "/usr/local/lib/*" io.cassandrareaper.ReaperApplication server \
             /etc/cassandra-reaper/cassandra-reaper.yml
 fi
@@ -62,6 +63,7 @@ if [ "$1" = 'schema-migration' ]; then
     /usr/local/bin/configure-jmx-credentials.sh
     exec java \
             ${JAVA_OPTS} \
+            -Djava.io.tmpdir=${REAPER_TMP_DIRECTORY} \
             -cp "/usr/local/lib/*" io.cassandrareaper.ReaperApplication schema-migration \
             /etc/cassandra-reaper/cassandra-reaper.yml
 fi
