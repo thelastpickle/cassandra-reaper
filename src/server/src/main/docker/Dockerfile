@@ -89,7 +89,7 @@ RUN apk add --update \
     python3 \
     py3-pip \
     bash \
-  && pip3 install requests \
+    py3-requests \
   && rm -rf /var/cache/apk/*
 
 
