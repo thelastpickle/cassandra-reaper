@@ -160,12 +160,11 @@
                     <groupId>com.boundary</groupId>
                     <artifactId>high-scale-lib</artifactId>
                 </exclusion>
+                <exclusion>
+                    <groupId>org.yaml</groupId>
+                    <artifactId>snakeyaml</artifactId>
+                </exclusion>
             </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>org.yaml</groupId>
-            <artifactId>snakeyaml</artifactId>
-            <version>1.29</version>
         </dependency>
         <dependency>
             <groupId>io.netty</groupId>
