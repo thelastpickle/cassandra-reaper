@@ -82,7 +82,9 @@ ENV REAPER_SEGMENT_COUNT_PER_NODE=64 \
     REAPER_MGMT_API_METRICS_PORT=9000 \
     REAPER_HTTP_MANAGEMENT_ENABLE="false" \
     REAPER_HTTP_MANAGEMENT_KEYSTORE_PATH="" \
-    REAPER_HTTP_MANAGEMENT_TRUSTSTORE_PATH=""
+    REAPER_HTTP_MANAGEMENT_TRUSTSTORE_PATH="" \
+    REAPER_TMP_DIRECTORY="/var/tmp/cassandra-reaper" \
+    REAPER_MEMORY_STORAGE_DIRECTORY="/var/lib/cassandra-reaper/storage"
 
 # used to run spreaper cli
 RUN apk add --update \
@@ -114,6 +116,7 @@ RUN addgroup -g 1001 -S reaper && adduser -G reaper -S -u 1001 reaper && \
     mkdir -p /var/lib/cassandra-reaper && \
     mkdir -p /etc/cassandra-reaper/shiro && \
     mkdir -p /var/log/cassandra-reaper && \
+    mkdir -p ${REAPER_TMP_DIRECTORY} && \
     chown reaper:reaper \
         /etc/cassandra-reaper/cassandra-reaper.yml \
         /usr/local/lib/cassandra-reaper.jar \
@@ -123,7 +126,8 @@ RUN addgroup -g 1001 -S reaper && adduser -G reaper -S -u 1001 reaper && \
         /usr/local/bin/configure-metrics.sh \
         /usr/local/bin/configure-jmx-credentials.sh \
         /usr/local/bin/spreaper \
-        /etc/cassandra-reaper/shiro.ini && \
+        /etc/cassandra-reaper/shiro.ini \
+        ${REAPER_TMP_DIRECTORY} && \
     chown -R reaper:reaper \
         /var/lib/cassandra-reaper \
         /etc/cassandra-reaper/shiro \
