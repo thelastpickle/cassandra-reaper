@@ -52,7 +52,6 @@ We recommend the use of nvm to manage node versions.
 Dependencies
 ------------
 
-For information on the packaged dependencies of Reaper for Apache Cassandra&reg; and their licenses, check out our [open source report](https://app.fossa.com/reports/9754f92d-782f-4660-a410-d0337e8ff514).
-
+Reaper uses an unmodified EPL-2.0 licensed dependency: [EclipseStore](https://eclipsestore.io/). The source code can be found in the [GitHub repository](https://github.com/eclipse-store/store).
 
 *Note: This repo is a fork from the original Reaper project, created by the awesome folks at Spotify.*
