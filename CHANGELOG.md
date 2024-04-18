@@ -1,5 +1,18 @@
 ## Change Log
 
+### 3.6.0 (2024/04/18 08:53 +00:00)
+- [#1500](https://github.com/thelastpickle/cassandra-reaper/pull/1500) Upgrade snakeyaml (#1500) (@emerkle826)
+- [#1499](https://github.com/thelastpickle/cassandra-reaper/pull/1499) Update Dockerfile to specify restricted Java temp directory (#1499) (@emerkle826)
+- [#1498](https://github.com/thelastpickle/cassandra-reaper/pull/1498) Update Dockerfile base image (#1498) (@emerkle826)
+- [#1492](https://github.com/thelastpickle/cassandra-reaper/pull/1492) Fix High/Critical CVEs (#1492) (@emerkle826)
+- [#1484](https://github.com/thelastpickle/cassandra-reaper/pull/1484) Add EclipseStore to memory storage for persistence (#1484) (@emerkle826)
+- [#1481](https://github.com/thelastpickle/cassandra-reaper/pull/1481) Upgrade dropwizard.version to 2.1.12 (#1481) (@FieteO)
+- [#1482](https://github.com/thelastpickle/cassandra-reaper/pull/1482) Generate SHA256 digests when packaging RPM files. (#1482) (@ernstae)
+- [#1478](https://github.com/thelastpickle/cassandra-reaper/pull/1478) Ignore repair_run_by_cluster_v2 rows with no corresponding repair (#1478) (@SesquipedalianDefenestrator)
+- [#1479](https://github.com/thelastpickle/cassandra-reaper/pull/1479) Improve idempotency of db creation scripts (#1479) (@FieteO)
+- [#1477](https://github.com/thelastpickle/cassandra-reaper/pull/1477) Set segment count per node to consistent value across defaults and docs (#1477) (@SesquipedalianDefenestrator)
+- [#1470](https://github.com/thelastpickle/cassandra-reaper/pull/1470) Fix spelling (#1470) (@Hagfjall)
+
 ### 3.5.0 (2024/02/22 08:49 +00:00)
 - [#1467](https://github.com/thelastpickle/cassandra-reaper/pull/1467) Add dotenv dependency to the build image (#1467) (@adejanovski)
 - [#1466](https://github.com/thelastpickle/cassandra-reaper/pull/1466) Watch the keystore and truststore directories for changes (#1466) (@burmanm)
