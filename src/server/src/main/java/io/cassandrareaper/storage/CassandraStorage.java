@@ -140,6 +140,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
 
   /* prepared stmts */
   private PreparedStatement insertClusterPrepStmt;
+  private PreparedStatement updateClusterPrepStmt;
   private PreparedStatement getClusterPrepStmt;
   private PreparedStatement deleteClusterPrepStmt;
   private PreparedStatement insertRepairRunPrepStmt;
@@ -323,6 +324,11 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
                 "INSERT INTO cluster(name, partitioner, seed_hosts, properties, state, last_contact)"
                     + " values(?, ?, ?, ?, ?, ?)")
             .setConsistencyLevel(ConsistencyLevel.QUORUM);
+    updateClusterPrepStmt = session
+            .prepare(
+                "INSERT INTO cluster(name, seed_hosts, state, last_contact)"
+                    + " values(?, ?, ?, ?)")
+            .setConsistencyLevel(ConsistencyLevel.LOCAL_ONE);
     getClusterPrepStmt = session
         .prepare("SELECT * FROM cluster WHERE name = ?")
         .setConsistencyLevel(ConsistencyLevel.QUORUM)
@@ -547,7 +553,18 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
 
   @Override
   public boolean updateCluster(Cluster newCluster) {
-    return addCluster(newCluster);
+    try {
+      session.execute(
+          updateClusterPrepStmt.bind(
+            newCluster.getName(),
+            newCluster.getSeedHosts(),
+            newCluster.getState().name(),
+            java.sql.Date.valueOf(newCluster.getLastContact())));
+    } catch (RuntimeException e) {
+      LOG.error("Failed updating cluster", e);
+      throw new IllegalStateException(e);
+    }
+    return true;
   }
 
   private boolean addClusterAssertions(Cluster cluster) {
