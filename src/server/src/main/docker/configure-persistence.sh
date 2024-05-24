@@ -16,20 +16,20 @@
 
 # Add specific jmxAddressTranslator
 if [ ! -z "${JMX_ADDRESS_TRANSLATOR_TYPE}" ]; then
-cat <<EOT >> /etc/cassandra-reaper/cassandra-reaper.yml
+cat <<EOT >> /etc/cassandra-reaper/config/cassandra-reaper.yml
 jmxAddressTranslator:
   type: ${JMX_ADDRESS_TRANSLATOR_TYPE}
 EOT
 fi
 
 if [ "multiIpPerNode" = "${JMX_ADDRESS_TRANSLATOR_TYPE}" ] && [ -n "$JMX_ADDRESS_TRANSLATOR_MAPPING" ]; then
-cat <<EOT >> /etc/cassandra-reaper/cassandra-reaper.yml
+cat <<EOT >> /etc/cassandra-reaper/config/cassandra-reaper.yml
   ipTranslations:
 EOT
 IFS=',' read -ra mappings <<< "$JMX_ADDRESS_TRANSLATOR_MAPPING"
 for mapping in "${mappings[@]}"; do
 IFS=':' read -ra mapping <<< "$mapping"
-cat <<EOT >> /etc/cassandra-reaper/cassandra-reaper.yml
+cat <<EOT >> /etc/cassandra-reaper/config/cassandra-reaper.yml
     - from: "${mapping[0]}"
       to: "${mapping[1]}"
 EOT
@@ -40,7 +40,7 @@ case ${REAPER_STORAGE_TYPE} in
     "cassandra")
 
 # BEGIN cassandra persistence options
-cat <<EOT >> /etc/cassandra-reaper/cassandra-reaper.yml
+cat <<EOT >> /etc/cassandra-reaper/config/cassandra-reaper.yml
 activateQueryLogger: ${REAPER_CASS_ACTIVATE_QUERY_LOGGER}
 
 cassandra:
@@ -59,7 +59,7 @@ cassandra:
 EOT
 
 if [ "true" = "${REAPER_CASS_AUTH_ENABLED}" ]; then
-cat <<EOT >> /etc/cassandra-reaper/cassandra-reaper.yml
+cat <<EOT >> /etc/cassandra-reaper/config/cassandra-reaper.yml
   authProvider:
     type: plainText
     username: "$(echo "${REAPER_CASS_AUTH_USERNAME}" | sed 's/"/\\"/g')"
@@ -68,27 +68,27 @@ EOT
 fi
 
 if [ "true" = "${REAPER_CASS_NATIVE_PROTOCOL_SSL_ENCRYPTION_ENABLED}" ]; then
-cat <<EOT >> /etc/cassandra-reaper/cassandra-reaper.yml
+cat <<EOT >> /etc/cassandra-reaper/config/cassandra-reaper.yml
   ssl:
     type: jdk
 EOT
 fi
 
 if [ "true" = "${REAPER_CASS_ADDRESS_TRANSLATOR_ENABLED}" ]; then
-cat <<EOT >> /etc/cassandra-reaper/cassandra-reaper.yml
+cat <<EOT >> /etc/cassandra-reaper/config/cassandra-reaper.yml
   addressTranslator:
     type: ${REAPER_CASS_ADDRESS_TRANSLATOR_TYPE}
 EOT
 fi
 
 if [ "multiIpPerNode" = "${REAPER_CASS_ADDRESS_TRANSLATOR_TYPE}" ] && [ -n "$REAPER_CASS_ADDRESS_TRANSLATOR_MAPPING" ]; then
-cat <<EOT >> /etc/cassandra-reaper/cassandra-reaper.yml
+cat <<EOT >> /etc/cassandra-reaper/config/cassandra-reaper.yml
     ipTranslations:
 EOT
 IFS=',' read -ra mappings <<< "$REAPER_CASS_ADDRESS_TRANSLATOR_MAPPING"
 for mapping in "${mappings[@]}"; do
 IFS=':' read -ra mapping <<< "$mapping"
-cat <<EOT >> /etc/cassandra-reaper/cassandra-reaper.yml
+cat <<EOT >> /etc/cassandra-reaper/config/cassandra-reaper.yml
     - from: "${mapping[0]}"
       to: "${mapping[1]}"
 EOT
@@ -100,7 +100,7 @@ fi
     ;;
     "memory")
 # BEGIN cassandra persistence options
-cat <<EOT >> /etc/cassandra-reaper/cassandra-reaper.yml
+cat <<EOT >> /etc/cassandra-reaper/config/cassandra-reaper.yml
 persistenceStoragePath: ${REAPER_MEMORY_STORAGE_DIRECTORY}
 
 EOT
