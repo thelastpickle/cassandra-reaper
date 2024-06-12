@@ -1,5 +1,8 @@
 ## Change Log
 
+### 3.6.1 (2024/06/11 07:14 +00:00)
+- [#1507](https://github.com/thelastpickle/cassandra-reaper/pull/1507) Allow mounting a volume to host the config and enable read only root FS (#1507) (@adejanovski)
+
 ### 3.6.0 (2024/04/18 08:53 +00:00)
 - [#1500](https://github.com/thelastpickle/cassandra-reaper/pull/1500) Upgrade snakeyaml (#1500) (@emerkle826)
 - [#1499](https://github.com/thelastpickle/cassandra-reaper/pull/1499) Update Dockerfile to specify restricted Java temp directory (#1499) (@emerkle826)
