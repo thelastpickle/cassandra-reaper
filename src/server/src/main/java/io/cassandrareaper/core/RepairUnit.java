@@ -31,6 +31,7 @@ public final class RepairUnit {
   private final String keyspaceName;
   private final Set<String> columnFamilies;
   private final boolean incrementalRepair;
+  private final boolean subrangeIncrementalRepair;
   private final Set<String> nodes;
   private final Set<String> datacenters;
   private final Set<String> blacklistedTables;
@@ -43,6 +44,7 @@ public final class RepairUnit {
     this.keyspaceName = builder.keyspaceName;
     this.columnFamilies = builder.columnFamilies;
     this.incrementalRepair = builder.incrementalRepair;
+    this.subrangeIncrementalRepair = builder.subrangeIncrementalRepair;
     this.nodes = builder.nodes;
     this.datacenters = builder.datacenters;
     this.blacklistedTables = builder.blacklistedTables;
@@ -72,6 +74,10 @@ public final class RepairUnit {
 
   public boolean getIncrementalRepair() {
     return incrementalRepair;
+  }
+
+  public boolean getSubrangeIncrementalRepair() {
+    return subrangeIncrementalRepair;
   }
 
   public Set<String> getNodes() {
@@ -104,6 +110,7 @@ public final class RepairUnit {
     public String keyspaceName;
     public Set<String> columnFamilies = Collections.emptySet();
     public Boolean incrementalRepair;
+    public Boolean subrangeIncrementalRepair;
     public Set<String> nodes = Collections.emptySet();
     public Set<String> datacenters = Collections.emptySet();
     public Set<String> blacklistedTables = Collections.emptySet();
@@ -117,6 +124,7 @@ public final class RepairUnit {
       keyspaceName = original.keyspaceName;
       columnFamilies = original.columnFamilies;
       incrementalRepair = original.incrementalRepair;
+      subrangeIncrementalRepair = original.subrangeIncrementalRepair;
       nodes = original.nodes;
       datacenters = original.datacenters;
       blacklistedTables = original.blacklistedTables;
@@ -141,6 +149,11 @@ public final class RepairUnit {
 
     public Builder incrementalRepair(boolean incrementalRepair) {
       this.incrementalRepair = incrementalRepair;
+      return this;
+    }
+
+    public Builder subrangeIncrementalRepair(boolean subrangeIncrementalRepair) {
+      this.subrangeIncrementalRepair = subrangeIncrementalRepair;
       return this;
     }
 
@@ -173,6 +186,8 @@ public final class RepairUnit {
       Preconditions.checkState(null != clusterName, "clusterName(..) must be called before build(..)");
       Preconditions.checkState(null != keyspaceName, "keyspaceName(..) must be called before build(..)");
       Preconditions.checkState(null != incrementalRepair, "incrementalRepair(..) must be called before build(..)");
+      Preconditions.checkState(null != subrangeIncrementalRepair,
+          "subrangeIncrementalRepair(..) must be called before build(..)");
       Preconditions.checkState(null != repairThreadCount, "repairThreadCount(..) must be called before build(..)");
       Preconditions.checkState(null != timeout, "timeout(..) must be called before build(..)");
       return new RepairUnit(this, id);
@@ -189,6 +204,8 @@ public final class RepairUnit {
       hash +=  Objects.hashCode(this.columnFamilies);
       hash *= 59;
       hash +=  (this.incrementalRepair ? 2 : 1);
+      hash *= 59;
+      hash +=  (this.subrangeIncrementalRepair ? 2 : 1);
       hash *= 59;
       hash +=  Objects.hashCode(this.nodes);
       hash *= 59;
@@ -212,6 +229,7 @@ public final class RepairUnit {
       }
 
       return Objects.equals(this.incrementalRepair, ((Builder) obj).incrementalRepair)
+          && Objects.equals(this.subrangeIncrementalRepair, ((Builder) obj).subrangeIncrementalRepair)
           && Objects.equals(this.clusterName, ((Builder) obj).clusterName)
           && Objects.equals(this.keyspaceName, ((Builder) obj).keyspaceName)
           && Objects.equals(this.columnFamilies, ((Builder) obj).columnFamilies)

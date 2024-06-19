@@ -305,6 +305,7 @@ public final class RepairRunServiceTest {
         .keyspaceName("test")
         .blacklistedTables(Sets.newHashSet("table1"))
         .incrementalRepair(false)
+        .subrangeIncrementalRepair(false)
         .repairThreadCount(4)
         .timeout(segmentTimeout)
         .build(UUIDs.timeBased());
@@ -392,6 +393,7 @@ public final class RepairRunServiceTest {
         .keyspaceName("test")
         .blacklistedTables(Sets.newHashSet("table1"))
         .incrementalRepair(false)
+        .subrangeIncrementalRepair(false)
         .repairThreadCount(4)
         .timeout(segmentTimeout)
         .build(UUIDs.timeBased());
@@ -406,6 +408,7 @@ public final class RepairRunServiceTest {
     final String KS_NAME = "reaper";
     final Set<String> CF_NAMES = Sets.newHashSet("reaper");
     final boolean INCREMENTAL_REPAIR = false;
+    final boolean SUBRANGE_INCREMENTAL_REPAIR = false;
     final Set<String> NODES = Sets.newHashSet("127.0.0.1", "127.0.0.2", "127.0.0.3");
     final Set<String> DATACENTERS = Collections.emptySet();
     final Set<String> BLACKLISTED_TABLES = Collections.emptySet();
@@ -450,6 +453,7 @@ public final class RepairRunServiceTest {
         .keyspaceName(KS_NAME)
         .columnFamilies(CF_NAMES)
         .incrementalRepair(INCREMENTAL_REPAIR)
+        .subrangeIncrementalRepair(SUBRANGE_INCREMENTAL_REPAIR)
         .nodes(NODES)
         .datacenters(DATACENTERS)
         .blacklistedTables(BLACKLISTED_TABLES)
@@ -465,6 +469,7 @@ public final class RepairRunServiceTest {
     final String KS_NAME = "reaper";
     final Set<String> CF_NAMES = Sets.newHashSet("reaper");
     final boolean INCREMENTAL_REPAIR = false;
+    final boolean SUBRANGE_INCREMENTAL_REPAIR = false;
     final Set<String> NODES = Sets.newHashSet("127.0.0.1", "127.0.0.2", "127.0.0.3");
     final Set<String> DATACENTERS = Collections.emptySet();
     final Set<String> BLACKLISTED_TABLES = Collections.emptySet();
@@ -515,6 +520,7 @@ public final class RepairRunServiceTest {
         .keyspaceName(KS_NAME)
         .columnFamilies(CF_NAMES)
         .incrementalRepair(INCREMENTAL_REPAIR)
+        .subrangeIncrementalRepair(SUBRANGE_INCREMENTAL_REPAIR)
         .nodes(NODES)
         .datacenters(DATACENTERS)
         .blacklistedTables(BLACKLISTED_TABLES)
@@ -531,6 +537,7 @@ public final class RepairRunServiceTest {
     final String KS_NAME = "reaper";
     final Set<String> CF_NAMES = Sets.newHashSet("reaper");
     final boolean INCREMENTAL_REPAIR = false;
+    final boolean SUBRANGE_INCREMENTAL_REPAIR = false;
     final Set<String> NODES = Sets.newHashSet("127.0.0.1", "127.0.0.2", "127.0.0.3");
     final Set<String> DATACENTERS = Sets.newHashSet("dc1");
     final Set<String> BLACKLISTED_TABLES = Collections.emptySet();
@@ -575,6 +582,7 @@ public final class RepairRunServiceTest {
         .keyspaceName(KS_NAME)
         .columnFamilies(CF_NAMES)
         .incrementalRepair(INCREMENTAL_REPAIR)
+        .subrangeIncrementalRepair(SUBRANGE_INCREMENTAL_REPAIR)
         .nodes(NODES)
         .datacenters(DATACENTERS)
         .blacklistedTables(BLACKLISTED_TABLES)
@@ -592,6 +600,7 @@ public final class RepairRunServiceTest {
     final String KS_NAME = "reaper";
     final Set<String> CF_NAMES = Sets.newHashSet("reaper");
     final boolean INCREMENTAL_REPAIR = false;
+    final boolean SUBRANGE_INCREMENTAL_REPAIR = false;
     final Set<String> NODES = Sets.newHashSet("127.0.0.1", "127.0.0.2", "127.0.0.3");
     final Set<String> DATACENTERS = Sets.newHashSet("dc1");
     final Set<String> BLACKLISTED_TABLES = Collections.emptySet();
@@ -639,6 +648,7 @@ public final class RepairRunServiceTest {
         .keyspaceName(KS_NAME)
         .columnFamilies(CF_NAMES)
         .incrementalRepair(INCREMENTAL_REPAIR)
+        .subrangeIncrementalRepair(SUBRANGE_INCREMENTAL_REPAIR)
         .nodes(NODES)
         .datacenters(DATACENTERS)
         .blacklistedTables(BLACKLISTED_TABLES)
@@ -655,6 +665,7 @@ public final class RepairRunServiceTest {
     final String KS_NAME = "reaper";
     final Set<String> CF_NAMES = Sets.newHashSet("reaper");
     final boolean INCREMENTAL_REPAIR = false;
+    final boolean SUBRANGE_INCREMENTAL_REPAIR = false;
     final Set<String> NODES = Sets.newHashSet("127.0.0.1", "127.0.0.2", "127.0.0.3");
     final Set<String> DATACENTERS = Sets.newHashSet("dc1");
     final Set<String> BLACKLISTED_TABLES = Collections.emptySet();
@@ -682,6 +693,7 @@ public final class RepairRunServiceTest {
         .keyspaceName(KS_NAME)
         .columnFamilies(CF_NAMES)
         .incrementalRepair(INCREMENTAL_REPAIR)
+        .subrangeIncrementalRepair(SUBRANGE_INCREMENTAL_REPAIR)
         .nodes(NODES)
         .datacenters(DATACENTERS)
         .blacklistedTables(BLACKLISTED_TABLES)
@@ -821,6 +833,7 @@ public final class RepairRunServiceTest {
     final String KS_NAME = "reaper";
     final Set<String> CF_NAMES = Sets.newHashSet("reaper");
     final boolean INCREMENTAL_REPAIR = false;
+    final boolean SUBRANGE_INCREMENTAL_REPAIR = false;
     final Set<String> NODES = Sets.newHashSet("127.0.0.1", "127.0.0.2", "127.0.0.3");
     final Set<String> DATACENTERS = Collections.emptySet();
     final Set<String> BLACKLISTED_TABLES = Collections.emptySet();
@@ -841,6 +854,7 @@ public final class RepairRunServiceTest {
             .keyspaceName(KS_NAME)
             .columnFamilies(CF_NAMES)
             .incrementalRepair(INCREMENTAL_REPAIR)
+            .subrangeIncrementalRepair(SUBRANGE_INCREMENTAL_REPAIR)
             .nodes(NODES)
             .datacenters(DATACENTERS)
             .blacklistedTables(BLACKLISTED_TABLES)
@@ -888,6 +902,7 @@ public final class RepairRunServiceTest {
         .keyspaceName("test")
         .blacklistedTables(Sets.newHashSet("table1"))
         .incrementalRepair(false)
+        .subrangeIncrementalRepair(false)
         .repairThreadCount(4)
         .timeout(segmentTimeout)
         .build(UUIDs.timeBased());

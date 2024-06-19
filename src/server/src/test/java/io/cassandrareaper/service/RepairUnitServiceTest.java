@@ -106,6 +106,7 @@ public final class RepairUnitServiceTest {
         .keyspaceName("test")
         .blacklistedTables(Sets.newHashSet("table1"))
         .incrementalRepair(false)
+        .subrangeIncrementalRepair(false)
         .repairThreadCount(4)
         .timeout(30)
         .build(UUIDs.timeBased());
@@ -130,6 +131,7 @@ public final class RepairUnitServiceTest {
         .keyspaceName("test")
         .blacklistedTables(Sets.newHashSet("table1"))
         .incrementalRepair(false)
+        .subrangeIncrementalRepair(false)
         .repairThreadCount(4)
         .timeout(30)
         .build(UUIDs.timeBased());
@@ -153,6 +155,7 @@ public final class RepairUnitServiceTest {
         .clusterName(cluster.getName())
         .keyspaceName("test")
         .incrementalRepair(false)
+        .subrangeIncrementalRepair(false)
         .repairThreadCount(4)
         .timeout(30)
         .build(UUIDs.timeBased());
@@ -177,6 +180,7 @@ public final class RepairUnitServiceTest {
         .keyspaceName("test")
         .blacklistedTables(Sets.newHashSet("table1", "table3"))
         .incrementalRepair(false)
+        .subrangeIncrementalRepair(false)
         .repairThreadCount(4)
         .timeout(30)
         .build(UUIDs.timeBased());
@@ -201,6 +205,7 @@ public final class RepairUnitServiceTest {
         .keyspaceName("test")
         .blacklistedTables(Sets.newHashSet("table1"))
         .incrementalRepair(false)
+        .subrangeIncrementalRepair(false)
         .repairThreadCount(4)
         .timeout(30)
         .build(UUIDs.timeBased());
@@ -226,6 +231,7 @@ public final class RepairUnitServiceTest {
         .columnFamilies(Sets.newHashSet("table1", "table2"))
         .blacklistedTables(Sets.newHashSet("table1"))
         .incrementalRepair(false)
+        .subrangeIncrementalRepair(false)
         .repairThreadCount(4)
         .timeout(30)
         .build(UUIDs.timeBased());
@@ -251,6 +257,7 @@ public final class RepairUnitServiceTest {
         .columnFamilies(Sets.newHashSet("table1", "table2"))
         .blacklistedTables(Sets.newHashSet("table1"))
         .incrementalRepair(false)
+        .subrangeIncrementalRepair(false)
         .repairThreadCount(4)
         .timeout(30)
         .build(UUIDs.timeBased());
@@ -275,6 +282,7 @@ public final class RepairUnitServiceTest {
         .keyspaceName("test")
         .blacklistedTables(Sets.newHashSet("table1", "table2", "table3"))
         .incrementalRepair(false)
+        .subrangeIncrementalRepair(false)
         .repairThreadCount(4)
         .timeout(30)
         .build(UUIDs.timeBased());
@@ -301,6 +309,7 @@ public final class RepairUnitServiceTest {
         .columnFamilies(Sets.newHashSet("table1", "table2", "table3"))
         .blacklistedTables(Sets.newHashSet("table1", "table2", "table3"))
         .incrementalRepair(false)
+        .subrangeIncrementalRepair(false)
         .repairThreadCount(4)
         .timeout(30)
         .build(UUIDs.timeBased());
@@ -327,6 +336,7 @@ public final class RepairUnitServiceTest {
         .columnFamilies(Sets.newHashSet("table1", "table2", "table3"))
         .blacklistedTables(Sets.newHashSet("table1", "table2", "table3"))
         .incrementalRepair(false)
+        .subrangeIncrementalRepair(false)
         .repairThreadCount(4)
         .timeout(30)
         .build(UUIDs.timeBased());
@@ -362,6 +372,7 @@ public final class RepairUnitServiceTest {
         .columnFamilies(Sets.newHashSet("table1", "table2", "table3"))
         .blacklistedTables(Sets.newHashSet("table1", "table2", "table3"))
         .incrementalRepair(false)
+        .subrangeIncrementalRepair(false)
         .repairThreadCount(4)
         .timeout(30)
         .build(UUIDs.timeBased());
@@ -395,6 +406,7 @@ public final class RepairUnitServiceTest {
         .clusterName(cluster.getName())
         .keyspaceName("test")
         .incrementalRepair(false)
+        .subrangeIncrementalRepair(false)
         .repairThreadCount(4)
         .timeout(30)
         .build(UUIDs.timeBased());
@@ -426,6 +438,7 @@ public final class RepairUnitServiceTest {
         .clusterName(cluster.getName())
         .keyspaceName("test")
         .incrementalRepair(false)
+        .subrangeIncrementalRepair(false)
         .repairThreadCount(4)
         .timeout(30)
         .build(UUIDs.timeBased());
@@ -459,6 +472,7 @@ public final class RepairUnitServiceTest {
         .columnFamilies(Sets.newHashSet("table1", "table2", "table3"))
         .blacklistedTables(Sets.newHashSet("table1", "table2", "table3"))
         .incrementalRepair(true)
+        .subrangeIncrementalRepair(false)
         .repairThreadCount(4)
         .timeout(30)
         .build(UUIDs.timeBased());
@@ -494,6 +508,7 @@ public final class RepairUnitServiceTest {
         .columnFamilies(Sets.newHashSet("table1", "table2", "table3"))
         .blacklistedTables(Sets.newHashSet("table1", "table2", "table3"))
         .incrementalRepair(false)
+        .subrangeIncrementalRepair(false)
         .repairThreadCount(4)
         .timeout(30)
         .build(UUIDs.timeBased());
@@ -542,6 +557,7 @@ public final class RepairUnitServiceTest {
         .blacklistedTables(Sets.newHashSet("table1", "table2", "table3"))
         .nodes(Sets.newHashSet("node1"))
         .incrementalRepair(false)
+        .subrangeIncrementalRepair(false)
         .repairThreadCount(4)
         .timeout(30)
         .build(UUIDs.timeBased());
@@ -578,6 +594,7 @@ public final class RepairUnitServiceTest {
         .datacenters(Sets.newHashSet("dc1"))
         .nodes(Sets.newHashSet("node1"))
         .incrementalRepair(false)
+        .subrangeIncrementalRepair(false)
         .repairThreadCount(4)
         .timeout(30)
         .build(UUIDs.timeBased());
@@ -621,6 +638,7 @@ public final class RepairUnitServiceTest {
         .datacenters(Sets.newHashSet("dc1"))
         .nodes(Sets.newHashSet("node1"))
         .incrementalRepair(false)
+        .subrangeIncrementalRepair(false)
         .repairThreadCount(4)
         .timeout(30)
         .build(UUIDs.timeBased());
@@ -663,6 +681,7 @@ public final class RepairUnitServiceTest {
         .columnFamilies(Sets.newHashSet("table1", "table2", "table3"))
         .blacklistedTables(Sets.newHashSet("table1", "table2", "table3"))
         .incrementalRepair(false)
+        .subrangeIncrementalRepair(false)
         .repairThreadCount(4)
         .timeout(30)
         .build(UUIDs.timeBased());
@@ -701,6 +720,7 @@ public final class RepairUnitServiceTest {
         .blacklistedTables(Sets.newHashSet("table1", "table2", "table3"))
         .nodes(Sets.newHashSet("node1"))
         .incrementalRepair(false)
+        .subrangeIncrementalRepair(false)
         .repairThreadCount(4)
         .timeout(30)
         .build(UUIDs.timeBased());
@@ -733,6 +753,7 @@ public final class RepairUnitServiceTest {
         .clusterName(cluster.getName())
         .keyspaceName("test")
         .incrementalRepair(false)
+        .subrangeIncrementalRepair(false)
         .repairThreadCount(4)
         .timeout(30)
         .build(UUIDs.timeBased());
@@ -764,6 +785,7 @@ public final class RepairUnitServiceTest {
         .columnFamilies(Sets.newHashSet("table1", "table2", "table3"))
         .blacklistedTables(Sets.newHashSet("table1", "table2", "table3"))
         .incrementalRepair(false)
+        .subrangeIncrementalRepair(false)
         .repairThreadCount(4)
         .timeout(30)
         .build(UUIDs.timeBased());
@@ -845,6 +867,7 @@ public final class RepairUnitServiceTest {
         .columnFamilies(Sets.newHashSet("table1", "table2", "table3"))
         .blacklistedTables(Sets.newHashSet("table1", "table2", "table3"))
         .incrementalRepair(true)
+        .subrangeIncrementalRepair(false)
         .repairThreadCount(4)
         .timeout(30);
 

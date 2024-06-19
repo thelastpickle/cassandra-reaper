@@ -75,6 +75,11 @@ public final class ReaperApplicationConfiguration extends Configuration {
   private Boolean incrementalRepair;
 
   @JsonProperty
+  @NotNull
+  @DefaultValue("false")
+  private Boolean subrangeIncremental;
+
+  @JsonProperty
   private Boolean blacklistTwcsTables;
 
   @DefaultValue("7")
@@ -235,6 +240,14 @@ public final class ReaperApplicationConfiguration extends Configuration {
 
   public void setIncrementalRepair(boolean incrementalRepair) {
     this.incrementalRepair = incrementalRepair;
+  }
+
+  public boolean getSubrangeIncremental() {
+    return subrangeIncremental != null ? subrangeIncremental : false;
+  }
+
+  public void setSubrangeIncremental(boolean subrangeIncremental) {
+    this.subrangeIncremental = subrangeIncremental;
   }
 
   public boolean getBlacklistTwcsTables() {

@@ -154,6 +154,20 @@ Sets the default repair type unless specifically defined for each run. Note that
 
 <br/>
 
+### `subrangeIncremental`
+
+Type: *Boolean*
+
+Default: *false*
+
+Sets the default repair type unless specifically defined for each run. Note that this is only supported with the PARALLEL repairParallelism setting. For more details in incremental repair, please refer to the following article.http://www.datastax.com/dev/blog/more-efficient-repairs.
+This will prevail over the `incrementalRepair` setting.
+
+
+*Note*: Subrange incremental repair is only available since Cassandra 4.0.
+
+<br/>
+
 ### `blacklistTwcsTables`
 
 Type: *Boolean*

@@ -1187,6 +1187,7 @@ public final class RepairRunnerTest {
     final String ksName = "reaper";
     final Set<String> cfNames = Sets.newHashSet("reaper");
     final boolean incrementalRepair = false;
+    final boolean subrangeIncremental = false;
     final Set<String> nodeSet = Sets.newHashSet("127.0.0.1", "127.0.0.2", "127.0.0.3");
     final List<String> nodeSetAfterTopologyChange = Lists.newArrayList("127.0.0.1", "127.0.0.2", "127.0.0.4");
     final Map<String, String> nodeMap = ImmutableMap.of(
@@ -1205,6 +1206,7 @@ public final class RepairRunnerTest {
         .keyspaceName(ksName)
         .columnFamilies(cfNames)
         .incrementalRepair(incrementalRepair)
+        .subrangeIncrementalRepair(subrangeIncremental)
         .nodes(nodeSet)
         .datacenters(datacenters)
         .blacklistedTables(blacklistedTables)
@@ -1350,6 +1352,7 @@ public final class RepairRunnerTest {
     final String ksName = "reaper";
     final Set<String> cfNames = Sets.newHashSet("reaper");
     final boolean incrementalRepair = false;
+    final boolean subrangeIncremental = false;
     final Set<String> nodeSet = Sets.newHashSet("127.0.0.1", "127.0.0.2", "127.0.0.3");
     final Map<String, String> nodeMap = ImmutableMap.of(
         "127.0.0.1", "dc1", "127.0.0.2", "dc1", "127.0.0.3", "dc1"
@@ -1367,6 +1370,7 @@ public final class RepairRunnerTest {
         .keyspaceName(ksName)
         .columnFamilies(cfNames)
         .incrementalRepair(incrementalRepair)
+        .subrangeIncrementalRepair(subrangeIncremental)
         .nodes(nodeSet)
         .datacenters(datacenters)
         .blacklistedTables(blacklistedTables)
@@ -1448,6 +1452,7 @@ public final class RepairRunnerTest {
     final String ksName = "reaper";
     final Set<String> cfNames = Sets.newHashSet("reaper");
     final boolean incrementalRepair = false;
+    final boolean subrangeIncremental = false;
     final Set<String> nodeSet = Sets.newHashSet("127.0.0.1", "127.0.0.2", "127.0.0.3");
     final Map<String, String> nodeMap = ImmutableMap.of(
         "127.0.0.1", "dc1", "127.0.0.2", "dc1", "127.0.0.3", "dc1"
@@ -1465,6 +1470,7 @@ public final class RepairRunnerTest {
         .keyspaceName(ksName)
         .columnFamilies(cfNames)
         .incrementalRepair(incrementalRepair)
+        .subrangeIncrementalRepair(subrangeIncremental)
         .nodes(nodeSet)
         .datacenters(datacenters)
         .blacklistedTables(blacklistedTables)
@@ -1545,6 +1551,7 @@ public final class RepairRunnerTest {
     final String ksName = "reaper";
     final Set<String> cfNames = Sets.newHashSet("reaper");
     final boolean incrementalRepair = false;
+    final boolean subrangeIncremental = false;
     final Set<String> nodeSet = Sets.newHashSet("127.0.0.1", "127.0.0.2", "127.0.0.3");
     final Map<String, String> nodeMap = ImmutableMap.of(
         "127.0.0.1", "dc1", "127.0.0.2", "dc1", "127.0.0.3", "dc1"
@@ -1563,6 +1570,7 @@ public final class RepairRunnerTest {
         .keyspaceName(ksName)
         .columnFamilies(cfNames)
         .incrementalRepair(incrementalRepair)
+        .subrangeIncrementalRepair(subrangeIncremental)
         .nodes(nodeSet)
         .datacenters(datacenters)
         .blacklistedTables(blacklistedTables)
@@ -1647,6 +1655,7 @@ public final class RepairRunnerTest {
     final String ksName = "reaper";
     final Set<String> cfNames = Sets.newHashSet("reaper");
     final boolean incrementalRepair = false;
+    final boolean subrangeIncremental = false;
     final Set<String> nodeSet = Sets.newHashSet("127.0.0.1", "127.0.0.2", "127.0.0.3");
     final Map<String, String> nodeMap = ImmutableMap.of(
         "127.0.0.1", "dc1", "127.0.0.2", "dc1", "127.0.0.3", "dc1"
@@ -1665,6 +1674,7 @@ public final class RepairRunnerTest {
         .keyspaceName(ksName)
         .columnFamilies(cfNames)
         .incrementalRepair(incrementalRepair)
+        .subrangeIncrementalRepair(subrangeIncremental)
         .nodes(nodeSet)
         .datacenters(datacenters)
         .blacklistedTables(blacklistedTables)
@@ -1751,6 +1761,7 @@ public final class RepairRunnerTest {
     final String ksName = "reaper";
     final Set<String> cfNames = Sets.newHashSet("reaper");
     final boolean incrementalRepair = false;
+    final boolean subrangeIncremental = false;
     final Set<String> nodeSet = Sets.newHashSet("127.0.0.1", "127.0.0.2", "127.0.0.3");
     final Map<String, String> nodeMap = ImmutableMap.of(
         "127.0.0.1", "dc1", "127.0.0.2", "dc1", "127.0.0.3", "dc1"
@@ -1774,6 +1785,7 @@ public final class RepairRunnerTest {
         .keyspaceName(ksName)
         .columnFamilies(cfNames)
         .incrementalRepair(incrementalRepair)
+        .subrangeIncrementalRepair(subrangeIncremental)
         .nodes(nodeSet)
         .datacenters(datacenters)
         .blacklistedTables(blacklistedTables)
@@ -1826,6 +1838,7 @@ public final class RepairRunnerTest {
     final String ksName = "reaper";
     final Set<String> cfNames = Sets.newHashSet("reaper");
     final boolean incrementalRepair = false;
+    final boolean subrangeIncremental = false;
     final Set<String> nodeSet = Sets.newHashSet("127.0.0.1", "127.0.0.2", "127.0.0.3");
     final Map<String, String> nodeMap = ImmutableMap.of(
         "127.0.0.1", "dc1", "127.0.0.2", "dc1", "127.0.0.3", "dc1"
@@ -1849,6 +1862,7 @@ public final class RepairRunnerTest {
         .keyspaceName(ksName)
         .columnFamilies(cfNames)
         .incrementalRepair(incrementalRepair)
+        .subrangeIncrementalRepair(subrangeIncremental)
         .nodes(nodeSet)
         .datacenters(datacenters)
         .blacklistedTables(blacklistedTables)

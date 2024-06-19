@@ -238,6 +238,7 @@ public final class RepairRunResourceTest {
         Optional.of(REPAIR_PARALLELISM.name()),
         Optional.<String>empty(),
         Optional.<String>empty(),
+        Optional.<String>empty(),
         nodes.isEmpty() ? Optional.empty() : Optional.of(StringUtils.join(nodes, ',')),
         Optional.<String>empty(),
         blacklistedTables.isEmpty() ? Optional.empty() : Optional.of(StringUtils.join(blacklistedTables, ',')),
@@ -562,6 +563,7 @@ public final class RepairRunResourceTest {
         Optional.of(REPAIR_PARALLELISM.name()),
         Optional.<String>empty(),
         Optional.<String>empty(),
+        Optional.<String>empty(),
         nodes.isEmpty() ? Optional.empty() : Optional.of(StringUtils.join(nodes, ',')),
         Optional.<String>empty(),
         blacklistedTables.isEmpty() ? Optional.empty() : Optional.of(StringUtils.join(blacklistedTables, ',')),
@@ -592,5 +594,38 @@ public final class RepairRunResourceTest {
     assertEquals(Response.Status.BAD_REQUEST.getStatusCode(), response.getStatus());
     assertTrue(response.getEntity() instanceof String);
     assertEquals("invalid query parameter \"force\", expecting [True,False]", response.getEntity());
+  }
+
+  @Test
+  public void testGetSegments() {
+    RepairRunResource repairRunResource = new RepairRunResource(context, context.storage.getRepairRunDao());
+    when(context.config.getSegmentCount()).thenReturn(10);
+    when(context.config.getSegmentCountPerNode()).thenReturn(5);
+    int segments = repairRunResource.getSegments(Optional.of(10), true, true);
+    assertEquals(10, segments);
+  }
+
+  @Test
+  public void testGetIncrementalRepair() {
+    RepairRunResource repairRunResource = new RepairRunResource(context, context.storage.getRepairRunDao());
+    when(context.config.getIncrementalRepair()).thenReturn(true);
+    boolean incrementalRepair = repairRunResource.getIncrementalRepair(Optional.of("false"));
+    assertFalse(incrementalRepair);
+  }
+
+  @Test
+  public void testGetSubrangeIncremental() {
+    RepairRunResource repairRunResource = new RepairRunResource(context, context.storage.getRepairRunDao());
+    when(context.config.getSubrangeIncremental()).thenReturn(true);
+    boolean subrangeIncremental = repairRunResource.getSubrangeIncremental(Optional.of("false"));
+    assertFalse(subrangeIncremental);
+  }
+
+  @Test
+  public void testGetIntensity() {
+    RepairRunResource repairRunResource = new RepairRunResource(context, context.storage.getRepairRunDao());
+    when(context.config.getRepairIntensity()).thenReturn(0.5);
+    Double intensity = repairRunResource.getIntensity(Optional.of("0.8"));
+    assertTrue(0.8 == intensity.floatValue());
   }
 }

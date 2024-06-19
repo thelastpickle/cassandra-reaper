@@ -82,6 +82,7 @@ public final class RepairManagerTest {
     final String ksName = "reaper";
     final Set<String> cfNames = Sets.newHashSet("reaper");
     final boolean incrementalRepair = false;
+    final boolean subrangeIncremental = false;
     final Set<String> nodes = Sets.newHashSet("127.0.0.1");
     final Set<String> datacenters = Collections.emptySet();
     final double intensity = 0.5f;
@@ -96,6 +97,7 @@ public final class RepairManagerTest {
         .keyspaceName(ksName)
         .columnFamilies(cfNames)
         .incrementalRepair(incrementalRepair)
+        .subrangeIncrementalRepair(subrangeIncremental)
         .nodes(nodes)
         .datacenters(datacenters)
         .repairThreadCount(repairThreadCount)
@@ -167,6 +169,7 @@ public final class RepairManagerTest {
     final String ksName = "reaper";
     final Set<String> cfNames = Sets.newHashSet("reaper");
     final boolean incrementalRepair = false;
+    final boolean subrangeIncremental = false;
     final Set<String> nodes = Sets.newHashSet("127.0.0.1");
     final Set<String> datacenters = Collections.emptySet();
     final double intensity = 0.5f;
@@ -204,6 +207,7 @@ public final class RepairManagerTest {
         .keyspaceName(ksName)
         .columnFamilies(cfNames)
         .incrementalRepair(incrementalRepair)
+        .subrangeIncrementalRepair(subrangeIncremental)
         .nodes(nodes)
         .datacenters(datacenters)
         .repairThreadCount(repairThreadCount)
@@ -260,6 +264,7 @@ public final class RepairManagerTest {
     final String ksName = "reaper";
     final Set<String> cfNames = Sets.newHashSet("reaper");
     final boolean incrementalRepair = false;
+    final boolean subrangeIncremental = false;
     final Set<String> nodes = Sets.newHashSet("127.0.0.1");
     final Set<String> datacenters = Collections.emptySet();
     final double intensity = 0.5f;
@@ -279,6 +284,7 @@ public final class RepairManagerTest {
         .keyspaceName(ksName)
         .columnFamilies(cfNames)
         .incrementalRepair(incrementalRepair)
+        .subrangeIncrementalRepair(subrangeIncremental)
         .nodes(nodes)
         .datacenters(datacenters)
         .repairThreadCount(repairThreadCount)
@@ -348,6 +354,7 @@ public final class RepairManagerTest {
     final String ksName = "reaper";
     final Set<String> cfNames = Sets.newHashSet("reaper");
     final boolean incrementalRepair = false;
+    final boolean subrangeIncremental = false;
     final Set<String> nodes = Sets.newHashSet("127.0.0.1");
     final Set<String> datacenters = Collections.emptySet();
     final double intensity = 0.5f;
@@ -382,6 +389,7 @@ public final class RepairManagerTest {
         .keyspaceName(ksName)
         .columnFamilies(cfNames)
         .incrementalRepair(incrementalRepair)
+        .subrangeIncrementalRepair(subrangeIncremental)
         .nodes(nodes)
         .datacenters(datacenters)
         .repairThreadCount(repairThreadCount)
@@ -451,6 +459,7 @@ public final class RepairManagerTest {
     final String ksName = "reaper";
     final Set<String> cfNames = Sets.newHashSet("reaper");
     final boolean incrementalRepair = false;
+    final boolean subrangeIncremental = false;
     final Set<String> nodes = Sets.newHashSet("127.0.0.1");
     final Set<String> datacenters = Collections.emptySet();
     final int repairThreadCount = 1;
@@ -461,6 +470,7 @@ public final class RepairManagerTest {
         .keyspaceName(ksName)
         .columnFamilies(cfNames)
         .incrementalRepair(incrementalRepair)
+        .subrangeIncrementalRepair(subrangeIncremental)
         .nodes(nodes)
         .datacenters(datacenters)
         .repairThreadCount(repairThreadCount)
@@ -568,6 +578,7 @@ public final class RepairManagerTest {
     final String ksName = "reaper";
     final Set<String> cfNames = Sets.newHashSet("reaper");
     final boolean incrementalRepair = false;
+    final boolean subrangeIncremental = false;
     final Set<String> nodes = Sets.newHashSet("127.0.0.1");
     final Set<String> datacenters = Collections.emptySet();
     final int repairThreadCount = 1;
@@ -578,6 +589,7 @@ public final class RepairManagerTest {
         .keyspaceName(ksName)
         .columnFamilies(cfNames)
         .incrementalRepair(incrementalRepair)
+        .subrangeIncrementalRepair(subrangeIncremental)
         .nodes(nodes)
         .datacenters(datacenters)
         .repairThreadCount(repairThreadCount)
