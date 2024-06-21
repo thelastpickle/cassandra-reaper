@@ -420,7 +420,8 @@ public final class RepairRunResource {
       final Optional<RepairUnit> maybeTheRepairUnit = repairUnitService.getOrCreateRepairUnit(cluster, builder, force);
       if (maybeTheRepairUnit.isPresent()) {
         RepairUnit theRepairUnit = maybeTheRepairUnit.get();
-        if (theRepairUnit.getIncrementalRepair() != incrementalRepair) {
+        if (theRepairUnit.getIncrementalRepair() != incrementalRepair
+            && theRepairUnit.getSubrangeIncrementalRepair() != subrangeIncrementalRepair) {
           String msg = String.format(
               "A repair unit %s already exist for the same cluster/keyspace/tables"
                   + " but with a different incremental repair value. Requested value %s | Existing value: %s",
