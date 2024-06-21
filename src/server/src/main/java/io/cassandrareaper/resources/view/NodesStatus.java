@@ -97,10 +97,6 @@ public final class NodesStatus {
       String allEndpointStates,
       Map<String, String> simpleStates) {
 
-    List<EndpointState> endpointStates = Lists.newArrayList();
-    Set<String> endpoints = Sets.newHashSet();
-    Matcher matcher;
-
     // Split into endpointState record strings
     String[] endpointLines = allEndpointStates.split("\n");
     List<String> strEndpoints = Lists.newArrayList();
@@ -132,7 +128,9 @@ public final class NodesStatus {
     simpleStates = simpleStatesCopy;
 
     Double totalLoad = 0.0;
-
+    Set<String> endpoints = Sets.newHashSet();
+    Matcher matcher;
+    List<EndpointState> endpointStates = Lists.newArrayList();
     for (String endpointString : strEndpoints) {
       Optional<String> status = Optional.empty();
       Optional<String> endpoint = parseEndpointState(ENDPOINT_NAME_PATTERNS, endpointString, 1, String.class);

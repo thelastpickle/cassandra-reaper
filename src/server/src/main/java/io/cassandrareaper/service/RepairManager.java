@@ -256,7 +256,7 @@ public final class RepairManager implements AutoCloseable {
 
   private void abortSegmentsWithNoLeader(RepairRun repairRun, Collection<RepairSegment> runningSegments) {
     RepairUnit repairUnit = context.storage.getRepairUnitDao().getRepairUnit(repairRun.getRepairUnitId());
-    if (repairUnit.getIncrementalRepair()) {
+    if (repairUnit.getIncrementalRepair() && !repairUnit.getSubrangeIncrementalRepair()) {
       abortSegmentsWithNoLeaderIncremental(repairRun, runningSegments);
     } else {
       abortSegmentsWithNoLeaderNonIncremental(repairRun, runningSegments);
@@ -326,7 +326,10 @@ public final class RepairManager implements AutoCloseable {
     try {
       if (null == segment.getCoordinatorHost() || RepairSegment.State.DONE == segment.getState()) {
         RepairUnit repairUnit = context.storage.getRepairUnitDao().getRepairUnit(segment.getRepairUnitId());
-        UUID leaderElectionId = repairUnit.getIncrementalRepair() ? runId : segmentId;
+        // Incremental non subrange repairs will use the run id as leader election id
+        // to prevent multiple segments to run at once. Subrange incremental will allow multiple segments.
+        UUID leaderElectionId = repairUnit.getIncrementalRepair() && !repairUnit.getSubrangeIncrementalRepair()
+            ? runId : segmentId;
         boolean tookLead;
         if (tookLead = takeLead(context, leaderElectionId) || renewLead(context, leaderElectionId)) {
           try {

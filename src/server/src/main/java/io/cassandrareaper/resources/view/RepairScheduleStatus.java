@@ -64,6 +64,9 @@ public final class RepairScheduleStatus {
   @JsonProperty("incremental_repair")
   private boolean incrementalRepair;
 
+  @JsonProperty("subrange_incremental_repair")
+  private boolean subrangeIncrementalRepair;
+
   @JsonProperty("repair_parallelism")
   private RepairParallelism repairParallelism;
 
@@ -115,6 +118,7 @@ public final class RepairScheduleStatus {
       DateTime pauseTime,
       double intensity,
       boolean incrementalRepair,
+      boolean subrangeIncrementalRepair,
       RepairParallelism repairParallelism,
       int daysBetween,
       Collection<String> nodes,
@@ -138,6 +142,7 @@ public final class RepairScheduleStatus {
     this.pauseTime = pauseTime;
     this.intensity = RepairRunStatus.roundDoubleNicely(intensity);
     this.incrementalRepair = incrementalRepair;
+    this.subrangeIncrementalRepair = subrangeIncrementalRepair;
     this.repairParallelism = repairParallelism;
     this.daysBetween = daysBetween;
     this.nodes = nodes;
@@ -164,6 +169,7 @@ public final class RepairScheduleStatus {
         repairSchedule.getPauseTime(),
         repairSchedule.getIntensity(),
         repairUnit.getIncrementalRepair(),
+        repairUnit.getSubrangeIncrementalRepair(),
         repairSchedule.getRepairParallelism(),
         repairSchedule.getDaysBetween(),
         repairUnit.getNodes(),
@@ -263,6 +269,14 @@ public final class RepairScheduleStatus {
 
   public void setIncrementalRepair(boolean incrementalRepair) {
     this.incrementalRepair = incrementalRepair;
+  }
+
+  public boolean getSubrangeIncrementalRepair() {
+    return subrangeIncrementalRepair;
+  }
+
+  public void setSubrangeIncrementalRepair(boolean subrangeIncrementalRepair) {
+    this.subrangeIncrementalRepair = subrangeIncrementalRepair;
   }
 
   public RepairParallelism getRepairParallelism() {

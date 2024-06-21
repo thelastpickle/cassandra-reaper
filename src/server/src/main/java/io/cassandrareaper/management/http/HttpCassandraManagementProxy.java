@@ -20,6 +20,7 @@ package io.cassandrareaper.management.http;
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.GenericMetric;
 import io.cassandrareaper.core.Node;
+import io.cassandrareaper.core.RepairType;
 import io.cassandrareaper.core.Snapshot;
 import io.cassandrareaper.core.Table;
 import io.cassandrareaper.management.ICassandraManagementProxy;
@@ -68,7 +69,6 @@ import com.datastax.mgmtapi.client.model.TokenRangeToEndpointResponse;
 import com.datastax.mgmtapi.client.model.TokenRangeToEndpoints;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Maps;
-
 import org.apache.cassandra.repair.RepairParallelism;
 import org.apache.cassandra.utils.progress.ProgressEventType;
 import org.slf4j.Logger;
@@ -354,7 +354,7 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
       String keyspace,
       RepairParallelism repairParallelism,
       Collection<String> columnFamilies,
-      boolean fullRepair,
+      RepairType repairType,
       Collection<String> datacenters,
       RepairStatusHandler repairStatusHandler,
       List<RingRange> associatedTokens,
@@ -365,7 +365,7 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
     try {
       RepairRequestResponse resp = apiClient.putRepairV2(
           (new RepairRequest())
-              .fullRepair(fullRepair)
+              .fullRepair(repairType == RepairType.SUBRANGE_FULL)
               .keyspace(keyspace)
               .tables(new ArrayList<>(columnFamilies))
               .repairParallelism(RepairRequest.RepairParallelismEnum.fromValue(repairParallelism.getName()))

@@ -71,7 +71,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
@@ -159,7 +158,7 @@ public final class RepairRunResourceTest {
         anyString(),
         any(RepairParallelism.class),
         anyCollection(),
-        anyBoolean(),
+        any(),
         anyCollection(),
         any(),
         any(),
@@ -186,6 +185,7 @@ public final class RepairRunResourceTest {
         .keyspaceName(keyspace)
         .columnFamilies(TABLES)
         .incrementalRepair(INCREMENTAL)
+        .subrangeIncrementalRepair(INCREMENTAL)
         .nodes(NODES)
         .datacenters(DATACENTERS)
         .blacklistedTables(BLACKLISTED_TABLES)
@@ -599,33 +599,49 @@ public final class RepairRunResourceTest {
   @Test
   public void testGetSegments() {
     RepairRunResource repairRunResource = new RepairRunResource(context, context.storage.getRepairRunDao());
-    when(context.config.getSegmentCount()).thenReturn(10);
-    when(context.config.getSegmentCountPerNode()).thenReturn(5);
+    // subrange incremental
     int segments = repairRunResource.getSegments(Optional.of(10), true, true);
+    assertEquals(10, segments);
+    // non-subrange incremental
+    segments = repairRunResource.getSegments(Optional.of(10), false, true);
+    assertEquals(-1, segments);
+    // non-incremental
+    segments = repairRunResource.getSegments(Optional.of(10), false, false);
     assertEquals(10, segments);
   }
 
   @Test
   public void testGetIncrementalRepair() {
-    RepairRunResource repairRunResource = new RepairRunResource(context, context.storage.getRepairRunDao());
-    when(context.config.getIncrementalRepair()).thenReturn(true);
+    AppContext ctx = mock(AppContext.class);
+    ctx.config = mock(ReaperApplicationConfiguration.class);
+    ctx.storage = new MemoryStorageFacade();
+    RepairRunResource repairRunResource = new RepairRunResource(ctx, ctx.storage.getRepairRunDao());
+
     boolean incrementalRepair = repairRunResource.getIncrementalRepair(Optional.of("false"));
+    assertFalse(incrementalRepair);
+    incrementalRepair = repairRunResource.getIncrementalRepair(Optional.of("true"));
+    assertTrue(incrementalRepair);
+    incrementalRepair = repairRunResource.getIncrementalRepair(Optional.empty());
     assertFalse(incrementalRepair);
   }
 
   @Test
-  public void testGetSubrangeIncremental() {
-    RepairRunResource repairRunResource = new RepairRunResource(context, context.storage.getRepairRunDao());
-    when(context.config.getSubrangeIncremental()).thenReturn(true);
-    boolean subrangeIncremental = repairRunResource.getSubrangeIncremental(Optional.of("false"));
+  public void testGetSubrangeIncrementalRepair() {
+    AppContext ctx = mock(AppContext.class);
+    ctx.config = mock(ReaperApplicationConfiguration.class);
+    ctx.storage = new MemoryStorageFacade();
+    RepairRunResource repairRunResource = new RepairRunResource(ctx, ctx.storage.getRepairRunDao());
+    boolean subrangeIncremental = repairRunResource.getSubrangeIncrementalRepair(Optional.of("false"));
     assertFalse(subrangeIncremental);
   }
 
   @Test
   public void testGetIntensity() {
-    RepairRunResource repairRunResource = new RepairRunResource(context, context.storage.getRepairRunDao());
-    when(context.config.getRepairIntensity()).thenReturn(0.5);
+    AppContext ctx = mock(AppContext.class);
+    ctx.config = mock(ReaperApplicationConfiguration.class);
+    ctx.storage = new MemoryStorageFacade();
+    RepairRunResource repairRunResource = new RepairRunResource(ctx, ctx.storage.getRepairRunDao());
     Double intensity = repairRunResource.getIntensity(Optional.of("0.8"));
-    assertTrue(0.8 == intensity.floatValue());
+    assertEquals(0.8f, intensity.floatValue(), 0.0f);
   }
 }

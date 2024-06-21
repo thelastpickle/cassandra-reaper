@@ -154,13 +154,14 @@ Sets the default repair type unless specifically defined for each run. Note that
 
 <br/>
 
-### `subrangeIncremental`
+### `subrangeIncrementalRepair`
 
 Type: *Boolean*
 
 Default: *false*
 
 Sets the default repair type unless specifically defined for each run. Note that this is only supported with the PARALLEL repairParallelism setting. For more details in incremental repair, please refer to the following article.http://www.datastax.com/dev/blog/more-efficient-repairs.
+This mode will split the repair jobs into sets of token ranges using the incremental mode.
 This will prevail over the `incrementalRepair` setting.
 
 

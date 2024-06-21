@@ -332,7 +332,7 @@ public final class RepairRunResource {
       @QueryParam("repairParallelism") Optional<String> repairParallelism,
       @QueryParam("intensity") Optional<String> intensityStr,
       @QueryParam("incrementalRepair") Optional<String> incrementalRepairStr,
-      @QueryParam("subrangeIncremental") Optional<String> subrangeIncrementalStr,
+      @QueryParam("subrangeIncrementalRepair") Optional<String> subrangeIncrementalRepairStr,
       @QueryParam("nodes") Optional<String> nodesToRepairParam,
       @QueryParam("datacenters") Optional<String> datacentersToRepairParam,
       @QueryParam("blacklistedTables") Optional<String> blacklistedTableNamesParam,
@@ -352,7 +352,7 @@ public final class RepairRunResource {
           repairParallelism,
           intensityStr,
           incrementalRepairStr,
-          subrangeIncrementalStr,
+          subrangeIncrementalRepairStr,
           nodesToRepairParam,
           datacentersToRepairParam,
           blacklistedTableNamesParam,
@@ -363,13 +363,6 @@ public final class RepairRunResource {
       if (null != possibleFailedResponse) {
         return possibleFailedResponse;
       }
-      Double intensity = getIntensity(intensityStr);
-
-      boolean subrangeIncremental = getSubrangeIncremental(subrangeIncrementalStr);
-
-      boolean incrementalRepair = getIncrementalRepair(incrementalRepairStr);
-
-      int segments = getSegments(segmentCountPerNode, subrangeIncremental, incrementalRepair);
 
       final Cluster cluster = context.storage.getClusterDao().getCluster(Cluster.toSymbolicName(clusterName.get()));
 
@@ -409,13 +402,15 @@ public final class RepairRunResource {
       }
       int timeout = timeoutParam.orElse(context.config.getHangingRepairTimeoutMins());
       boolean force = (forceParam.isPresent() ? Boolean.parseBoolean(forceParam.get()) : false);
+      boolean subrangeIncrementalRepair = getSubrangeIncrementalRepair(subrangeIncrementalRepairStr);
+      boolean incrementalRepair = getIncrementalRepair(incrementalRepairStr);
 
       RepairUnit.Builder builder = RepairUnit.builder()
           .clusterName(cluster.getName())
           .keyspaceName(keyspace.get())
           .columnFamilies(tableNames)
           .incrementalRepair(incrementalRepair)
-          .subrangeIncrementalRepair(subrangeIncremental)
+          .subrangeIncrementalRepair(subrangeIncrementalRepair)
           .nodes(nodesToRepair)
           .datacenters(datacentersToRepair)
           .blacklistedTables(blacklistedTableNames)
@@ -446,10 +441,12 @@ public final class RepairRunResource {
           parallelism = RepairParallelism.valueOf(repairParallelism.get().toUpperCase());
         }
 
-        if (incrementalRepair || subrangeIncremental) {
+        if (incrementalRepair || subrangeIncrementalRepair) {
           parallelism = RepairParallelism.PARALLEL;
         }
 
+        Double intensity = getIntensity(intensityStr);
+        int segments = getSegments(segmentCountPerNode, subrangeIncrementalRepair, incrementalRepair);
         final RepairRun newRepairRun = repairRunService.registerRepairRun(
             cluster,
             theRepairUnit,
@@ -476,10 +473,10 @@ public final class RepairRunResource {
   }
 
   @VisibleForTesting
-  public int getSegments(Optional<Integer> segmentCountPerNode, boolean subrangeIncremental,
+  public int getSegments(Optional<Integer> segmentCountPerNode, boolean subrangeIncrementalRepair,
       boolean incrementalRepair) {
     int segments = context.config.getSegmentCountPerNode();
-    if (!incrementalRepair || subrangeIncremental) {
+    if (!incrementalRepair || subrangeIncrementalRepair) {
       if (segmentCountPerNode.isPresent()) {
         LOG.debug(
             "using given segment count {} instead of configured value {}",
@@ -507,15 +504,15 @@ public final class RepairRunResource {
   }
 
   @VisibleForTesting
-  public boolean getSubrangeIncremental(Optional<String> subrangeIncrementalStr) {
-    boolean subrangeIncremental;
-    if (subrangeIncrementalStr.isPresent()) {
-      subrangeIncremental = Boolean.parseBoolean(subrangeIncrementalStr.get());
+  public boolean getSubrangeIncrementalRepair(Optional<String> subrangeIncrementalRepairStr) {
+    boolean subrangeIncrementalRepair;
+    if (subrangeIncrementalRepairStr.isPresent()) {
+      subrangeIncrementalRepair = Boolean.parseBoolean(subrangeIncrementalRepairStr.get());
     } else {
-      subrangeIncremental = context.config.getSubrangeIncremental();
-      LOG.debug("no subrange incremental repair given, so using default value: {}", subrangeIncremental);
+      subrangeIncrementalRepair = context.config.getSubrangeIncrementalRepair();
+      LOG.debug("no subrange incremental repair given, so using default value: {}", subrangeIncrementalRepair);
     }
-    return subrangeIncremental;
+    return subrangeIncrementalRepair;
   }
 
   @VisibleForTesting

@@ -43,7 +43,8 @@ public final class RepairUnit {
     this.clusterName = builder.clusterName;
     this.keyspaceName = builder.keyspaceName;
     this.columnFamilies = builder.columnFamilies;
-    this.incrementalRepair = builder.incrementalRepair;
+    // If subrange incremental repair is enabled, incremental repair must also be enabled
+    this.incrementalRepair = builder.incrementalRepair || builder.subrangeIncrementalRepair;
     this.subrangeIncrementalRepair = builder.subrangeIncrementalRepair;
     this.nodes = builder.nodes;
     this.datacenters = builder.datacenters;
@@ -205,7 +206,7 @@ public final class RepairUnit {
       hash *= 59;
       hash +=  (this.incrementalRepair ? 2 : 1);
       hash *= 59;
-      hash +=  (this.subrangeIncrementalRepair ? 2 : 1);
+      hash +=  (this.subrangeIncrementalRepair ? 8 : 4);
       hash *= 59;
       hash +=  Objects.hashCode(this.nodes);
       hash *= 59;

@@ -190,7 +190,6 @@ public final class RepairManagerTest {
     AppContext context = new AppContext();
     context.storage = storage;
     context.config = new ReaperApplicationConfiguration();
-
     RepairManager repairManager = RepairManager.create(
         context,
         Executors.newScheduledThreadPool(1),
@@ -198,10 +197,8 @@ public final class RepairManagerTest {
         TimeUnit.MILLISECONDS,
         1,
         context.storage.getRepairRunDao());
-
     repairManager = Mockito.spy(repairManager);
     context.repairManager = repairManager;
-
     final RepairUnit cf = RepairUnit.builder()
         .clusterName(clusterName)
         .keyspaceName(ksName)
@@ -615,14 +612,14 @@ public final class RepairManagerTest {
     return run;
   }
 
-  private static class NotEmptyList implements ArgumentMatcher<Collection<RepairSegment>> {
+  private static final class NotEmptyList implements ArgumentMatcher<Collection<RepairSegment>> {
     @Override
     public boolean matches(Collection<RepairSegment> segments) {
       return !segments.isEmpty();
     }
   }
 
-  private static class EmptyList implements ArgumentMatcher<Collection<RepairSegment>> {
+  private static final class EmptyList implements ArgumentMatcher<Collection<RepairSegment>> {
     @Override
     public boolean matches(Collection<RepairSegment> segments) {
       return segments.isEmpty();

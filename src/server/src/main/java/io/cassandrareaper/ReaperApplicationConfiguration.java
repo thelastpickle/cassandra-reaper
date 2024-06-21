@@ -75,9 +75,8 @@ public final class ReaperApplicationConfiguration extends Configuration {
   private Boolean incrementalRepair;
 
   @JsonProperty
-  @NotNull
   @DefaultValue("false")
-  private Boolean subrangeIncremental;
+  private Boolean subrangeIncrementalRepair;
 
   @JsonProperty
   private Boolean blacklistTwcsTables;
@@ -242,12 +241,12 @@ public final class ReaperApplicationConfiguration extends Configuration {
     this.incrementalRepair = incrementalRepair;
   }
 
-  public boolean getSubrangeIncremental() {
-    return subrangeIncremental != null ? subrangeIncremental : false;
+  public boolean getSubrangeIncrementalRepair() {
+    return subrangeIncrementalRepair != null ? subrangeIncrementalRepair : false;
   }
 
-  public void setSubrangeIncremental(boolean subrangeIncremental) {
-    this.subrangeIncremental = subrangeIncremental;
+  public void setSubrangeIncrementalRepair(boolean subrangeIncrementalRepair) {
+    this.subrangeIncrementalRepair = subrangeIncrementalRepair;
   }
 
   public boolean getBlacklistTwcsTables() {
@@ -592,6 +591,9 @@ public final class ReaperApplicationConfiguration extends Configuration {
     private Boolean incremental;
 
     @JsonProperty
+    private Boolean subrangeIncrementalRepair;
+
+    @JsonProperty
     private Integer percentUnrepairedThreshold;
 
 
@@ -669,6 +671,14 @@ public final class ReaperApplicationConfiguration extends Configuration {
 
     public void setIncremental(Boolean incremental) {
       this.incremental = incremental;
+    }
+
+    public Boolean subrangeIncrementalRepair() {
+      return subrangeIncrementalRepair == null ? false : subrangeIncrementalRepair;
+    }
+
+    public void setSubrangeIncrementalRepair(Boolean subrangeIncrementalRepair) {
+      this.subrangeIncrementalRepair = subrangeIncrementalRepair;
     }
 
     public Integer getPercentUnrepairedThreshold() {

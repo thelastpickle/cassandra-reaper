@@ -421,6 +421,7 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
   private void checkConfiguration(ReaperApplicationConfiguration config) {
     LOG.debug("repairIntensity: {}", config.getRepairIntensity());
     LOG.debug("incrementalRepair: {}", config.getIncrementalRepair());
+    LOG.debug("subrangeIncrementalRepair: {}", config.getSubrangeIncrementalRepair());
     LOG.debug("repairRunThreadCount: {}", config.getRepairRunThreadCount());
     LOG.debug("segmentCount: {}", config.getSegmentCount());
     LOG.debug("repairParallelism: {}", config.getRepairParallelism());

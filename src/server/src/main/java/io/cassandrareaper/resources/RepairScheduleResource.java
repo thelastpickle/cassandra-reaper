@@ -225,7 +225,7 @@ public final class RepairScheduleResource {
       @QueryParam("repairParallelism") Optional<String> repairParallelism,
       @QueryParam("intensity") Optional<String> intensityStr,
       @QueryParam("incrementalRepair") Optional<String> incrementalRepairStr,
-      @QueryParam("subrangeIncremental") Optional<String> subrangeIncrementalStr,
+      @QueryParam("subrangeIncrementalRepair") Optional<String> subrangeIncrementalRepairStr,
       @QueryParam("scheduleDaysBetween") Optional<Integer> scheduleDaysBetween,
       @QueryParam("scheduleTriggerTime") Optional<String> scheduleTriggerTime,
       @QueryParam("nodes") Optional<String> nodesToRepairParam,
@@ -248,7 +248,7 @@ public final class RepairScheduleResource {
           repairParallelism,
           intensityStr,
           incrementalRepairStr,
-          subrangeIncrementalStr,
+          subrangeIncrementalRepairStr,
           nodesToRepairParam,
           datacentersToRepairParam,
           blacklistedTableNamesParam,
@@ -310,7 +310,8 @@ public final class RepairScheduleResource {
       final Set<String> datacentersToRepair = RepairRunService
           .getDatacentersToRepairBasedOnParam(datacentersToRepairParam);
 
-      boolean incremental = isIncrementalRepair(incrementalRepairStr);
+      boolean incremental
+          = isIncrementalRepair(incrementalRepairStr) || isIncrementalRepair(subrangeIncrementalRepairStr);
       RepairParallelism parallelism = context.config.getRepairParallelism();
       if (repairParallelism.isPresent()) {
         LOG.debug("using given repair parallelism {} over configured value {}", repairParallelism.get(), parallelism);
@@ -334,12 +335,13 @@ public final class RepairScheduleResource {
 
       int timeout = timeoutParam.orElse(context.config.getHangingRepairTimeoutMins());
       boolean adaptive = (adaptiveParam.isPresent() ? Boolean.parseBoolean(adaptiveParam.get()) : false);
-
+      boolean subrangeIncremental = isIncrementalRepair(subrangeIncrementalRepairStr) ;
       RepairUnit.Builder unitBuilder = RepairUnit.builder()
           .clusterName(cluster.getName())
           .keyspaceName(keyspace.get())
           .columnFamilies(tableNames)
           .incrementalRepair(incremental)
+          .subrangeIncrementalRepair(subrangeIncremental)
           .nodes(nodesToRepair)
           .datacenters(datacentersToRepair)
           .blacklistedTables(blacklistedTableNames)
@@ -421,7 +423,9 @@ public final class RepairScheduleResource {
     if (maybeUnit.isPresent()) {
       RepairUnit unit = maybeUnit.get();
       Preconditions
-          .checkState(unit.getIncrementalRepair() == incremental, "%s!=%s", unit.getIncrementalRepair(), incremental);
+          .checkState(unit.getIncrementalRepair() == incremental
+              || unit.getSubrangeIncrementalRepair() == incremental,
+              "%s!=%s", unit.getIncrementalRepair(), incremental);
       Preconditions
           .checkState((percentUnrepairedThreshold > 0 && incremental) || percentUnrepairedThreshold <= 0,
               "Setting a % repaired threshold can only be done on incremental schedules");

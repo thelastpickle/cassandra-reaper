@@ -150,7 +150,9 @@ const TableRowDetails = CreateReactClass({
     let duration = this.props.row.duration;
 
 
-    const incremental = this.props.row.incremental_repair == true ? "true" : "false";
+    const repairType = this.props.row.subrange_incremental_repair == true
+        ? "Subrange incremental"
+        : this.props.row.incremental_repair == true ? "Incremental" : "Subrange full";
 
     let intensity = this.props.row.intensity;
     if (this.props.row.state === 'PAUSED' && !!this.props.updateIntensitySubject) {
@@ -229,8 +231,8 @@ const TableRowDetails = CreateReactClass({
                     <td>{this.props.row.repair_parallelism}</td>
                 </tr>
                 <tr>
-                    <td>Incremental repair</td>
-                    <td>{incremental}</td>
+                    <td>Repair Type</td>
+                    <td>{repairType}</td>
                 </tr>
                 <tr>
                     <td>Repair threads</td>
