@@ -43,7 +43,7 @@ public final class RepairUnit {
     this.clusterName = builder.clusterName;
     this.keyspaceName = builder.keyspaceName;
     this.columnFamilies = builder.columnFamilies;
-    // If subrange incremental repair is enabled, incremental repair must also be enabled
+    // If subrange incremental repair is true, we set incremental repair to true as well
     this.incrementalRepair = builder.incrementalRepair || builder.subrangeIncrementalRepair;
     this.subrangeIncrementalRepair = builder.subrangeIncrementalRepair;
     this.nodes = builder.nodes;

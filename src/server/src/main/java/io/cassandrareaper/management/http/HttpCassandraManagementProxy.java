@@ -365,7 +365,7 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
     try {
       RepairRequestResponse resp = apiClient.putRepairV2(
           (new RepairRequest())
-              .fullRepair(repairType == RepairType.SUBRANGE_FULL)
+              .fullRepair(repairType.isFull())
               .keyspace(keyspace)
               .tables(new ArrayList<>(columnFamilies))
               .repairParallelism(RepairRequest.RepairParallelismEnum.fromValue(repairParallelism.getName()))

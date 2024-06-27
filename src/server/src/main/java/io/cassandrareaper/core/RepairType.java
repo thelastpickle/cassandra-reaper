@@ -18,26 +18,27 @@
 package io.cassandrareaper.core;
 
 public enum RepairType {
-    SUBRANGE_FULL("subrange_full"),
-    INCREMENTAL("incremental"),
-    SUBRANGE_INCREMENTAL("subrange_incremental");
-
-  private final String repairType;
-
-  RepairType(String repairType) {
-    this.repairType = repairType;
-  }
+    SUBRANGE_FULL,
+    INCREMENTAL,
+    SUBRANGE_INCREMENTAL;
 
   public String getRepairType() {
-    return repairType;
+    return name().toLowerCase();
   }
 
   public static RepairType fromName(String name) {
-    for (RepairType type : RepairType.values()) {
-      if (type.getRepairType().equalsIgnoreCase(name)) {
-        return type;
-      }
-    }
-    throw new IllegalArgumentException("No RepairType with name " + name);
+    return valueOf(name.toUpperCase());
+  }
+
+  public boolean isIncremental() {
+    return this == INCREMENTAL || this == SUBRANGE_INCREMENTAL;
+  }
+
+  public boolean isFull() {
+    return this == SUBRANGE_FULL;
+  }
+
+  public boolean isSubrange() {
+    return this == SUBRANGE_FULL || this == SUBRANGE_INCREMENTAL;
   }
 }

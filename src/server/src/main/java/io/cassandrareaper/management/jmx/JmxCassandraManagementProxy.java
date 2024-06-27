@@ -618,14 +618,14 @@ public final class JmxCassandraManagementProxy implements ICassandraManagementPr
     Map<String, String> options = new HashMap<>();
 
     options.put(RepairOption.PARALLELISM_KEY, repairParallelism.getName());
-    options.put(RepairOption.INCREMENTAL_KEY, Boolean.toString(repairType != RepairType.SUBRANGE_FULL));
+    options.put(RepairOption.INCREMENTAL_KEY, Boolean.toString(repairType.isIncremental()));
     options.put(
         RepairOption.JOB_THREADS_KEY,
         Integer.toString(repairThreadCount == 0 ? 1 : repairThreadCount));
     options.put(RepairOption.TRACE_KEY, Boolean.toString(Boolean.FALSE));
     options.put(RepairOption.COLUMNFAMILIES_KEY, StringUtils.join(columnFamilies, ","));
     // options.put(RepairOption.PULL_REPAIR_KEY, Boolean.FALSE);
-    if (repairType != RepairType.INCREMENTAL) {
+    if (repairType.isSubrange()) {
       options.put(
           RepairOption.RANGES_KEY,
           StringUtils.join(

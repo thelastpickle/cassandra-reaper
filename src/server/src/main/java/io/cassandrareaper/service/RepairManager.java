@@ -256,11 +256,15 @@ public final class RepairManager implements AutoCloseable {
 
   private void abortSegmentsWithNoLeader(RepairRun repairRun, Collection<RepairSegment> runningSegments) {
     RepairUnit repairUnit = context.storage.getRepairUnitDao().getRepairUnit(repairRun.getRepairUnitId());
-    if (repairUnit.getIncrementalRepair() && !repairUnit.getSubrangeIncrementalRepair()) {
+    if (repairUnitIsNonSubrangeIncremental(repairUnit)) {
       abortSegmentsWithNoLeaderIncremental(repairRun, runningSegments);
     } else {
       abortSegmentsWithNoLeaderNonIncremental(repairRun, runningSegments);
     }
+  }
+
+  private boolean repairUnitIsNonSubrangeIncremental(RepairUnit repairUnit) {
+    return repairUnit.getIncrementalRepair() && !repairUnit.getSubrangeIncrementalRepair();
   }
 
   private void abortSegmentsWithNoLeaderIncremental(RepairRun repairRun, Collection<RepairSegment> runningSegments) {
