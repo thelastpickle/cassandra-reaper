@@ -202,10 +202,10 @@ const TableRow = CreateReactClass({
   },
 
   render: function() {
-
     const next = moment(this.props.row.next_activation).fromNow();
     const rowID = `#details_${this.props.row.id}`;
-    const incremental = this.props.row.incremental_repair === true ? "true" : "false";
+    const repairType = this.props.row.subrange_incremental_repair === true ? "Subrange incremental"
+        : this.props.row.incremental_repair ? "Incremental" : "Subrange full";
     const percentThreshold = this.props.row.percent_unrepaired_threshold > 0 ? ` or ${this.props.row.percent_unrepaired_threshold}% unrepaired` : "";
 
     return (
@@ -215,7 +215,7 @@ const TableRow = CreateReactClass({
         <td data-toggle="collapse" data-target={rowID}>{this.props.row.keyspace_name}</td>
         <td data-toggle="collapse" data-target={rowID}><CFsListRender list={this.props.row.column_families} /></td>
         <td data-toggle="collapse" data-target={rowID}><CFsListRender list={this.props.row.blacklisted_tables} /></td>
-        <td data-toggle="collapse" data-target={rowID}>{incremental}</td>
+        <td data-toggle="collapse" data-target={rowID}>{repairType}</td>
         <td data-toggle="collapse" data-target={rowID}>{next}</td>
         <td data-toggle="collapse" data-target={rowID}>{this.props.row.scheduled_days_between} days{percentThreshold}</td>
         <td>
@@ -236,7 +236,8 @@ const TableRowDetails = CreateReactClass({
     const createdAt = moment(this.props.row.creation_time).format("LLL");
     const nextAt = moment(this.props.row.next_activation).format("LLL");
     const rowID = `details_${this.props.row.id}`;
-    const incremental = this.props.row.incremental_repair == true ? "true" : "false";
+      const repairType = this.props.row.subrange_incremental_repair === true ? "Subrange incremental"
+          : this.props.row.incremental_repair ? "Incremental" : "Subrange full";
     const adaptive = this.props.row.adaptive == true ? "true" : "false";
 
     let segmentCount = <tr>
@@ -277,8 +278,8 @@ const TableRowDetails = CreateReactClass({
                     <td><CFsListRender list={this.props.row.datacenters}/></td>
                 </tr>
                 <tr>
-                    <td>Incremental</td>
-                    <td>{incremental}</td>
+                    <td>Repair Type</td>
+                    <td>{repairType}</td>
                 </tr>
                 {segmentCount}
                 <tr>
@@ -458,7 +459,7 @@ const scheduleList = CreateReactClass({
                               <th>Keyspace</th>
                               <th>Tables</th>
                               <th>Blacklist</th>
-                              <th>Incremental</th>
+                              <th>Repair Type</th>
                               <th>Next run</th>
                               <th>Interval</th>
                               <th></th>

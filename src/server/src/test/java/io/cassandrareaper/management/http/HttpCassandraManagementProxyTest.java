@@ -22,6 +22,7 @@ import io.cassandrareaper.ReaperApplicationConfiguration;
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.GenericMetric;
 import io.cassandrareaper.core.Node;
+import io.cassandrareaper.core.RepairType;
 import io.cassandrareaper.core.Snapshot;
 import io.cassandrareaper.core.Table;
 import io.cassandrareaper.management.RepairStatusHandler;
@@ -155,7 +156,12 @@ public class HttpCassandraManagementProxyTest {
 
     int repairNo = httpCassandraManagementProxy.triggerRepair("ks",
         RepairParallelism.PARALLEL,
-        Collections.singleton("table"), true, Collections.emptyList(), repairStatusHandler, Collections.emptyList(), 1);
+        Collections.singleton("table"),
+        RepairType.SUBRANGE_FULL,
+        Collections.emptyList(),
+        repairStatusHandler,
+        Collections.emptyList(),
+        1);
 
     assertEquals(123456789, repairNo);
     assertEquals(1, httpCassandraManagementProxy.jobTracker.size());
@@ -192,7 +198,7 @@ public class HttpCassandraManagementProxyTest {
 
     int repairNo = httpCassandraManagementProxy.triggerRepair("ks",
         RepairParallelism.PARALLEL,
-        Collections.singleton("table"), true, Collections.emptyList(), workAroundHandler,
+        Collections.singleton("table"), RepairType.SUBRANGE_FULL, Collections.emptyList(), workAroundHandler,
         Collections.emptyList(), 1);
 
     verify(mockClient).putRepairV2(eq(

@@ -73,7 +73,6 @@ import org.mockito.Mockito;
 import static org.apache.cassandra.repair.RepairParallelism.PARALLEL;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doThrow;
@@ -107,6 +106,7 @@ public final class SegmentRunnerTest {
             .keyspaceName("reaper")
             .columnFamilies(Sets.newHashSet("reaper"))
             .incrementalRepair(false)
+            .subrangeIncrementalRepair(false)
             .nodes(Sets.newHashSet("127.0.0.1"))
             .repairThreadCount(1)
             .timeout(segmentTimeout));
@@ -154,7 +154,7 @@ public final class SegmentRunnerTest {
     }
 
 
-    when(jmx.triggerRepair(any(), any(), any(), anyBoolean(), any(), any(), any(), anyInt()))
+    when(jmx.triggerRepair(any(), any(), any(), any(), any(), any(), any(), anyInt()))
         .then(
             (invocation) -> {
               assertEquals(
@@ -230,6 +230,7 @@ public final class SegmentRunnerTest {
             .keyspaceName("reaper")
             .columnFamilies(Sets.newHashSet("reaper"))
             .incrementalRepair(false)
+            .subrangeIncrementalRepair(false)
             .nodes(Sets.newHashSet("127.0.0.1"))
             .repairThreadCount(1)
             .timeout(segmentTimeout));
@@ -276,7 +277,7 @@ public final class SegmentRunnerTest {
       throw new AssertionError(ex);
     }
 
-    when(jmx.triggerRepair(any(), any(), any(), anyBoolean(), any(), any(), any(), anyInt()))
+    when(jmx.triggerRepair(any(), any(), any(), any(), any(), any(), any(), anyInt()))
         .then(
             (invocation) -> {
               assertEquals(
@@ -382,6 +383,7 @@ public final class SegmentRunnerTest {
             .keyspaceName("reaper")
             .columnFamilies(Sets.newHashSet("reaper"))
             .incrementalRepair(false)
+            .subrangeIncrementalRepair(false)
             .nodes(Sets.newHashSet("127.0.0.1"))
             .repairThreadCount(1)
             .timeout(segmentTimeout));
@@ -434,7 +436,7 @@ public final class SegmentRunnerTest {
     }
 
 
-    when(jmx.triggerRepair(any(), any(), any(), anyBoolean(), any(), any(), any(), anyInt()))
+    when(jmx.triggerRepair(any(), any(), any(), any(), any(), any(), any(), anyInt()))
         .then(
             (invocation) -> {
               assertEquals(
@@ -529,6 +531,7 @@ public final class SegmentRunnerTest {
             .keyspaceName("reaper")
             .columnFamilies(Sets.newHashSet("reaper"))
             .incrementalRepair(false)
+            .subrangeIncrementalRepair(false)
             .nodes(Sets.newHashSet("127.0.0.1"))
             .repairThreadCount(1)
             .timeout(30));
@@ -581,7 +584,7 @@ public final class SegmentRunnerTest {
     }
 
 
-    when(jmx.triggerRepair(any(), any(), any(), anyBoolean(), any(), any(), any(), anyInt()))
+    when(jmx.triggerRepair(any(), any(), any(), any(), any(), any(), any(), anyInt()))
         .then(
             invocation -> {
               assertEquals(
@@ -671,6 +674,7 @@ public final class SegmentRunnerTest {
             .keyspaceName("reaper")
             .columnFamilies(Sets.newHashSet("reaper"))
             .incrementalRepair(false)
+            .subrangeIncrementalRepair(false)
             .nodes(Sets.newHashSet("127.0.0.1"))
             .repairThreadCount(1)
             .timeout(30));
@@ -723,7 +727,7 @@ public final class SegmentRunnerTest {
     }
 
 
-    when(jmx.triggerRepair(any(), any(), any(), anyBoolean(), any(), any(), any(), anyInt()))
+    when(jmx.triggerRepair(any(), any(), any(), any(), any(), any(), any(), anyInt()))
         .then(
             invocation -> {
               assertEquals(
@@ -815,6 +819,7 @@ public final class SegmentRunnerTest {
             .keyspaceName("reaper")
             .columnFamilies(Sets.newHashSet("reaper"))
             .incrementalRepair(false)
+            .subrangeIncrementalRepair(false)
             .nodes(Sets.newHashSet("127.0.0.1"))
             .repairThreadCount(1)
             .timeout(30));
@@ -867,7 +872,7 @@ public final class SegmentRunnerTest {
     }
 
 
-    when(jmx.triggerRepair(any(), any(), any(), anyBoolean(), any(), any(), any(), anyInt()))
+    when(jmx.triggerRepair(any(), any(), any(), any(), any(), any(), any(), anyInt()))
         .then(
             invocation -> {
               assertEquals(
@@ -960,6 +965,7 @@ public final class SegmentRunnerTest {
             .keyspaceName("reaper")
             .columnFamilies(Sets.newHashSet("reaper"))
             .incrementalRepair(false)
+            .subrangeIncrementalRepair(false)
             .nodes(Sets.newHashSet("127.0.0.1"))
             .repairThreadCount(1)
             .timeout(30));
@@ -1012,7 +1018,7 @@ public final class SegmentRunnerTest {
     }
 
 
-    when(jmx.triggerRepair(any(), any(), any(), anyBoolean(), any(), any(), any(), anyInt()))
+    when(jmx.triggerRepair(any(), any(), any(), any(), any(), any(), any(), anyInt()))
         .then(
             invocation -> {
               assertEquals(
@@ -1136,6 +1142,7 @@ public final class SegmentRunnerTest {
             .keyspaceName("reaper")
             .columnFamilies(Sets.newHashSet("reaper"))
             .incrementalRepair(false)
+            .subrangeIncrementalRepair(false)
             .nodes(Sets.newHashSet("127.0.0.1"))
             .repairThreadCount(1)
             .timeout(segmentTimeout));
@@ -1185,7 +1192,7 @@ public final class SegmentRunnerTest {
     }
 
 
-    when(jmx.triggerRepair(any(), any(), any(), anyBoolean(), any(), any(), any(), anyInt()))
+    when(jmx.triggerRepair(any(), any(), any(), any(), any(), any(), any(), anyInt()))
         .thenThrow(new ReaperException("failure"));
 
     context.managementConnectionFactory = new JmxManagementConnectionFactory(context, new NoopCrypotograph()) {
@@ -1230,6 +1237,7 @@ public final class SegmentRunnerTest {
             .keyspaceName("reaper")
             .columnFamilies(Sets.newHashSet("reaper"))
             .incrementalRepair(false)
+            .subrangeIncrementalRepair(false)
             .nodes(Sets.newHashSet("127.0.0.1"))
             .repairThreadCount(1)
             .timeout(segmentTimeout));
@@ -1279,7 +1287,7 @@ public final class SegmentRunnerTest {
     }
 
 
-    when(jmx.triggerRepair(any(), any(), any(), anyBoolean(), any(), any(), any(), anyInt()))
+    when(jmx.triggerRepair(any(), any(), any(), any(), any(), any(), any(), anyInt()))
         .thenReturn(0);
 
     context.managementConnectionFactory = new JmxManagementConnectionFactory(context, new NoopCrypotograph()) {
@@ -1351,6 +1359,7 @@ public final class SegmentRunnerTest {
             .keyspaceName("reaper")
             .columnFamilies(Sets.newHashSet("reaper"))
             .incrementalRepair(false)
+            .subrangeIncrementalRepair(false)
             .nodes(Sets.newHashSet("127.0.0.1"))
             .repairThreadCount(1)
             .timeout(segmentTimeout));
@@ -1430,6 +1439,7 @@ public final class SegmentRunnerTest {
             .keyspaceName("reaper")
             .columnFamilies(Sets.newHashSet("reaper"))
             .incrementalRepair(false)
+            .subrangeIncrementalRepair(false)
             .nodes(Sets.newHashSet("127.0.0.1"))
             .repairThreadCount(1)
             .timeout(segmentTimeout));

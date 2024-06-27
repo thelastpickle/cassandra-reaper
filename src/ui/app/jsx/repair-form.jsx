@@ -61,7 +61,7 @@ const repairForm = CreateReactClass({
       cause: "",
       startTime: this.props.formType === "schedule" ? moment().toDate() : null,
       intervalDays: "",
-      incrementalRepair: "false",
+      repairType: "full",
       repairThreadCount: 1,
       timeout: null,
       formCollapsed: true,
@@ -203,14 +203,17 @@ const repairForm = CreateReactClass({
     if (this.state.parallelism) repair.repairParallelism = this.state.parallelism;
     if (this.state.intensity) repair.intensity = this.state.intensity;
     if (this.state.cause) repair.cause = this.state.cause;
-    if (this.state.incrementalRepair) {
-      repair.incrementalRepair = this.state.incrementalRepair;
-      if (repair.incrementalRepair == "true") {
+    repair.incrementalRepair = "false";
+    if (this.state.repairType) {
+      if (this.state.repairType === "incremental_subrange") {
+        repair.incrementalRepair = "true";
+        repair.subrangeIncrementalRepair = "true";
         repair.repairParallelism = "PARALLEL";
       }
-    }
-    else {
-      repair.incrementalRepair = "false";
+      if (this.state.repairType === "incremental") {
+        repair.incrementalRepair = "true";
+        repair.repairParallelism = "PARALLEL";
+      }
     }
     if (this.state.nodes) repair.nodes = this.state.nodes;
     if (this.state.datacenters) repair.datacenters = this.state.datacenters;
@@ -712,14 +715,14 @@ const repairForm = CreateReactClass({
                       </div>
                     </div>
                     <div className="form-group">
-                      <label htmlFor="in_incrementalRepair" className="col-sm-3 control-label">Incremental</label>
+                      <label htmlFor="in_repairType" className="col-sm-3 control-label">Repair Type</label>
                       <div className="col-sm-14 col-md-12 col-lg-9">
                         <Select
-                          id="in_incrementalRepair"
-                          name="in_incrementalRepair"
+                          id="in_repairType"
+                          name="in_repairType"
                           classNamePrefix="select"
-                          options={[{label: "true", value: "true"}, {label: "false", value: "false"}]}
-                          placeholder="false"
+                          options={[{label: "Full Subrange", value: "full"}, {label: "Incremental", value: "incremental"}, {label: "Incremental Subrange", value: "incremental_subrange"}]}
+                          placeholder="Full Subrange"
                           onChange={this._handleSelectOnChange}
                         />
                       </div>

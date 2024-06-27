@@ -25,6 +25,7 @@ import io.cassandrareaper.core.RepairSchedule;
 import io.cassandrareaper.core.RepairUnit;
 import io.cassandrareaper.core.Table;
 import io.cassandrareaper.management.ClusterFacade;
+import io.cassandrareaper.management.ICassandraManagementProxy;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -94,11 +95,23 @@ public final class RepairUnitService {
     if (params.incrementalRepair) {
       try {
         String version = clusterFacade.getCassandraVersion(cluster);
-        if (null != version && version.startsWith("2.0")) {
+        if (null != version && ICassandraManagementProxy.versionCompare(version, "2.1.0") < 0) {
           throw new IllegalArgumentException("Incremental repair does not work with Cassandra versions before 2.1");
         }
       } catch (ReaperException e) {
         LOG.warn("unknown version to cluster {}, maybe enabling incremental on 2.0...", cluster.getName(), e);
+      }
+    }
+    if (params.subrangeIncrementalRepair) {
+      try {
+        String version = clusterFacade.getCassandraVersion(cluster);
+        if (null != version && ICassandraManagementProxy.versionCompare(version, "4.0.0") < 0) {
+          throw new IllegalArgumentException(
+              "Subrange incremental repair does not work with Cassandra versions before 4.0.0");
+        }
+      } catch (ReaperException e) {
+        LOG.warn("unknown version to cluster {}, maybe enabling subrange incremental before 4.0...",
+            cluster.getName(), e);
       }
     }
     Optional<RepairUnit> repairUnit = context.storage.getRepairUnitDao().getRepairUnit(params);
@@ -211,7 +224,12 @@ public final class RepairUnitService {
 
     // if incremental repair is not the same, the units are not identical
     if (unit.getIncrementalRepair() != builder.incrementalRepair.booleanValue()) {
-      // incremental reapir is not the same
+      // incremental repair is not the same
+      return false;
+    }
+
+    if (unit.getSubrangeIncrementalRepair() != builder.subrangeIncrementalRepair.booleanValue()) {
+      // subrange incremental repair is not the same
       return false;
     }
 

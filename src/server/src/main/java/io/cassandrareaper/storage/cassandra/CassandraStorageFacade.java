@@ -454,7 +454,7 @@ public final class CassandraStorageFacade implements IStorageDao, IDistributedSt
    * <p>
    * Writes keep retrying forever.
    */
-  private static class RetryPolicyImpl implements RetryPolicy {
+  private static final class RetryPolicyImpl implements RetryPolicy {
 
     @Override
     public RetryDecision onReadTimeout(

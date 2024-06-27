@@ -64,8 +64,9 @@ public class CassandraRepairUnitDao implements IRepairUnitDao {
     insertRepairUnitPrepStmt = session
         .prepare(
             "INSERT INTO repair_unit_v1(id, cluster_name, keyspace_name, column_families, "
-                + "incremental_repair, nodes, \"datacenters\", blacklisted_tables, repair_thread_count, timeout) "
-                + "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+                + "incremental_repair, subrange_incremental, nodes, \"datacenters\", blacklisted_tables,"
+                + "repair_thread_count, timeout) "
+                + "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
         .setConsistencyLevel(ConsistencyLevel.QUORUM);
     getRepairUnitPrepStmt = session
         .prepare("SELECT * FROM repair_unit_v1 WHERE id = ?")
@@ -91,6 +92,7 @@ public class CassandraRepairUnitDao implements IRepairUnitDao {
             updatedRepairUnit.getKeyspaceName(),
             updatedRepairUnit.getColumnFamilies(),
             updatedRepairUnit.getIncrementalRepair(),
+            updatedRepairUnit.getSubrangeIncrementalRepair(),
             updatedRepairUnit.getNodes(),
             updatedRepairUnit.getDatacenters(),
             updatedRepairUnit.getBlacklistedTables(),
@@ -106,6 +108,7 @@ public class CassandraRepairUnitDao implements IRepairUnitDao {
           .keyspaceName(repairUnitRow.getString("keyspace_name"))
           .columnFamilies(repairUnitRow.getSet("column_families", String.class))
           .incrementalRepair(repairUnitRow.getBool("incremental_repair"))
+          .subrangeIncrementalRepair(repairUnitRow.getBool("subrange_incremental"))
           .nodes(repairUnitRow.getSet("nodes", String.class))
           .datacenters(repairUnitRow.getSet("datacenters", String.class))
           .blacklistedTables(repairUnitRow.getSet("blacklisted_tables", String.class))
@@ -134,6 +137,7 @@ public class CassandraRepairUnitDao implements IRepairUnitDao {
           .keyspaceName(repairUnitRow.getString("keyspace_name"))
           .columnFamilies(repairUnitRow.getSet("column_families", String.class))
           .incrementalRepair(repairUnitRow.getBool("incremental_repair"))
+          .subrangeIncrementalRepair(repairUnitRow.getBool("subrange_incremental"))
           .nodes(repairUnitRow.getSet("nodes", String.class))
           .datacenters(repairUnitRow.getSet("datacenters", String.class))
           .blacklistedTables(repairUnitRow.getSet("blacklisted_tables", String.class))

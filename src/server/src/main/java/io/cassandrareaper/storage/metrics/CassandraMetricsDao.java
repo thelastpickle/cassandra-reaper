@@ -89,7 +89,8 @@ public class CassandraMetricsDao implements IMetricsDao, IDistributedMetrics {
     storePercentRepairedForSchedulePrepStmt = session
         .prepare(
             "INSERT INTO percent_repaired_by_schedule"
-                + " (cluster_name, repair_schedule_id, time_bucket, node, keyspace_name, table_name, percent_repaired, ts)"
+                + " (cluster_name, repair_schedule_id, time_bucket, node, keyspace_name,"
+                + " table_name, percent_repaired, ts)"
                 + " values(?, ?, ?, ?, ?, ?, ?, ?)"
         );
 
@@ -207,7 +208,6 @@ public class CassandraMetricsDao implements IMetricsDao, IDistributedMetrics {
 
   @Override
   public List<PercentRepairedMetric> getPercentRepairedMetrics(String clusterName, UUID repairScheduleId, Long since) {
-    List<PercentRepairedMetric> metrics = Lists.newArrayList();
     List<ResultSetFuture> futures = Lists.newArrayList();
     List<String> timeBuckets = Lists.newArrayList();
     long now = DateTime.now().getMillis();
@@ -229,6 +229,7 @@ public class CassandraMetricsDao implements IMetricsDao, IDistributedMetrics {
               timeBucket)));
     }
 
+    List<PercentRepairedMetric> metrics = Lists.newArrayList();
     long maxTimeBucket = 0;
     for (ResultSetFuture future : futures) {
       for (Row row : future.getUninterruptibly()) {

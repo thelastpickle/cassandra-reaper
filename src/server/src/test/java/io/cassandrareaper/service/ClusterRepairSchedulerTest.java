@@ -271,6 +271,7 @@ public final class ClusterRepairSchedulerTest {
         .clusterName(cluster.getName())
         .keyspaceName(keyspace)
         .incrementalRepair(Boolean.FALSE)
+        .subrangeIncrementalRepair(Boolean.FALSE)
         .repairThreadCount(1)
         .timeout(30);
   }

@@ -27,6 +27,7 @@ The Docker environment variables listed in this section map directly to Reaper s
 <code class="codeLarge">REAPER_ENABLE_DYNAMIC_SEED_LIST</code> | [enableDynamicSeedList]({{< relref "reaper_specific.md#enabledynamicseedlist" >}})                                   | true
 <code class="codeLarge">REAPER_HANGING_REPAIR_TIMEOUT_MINS</code> | [hangingRepairTimeoutMins]({{< relref "reaper_specific.md#hangingrepairtimeoutmins" >}})                             | 30
 <code class="codeLarge">REAPER_INCREMENTAL_REPAIR</code> | [incrementalRepair]({{< relref "reaper_specific.md#incrementalrepair" >}})                                           | false
+<code class="codeLarge">REAPER_SUBRANGE_INCREMENTAL</code> | [subrangeIncrementalRepair]({{< relref "reaper_specific.md#subrangeincremental" >}})                                           | false
 <code class="codeLarge">REAPER_JMX_AUTH_PASSWORD</code> | [password]({{< relref "reaper_specific.md#password" >}})                                                             |
 <code class="codeLarge">REAPER_JMX_AUTH_USERNAME</code> | [username]({{< relref "reaper_specific.md#username" >}})                                                             |
 <code class="codeLarge">REAPER_JMX_CREDENTIALS</code> | [jmxCredentials]({{< relref "reaper_specific.md#jmxcredentials" >}})                                                 |

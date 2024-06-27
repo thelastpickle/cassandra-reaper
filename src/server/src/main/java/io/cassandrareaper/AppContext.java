@@ -56,7 +56,7 @@ public final class AppContext {
     return localNodeAddress;
   }
 
-  private static class Private {
+  private static final class Private {
     private static final Logger LOG = LoggerFactory.getLogger(AppContext.class);
     private static final String DEFAULT_INSTANCE_ADDRESS = "127.0.0.1";
 

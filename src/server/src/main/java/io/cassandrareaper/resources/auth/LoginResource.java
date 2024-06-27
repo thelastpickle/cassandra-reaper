@@ -18,7 +18,6 @@
 package io.cassandrareaper.resources.auth;
 
 import java.io.IOException;
-
 import javax.ws.rs.FormParam;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;

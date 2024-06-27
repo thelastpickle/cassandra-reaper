@@ -14,30 +14,11 @@
  limitations under the License.
 -->
 <!DOCTYPE module PUBLIC
-          "-//Puppy Crawl//DTD Check Configuration 1.3//EN"
-          "http://www.puppycrawl.com/dtds/configuration_1_3.dtd">
-
-<!--
-
-   -  Modified from Google Java Style
-      https://google-styleguide.googlecode.com/svn-history/r130/trunk/javaguide.html
-
-   Checkstyle is very configurable. Be sure to read the documentation at
-   http://checkstyle.sf.net (or in your downloaded distribution).
-
-   Most Checks are configurable, be sure to consult the documentation.
-
-   To completely disable a check, just comment it out or delete it from the file.
-
--->
-
-<module name = "Checker">
-    <module name="SuppressWarningsFilter"/>
+        "-//Checkstyle//DTD Checkstyle Configuration 1.3//EN"
+        "https://checkstyle.org/dtds/configuration_1_3.dtd">
+<module name = "RootModule">
     <property name="charset" value="UTF-8"/>
-
     <property name="fileExtensions" value="java, properties, xml"/>
-    <!-- Checks for whitespace                               -->
-    <!-- See http://checkstyle.sf.net/config_whitespace.html -->
     <module name="FileTabCharacter">
         <property name="eachLine" value="true"/>
     </module>
@@ -48,9 +29,12 @@
       <property name="multiLines" value="2"/>
     </module>
 
-    <module name="TreeWalker">
-        <module name="SuppressWarningsHolder"/>
+    <module name="LineLength">
+        <property name="max" value="120"/>
+        <property name="ignorePattern" value="^package.*|^import.*|a href|href|http://|https://|ftp://"/>
+    </module>
 
+    <module name="TreeWalker">
         <module name="SuppressWarnings">
             <property name="id" value="checkstyle:suppresswarnings"/>
         </module> 
@@ -69,10 +53,6 @@
             <property name="allowEscapesForControlCharacters" value="true"/>
             <property name="allowByTailComment" value="true"/>
             <property name="allowNonPrintableEscapes" value="true"/>
-        </module>
-        <module name="LineLength">
-            <property name="max" value="120"/>
-            <property name="ignorePattern" value="^package.*|^import.*|a href|href|http://|https://|ftp://"/>
         </module>
         <module name="Regexp">
           <property name="format" value="[ \t]+$"/>
@@ -234,6 +214,6 @@
         <module name="FinalClass"/>
     </module>
     <module name="SuppressionFilter">
-      <property name="file" value="${checkstyle.suppressions.file}"/>
+        <property name="file" value="${checkstyle.suppressions.file}"/>
     </module>
 </module>

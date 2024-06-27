@@ -251,15 +251,19 @@ public final class RepairRunService {
 
     // preparing a repair run involves several steps
     // the first step is to generate token segments
-    List<Segment> tokenSegments = repairUnit.getIncrementalRepair()
+    // Non subrange incremental repair will generate a single segment per node
+    // Other types of repairs (full and subrange incremental) will generate segments
+    List<Segment> tokenSegments = repairUnit.getIncrementalRepair() && !repairUnit.getSubrangeIncrementalRepair()
         ? Lists.newArrayList()
         : generateSegments(cluster, segmentsPerNode, repairUnit);
 
     checkNotNull(tokenSegments, "failed generating repair segments");
 
     Map<String, RingRange> nodes = getClusterNodes(cluster, repairUnit);
-    // the next step is to prepare a repair run objec
-    int segments = repairUnit.getIncrementalRepair() ? nodes.keySet().size() : tokenSegments.size();
+    // the next step is to prepare a repair run object
+    int segments = repairUnit.getIncrementalRepair() && !repairUnit.getSubrangeIncrementalRepair()
+        ? nodes.keySet().size()
+        : tokenSegments.size();
 
     RepairRun.Builder runBuilder = RepairRun.builder(cluster.getName(), repairUnit.getId())
         .intensity(intensity)
@@ -271,7 +275,8 @@ public final class RepairRunService {
         .adaptiveSchedule(adaptiveSchedule);
 
     // the last preparation step is to generate actual repair segments
-    List<RepairSegment.Builder> segmentBuilders = repairUnit.getIncrementalRepair()
+    List<RepairSegment.Builder> segmentBuilders
+        = repairUnit.getIncrementalRepair() && !repairUnit.getSubrangeIncrementalRepair()
         ? createRepairSegmentsForIncrementalRepair(nodes, repairUnit, cluster, clusterFacade)
         : createRepairSegments(tokenSegments, repairUnit);
 
@@ -322,7 +327,7 @@ public final class RepairRunService {
           sg.generateSegments(
               globalSegmentCount,
               tokens,
-              repairUnit.getIncrementalRepair(),
+              repairUnit.getIncrementalRepair() && !repairUnit.getSubrangeIncrementalRepair(),
               replicasToRange,
               cassandraVersion),
           repairUnit,
@@ -335,7 +340,7 @@ public final class RepairRunService {
       throw new ReaperException("Couldn't get endpoints for tokens", e);
     }
 
-    if (segments.isEmpty() && !repairUnit.getIncrementalRepair()) {
+    if (segments.isEmpty() && (!repairUnit.getIncrementalRepair() || repairUnit.getSubrangeIncrementalRepair())) {
       String errMsg = String.format("failed to generate repair segments for cluster \"%s\"", targetCluster.getName());
       LOG.error(errMsg);
       throw new ReaperException(errMsg);

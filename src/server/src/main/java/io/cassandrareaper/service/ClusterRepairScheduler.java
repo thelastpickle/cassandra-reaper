@@ -119,11 +119,13 @@ public final class ClusterRepairScheduler {
 
   private void createRepairSchedule(Cluster cluster, String keyspace, DateTime nextActivationTime) {
     boolean incrementalRepair = context.config.getAutoScheduling().incremental();
+    boolean subrangeIncrementalRepair = context.config.getAutoScheduling().subrangeIncrementalRepair();
 
     RepairUnit.Builder builder = RepairUnit.builder()
         .clusterName(cluster.getName())
         .keyspaceName(keyspace)
         .incrementalRepair(incrementalRepair)
+        .subrangeIncrementalRepair(subrangeIncrementalRepair)
         .repairThreadCount(context.config.getRepairThreadCount())
         .timeout(context.config.getHangingRepairTimeoutMins());
 

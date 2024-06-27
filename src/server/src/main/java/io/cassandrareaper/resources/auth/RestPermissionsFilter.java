@@ -21,7 +21,6 @@ import io.cassandrareaper.resources.RequestUtils;
 
 import java.io.IOException;
 import java.util.Date;
-
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletResponse;
@@ -50,7 +49,7 @@ public final class RestPermissionsFilter extends HttpMethodPermissionFilter {
     if (!subject.getPrincipals().getRealmNames().contains("jwtRealm")
         && !RequestUtils.getSessionTimeout().isNegative()
         && subject.getSession().getStartTimestamp().before(
-        new Date(System.currentTimeMillis() - RequestUtils.getSessionTimeout().toMillis()))) {
+            new Date(System.currentTimeMillis() - RequestUtils.getSessionTimeout().toMillis()))) {
       // Session has lived longer than its timeout already. Force logout.
       subject.logout();
       return false;

@@ -73,6 +73,7 @@ public final class RepairRunStatusTest {
             null, // pauseTime
             0.9, // intensity
             false, // incremental
+            false, // subrange incremental
             RepairParallelism.PARALLEL, // repairParellelism
             Collections.EMPTY_LIST, // nodes
             Collections.EMPTY_LIST, // datacenters
@@ -104,6 +105,7 @@ public final class RepairRunStatusTest {
             null, // pauseTime
             0.9, // intensity
             false, // incremental
+            false, // subrange incremental
             RepairParallelism.PARALLEL, // repairParellelism
             Collections.EMPTY_LIST, // nodes
             Collections.EMPTY_LIST, // datacenters
@@ -135,6 +137,7 @@ public final class RepairRunStatusTest {
             new DateTime().now().minusMinutes(1), // pauseTime
             0.9, // intensity
             false, // incremental
+            false, // subrange incremental
             RepairParallelism.PARALLEL, // repairParellelism
             Collections.EMPTY_LIST, // nodes
             Collections.EMPTY_LIST, // datacenters
@@ -166,6 +169,7 @@ public final class RepairRunStatusTest {
             new DateTime().now().minusMinutes(1), // pauseTime
             0.9, // intensity
             false, // incremental
+            false, // subrange incremental
             RepairParallelism.PARALLEL, // repairParellelism
             Collections.EMPTY_LIST, // nodes
             Collections.EMPTY_LIST, // datacenters

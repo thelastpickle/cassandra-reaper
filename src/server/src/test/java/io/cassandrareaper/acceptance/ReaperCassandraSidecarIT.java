@@ -46,12 +46,12 @@ public class ReaperCassandraSidecarIT {
   private static final Logger LOG = LoggerFactory.getLogger(ReaperCassandraSidecarIT.class);
   private static final List<ReaperTestJettyRunner> RUNNER_INSTANCES = new CopyOnWriteArrayList<>();
   private static final String[] CASS_CONFIG_FILE
-    = {
-      "reaper-cassandra-sidecar1-at.yaml",
-      "reaper-cassandra-sidecar2-at.yaml",
-      "reaper-cassandra-sidecar3-at.yaml",
-      "reaper-cassandra-sidecar4-at.yaml",
-    };
+      = {
+        "reaper-cassandra-sidecar1-at.yaml",
+        "reaper-cassandra-sidecar2-at.yaml",
+        "reaper-cassandra-sidecar3-at.yaml",
+        "reaper-cassandra-sidecar4-at.yaml",
+      };
 
   protected ReaperCassandraSidecarIT() {}
 

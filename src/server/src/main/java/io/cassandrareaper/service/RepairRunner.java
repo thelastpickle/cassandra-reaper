@@ -495,7 +495,7 @@ final class RepairRunner implements Runnable {
     for (RepairSegment segment : nextRepairSegments) {
       Map<String, String> potentialReplicaMap = this.repairRunService.getDCsByNodeForRepairSegment(
           cluster, segment.getTokenRange(), repairUnit.getKeyspaceName(), repairUnit);
-      if (repairUnit.getIncrementalRepair()) {
+      if (repairUnit.getIncrementalRepair() && !repairUnit.getSubrangeIncrementalRepair()) {
         Map<String, String> endpointHostIdMap = clusterFacade.getEndpointToHostId(cluster);
         if (segment.getHostID() == null) {
           throw new ReaperException(
@@ -672,8 +672,8 @@ final class RepairRunner implements Runnable {
     LOG.debug("preparing to repair segment {} on run with id {}", segmentId, repairRunId);
 
     List<String> potentialCoordinators = Lists.newArrayList();
-    if (!repairUnit.getIncrementalRepair()) {
-      // full repair
+    if (!repairUnit.getIncrementalRepair() || repairUnit.getSubrangeIncrementalRepair()) {
+      // full repair or subrange incremental
       try {
         potentialCoordinators = filterPotentialCoordinatorsByDatacenters(
             repairUnit.getDatacenters(),

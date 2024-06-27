@@ -18,7 +18,6 @@
 package io.cassandrareaper.resources;
 
 import java.time.Duration;
-
 import javax.servlet.ServletRequest;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.HttpMethod;

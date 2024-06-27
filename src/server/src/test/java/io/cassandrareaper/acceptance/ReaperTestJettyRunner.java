@@ -27,11 +27,9 @@ import java.net.ServerSocket;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-
 import javax.ws.rs.core.Response;
 
 import com.google.common.collect.Sets;
-
 import io.dropwizard.testing.ConfigOverride;
 import io.dropwizard.testing.DropwizardTestSupport;
 import io.dropwizard.testing.ResourceHelpers;

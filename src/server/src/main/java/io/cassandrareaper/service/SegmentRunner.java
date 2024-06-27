@@ -22,6 +22,7 @@ import io.cassandrareaper.ReaperApplicationConfiguration.DatacenterAvailability;
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.RepairSegment;
+import io.cassandrareaper.core.RepairType;
 import io.cassandrareaper.core.RepairUnit;
 import io.cassandrareaper.management.ClusterFacade;
 import io.cassandrareaper.management.ICassandraManagementProxy;
@@ -121,7 +122,9 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
     this.repairUnit = repairUnit;
     this.repairRunner = repairRunner;
     this.segmentFailed = new AtomicBoolean(false);
-    this.leaderElectionId = repairUnit.getIncrementalRepair() ? repairRunner.getRepairRunId() : segmentId;
+    this.leaderElectionId = repairUnit.getIncrementalRepair() && !repairUnit.getSubrangeIncrementalRepair()
+        ? repairRunner.getRepairRunId()
+        : segmentId;
     this.tablesToRepair = tablesToRepair;
   }
 
@@ -159,7 +162,9 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
         = segment
         .reset()
         // set coordinator host to null only for full repairs
-        .withCoordinatorHost(unit.getIncrementalRepair() ? segment.getCoordinatorHost() : null)
+        .withCoordinatorHost(unit.getIncrementalRepair() && !unit.getSubrangeIncrementalRepair()
+            ? segment.getCoordinatorHost()
+            : null)
         .withFailCount(segment.getFailCount() + 1)
         .withId(segment.getId())
         .build();
@@ -174,7 +179,9 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
           segment
               .reset()
               // set coordinator host to null only for full repairs
-              .withCoordinatorHost(repairUnit.getIncrementalRepair() ? segment.getCoordinatorHost() : null)
+              .withCoordinatorHost(repairUnit.getIncrementalRepair() && !repairUnit.getSubrangeIncrementalRepair()
+                  ? segment.getCoordinatorHost()
+                  : null)
               .withFailCount(segment.getFailCount() + 1)
               .withId(segment.getId())
               .build());
@@ -298,7 +305,8 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
       Cluster cluster = context.storage.getClusterDao().getCluster(clusterName);
       ICassandraManagementProxy coordinator = clusterFacade.connect(cluster, potentialCoordinators);
       String keyspace = repairUnit.getKeyspaceName();
-      boolean fullRepair = !repairUnit.getIncrementalRepair();
+      RepairType repairType = repairUnit.getSubrangeIncrementalRepair() ? RepairType.SUBRANGE_INCREMENTAL
+          : repairUnit.getIncrementalRepair() ? RepairType.INCREMENTAL : RepairType.SUBRANGE_FULL;
 
       try (Timer.Context cxt1 = context.metricRegistry.timer(metricNameForRepairing(segment)).time()) {
         try {
@@ -321,7 +329,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
                 keyspace,
                 validationParallelism,
                 tablesToRepair,
-                fullRepair,
+                repairType,
                 repairUnit.getDatacenters(),
                 this,
                 segment.getTokenRange().getTokenRanges(),
@@ -371,7 +379,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
 
     // Timeout is extended for each attempt to prevent repairs from blocking if settings aren't accurate
     int attempt = segment.getFailCount() + 1;
-    long segmentTimeout = repairUnit.getIncrementalRepair()
+    long segmentTimeout = repairUnit.getIncrementalRepair() && !repairUnit.getSubrangeIncrementalRepair()
         ? timeoutMillis * MAX_TIMEOUT_EXTENSIONS * attempt
         : timeoutMillis * attempt;
     LOG.info("Repair for segment {} started, status wait will timeout in {} millis", segmentId, segmentTimeout);
@@ -856,7 +864,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
              = context.metricRegistry.timer(MetricRegistry.name(SegmentRunner.class, "takeLead")).time()) {
 
       boolean result = false;
-      if (repairUnit.getIncrementalRepair()) {
+      if (repairUnit.getIncrementalRepair() && !repairUnit.getSubrangeIncrementalRepair()) {
         result = context.storage instanceof IDistributedStorage
             ? ((IDistributedStorage) context.storage).takeLead(leaderElectionId)
             : true;
@@ -877,7 +885,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
     try (Timer.Context cx
              = context.metricRegistry.timer(MetricRegistry.name(SegmentRunner.class, "renewLead")).time()) {
 
-      if (repairUnit.getIncrementalRepair()) {
+      if (repairUnit.getIncrementalRepair() && !repairUnit.getSubrangeIncrementalRepair()) {
         boolean result = context.storage instanceof IDistributedStorage
             ? ((IDistributedStorage) context.storage).renewLead(leaderElectionId)
             : true;
@@ -905,7 +913,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
     try (Timer.Context cx
              = context.metricRegistry.timer(MetricRegistry.name(SegmentRunner.class, "releaseLead")).time()) {
       if (context.storage instanceof IDistributedStorage) {
-        if (repairUnit.getIncrementalRepair()) {
+        if (repairUnit.getIncrementalRepair() && !repairUnit.getSubrangeIncrementalRepair()) {
           ((IDistributedStorage) context.storage).releaseLead(leaderElectionId);
         } else {
           ((IDistributedStorage) context.storage).releaseRunningRepairsForNodes(this.repairRunner.getRepairRunId(),

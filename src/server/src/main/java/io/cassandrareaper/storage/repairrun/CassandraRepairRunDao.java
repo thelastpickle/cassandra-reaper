@@ -215,7 +215,6 @@ public class CassandraRepairRunDao implements IRepairRunDao {
         nbRanges = 0;
       }
     }
-    assert cassRepairUnitDao.getRepairUnit(newRepairRun.getRepairUnitId()).getIncrementalRepair() == isIncremental;
 
     futures.add(this.session.executeAsync(repairRunBatch));
     futures.add(
