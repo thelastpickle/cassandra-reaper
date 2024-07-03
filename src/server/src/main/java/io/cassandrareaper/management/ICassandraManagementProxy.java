@@ -18,6 +18,7 @@
 package io.cassandrareaper.management;
 
 import io.cassandrareaper.ReaperException;
+import io.cassandrareaper.core.RepairType;
 import io.cassandrareaper.core.Snapshot;
 import io.cassandrareaper.core.Table;
 import io.cassandrareaper.resources.view.NodesStatus;
@@ -122,7 +123,7 @@ public interface ICassandraManagementProxy {
       String keyspace,
       RepairParallelism repairParallelism,
       Collection<String> columnFamilies,
-      boolean fullRepair,
+      RepairType repairType,
       Collection<String> datacenters,
       RepairStatusHandler repairStatusHandler,
       List<RingRange> associatedTokens,

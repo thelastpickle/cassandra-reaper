@@ -924,7 +924,7 @@ public final class ClusterFacade {
         : endpoints;
   }
 
-  private static class Async {
+  private static final class Async {
     private static final ExecutorService ASYNC = Executors.newSingleThreadExecutor();
 
     private static boolean markClusterActive(Cluster cluster, AppContext context) {

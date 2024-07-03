@@ -92,6 +92,7 @@ public class RepairScheduleResourceTest {
 
     RepairUnit.Builder mockRepairUnitBuilder = RepairUnit.builder()
         .incrementalRepair(false)
+        .subrangeIncrementalRepair(false)
         .repairThreadCount(1)
         .clusterName("cluster-test")
         .keyspaceName("keyspace-test")

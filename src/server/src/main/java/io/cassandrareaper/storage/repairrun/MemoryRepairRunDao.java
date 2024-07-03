@@ -84,6 +84,7 @@ public class MemoryRepairRunDao implements IRepairRunDao {
                   run.getPauseTime(),
                   run.getIntensity(),
                   unit.getIncrementalRepair(),
+                  unit.getSubrangeIncrementalRepair(),
                   run.getRepairParallelism(),
                   unit.getNodes(),
                   unit.getDatacenters(),

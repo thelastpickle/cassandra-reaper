@@ -22,7 +22,6 @@ import io.cassandrareaper.core.RepairUnit;
 
 import java.util.Collection;
 import java.util.UUID;
-
 import javax.annotation.Nullable;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -78,6 +77,9 @@ public final class RepairRunStatus {
 
   @JsonProperty("incremental_repair")
   private boolean incrementalRepair;
+
+  @JsonProperty("subrange_incremental_repair")
+  private boolean subrangeIncrementalRepair;
 
   @JsonProperty("total_segments")
   private int totalSegments;
@@ -142,6 +144,7 @@ public final class RepairRunStatus {
       DateTime pauseTime,
       double intensity,
       boolean incrementalRepair,
+      boolean subrangeIncrementalRepair,
       RepairParallelism repairParallelism,
       Collection<String> nodes,
       Collection<String> datacenters,
@@ -165,6 +168,7 @@ public final class RepairRunStatus {
     this.currentTime = DateTime.now();
     this.intensity = roundDoubleNicely(intensity);
     this.incrementalRepair = incrementalRepair;
+    this.subrangeIncrementalRepair = subrangeIncrementalRepair;
     this.totalSegments = totalSegments;
     this.repairParallelism = repairParallelism;
     this.segmentsRepaired = segmentsRepaired;
@@ -231,6 +235,7 @@ public final class RepairRunStatus {
         repairRun.getPauseTime(),
         repairRun.getIntensity(),
         repairUnit.getIncrementalRepair(),
+        repairUnit.getSubrangeIncrementalRepair(),
         repairRun.getRepairParallelism(),
         repairUnit.getNodes(),
         repairUnit.getDatacenters(),
@@ -411,6 +416,14 @@ public final class RepairRunStatus {
 
   public void setIncrementalRepair(boolean incrementalRepair) {
     this.incrementalRepair = incrementalRepair;
+  }
+
+  public boolean getSubrangeIncrementalRepair() {
+    return subrangeIncrementalRepair;
+  }
+
+  public void setSubrangeIncrementalRepair(boolean subrangeIncrementalRepair) {
+    this.subrangeIncrementalRepair = subrangeIncrementalRepair;
   }
 
   public int getTotalSegments() {

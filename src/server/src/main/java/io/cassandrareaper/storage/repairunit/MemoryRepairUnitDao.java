@@ -43,7 +43,8 @@ public class MemoryRepairUnitDao implements IRepairUnitDao {
   @Override
   public RepairUnit addRepairUnit(RepairUnit.Builder repairUnitBuilder) {
     Optional<RepairUnit> existing = getRepairUnit(repairUnitBuilder);
-    if (existing.isPresent() && repairUnitBuilder.incrementalRepair == existing.get().getIncrementalRepair()) {
+    if (existing.isPresent() && repairUnitBuilder.incrementalRepair == existing.get().getIncrementalRepair()
+        && repairUnitBuilder.subrangeIncrementalRepair == existing.get().getSubrangeIncrementalRepair()) {
       return existing.get();
     } else {
       RepairUnit newRepairUnit = repairUnitBuilder.build(UUIDs.timeBased());

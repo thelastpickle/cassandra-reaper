@@ -21,6 +21,7 @@ import io.cassandrareaper.ReaperApplicationConfiguration.Jmxmp;
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.JmxCredentials;
+import io.cassandrareaper.core.RepairType;
 import io.cassandrareaper.core.Snapshot;
 import io.cassandrareaper.core.Table;
 import io.cassandrareaper.crypto.Cryptograph;
@@ -556,7 +557,7 @@ public final class JmxCassandraManagementProxy implements ICassandraManagementPr
       String keyspace,
       RepairParallelism repairParallelism,
       Collection<String> columnFamilies,
-      boolean fullRepair,
+      RepairType repairType,
       Collection<String> datacenters,
       RepairStatusHandler repairStatusHandler,
       List<RingRange> associatedTokens,
@@ -589,7 +590,7 @@ public final class JmxCassandraManagementProxy implements ICassandraManagementPr
     try {
       int repairNo;
       repairNo = triggerRepairPost2dot2(
-          fullRepair,
+          repairType,
           repairParallelism,
           keyspace,
           columnFamilies,
@@ -606,7 +607,7 @@ public final class JmxCassandraManagementProxy implements ICassandraManagementPr
   }
 
   private int triggerRepairPost2dot2(
-      boolean fullRepair,
+      RepairType repairType,
       RepairParallelism repairParallelism,
       String keyspace,
       Collection<String> columnFamilies,
@@ -617,14 +618,14 @@ public final class JmxCassandraManagementProxy implements ICassandraManagementPr
     Map<String, String> options = new HashMap<>();
 
     options.put(RepairOption.PARALLELISM_KEY, repairParallelism.getName());
-    options.put(RepairOption.INCREMENTAL_KEY, Boolean.toString(!fullRepair));
+    options.put(RepairOption.INCREMENTAL_KEY, Boolean.toString(repairType.isIncremental()));
     options.put(
         RepairOption.JOB_THREADS_KEY,
         Integer.toString(repairThreadCount == 0 ? 1 : repairThreadCount));
     options.put(RepairOption.TRACE_KEY, Boolean.toString(Boolean.FALSE));
     options.put(RepairOption.COLUMNFAMILIES_KEY, StringUtils.join(columnFamilies, ","));
     // options.put(RepairOption.PULL_REPAIR_KEY, Boolean.FALSE);
-    if (fullRepair) {
+    if (repairType.isSubrange()) {
       options.put(
           RepairOption.RANGES_KEY,
           StringUtils.join(

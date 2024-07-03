@@ -25,6 +25,7 @@ import io.cassandrareaper.core.RepairRun.RunState;
 import io.cassandrareaper.core.RepairSegment;
 import io.cassandrareaper.core.RepairUnit;
 import io.cassandrareaper.management.ClusterFacade;
+import io.cassandrareaper.management.ICassandraManagementProxy;
 import io.cassandrareaper.resources.view.RepairRunStatus;
 import io.cassandrareaper.service.PurgeService;
 import io.cassandrareaper.service.RepairRunService;
@@ -57,6 +58,7 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.UriInfo;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.apache.cassandra.repair.RepairParallelism;
@@ -100,6 +102,7 @@ public final class RepairRunResource {
       Optional<String> repairParallelism,
       Optional<String> intensityStr,
       Optional<String> incrementalRepairStr,
+      Optional<String> subrangeIncrementalStr,
       Optional<String> nodesStr,
       Optional<String> datacentersStr,
       Optional<String> blacklistedTableNamesParam,
@@ -148,6 +151,14 @@ public final class RepairRunResource {
           .entity("invalid query parameter \"incrementalRepair\", expecting [True,False]")
           .build();
     }
+    if (subrangeIncrementalStr.isPresent()
+        && (!subrangeIncrementalStr.get().toUpperCase().contentEquals("TRUE")
+        && !subrangeIncrementalStr.get().toUpperCase().contentEquals("FALSE"))) {
+
+      return Response.status(Response.Status.BAD_REQUEST)
+          .entity("invalid query parameter \"subrangeIncrementalStr\", expecting [True,False]")
+          .build();
+    }
     try {
       Cluster cluster = context.storage.getClusterDao().getCluster(Cluster.toSymbolicName(clusterName.get()));
 
@@ -157,10 +168,22 @@ public final class RepairRunResource {
             .build();
       }
 
-      if (incrementalRepairStr.isPresent() && "true".equalsIgnoreCase(incrementalRepairStr.get())) {
+      if (subrangeIncrementalStr.isPresent() && "true".equalsIgnoreCase(subrangeIncrementalStr.get())) {
         try {
           String version = ClusterFacade.create(context).getCassandraVersion(cluster);
-          if (null != version && version.startsWith("2.0")) {
+          if (null != version && ICassandraManagementProxy.versionCompare(version, "4.0.0") < 0) {
+            String msg = "Subrange incremental repair does not work with Cassandra versions before 4.0.0";
+            return Response.status(Response.Status.BAD_REQUEST).entity(msg).build();
+          }
+        } catch (ReaperException e) {
+          String msg = String.format("find version of cluster %s failed", cluster.getName());
+          LOG.error(msg, e);
+          return Response.serverError().entity(msg).build();
+        }
+      } else if (incrementalRepairStr.isPresent() && "true".equalsIgnoreCase(incrementalRepairStr.get())) {
+        try {
+          String version = ClusterFacade.create(context).getCassandraVersion(cluster);
+          if (null != version && ICassandraManagementProxy.versionCompare(version, "2.1.0") < 0) {
             String msg = "Incremental repair does not work with Cassandra versions before 2.1";
             return Response.status(Response.Status.BAD_REQUEST).entity(msg).build();
           }
@@ -309,6 +332,7 @@ public final class RepairRunResource {
       @QueryParam("repairParallelism") Optional<String> repairParallelism,
       @QueryParam("intensity") Optional<String> intensityStr,
       @QueryParam("incrementalRepair") Optional<String> incrementalRepairStr,
+      @QueryParam("subrangeIncrementalRepair") Optional<String> subrangeIncrementalRepairStr,
       @QueryParam("nodes") Optional<String> nodesToRepairParam,
       @QueryParam("datacenters") Optional<String> datacentersToRepairParam,
       @QueryParam("blacklistedTables") Optional<String> blacklistedTableNamesParam,
@@ -328,6 +352,7 @@ public final class RepairRunResource {
           repairParallelism,
           intensityStr,
           incrementalRepairStr,
+          subrangeIncrementalRepairStr,
           nodesToRepairParam,
           datacentersToRepairParam,
           blacklistedTableNamesParam,
@@ -338,34 +363,9 @@ public final class RepairRunResource {
       if (null != possibleFailedResponse) {
         return possibleFailedResponse;
       }
-      Double intensity;
-      if (intensityStr.isPresent()) {
-        intensity = Double.parseDouble(intensityStr.get());
-      } else {
-        intensity = context.config.getRepairIntensity();
-        LOG.debug("no intensity given, so using default value: {}", intensity);
-      }
-      boolean incrementalRepair;
-      if (incrementalRepairStr.isPresent()) {
-        incrementalRepair = Boolean.parseBoolean(incrementalRepairStr.get());
-      } else {
-        incrementalRepair = context.config.getIncrementalRepair();
-        LOG.debug("no incremental repair given, so using default value: {}", incrementalRepair);
-      }
-      int segments = context.config.getSegmentCountPerNode();
-      if (!incrementalRepair) {
-        if (segmentCountPerNode.isPresent()) {
-          LOG.debug(
-              "using given segment count {} instead of configured value {}",
-              segmentCountPerNode.get(),
-              context.config.getSegmentCount());
-          segments = segmentCountPerNode.get();
-        }
-      } else {
-        // hijack the segment count in case of incremental repair
-        segments = -1;
-      }
+
       final Cluster cluster = context.storage.getClusterDao().getCluster(Cluster.toSymbolicName(clusterName.get()));
+
       Set<String> tableNames;
       try {
         tableNames = repairRunService.getTableNamesBasedOnParam(cluster, keyspace.get(), tableNamesParam);
@@ -373,6 +373,7 @@ public final class RepairRunResource {
         LOG.error(ex.getMessage(), ex);
         return Response.status(Response.Status.NOT_FOUND).entity(ex.getMessage()).build();
       }
+
       Set<String> blacklistedTableNames;
       try {
         blacklistedTableNames
@@ -381,6 +382,7 @@ public final class RepairRunResource {
         LOG.error(ex.getMessage(), ex);
         return Response.status(Response.Status.NOT_FOUND).entity(ex.getMessage()).build();
       }
+
       final Set<String> nodesToRepair;
       try {
         nodesToRepair = repairRunService.getNodesToRepairBasedOnParam(cluster, nodesToRepairParam);
@@ -388,6 +390,7 @@ public final class RepairRunResource {
         LOG.error(ex.getMessage(), ex);
         return Response.status(Response.Status.NOT_FOUND).entity(ex.getMessage()).build();
       }
+
       final Set<String> datacentersToRepair;
       try {
         datacentersToRepair = RepairRunService
@@ -399,12 +402,15 @@ public final class RepairRunResource {
       }
       int timeout = timeoutParam.orElse(context.config.getHangingRepairTimeoutMins());
       boolean force = (forceParam.isPresent() ? Boolean.parseBoolean(forceParam.get()) : false);
+      boolean subrangeIncrementalRepair = getSubrangeIncrementalRepair(subrangeIncrementalRepairStr);
+      boolean incrementalRepair = getIncrementalRepair(incrementalRepairStr);
 
       RepairUnit.Builder builder = RepairUnit.builder()
           .clusterName(cluster.getName())
           .keyspaceName(keyspace.get())
           .columnFamilies(tableNames)
           .incrementalRepair(incrementalRepair)
+          .subrangeIncrementalRepair(subrangeIncrementalRepair)
           .nodes(nodesToRepair)
           .datacenters(datacentersToRepair)
           .blacklistedTables(blacklistedTableNames)
@@ -414,7 +420,8 @@ public final class RepairRunResource {
       final Optional<RepairUnit> maybeTheRepairUnit = repairUnitService.getOrCreateRepairUnit(cluster, builder, force);
       if (maybeTheRepairUnit.isPresent()) {
         RepairUnit theRepairUnit = maybeTheRepairUnit.get();
-        if (theRepairUnit.getIncrementalRepair() != incrementalRepair) {
+        if (theRepairUnit.getIncrementalRepair() != incrementalRepair
+            && theRepairUnit.getSubrangeIncrementalRepair() != subrangeIncrementalRepair) {
           String msg = String.format(
               "A repair unit %s already exist for the same cluster/keyspace/tables"
                   + " but with a different incremental repair value. Requested value %s | Existing value: %s",
@@ -435,10 +442,12 @@ public final class RepairRunResource {
           parallelism = RepairParallelism.valueOf(repairParallelism.get().toUpperCase());
         }
 
-        if (incrementalRepair) {
+        if (incrementalRepair || subrangeIncrementalRepair) {
           parallelism = RepairParallelism.PARALLEL;
         }
 
+        Double intensity = getIntensity(intensityStr);
+        int segments = getSegments(segmentCountPerNode, subrangeIncrementalRepair, incrementalRepair);
         final RepairRun newRepairRun = repairRunService.registerRepairRun(
             cluster,
             theRepairUnit,
@@ -462,6 +471,61 @@ public final class RepairRunResource {
       LOG.error(e.getMessage(), e);
       return Response.serverError().entity(e.getMessage()).build();
     }
+  }
+
+  @VisibleForTesting
+  public int getSegments(Optional<Integer> segmentCountPerNode, boolean subrangeIncrementalRepair,
+      boolean incrementalRepair) {
+    int segments = context.config.getSegmentCountPerNode();
+    if (!incrementalRepair || subrangeIncrementalRepair) {
+      if (segmentCountPerNode.isPresent()) {
+        LOG.debug(
+            "using given segment count {} instead of configured value {}",
+            segmentCountPerNode.get(),
+            context.config.getSegmentCount());
+        segments = segmentCountPerNode.get();
+      }
+    } else {
+      // hijack the segment count in case of incremental repair
+      segments = -1;
+    }
+    return segments;
+  }
+
+  @VisibleForTesting
+  public boolean getIncrementalRepair(Optional<String> incrementalRepairStr) {
+    boolean incrementalRepair;
+    if (incrementalRepairStr.isPresent()) {
+      incrementalRepair = Boolean.parseBoolean(incrementalRepairStr.get());
+    } else {
+      incrementalRepair = context.config.getIncrementalRepair();
+      LOG.debug("no incremental repair given, so using default value: {}", incrementalRepair);
+    }
+    return incrementalRepair;
+  }
+
+  @VisibleForTesting
+  public boolean getSubrangeIncrementalRepair(Optional<String> subrangeIncrementalRepairStr) {
+    boolean subrangeIncrementalRepair;
+    if (subrangeIncrementalRepairStr.isPresent()) {
+      subrangeIncrementalRepair = Boolean.parseBoolean(subrangeIncrementalRepairStr.get());
+    } else {
+      subrangeIncrementalRepair = context.config.getSubrangeIncrementalRepair();
+      LOG.debug("no subrange incremental repair given, so using default value: {}", subrangeIncrementalRepair);
+    }
+    return subrangeIncrementalRepair;
+  }
+
+  @VisibleForTesting
+  public Double getIntensity(Optional<String> intensityStr) {
+    Double intensity;
+    if (intensityStr.isPresent()) {
+      intensity = Double.parseDouble(intensityStr.get());
+    } else {
+      intensity = context.config.getRepairIntensity();
+      LOG.debug("no intensity given, so using default value: {}", intensity);
+    }
+    return intensity;
   }
 
   /**
