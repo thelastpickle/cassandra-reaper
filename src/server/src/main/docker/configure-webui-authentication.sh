@@ -17,31 +17,19 @@ if [ "false" = "${REAPER_AUTH_ENABLED}" ]; then
   exit 0
 fi
 
-if [ ! -z "${REAPER_SHIRO_INI}" ]; then
-cat <<EOT >> /etc/cassandra-reaper/config/cassandra-reaper.yml
-accessControl:
-  sessionTimeout: PT10M
-  shiro:
-    iniConfigs: ["file:${REAPER_SHIRO_INI}"]
+if [ ! -z "${REAPER_AUTH_USER}" ]; then
+  _ACTUAL_REAPER_SHIRO_INI_="${REAPER_SHIRO_INI:-/etc/cassandra-reaper/config/shiro.ini}"
+  cat <<EOT >> "${_ACTUAL_REAPER_SHIRO_INI_}"
+${REAPER_AUTH_USER} = ${REAPER_AUTH_PASSWORD}, operator
 EOT
-elif [ ! -z "${REAPER_AUTH_USER}" ]; then
-cat <<EOT >> /etc/cassandra-reaper/config/cassandra-reaper.yml
-accessControl:
-  sessionTimeout: PT10M
-  shiro:
-    iniConfigs: ["file:/etc/cassandra-reaper/config/shiro.ini"]
-EOT
+  _REAPER_SHIRO_INI_PATH_="file:${_ACTUAL_REAPER_SHIRO_INI_}"
 else
-cat <<EOT >> /etc/cassandra-reaper/config/cassandra-reaper.yml
-accessControl:
-  sessionTimeout: PT10M
-  shiro:
-    iniConfigs: ["classpath:shiro.ini"]
-EOT
+  _REAPER_SHIRO_INI_PATH_="classpath:shiro.ini"
 fi
 
-if [ ! -z "${REAPER_AUTH_USER}" ]; then
-cat <<EOT2 >> /etc/cassandra-reaper/config/shiro.ini
-${REAPER_AUTH_USER} = ${REAPER_AUTH_PASSWORD}, operator
+cat <<EOT2 >> /etc/cassandra-reaper/config/cassandra-reaper.yml
+accessControl:
+  sessionTimeout: PT10M
+  shiro:
+    iniConfigs: ["${_REAPER_SHIRO_INI_PATH_}"]
 EOT2
-fi
