@@ -236,7 +236,7 @@ case "${TEST_TYPE}" in
         mkdir -p ~/.reaper
         echo "admin" > ~/.reaper/credentials
         sleep 30 && src/packaging/bin/spreaper login admin
-        src/packaging/bin/spreaper add-cluster $(docker-compose -f ./src/packaging/docker-compose.yml run nodetool status | grep UN | tr -s ' ' | cut -d' ' -f2) 7199 > cluster.json
+        src/packaging/bin/spreaper add-cluster $(docker compose -f ./src/packaging/docker-compose.yml run nodetool status | grep UN | tr -s ' ' | cut -d' ' -f2) 7199 > cluster.json
         cat cluster.json
         cluster_name=$(cat cluster.json|grep -v "#" | jq -r '.name')
         if [[ "$cluster_name" != "reaper-cluster" ]]; then
