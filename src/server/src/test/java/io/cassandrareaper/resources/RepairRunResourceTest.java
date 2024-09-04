@@ -71,7 +71,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
@@ -159,7 +158,7 @@ public final class RepairRunResourceTest {
         anyString(),
         any(RepairParallelism.class),
         anyCollection(),
-        anyBoolean(),
+        any(),
         anyCollection(),
         any(),
         any(),
@@ -186,6 +185,7 @@ public final class RepairRunResourceTest {
         .keyspaceName(keyspace)
         .columnFamilies(TABLES)
         .incrementalRepair(INCREMENTAL)
+        .subrangeIncrementalRepair(INCREMENTAL)
         .nodes(NODES)
         .datacenters(DATACENTERS)
         .blacklistedTables(BLACKLISTED_TABLES)
@@ -236,6 +236,7 @@ public final class RepairRunResourceTest {
         Optional.ofNullable(cause),
         Optional.ofNullable(segments),
         Optional.of(REPAIR_PARALLELISM.name()),
+        Optional.<String>empty(),
         Optional.<String>empty(),
         Optional.<String>empty(),
         nodes.isEmpty() ? Optional.empty() : Optional.of(StringUtils.join(nodes, ',')),
@@ -562,6 +563,7 @@ public final class RepairRunResourceTest {
         Optional.of(REPAIR_PARALLELISM.name()),
         Optional.<String>empty(),
         Optional.<String>empty(),
+        Optional.<String>empty(),
         nodes.isEmpty() ? Optional.empty() : Optional.of(StringUtils.join(nodes, ',')),
         Optional.<String>empty(),
         blacklistedTables.isEmpty() ? Optional.empty() : Optional.of(StringUtils.join(blacklistedTables, ',')),
@@ -592,5 +594,54 @@ public final class RepairRunResourceTest {
     assertEquals(Response.Status.BAD_REQUEST.getStatusCode(), response.getStatus());
     assertTrue(response.getEntity() instanceof String);
     assertEquals("invalid query parameter \"force\", expecting [True,False]", response.getEntity());
+  }
+
+  @Test
+  public void testGetSegments() {
+    RepairRunResource repairRunResource = new RepairRunResource(context, context.storage.getRepairRunDao());
+    // subrange incremental
+    int segments = repairRunResource.getSegments(Optional.of(10), true, true);
+    assertEquals(10, segments);
+    // non-subrange incremental
+    segments = repairRunResource.getSegments(Optional.of(10), false, true);
+    assertEquals(-1, segments);
+    // non-incremental
+    segments = repairRunResource.getSegments(Optional.of(10), false, false);
+    assertEquals(10, segments);
+  }
+
+  @Test
+  public void testGetIncrementalRepair() {
+    AppContext ctx = mock(AppContext.class);
+    ctx.config = mock(ReaperApplicationConfiguration.class);
+    ctx.storage = new MemoryStorageFacade();
+    RepairRunResource repairRunResource = new RepairRunResource(ctx, ctx.storage.getRepairRunDao());
+
+    boolean incrementalRepair = repairRunResource.getIncrementalRepair(Optional.of("false"));
+    assertFalse(incrementalRepair);
+    incrementalRepair = repairRunResource.getIncrementalRepair(Optional.of("true"));
+    assertTrue(incrementalRepair);
+    incrementalRepair = repairRunResource.getIncrementalRepair(Optional.empty());
+    assertFalse(incrementalRepair);
+  }
+
+  @Test
+  public void testGetSubrangeIncrementalRepair() {
+    AppContext ctx = mock(AppContext.class);
+    ctx.config = mock(ReaperApplicationConfiguration.class);
+    ctx.storage = new MemoryStorageFacade();
+    RepairRunResource repairRunResource = new RepairRunResource(ctx, ctx.storage.getRepairRunDao());
+    boolean subrangeIncremental = repairRunResource.getSubrangeIncrementalRepair(Optional.of("false"));
+    assertFalse(subrangeIncremental);
+  }
+
+  @Test
+  public void testGetIntensity() {
+    AppContext ctx = mock(AppContext.class);
+    ctx.config = mock(ReaperApplicationConfiguration.class);
+    ctx.storage = new MemoryStorageFacade();
+    RepairRunResource repairRunResource = new RepairRunResource(ctx, ctx.storage.getRepairRunDao());
+    Double intensity = repairRunResource.getIntensity(Optional.of("0.8"));
+    assertEquals(0.8f, intensity.floatValue(), 0.0f);
   }
 }

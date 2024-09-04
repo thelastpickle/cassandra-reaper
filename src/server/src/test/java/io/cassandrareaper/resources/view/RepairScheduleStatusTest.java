@@ -45,6 +45,7 @@ public final class RepairScheduleStatusTest {
     data.setId(UUIDs.timeBased());
     data.setIntensity(0.75);
     data.setIncrementalRepair(false);
+    data.setSubrangeIncrementalRepair(false);
     data.setKeyspaceName("testKeyspace");
     data.setOwner("testuser");
     data.setRepairParallelism(RepairParallelism.PARALLEL);
@@ -63,6 +64,7 @@ public final class RepairScheduleStatusTest {
     assertEquals(data.getId(), dataAfter.getId());
     assertEquals(data.getIntensity(), dataAfter.getIntensity(), 0.0);
     assertEquals(data.getIncrementalRepair(), dataAfter.getIncrementalRepair());
+    assertEquals(data.getSubrangeIncrementalRepair(), dataAfter.getSubrangeIncrementalRepair());
     assertEquals(data.getKeyspaceName(), dataAfter.getKeyspaceName());
     assertEquals(data.getRepairParallelism(), dataAfter.getRepairParallelism());
     assertEquals(data.getState(), dataAfter.getState());

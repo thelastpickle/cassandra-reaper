@@ -23,6 +23,7 @@ hangingRepairTimeoutMins: ${REAPER_HANGING_REPAIR_TIMEOUT_MINS}
 storageType: ${REAPER_STORAGE_TYPE}
 enableCrossOrigin: ${REAPER_ENABLE_CROSS_ORIGIN}
 incrementalRepair: ${REAPER_INCREMENTAL_REPAIR}
+subrangeIncrementalRepair: ${REAPER_SUBRANGE_INCREMENTAL}
 blacklistTwcsTables: ${REAPER_BLACKLIST_TWCS}
 enableDynamicSeedList: ${REAPER_ENABLE_DYNAMIC_SEED_LIST}
 repairManagerSchedulingIntervalSeconds: ${REAPER_REPAIR_MANAGER_SCHEDULING_INTERVAL_SECONDS}

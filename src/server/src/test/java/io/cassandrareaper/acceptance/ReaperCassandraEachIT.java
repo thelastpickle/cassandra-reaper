@@ -45,10 +45,10 @@ public class ReaperCassandraEachIT {
   private static final Logger LOG = LoggerFactory.getLogger(ReaperCassandraSidecarIT.class);
   private static final List<ReaperTestJettyRunner> RUNNER_INSTANCES = new CopyOnWriteArrayList<>();
   private static final String[] CASS_CONFIG_FILE
-    = {
-      "reaper-cassandra-each1-at.yaml",
-      "reaper-cassandra-each2-at.yaml"
-    };
+      = {
+        "reaper-cassandra-each1-at.yaml",
+        "reaper-cassandra-each2-at.yaml"
+      };
 
   protected ReaperCassandraEachIT() {}
 

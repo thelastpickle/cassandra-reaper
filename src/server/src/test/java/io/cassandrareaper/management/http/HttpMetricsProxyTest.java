@@ -28,7 +28,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-
 import javax.management.JMException;
 
 import com.datastax.mgmtapi.client.api.DefaultApi;
@@ -38,7 +37,6 @@ import okhttp3.Call;
 import okhttp3.OkHttpClient;
 import okhttp3.Response;
 import okhttp3.ResponseBody;
-
 import org.junit.Test;
 import org.mockito.Mockito;
 import org.mockito.internal.util.collections.Sets;
@@ -261,12 +259,29 @@ public class HttpMetricsProxyTest {
   @SuppressWarnings("checkstyle:LineLength")
   @Test
   public void testCollectTpStats() throws IOException, JMException {
-    String responseBodyStr = "org_apache_cassandra_metrics_thread_pools_pending_tasks{host=\"eae3481e-f803-49b5-8516-7ff271104db5\",instance=\"172.18.0.3\",cluster=\"test\",datacenter=\"dc1\",rack=\"default\",pod_name=\"test-dc1-default-sts-0\",node_name=\"mc-0-worker3\",pool_type=\"internal\",pool_name=\"TPC\",} 0.0\n"
-          + "org_apache_cassandra_metrics_thread_pools_pending_tasks{host=\"eae3481e-f803-49b5-8516-7ff271104db5\",instance=\"172.18.0.3\",cluster=\"test\",datacenter=\"dc1\",rack=\"default\",pod_name=\"test-dc1-default-sts-0\",node_name=\"mc-0-worker3\",pool_type=\"internal\",pool_name=\"ValidationExecutor\",} 0.0\n"
-          + "org_apache_cassandra_metrics_thread_pools_pending_tasks{host=\"eae3481e-f803-49b5-8516-7ff271104db5\",instance=\"172.18.0.3\",cluster=\"test\",datacenter=\"dc1\",rack=\"default\",pod_name=\"test-dc1-default-sts-0\",node_name=\"mc-0-worker3\",pool_type=\"internal\",pool_name=\"AntiCompactionExecutor\",} 0.0\n"
-          + "org_apache_cassandra_metrics_thread_pools_pending_tasks{host=\"eae3481e-f803-49b5-8516-7ff271104db5\",instance=\"172.18.0.3\",cluster=\"test\",datacenter=\"dc1\",rack=\"default\",pod_name=\"test-dc1-default-sts-0\",node_name=\"mc-0-worker3\",pool_type=\"internal\",pool_name=\"AntiEntropyStage\",} 0.0\n"
-          + "org_apache_cassandra_metrics_thread_pools_pending_tasks{host=\"eae3481e-f803-49b5-8516-7ff271104db5\",instance=\"172.18.0.3\",cluster=\"test\",datacenter=\"dc1\",rack=\"default\",pod_name=\"test-dc1-default-sts-0\",node_name=\"mc-0-worker3\",pool_type=\"internal\",pool_name=\"TPC\",} 0.0\n"
-          + "org_apache_cassandra_metrics_keyspace_view_read_time_solr_admin_bucket{host=\"eae3481e-f803-49b5-8516-7ff271104db5\",instance=\"172.18.0.3\",cluster=\"test\",datacenter=\"dc1\",rack=\"default\",pod_name=\"test-dc1-default-sts-0\",node_name=\"mc-0-worker3\",le=\"3379391\",} 0.0\n";
+    String responseBodyStr = "org_apache_cassandra_metrics_thread_pools_pending_tasks{"
+        + "host=\"eae3481e-f803-49b5-8516-7ff271104db5\",instance=\"172.18.0.3\",cluster=\"test\","
+        + "datacenter=\"dc1\",rack=\"default\",pod_name=\"test-dc1-default-sts-0\",node_name=\"mc-0-worker3\","
+        + "pool_type=\"internal\",pool_name=\"TPC\",} 0.0\n"
+        + "org_apache_cassandra_metrics_thread_pools_pending_tasks{host=\"eae3481e-f803-49b5-8516-7ff271104db5\","
+        + "instance=\"172.18.0.3\",cluster=\"test\",datacenter=\"dc1\",rack=\"default\","
+        + "pod_name=\"test-dc1-default-sts-0\",node_name=\"mc-0-worker3\",pool_type=\"internal\","
+        + "pool_name=\"ValidationExecutor\",} 0.0\n"
+        + "org_apache_cassandra_metrics_thread_pools_pending_tasks{host=\"eae3481e-f803-49b5-8516-7ff271104db5\","
+        + "instance=\"172.18.0.3\",cluster=\"test\",datacenter=\"dc1\",rack=\"default\","
+        + "pod_name=\"test-dc1-default-sts-0\",node_name=\"mc-0-worker3\",pool_type=\"internal\","
+        + "pool_name=\"AntiCompactionExecutor\",} 0.0\n"
+        + "org_apache_cassandra_metrics_thread_pools_pending_tasks{host=\"eae3481e-f803-49b5-8516-7ff271104db5\","
+        + "instance=\"172.18.0.3\",cluster=\"test\",datacenter=\"dc1\",rack=\"default\","
+        + "pod_name=\"test-dc1-default-sts-0\",node_name=\"mc-0-worker3\",pool_type=\"internal\","
+        + "pool_name=\"AntiEntropyStage\",} 0.0\n"
+        + "org_apache_cassandra_metrics_thread_pools_pending_tasks{host=\"eae3481e-f803-49b5-8516-7ff271104db5\","
+        + "instance=\"172.18.0.3\",cluster=\"test\",datacenter=\"dc1\",rack=\"default\","
+        + "pod_name=\"test-dc1-default-sts-0\",node_name=\"mc-0-worker3\",pool_type=\"internal\","
+        + "pool_name=\"TPC\",} 0.0\n"
+        + "org_apache_cassandra_metrics_keyspace_view_read_time_solr_admin_bucket{"
+        + "host=\"eae3481e-f803-49b5-8516-7ff271104db5\",instance=\"172.18.0.3\",cluster=\"test\",datacenter=\"dc1\","
+        + "rack=\"default\",pod_name=\"test-dc1-default-sts-0\",node_name=\"mc-0-worker3\",le=\"3379391\",} 0.0\n";
 
     OkHttpClient httpClient = Mockito.mock(OkHttpClient.class);
     Call call = Mockito.mock(Call.class);
@@ -304,13 +319,34 @@ public class HttpMetricsProxyTest {
   @SuppressWarnings("checkstyle:LineLength")
   @Test
   public void testCollectTpPendingTasks() throws JMException, IOException, ReaperException {
-    String responseBodyStr = "org_apache_cassandra_metrics_thread_pools_pending_tasks{host=\"eae3481e-f803-49b5-8516-7ff271104db5\",instance=\"172.18.0.3\",cluster=\"test\",datacenter=\"dc1\",rack=\"default\",pod_name=\"test-dc1-default-sts-0\",node_name=\"mc-0-worker3\",pool_type=\"internal\",pool_name=\"TPC\",} 0.0\n"
-          + "org_apache_cassandra_metrics_thread_pools_pending_tasks{host=\"eae3481e-f803-49b5-8516-7ff271104db5\",instance=\"172.18.0.3\",cluster=\"test\",datacenter=\"dc1\",rack=\"default\",pod_name=\"test-dc1-default-sts-0\",node_name=\"mc-0-worker3\",pool_type=\"internal\",pool_name=\"ValidationExecutor\",} 0.0\n"
-          + "org_apache_cassandra_metrics_thread_pools_pending_tasks{host=\"eae3481e-f803-49b5-8516-7ff271104db5\",instance=\"172.18.0.3\",cluster=\"test\",datacenter=\"dc1\",rack=\"default\",pod_name=\"test-dc1-default-sts-0\",node_name=\"mc-0-worker3\",pool_type=\"internal\",pool_name=\"AntiCompactionExecutor\",} 0.0\n"
-          + "org_apache_cassandra_metrics_thread_pools_pending_tasks{host=\"eae3481e-f803-49b5-8516-7ff271104db5\",instance=\"172.18.0.3\",cluster=\"test\",datacenter=\"dc1\",rack=\"default\",pod_name=\"test-dc1-default-sts-0\",node_name=\"mc-0-worker3\",pool_type=\"internal\",pool_name=\"AntiEntropyStage\",} 0.0\n"
-          + "org_apache_cassandra_metrics_thread_pools_pending_tasks{host=\"eae3481e-f803-49b5-8516-7ff271104db5\",instance=\"172.18.0.3\",cluster=\"test\",datacenter=\"dc1\",rack=\"default\",pod_name=\"test-dc1-default-sts-0\",node_name=\"mc-0-worker3\",pool_type=\"internal\",pool_name=\"TPC\",} 0.0\n"
-          + "org_apache_cassandra_metrics_thread_pools_pending_tasks{host=\"eae3481e-f803-49b5-8516-7ff271104db5\",instance=\"172.18.0.3\",cluster=\"test\",datacenter=\"dc1\",rack=\"default\",pod_name=\"test-dc1-default-sts-0\",node_name=\"mc-0-worker3\",pool_type=\"internal\",pool_name=\"CompactionExecutor\",} 0.0\n"
-          + "org_apache_cassandra_metrics_keyspace_view_read_time_solr_admin_bucket{host=\"eae3481e-f803-49b5-8516-7ff271104db5\",instance=\"172.18.0.3\",cluster=\"test\",datacenter=\"dc1\",rack=\"default\",pod_name=\"test-dc1-default-sts-0\",node_name=\"mc-0-worker3\",le=\"3379391\",} 0.0\n";
+    String responseBodyStr = "org_apache_cassandra_metrics_thread_pools_pending_tasks{"
+        + "host=\"eae3481e-f803-49b5-8516-7ff271104db5\",instance=\"172.18.0.3\",cluster=\"test\",datacenter=\"dc1\","
+        + "rack=\"default\",pod_name=\"test-dc1-default-sts-0\",node_name=\"mc-0-worker3\",pool_type=\"internal\","
+        + "pool_name=\"TPC\",} 0.0\n"
+        + "org_apache_cassandra_metrics_thread_pools_pending_tasks{host=\"eae3481e-f803-49b5-8516-7ff271104db5\","
+        + "instance=\"172.18.0.3\",cluster=\"test\",datacenter=\"dc1\",rack=\"default\","
+        + "pod_name=\"test-dc1-default-sts-0\",node_name=\"mc-0-worker3\",pool_type=\"internal\","
+        + "pool_name=\"ValidationExecutor\",} 0.0\n"
+        + "org_apache_cassandra_metrics_thread_pools_pending_tasks{host=\"eae3481e-f803-49b5-8516-7ff271104db5\","
+        + "instance=\"172.18.0.3\",cluster=\"test\",datacenter=\"dc1\",rack=\"default\","
+        + "pod_name=\"test-dc1-default-sts-0\",node_name=\"mc-0-worker3\",pool_type=\"internal\","
+        + "pool_name=\"AntiCompactionExecutor\",} 0.0\n"
+        + "org_apache_cassandra_metrics_thread_pools_pending_tasks{host=\"eae3481e-f803-49b5-8516-7ff271104db5\","
+        + "instance=\"172.18.0.3\",cluster=\"test\",datacenter=\"dc1\",rack=\"default\","
+        + "pod_name=\"test-dc1-default-sts-0\",node_name=\"mc-0-worker3\",pool_type=\"internal\","
+        + "pool_name=\"AntiEntropyStage\",} 0.0\n"
+        +  "org_apache_cassandra_metrics_thread_pools_pending_tasks{host=\"eae3481e-f803-49b5-8516-7ff271104db5\","
+        + "instance=\"172.18.0.3\",cluster=\"test\",datacenter=\"dc1\",rack=\"default\","
+        + "pod_name=\"test-dc1-default-sts-0\",node_name=\"mc-0-worker3\",pool_type=\"internal\","
+        + "pool_name=\"TPC\",} 0.0\n"
+        +  "org_apache_cassandra_metrics_thread_pools_pending_tasks{host=\"eae3481e-f803-49b5-8516-7ff271104db5\","
+        + "instance=\"172.18.0.3\",cluster=\"test\",datacenter=\"dc1\",rack=\"default\","
+        + "pod_name=\"test-dc1-default-sts-0\",node_name=\"mc-0-worker3\",pool_type=\"internal\","
+        + "pool_name=\"CompactionExecutor\",} 0.0\n"
+        +  "org_apache_cassandra_metrics_keyspace_view_read_time_solr_admin_bucket{"
+        + "host=\"eae3481e-f803-49b5-8516-7ff271104db5\",instance=\"172.18.0.3\",cluster=\"test\","
+        + "datacenter=\"dc1\",rack=\"default\",pod_name=\"test-dc1-default-sts-0\",node_name=\"mc-0-worker3\","
+        + "le=\"3379391\",} 0.0\n";
 
     OkHttpClient httpClient = Mockito.mock(OkHttpClient.class);
     Call call = Mockito.mock(Call.class);

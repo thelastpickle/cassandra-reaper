@@ -196,7 +196,8 @@ Returns OK if all goes well NOT_MODIFIED if new state is the same as the old one
 	    * *segmentCountPerNode*: Defines the amount of segments per node to create for scheduled repair runs. (Optional)
 	    * *repairParallelism*: Defines the used repair parallelism for scheduled repair runs. (Optional)
 	    * *intensity*: Defines the repair intensity for scheduled repair runs. (Optional)
-	    * *incrementalRepair*: Defines if incremental repair should be done. [true/false] (Optional)
+	    * *incrementalRepair*: Defines if incremental repair should be done on all tokens of each node at once. [true/false] (Optional)
+      * *subrangeIncrementalRepair*: Defines if incremental repair should be done in subrange mode, against discrete token ranges. [true/false] (Optional)
 	    * *scheduleDaysBetween*: Defines the amount of days to wait between scheduling new repairs.
 	                             For example, use value 7 for weekly schedule, and 0 for continuous.
 	    * *scheduleTriggerTime*: Defines the time for first scheduled trigger for the run.

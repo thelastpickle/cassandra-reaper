@@ -1336,6 +1336,27 @@ public final class BasicSteps {
     }
   }
 
+  @When("^a new subrange incremental repair is added for the last added cluster and keyspace \"([^\"]*)\"$")
+  public void a_new_subrange_incremental_repair_is_added_for_the_last_added_cluster_and_keyspace(String keyspace)
+      throws Throwable {
+    synchronized (BasicSteps.class) {
+      ReaperTestJettyRunner runner = RUNNERS.get(RAND.nextInt(RUNNERS.size()));
+      Map<String, String> params = Maps.newHashMap();
+      params.put("clusterName", TestContext.TEST_CLUSTER);
+      params.put("keyspace", keyspace);
+      params.put("owner", TestContext.TEST_USER);
+      params.put("incrementalRepair", Boolean.FALSE.toString());
+      params.put("subrangeIncrementalRepair", Boolean.TRUE.toString());
+      Response response = runner.callReaper("POST", "/repair_run", Optional.of(params));
+      String responseData = response.readEntity(String.class);
+      assertEquals(responseData, Response.Status.CREATED.getStatusCode(), response.getStatus());
+      Assertions.assertThat(responseData).isNotBlank();
+      RepairRunStatus run = SimpleReaperClient.parseRepairRunStatusJSON(responseData);
+      Assertions.assertThat(run.getTotalSegments()).isGreaterThan(3);
+      testContext.addCurrentRepairId(run.getId());
+    }
+  }
+
   @Then("^reaper has (\\d+) repairs for cluster called \"([^\"]*)\"$")
   public void reaper_has_repairs_for_cluster_called(int expected, String clusterName) throws Throwable {
     synchronized (BasicSteps.class) {
