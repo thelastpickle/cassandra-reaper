@@ -174,7 +174,7 @@
         <dependency>
             <groupId>com.datastax.cassandra</groupId>
             <artifactId>cassandra-driver-core</artifactId>
-            <version>3.11.0</version>
+            lversion>3.11.5</version>
             <exclusions>
 	            <exclusion>
 		            <groupId>com.fasterxml.jackson.core</groupId>
