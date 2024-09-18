@@ -754,6 +754,9 @@ public final class ReaperApplicationConfiguration extends Configuration {
     private String truststore;
 
     @JsonProperty
+    private String truststoresDir;
+
+    @JsonProperty
     private Integer mgmtApiMetricsPort;
 
     @JsonProperty
@@ -772,6 +775,10 @@ public final class ReaperApplicationConfiguration extends Configuration {
       return truststore;
     }
 
+    public String getTruststoresDir() {
+      return truststoresDir;
+    }
+
     @VisibleForTesting
     public void setEnabled(Boolean enabled) {
       this.enabled = enabled;
@@ -785,6 +792,11 @@ public final class ReaperApplicationConfiguration extends Configuration {
     @VisibleForTesting
     public void setTruststore(String truststore) {
       this.truststore = truststore;
+    }
+
+    @VisibleForTesting
+    public void setTruststoresDir(String truststoresDir) {
+      this.truststoresDir = truststoresDir;
     }
 
     public int getMgmtApiMetricsPort() {

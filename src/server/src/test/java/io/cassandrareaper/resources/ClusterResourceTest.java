@@ -471,8 +471,15 @@ public final class ClusterResourceTest {
     ClusterResource clusterResource
         = ClusterResource.create(mocks.context, mocks.cryptograph, mocks.context.storage.getEventsDao(),
         mocks.context.storage.getRepairRunDao());
-    clusterResource.addOrUpdateCluster(mocks.uriInfo, Optional.of(SEED_HOST), Optional.of(Cluster.DEFAULT_JMX_PORT),
-        Optional.of(JMX_USERNAME), Optional.of(JMX_PASSWORD));
+
+    clusterResource.addOrUpdateCluster(
+        mocks.uriInfo,
+        Optional.of(SEED_HOST),
+        Optional.of(Cluster.DEFAULT_JMX_PORT),
+        Optional.of(JMX_USERNAME),
+        Optional.of(JMX_PASSWORD)
+    );
+
     doReturn(Arrays.asList(SEED_HOST + 1, SEED_HOST)).when(mocks.cassandraManagementProxy).getLiveNodes();
 
     Response response = clusterResource
@@ -495,7 +502,8 @@ public final class ClusterResourceTest {
         Optional.of(SEED_HOST + 1),
         Optional.of(Cluster.DEFAULT_JMX_PORT),
         Optional.of(JMX_USERNAME),
-        Optional.of(JMX_PASSWORD));
+        Optional.of(JMX_PASSWORD)
+    );
 
     assertEquals(HttpStatus.NO_CONTENT_204, response.getStatus());
     assertTrue(response.getLocation().toString().endsWith("/cluster/" + cluster.getName()));
@@ -510,8 +518,14 @@ public final class ClusterResourceTest {
         mocks.context.storage.getEventsDao(),
         mocks.context.storage.getRepairRunDao());
     ;
-    clusterResource.addOrUpdateCluster(mocks.uriInfo, Optional.of(SEED_HOST), Optional.of(Cluster.DEFAULT_JMX_PORT),
-        Optional.of(JMX_USERNAME), Optional.of(JMX_PASSWORD));
+    clusterResource.addOrUpdateCluster(
+        mocks.uriInfo,
+        Optional.of(SEED_HOST),
+        Optional.of(Cluster.DEFAULT_JMX_PORT),
+        Optional.of(JMX_USERNAME),
+        Optional.of(JMX_PASSWORD)
+    );
+
     doReturn(Arrays.asList(SEED_HOST + 1, SEED_HOST)).when(mocks.cassandraManagementProxy).getLiveNodes();
 
     Response response = clusterResource.addOrUpdateCluster(
@@ -565,9 +579,13 @@ public final class ClusterResourceTest {
         mocks.context.storage.getRepairRunDao());
     ;
 
-    Response response = clusterResource
-        .addOrUpdateCluster(mocks.uriInfo, Optional.of(SEED_HOST), Optional.of(Cluster.DEFAULT_JMX_PORT),
-            Optional.of(JMX_USERNAME), Optional.of(JMX_PASSWORD));
+    Response response = clusterResource.addOrUpdateCluster(
+        mocks.uriInfo,
+        Optional.of(SEED_HOST),
+        Optional.of(Cluster.DEFAULT_JMX_PORT),
+        Optional.of(JMX_USERNAME),
+        Optional.of(JMX_PASSWORD)
+    );
 
     assertEquals(HttpStatus.CREATED_201, response.getStatus());
     assertEquals(1, mocks.context.storage.getRepairScheduleDao().getAllRepairSchedules().size());
@@ -599,9 +617,13 @@ public final class ClusterResourceTest {
         mocks.context.storage.getRepairRunDao());
     ;
 
-    Response response = clusterResource
-        .addOrUpdateCluster(mocks.uriInfo, Optional.of(SEED_HOST), Optional.of(Cluster.DEFAULT_JMX_PORT),
-            Optional.of(JMX_USERNAME), Optional.of(JMX_PASSWORD));
+    Response response = clusterResource.addOrUpdateCluster(
+        mocks.uriInfo,
+        Optional.of(SEED_HOST),
+        Optional.of(Cluster.DEFAULT_JMX_PORT),
+        Optional.of(JMX_USERNAME),
+        Optional.of(JMX_PASSWORD)
+    );
 
     assertEquals(HttpStatus.CREATED_201, response.getStatus());
     assertEquals(1, mocks.context.storage.getRepairScheduleDao().getAllRepairSchedules().size());
