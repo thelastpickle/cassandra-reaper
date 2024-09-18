@@ -77,6 +77,11 @@ import org.slf4j.LoggerFactory;
 
 public class HttpManagementConnectionFactory implements IManagementConnectionFactory {
   private static final char[] KEYSTORE_PASSWORD = "changeit".toCharArray();
+
+  private static final String KEYSTORE_COMPONENT_NAME = "keystore.jks";
+
+  private static final String TRUSTSTORE_COMPONENT_NAME = "truststore.jks";
+
   private static final Logger LOG = LoggerFactory.getLogger(HttpManagementConnectionFactory.class);
   private static final ConcurrentMap<String, HttpCassandraManagementProxy> HTTP_CONNECTIONS = Maps.newConcurrentMap();
   private final MetricRegistry metricRegistry;
@@ -95,13 +100,22 @@ public class HttpManagementConnectionFactory implements IManagementConnectionFac
     this.config = context.config;
     registerConnectionsGauge();
     this.jobStatusPollerExecutor = jobStatusPollerExecutor;
-    if (context.config.getHttpManagement().getKeystore() != null && !context.config.getHttpManagement().getKeystore()
-        .isEmpty()) {
-      try {
-        createSslWatcher();
-      } catch (IOException e) {
-        throw new RuntimeException(e);
+
+    String ts = context.config.getHttpManagement().getTruststore();
+    boolean watchTruststore = ts != null && !ts.isEmpty();
+    String ks = context.config.getHttpManagement().getKeystore();
+    boolean watchKeystore = ks != null && !ks.isEmpty();
+    String tsd = context.config.getHttpManagement().getTruststoresDir();
+    boolean watchTruststoreDir = tsd != null && !tsd.isEmpty() && Files.isDirectory(Paths.get(tsd));
+
+    try {
+      if (watchKeystore || watchTruststore || watchTruststoreDir) {
+        createSslWatcher(watchTruststore, watchKeystore, watchTruststoreDir);
+      } else {
+        LOG.debug("Not setting up any SSL watchers");
       }
+    } catch (IOException e) {
+      throw new RuntimeException(e);
     }
   }
 
@@ -170,19 +184,26 @@ public class HttpManagementConnectionFactory implements IManagementConnectionFac
       @Override
       public HttpCassandraManagementProxy apply(@Nullable String hostName) {
         ReaperApplicationConfiguration.HttpManagement httpConfig = config.getHttpManagement();
-        boolean useMtls = httpConfig.getKeystore() != null && !httpConfig.getKeystore().isEmpty();
+
+        boolean useMtls = (httpConfig.getKeystore() != null && !httpConfig.getKeystore().isEmpty())
+            || (httpConfig.getTruststoresDir() != null && !httpConfig.getTruststoresDir().isEmpty());
 
         OkHttpClient.Builder clientBuilder = new OkHttpClient().newBuilder();
 
         String protocol = "http";
+
         if (useMtls) {
+
+          Path truststoreName = getTruststoreComponentPath(node, TRUSTSTORE_COMPONENT_NAME);
+          Path keystoreName = getTruststoreComponentPath(node, KEYSTORE_COMPONENT_NAME);
+
           LOG.debug("Using TLS connection to " + node.getHostname());
           // We have to split TrustManagers to its own function to please OkHttpClient
           TrustManager[] trustManagers;
           SSLContext sslContext;
           try {
-            trustManagers = getTrustManagers();
-            sslContext = createSslContext(trustManagers);
+            trustManagers = getTrustManagers(truststoreName);
+            sslContext = createSslContext(trustManagers, keystoreName);
           } catch (ReaperException e) {
             LOG.error("Failed to create SSLContext: " + e.getLocalizedMessage(), e);
             throw new RuntimeException(e);
@@ -218,8 +239,7 @@ public class HttpManagementConnectionFactory implements IManagementConnectionFac
   }
 
   @VisibleForTesting
-  SSLContext createSslContext(TrustManager[] tms) throws ReaperException {
-    Path keyStorePath = Paths.get(config.getHttpManagement().getKeystore());
+  SSLContext createSslContext(TrustManager[] tms, Path keyStorePath) throws ReaperException {
 
     try (InputStream ksIs = Files.newInputStream(keyStorePath, StandardOpenOption.READ)) {
 
@@ -238,8 +258,11 @@ public class HttpManagementConnectionFactory implements IManagementConnectionFac
     }
   }
 
-  private TrustManager[] getTrustManagers() throws ReaperException {
-    Path trustStorePath = Paths.get(config.getHttpManagement().getTruststore());
+  @VisibleForTesting
+  TrustManager[] getTrustManagers(Path trustStorePath) throws ReaperException {
+
+    LOG.trace(String.format("Calling getSingleTrustManager with %s", trustStorePath));
+
     try (InputStream tsIs = Files.newInputStream(trustStorePath, StandardOpenOption.READ)) {
       KeyStore trustStore = KeyStore.getInstance(KeyStore.getDefaultType());
       trustStore.load(tsIs, KEYSTORE_PASSWORD);
@@ -249,30 +272,67 @@ public class HttpManagementConnectionFactory implements IManagementConnectionFac
 
       return tmf.getTrustManagers();
     } catch (IOException | NoSuchAlgorithmException | KeyStoreException | CertificateException e) {
-      throw new ReaperException(e);
+      throw new ReaperException("Error loading trust managers");
     }
   }
 
   @VisibleForTesting
-  void createSslWatcher() throws IOException {
+  Path getTruststoreComponentPath(Node node, String truststoreComponentName) {
+    Path trustStorePath;
+
+    String clusterName = node.getClusterName();
+    // the cluster name is not available, or we don't have the per-cluster truststores
+    // we fall back to the global trust stores
+    if (clusterName.equals("") || config.getHttpManagement().getTruststoresDir() == null) {
+
+      trustStorePath = truststoreComponentName.equals(TRUSTSTORE_COMPONENT_NAME)
+          ? Paths.get(config.getHttpManagement().getTruststore()).toAbsolutePath()
+          : Paths.get(config.getHttpManagement().getKeystore()).toAbsolutePath();
+    } else {
+      // load a cluster-specific trust store otherwise
+      Path storesRootPath = Paths.get(config.getHttpManagement().getTruststoresDir());
+      trustStorePath = storesRootPath
+          .resolve(String.format("%s-%s", clusterName, truststoreComponentName))
+          .toAbsolutePath();
+    }
+
+    return trustStorePath;
+  }
+
+  @VisibleForTesting
+  void createSslWatcher(boolean watchTruststore, boolean watchKeystore, boolean watchTruststoreDir) throws IOException {
+
     WatchService watchService = FileSystems.getDefault().newWatchService();
-    Path trustStorePath = Paths.get(config.getHttpManagement().getTruststore());
-    Path keyStorePath = Paths.get(config.getHttpManagement().getKeystore());
-    Path keystoreParent = trustStorePath.getParent();
-    Path trustStoreParent = keyStorePath.getParent();
 
-    keystoreParent.register(
-        watchService,
-        StandardWatchEventKinds.ENTRY_CREATE,
-        StandardWatchEventKinds.ENTRY_DELETE,
-        StandardWatchEventKinds.ENTRY_MODIFY);
+    Path trustStorePath = watchTruststore ? Paths.get(config.getHttpManagement().getTruststore()) : null;
+    Path keyStorePath = watchKeystore ? Paths.get(config.getHttpManagement().getKeystore()) : null ;
+    Path truststoreDirPath = watchTruststoreDir ? Paths.get(config.getHttpManagement().getTruststoresDir()) : null ;
 
-    if (!keystoreParent.equals(trustStoreParent)) {
-      trustStoreParent.register(
+    if (watchKeystore) {
+      keyStorePath.getParent().register(
           watchService,
           StandardWatchEventKinds.ENTRY_CREATE,
           StandardWatchEventKinds.ENTRY_DELETE,
-          StandardWatchEventKinds.ENTRY_MODIFY);
+          StandardWatchEventKinds.ENTRY_MODIFY
+      );
+    }
+    if (watchTruststore && watchKeystore) {
+      if (!trustStorePath.getParent().equals(keyStorePath.getParent())) {
+        trustStorePath.getParent().register(
+            watchService,
+            StandardWatchEventKinds.ENTRY_CREATE,
+            StandardWatchEventKinds.ENTRY_DELETE,
+            StandardWatchEventKinds.ENTRY_MODIFY
+        );
+      }
+    }
+    if (watchTruststoreDir) {
+      truststoreDirPath.register(
+          watchService,
+          StandardWatchEventKinds.ENTRY_CREATE,
+          StandardWatchEventKinds.ENTRY_DELETE,
+          StandardWatchEventKinds.ENTRY_MODIFY
+      );
     }
 
     ExecutorService executorService = Executors.newSingleThreadExecutor();
@@ -290,11 +350,23 @@ public class HttpManagementConnectionFactory implements IManagementConnectionFac
                 WatchEvent<java.nio.file.Path> ev = (WatchEvent<Path>) event;
                 Path eventFilename = ev.context();
 
-                if (keystoreParent.resolve(eventFilename).equals(keyStorePath)
-                    || trustStoreParent.resolve(eventFilename).equals(trustStorePath)) {
-                  // Something in the TLS has been modified.. recreate HTTP connections
-                  reloadNeeded = true;
+                if (watchKeystore) {
+                  if (keyStorePath.getParent().resolve(eventFilename).equals(keyStorePath)) {
+                    reloadNeeded = true;
+                  }
                 }
+                if (watchTruststore) {
+                  if (trustStorePath.getParent().resolve(eventFilename).equals(trustStorePath)) {
+                    // Something in the TLS has been modified.. recreate HTTP connections
+                    reloadNeeded = true;
+                  }
+                }
+                if (watchTruststoreDir) {
+                  if (eventFilename.toString().endsWith(".jks")) {
+                    reloadNeeded = true;
+                  }
+                }
+
               }
               if (!key.reset()) {
                 // The watched directories have disappeared..
