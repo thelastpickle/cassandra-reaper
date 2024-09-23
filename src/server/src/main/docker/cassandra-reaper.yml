@@ -30,6 +30,8 @@ repairManagerSchedulingIntervalSeconds: ${REAPER_REPAIR_MANAGER_SCHEDULING_INTER
 jmxConnectionTimeoutInSeconds: ${REAPER_JMX_CONNECTION_TIMEOUT_IN_SECONDS}
 useAddressTranslator: ${REAPER_USE_ADDRESS_TRANSLATOR}
 maxParallelRepairs: ${REAPER_MAX_PARALLEL_REPAIRS}
+scheduleRetryOnError: ${REAPER_SCHEDULE_RETRY_ON_ERROR:-false}
+scheduleRetryDelay: ${REAPER_SCHEDULE_RETRY_DELAY:-PT1H}
 
 # datacenterAvailability has three possible values: ALL | LOCAL | EACH
 # the correct value to use depends on whether jmx ports to C* nodes in remote datacenters are accessible

@@ -79,6 +79,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 public final class RepairRunnerHangingTest {
@@ -266,7 +268,7 @@ public final class RepairRunnerHangingTest {
         Collections.singleton(
             RepairSegment.builder(
                 Segment.builder()
-                    .withTokenRange(new RingRange(BigInteger.ZERO, new BigInteger("100")))
+                    .withTokenRange(new RingRange(BigInteger.ZERO, new BigInteger("50")))
                     .withReplicas(replicas)
                     .build(),
                 cf.getId())));
@@ -382,6 +384,9 @@ public final class RepairRunnerHangingTest {
       }
     });
     assertEquals(RepairRun.RunState.DONE, storage.getRepairRunDao().getRepairRun(runId).get().getRunState());
+    verify(jmx, times(2)).triggerRepair(
+            any(), any(), any(), any(), any(), any(), any(), anyInt()
+    );
   }
 
   @Test
@@ -420,7 +425,7 @@ public final class RepairRunnerHangingTest {
         Collections.singleton(
             RepairSegment.builder(
                 Segment.builder()
-                    .withTokenRange(new RingRange(BigInteger.ZERO, new BigInteger("100")))
+                    .withTokenRange(new RingRange(BigInteger.ZERO, new BigInteger("50")))
                     .withReplicas(replicas)
                     .build(),
                 cf.getId())));
@@ -534,6 +539,9 @@ public final class RepairRunnerHangingTest {
       }
     });
     assertEquals(RepairRun.RunState.DONE, storage.getRepairRunDao().getRepairRun(runId).get().getRunState());
+    verify(jmx, times(2)).triggerRepair(
+            any(), any(), any(), any(), any(), any(), any(), anyInt()
+    );
   }
 
   @Test
