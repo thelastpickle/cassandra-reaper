@@ -50,6 +50,8 @@ import io.cassandrareaper.service.SchedulingManager;
 import io.cassandrareaper.storage.IDistributedStorage;
 import io.cassandrareaper.storage.InitializeStorage;
 
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.EnumSet;
 import java.util.Optional;
 import java.util.concurrent.ScheduledExecutorService;
@@ -341,8 +343,9 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
 
   private boolean selfRegisterClusterForSidecar(ClusterResource addClusterResource, String seedHost)
       throws ReaperException {
-    final Optional<Cluster> cluster = addClusterResource.findClusterWithSeedHost(seedHost, Optional.empty(),
-        Optional.empty());
+    final Optional<Cluster> cluster = addClusterResource.findClusterWithSeedHost(
+        seedHost, Optional.empty(),Optional.empty()
+    );
     if (!cluster.isPresent()) {
       return false;
     }
@@ -427,6 +430,19 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
     LOG.debug("repairParallelism: {}", config.getRepairParallelism());
     LOG.debug("hangingRepairTimeoutMins: {}", config.getHangingRepairTimeoutMins());
     LOG.debug("jmxPorts: {}", config.getJmxPorts());
+
+    if (config.getHttpManagement() != null) {
+      if (config.getHttpManagement().isEnabled()) {
+        if (config.getHttpManagement().getTruststoresDir() != null) {
+          if (!Files.exists(Paths.get(config.getHttpManagement().getTruststoresDir()))) {
+            throw new RuntimeException(String.format(
+                "HttpManagement truststores directory is configured as %s but it does not exist",
+                config.getHttpManagement().getTruststoresDir()
+            ));
+          }
+        }
+      }
+    }
   }
 
   private void tryInitializeStorage(ReaperApplicationConfiguration config, Environment environment)
