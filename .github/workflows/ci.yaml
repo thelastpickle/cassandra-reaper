@@ -507,58 +507,6 @@ jobs:
 
       - uses: codecov/codecov-action@v1
 
-  snapshot-release:
-    name: Publish Reaper image built off this PR
-    needs: [its-distributed, its-flapping, its-sidecar, its-each]
-    if: ${{ github.event_name == 'pull_request' }}
-    runs-on: ubuntu-20.04
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-        with:
-          ref: ${{ github.event.pull_request.head.ref }}
-      - name: Setup
-        uses: ./.github/actions/setup
-      - name: Compute version number
-        run: |
-          short_sha=$(git rev-parse --short HEAD)
-          echo "Releasing version (this will become the Docker tag): ${short_sha}-tmp"
-          echo "TMP_DOCKER_TAG=${short_sha}-tmp" >> $GITHUB_ENV
-      - name: Build Reaper
-        run: |
-          MAVEN_OPTS="-Xmx384m" mvn -B install -DskipTests
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v2
-        with:
-          platforms: 'arm64,arm'
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
-      - name: Login to DockerHub
-        uses: docker/login-action@v2
-        with:
-          username: ${{ secrets.DOCKERHUB_USER }}
-          password: ${{ secrets.DOCKERHUB_PASSWORD }}
-      - name: Build packages
-        run: ./.github/scripts/before_deploy.sh
-      - name: tags
-        run: |
-          REPO="thelastpickle/cassandra-reaper"
-          echo "Will tag the image as ${REPO}:${TMP_DOCKER_TAG}"
-          echo "DOCKER_TAG_TMP=${REPO}:${TMP_DOCKER_TAG}" >> $GITHUB_ENV
-      - name: Build image and push
-        id: docker_build
-        uses: docker/build-push-action@v4
-        with:
-          file: src/server/src/main/docker/Dockerfile
-          context: .
-          build-args: |
-            SHADED_JAR=${{ env.SHADED_JAR }}
-          push: true
-          tags: ${{ env.DOCKER_TAG_TMP }}
-          platforms: linux/amd64,linux/arm64
-          cache-from: type=local,src=/tmp/.buildx-cache
-          cache-to: type=local,dest=/tmp/.buildx-cache
-
   release:
     name: Release Reaper
     needs: [its-distributed, its-flapping, its-sidecar, its-each]
