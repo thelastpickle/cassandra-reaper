@@ -117,6 +117,10 @@ public class CassandraClusterDao implements IClusterDao {
 
   @Override
   public boolean addCluster(Cluster cluster) {
+    return addCluster(cluster, ConsistencyLevel.QUORUM);
+  }
+
+  public boolean addCluster(Cluster cluster, ConsistencyLevel consistencyLevel) {
     assert addClusterAssertions(cluster);
     try {
       session.execute(
@@ -126,7 +130,7 @@ public class CassandraClusterDao implements IClusterDao {
               cluster.getSeedHosts(),
               objectMapper.writeValueAsString(cluster.getProperties()),
               cluster.getState().name(),
-              Date.valueOf(cluster.getLastContact())));
+              Date.valueOf(cluster.getLastContact())).setConsistencyLevel(consistencyLevel));
     } catch (IOException e) {
       LOG.error("Failed serializing cluster information for database write", e);
       throw new IllegalStateException(e);
@@ -136,7 +140,7 @@ public class CassandraClusterDao implements IClusterDao {
 
   @Override
   public boolean updateCluster(Cluster newCluster) {
-    return addCluster(newCluster);
+    return addCluster(newCluster, ConsistencyLevel.LOCAL_ONE);
   }
 
   public boolean addClusterAssertions(Cluster cluster) {
