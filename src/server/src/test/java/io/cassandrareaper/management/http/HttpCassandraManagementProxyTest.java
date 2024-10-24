@@ -20,6 +20,7 @@ package io.cassandrareaper.management.http;
 import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperApplicationConfiguration;
 import io.cassandrareaper.ReaperException;
+import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.GenericMetric;
 import io.cassandrareaper.core.Node;
 import io.cassandrareaper.core.RepairType;
@@ -31,9 +32,9 @@ import io.cassandrareaper.resources.view.NodesStatus;
 
 import java.math.BigInteger;
 import java.net.InetSocketAddress;
-import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -59,6 +60,7 @@ import com.datastax.mgmtapi.client.model.StatusChange;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.MoreExecutors;
 import org.apache.cassandra.repair.RepairParallelism;
@@ -817,11 +819,11 @@ public class HttpCassandraManagementProxyTest {
     context.config = config;
 
     Path tempDirectory = Files.createTempDirectory("reload-test");
-    // handle running tests locally vs. via GitHub actions
-    // Path ks = Paths.get("/home/runner/work/cassandra-reaper/cassandra-reaper/.github/files/keystore.jks");
-    // Path ts = Paths.get("/home/runner/work/cassandra-reaper/cassandra-reaper/.github/files/truststore.jks");
-    // use relative paths as we are likely running locally
-    Path projectRoot = FileSystems.getDefault().getPath("..", "..", "..");
+
+    Path projectRoot = Paths.get(".").toAbsolutePath();
+    while (!projectRoot.endsWith("cassandra-reaper")) {
+      projectRoot = projectRoot.getParent();
+    }
     Path ks = projectRoot.resolve(".github/files/keystore.jks");
     Path ts = projectRoot.resolve(".github/files/truststore.jks");
 
@@ -833,17 +835,99 @@ public class HttpCassandraManagementProxyTest {
     config.getHttpManagement().setEnabled(true);
     config.getHttpManagement().setKeystore(ksCopy.toAbsolutePath().toString());
     config.getHttpManagement().setTruststore(tsCopy.toAbsolutePath().toString());
+
+    Path storesRoot = Files.createDirectory(tempDirectory.resolve("stores"));
+    Path clustersStore = Files.createDirectory(storesRoot.resolve("cluster1"));
+    Files.copy(ts, clustersStore.resolve(ts.getFileName()));
+    Files.copy(ks, clustersStore.resolve(ks.getFileName()));
+    config.getHttpManagement().setTruststoresDir(storesRoot.toAbsolutePath().toString());
+
     HttpManagementConnectionFactory connectionFactory = new HttpManagementConnectionFactory(context, null);
     HttpManagementConnectionFactory spy = spy(connectionFactory);
-    spy.createSslWatcher();
+    spy.createSslWatcher(true, true, true);
 
     verify(spy, Mockito.timeout(1000)).clearHttpConnections();
 
     // Modify filepaths
     Files.delete(ksCopy);
+    Files.delete(clustersStore.resolve(ts.getFileName()));
 
-    // We need 3 invocations, because we can't spy the original constructor call to the clearHttpConnections() and
+    // We need 4 invocations, because we can't spy the original constructor call to the clearHttpConnections() and
     // as such need to create more SslWatchers() for the same path
-    verify(spy, Mockito.timeout(30000).atLeast(2)).clearHttpConnections();
+    verify(spy, Mockito.timeout(30000).atLeast(3)).clearHttpConnections();
   }
+
+  @Test
+  public void testGetTruststore() throws Exception {
+
+    Path projectRoot = Paths.get(".").toAbsolutePath();
+    while (!projectRoot.endsWith("cassandra-reaper")) {
+      projectRoot = projectRoot.getParent();
+    }
+    Path ks = projectRoot.resolve(".github/files/keystore.jks");
+    Path ts = projectRoot.resolve(".github/files/truststore.jks");
+
+    Path tempDirectory = Files.createTempDirectory("get-truststore-test");
+    Files.copy(ks, tempDirectory.resolve("keystore.jks"));
+    Files.copy(ts, tempDirectory.resolve("truststore.jks"));
+
+    Path perClusterStores = tempDirectory.resolve(Paths.get("perClusterStores"));
+    Files.createDirectory(perClusterStores.toAbsolutePath());
+    Files.copy(ks, perClusterStores.resolve("testCluster-keystore.jks"));
+    Files.copy(ts, perClusterStores .resolve("testCluster-truststore.jks"));
+
+    ReaperApplicationConfiguration config = new ReaperApplicationConfiguration();
+    config.getHttpManagement().setTruststoresDir(perClusterStores.toAbsolutePath().toString());
+
+    String tempTrustStore = tempDirectory.resolve("truststore.jks").toAbsolutePath().toString();
+    String tempKeyStore = tempDirectory.resolve("keystore.jks").toAbsolutePath().toString();
+    config.getHttpManagement().setTruststore(tempTrustStore);
+    config.getHttpManagement().setKeystore(tempKeyStore);
+
+    AppContext context = mock(AppContext.class);
+    context.config = config;
+    HttpManagementConnectionFactory connectionFactory = new HttpManagementConnectionFactory(context, null);
+
+    // if we specify a cluster name together with the seed host, Reaper will look for that cluster's trust stores
+    String seedHost = "testHost@testCluster";
+
+    Cluster clusterWithName = Cluster.builder()
+        .withName("testCluster")
+        .withSeedHosts(ImmutableSet.of(seedHost))
+        .build();
+    Node node = Node.builder()
+        .withHostname(seedHost)
+        .withCluster(clusterWithName)
+        .build();
+
+    Path expected = tempDirectory
+        .resolve("perClusterStores")
+        // something somewhere is doing a .lower() on the cluster name
+        .resolve("testcluster-truststore.jks");
+    Path actual = connectionFactory.getTruststoreComponentPath(node, "truststore.jks");
+    assertEquals(expected, actual);
+
+    expected = tempDirectory.resolve("perClusterStores").resolve("testcluster-keystore.jks");
+    actual = connectionFactory.getTruststoreComponentPath(node, "keystore.jks");
+    assertEquals(expected, actual);
+
+    // but if we don't provide the cluster name, reaper will we use the general one
+    Cluster clusterWithoutTruststore = Cluster.builder()
+        .withName("")
+        .withSeedHosts(ImmutableSet.of("testHost"))
+        .build();
+    node = Node.builder()
+        .withHostname("testHost")
+        .withCluster(clusterWithoutTruststore)
+        .build();
+
+    expected = tempDirectory.resolve("truststore.jks");
+    actual = connectionFactory.getTruststoreComponentPath(node, "truststore.jks");
+    assertEquals(expected, actual);
+
+    expected = tempDirectory.resolve("keystore.jks");
+    actual = connectionFactory.getTruststoreComponentPath(node, "keystore.jks");
+    assertEquals(expected, actual);
+  }
+
 }
