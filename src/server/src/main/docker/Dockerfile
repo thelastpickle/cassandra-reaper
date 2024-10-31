@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM amazoncorretto:11.0.22-alpine
+FROM amazoncorretto:11.0.25-alpine
 
 ARG SHADED_JAR
 
