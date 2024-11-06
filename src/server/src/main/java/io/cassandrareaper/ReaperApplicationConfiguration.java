@@ -177,6 +177,12 @@ public final class ReaperApplicationConfiguration extends Configuration {
   @Nullable
   private String persistenceStoragePath;
 
+  @JsonProperty
+  private Boolean scheduleRetryOnError;
+
+  @JsonProperty
+  private Duration scheduleRetryDelay;
+
   public HttpManagement getHttpManagement() {
     return httpManagement;
   }
@@ -531,6 +537,22 @@ public final class ReaperApplicationConfiguration extends Configuration {
   @Nullable
   public String getPersistenceStoragePath() {
     return persistenceStoragePath;
+  }
+
+  public Boolean isScheduleRetryOnError() {
+    return scheduleRetryOnError != null ? scheduleRetryOnError : false;
+  }
+
+  public void setScheduleRetryOnError(Boolean scheduleRetryOnError) {
+    this.scheduleRetryOnError = scheduleRetryOnError;
+  }
+
+  public Duration getScheduleRetryDelay() {
+    return scheduleRetryDelay != null ? scheduleRetryDelay : Duration.ofMinutes(60);
+  }
+
+  public void setScheduleRetryDelay(Duration scheduleRetryDelay) {
+    this.scheduleRetryDelay = scheduleRetryDelay;
   }
 
   public enum DatacenterAvailability {
