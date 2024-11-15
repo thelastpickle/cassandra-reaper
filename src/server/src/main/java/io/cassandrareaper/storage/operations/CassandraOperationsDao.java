@@ -21,12 +21,12 @@ package io.cassandrareaper.storage.operations;
 import io.cassandrareaper.storage.OpType;
 
 import java.util.List;
+import java.util.concurrent.CompletionStage;
 
-import com.datastax.driver.core.PreparedStatement;
-import com.datastax.driver.core.ResultSet;
-import com.datastax.driver.core.ResultSetFuture;
-import com.datastax.driver.core.Row;
-import com.datastax.driver.core.Session;
+import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
+import com.datastax.oss.driver.api.core.cql.PreparedStatement;
+import com.datastax.oss.driver.api.core.cql.Row;
 import com.google.common.collect.Lists;
 import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
@@ -37,9 +37,9 @@ public class CassandraOperationsDao implements IOperationsDao {
   private static final DateTimeFormatter TIME_BUCKET_FORMATTER = DateTimeFormat.forPattern("yyyyMMddHHmm");
   private PreparedStatement insertOperationsPrepStmt;
   private PreparedStatement listOperationsForNodePrepStmt;
-  private final Session session;
+  private final CqlSession session;
 
-  public CassandraOperationsDao(Session session) {
+  public CassandraOperationsDao(CqlSession session) {
     this.session = session;
     prepareOperationsStatements();
   }
@@ -66,27 +66,28 @@ public class CassandraOperationsDao implements IOperationsDao {
   }
 
   public String listOperations(String clusterName, OpType operationType, String host) {
-    List<ResultSetFuture> futures = Lists.newArrayList();
+    List<CompletionStage<AsyncResultSet>> futures = Lists.newArrayList();
     futures.add(session.executeAsync(
         listOperationsForNodePrepStmt.bind(
-            clusterName, operationType.getName(), DateTime.now().toString(TIME_BUCKET_FORMATTER), host)));
+          clusterName, operationType.getName(), DateTime.now().toString(TIME_BUCKET_FORMATTER), host)));
     futures.add(session.executeAsync(
         listOperationsForNodePrepStmt.bind(
-            clusterName,
-            operationType.getName(),
-            DateTime.now().minusMinutes(1).toString(TIME_BUCKET_FORMATTER),
-            host)));
-    for (ResultSetFuture future : futures) {
-      ResultSet operations = future.getUninterruptibly();
-      for (Row row : operations) {
-        return row.getString("data");
+          clusterName,
+          operationType.getName(),
+          DateTime.now().minusMinutes(1).toString(TIME_BUCKET_FORMATTER),
+          host)));
+    for (CompletionStage<AsyncResultSet> future : futures) {
+      AsyncResultSet results = future.toCompletableFuture().join();
+      while (true) {
+        for (Row row : results.currentPage()) {
+          return row.getString("data");
+        }
       }
     }
-
     return "";
   }
 
-
+  @Override
   public void purgeNodeOperations() {
   }
 }

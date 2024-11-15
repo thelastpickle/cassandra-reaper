@@ -26,31 +26,33 @@ import io.cassandrareaper.storage.cluster.CassandraClusterDao;
 import io.cassandrareaper.storage.repairsegment.CassandraRepairSegmentDao;
 import io.cassandrareaper.storage.repairunit.CassandraRepairUnitDao;
 
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Date;
+import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.UUID;
-import java.util.concurrent.ExecutionException;
+import java.util.concurrent.CompletionStage;
 import java.util.stream.Collectors;
 
-import com.datastax.driver.core.BatchStatement;
-import com.datastax.driver.core.ConsistencyLevel;
-import com.datastax.driver.core.PreparedStatement;
-import com.datastax.driver.core.ResultSet;
-import com.datastax.driver.core.ResultSetFuture;
-import com.datastax.driver.core.Row;
-import com.datastax.driver.core.Session;
-import com.datastax.driver.core.utils.UUIDs;
+import com.datastax.oss.driver.api.core.ConsistencyLevel;
+import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
+import com.datastax.oss.driver.api.core.cql.BatchStatement;
+import com.datastax.oss.driver.api.core.cql.BatchStatementBuilder;
+import com.datastax.oss.driver.api.core.cql.BatchType;
+import com.datastax.oss.driver.api.core.cql.PreparedStatement;
+import com.datastax.oss.driver.api.core.cql.ResultSet;
+import com.datastax.oss.driver.api.core.cql.Row;
+import com.datastax.oss.driver.api.core.cql.SimpleStatement;
+import com.datastax.oss.driver.api.core.uuid.Uuids;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import com.google.common.util.concurrent.Futures;
 import org.apache.cassandra.repair.RepairParallelism;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
@@ -77,13 +79,13 @@ public class CassandraRepairRunDao implements IRepairRunDao {
   private final CassandraClusterDao cassClusterDao;
 
   private final CassandraRepairSegmentDao cassRepairSegmentDao;
-  private final Session session;
+  private final CqlSession session;
 
 
   public CassandraRepairRunDao(CassandraRepairUnitDao cassRepairUnitDao,
                                CassandraClusterDao cassClusterDao,
                                CassandraRepairSegmentDao cassRepairSegmentDao,
-                               Session session,
+                               CqlSession session,
                                ObjectMapper objectMapper) {
     this.session = session;
     this.cassRepairSegmentDao = cassRepairSegmentDao;
@@ -97,27 +99,30 @@ public class CassandraRepairRunDao implements IRepairRunDao {
     deleteRepairRunPrepStmt = session.prepare("DELETE FROM repair_run WHERE id = ?");
     insertRepairRunPrepStmt = session
         .prepare(
-            "INSERT INTO repair_run(id, cluster_name, repair_unit_id, cause, owner, state, creation_time, "
+            SimpleStatement.builder("INSERT INTO repair_run(id, cluster_name, repair_unit_id,"
+                + " cause, owner, state, creation_time, "
                 + "start_time, end_time, pause_time, intensity, last_event, segment_count, repair_parallelism, "
                 + "tables, adaptive_schedule) "
                 + "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
-        .setConsistencyLevel(ConsistencyLevel.QUORUM);
+              .setConsistencyLevel(ConsistencyLevel.QUORUM).build());
     insertRepairRunNoStatePrepStmt = session
         .prepare(
-            "INSERT INTO repair_run(id, cluster_name, repair_unit_id, cause, owner, creation_time, "
+          SimpleStatement.builder("INSERT INTO repair_run(id, cluster_name,"
+                + "repair_unit_id, cause, owner, creation_time, "
                 + "intensity, last_event, segment_count, repair_parallelism, tables, adaptive_schedule) "
                 + "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
-        .setConsistencyLevel(ConsistencyLevel.QUORUM);
+              .setConsistencyLevel(ConsistencyLevel.QUORUM).build());
     insertRepairRunClusterIndexPrepStmt = session.prepare(
         "INSERT INTO repair_run_by_cluster_v2(cluster_name, id, repair_run_state) values(?, ?, ?)");
     insertRepairRunUnitIndexPrepStmt = session.prepare(
         "INSERT INTO repair_run_by_unit(repair_unit_id, id) values(?, ?)");
     getRepairRunPrepStmt = session
         .prepare(
-            "SELECT id,cluster_name,repair_unit_id,cause,owner,state,creation_time,start_time,end_time,"
+          SimpleStatement.builder("SELECT id,cluster_name,repair_unit_id,cause,owner,"
+                + "state,creation_time,start_time,end_time,"
                 + "pause_time,intensity,last_event,segment_count,repair_parallelism,tables,adaptive_schedule "
                 + "FROM repair_run WHERE id = ? LIMIT 1")
-        .setConsistencyLevel(ConsistencyLevel.QUORUM);
+              .setConsistencyLevel(ConsistencyLevel.QUORUM).build());
     getRepairRunForClusterPrepStmt = session.prepare(
         "SELECT * FROM repair_run_by_cluster_v2 WHERE cluster_name = ? limit ?");
     getRepairRunForClusterWhereStatusPrepStmt = session.prepare(
@@ -135,12 +140,24 @@ public class CassandraRepairRunDao implements IRepairRunDao {
   public RepairRun addRepairRun(
       RepairRun.Builder repairRun,
       Collection<RepairSegment.Builder> newSegments) {
-    RepairRun newRepairRun = repairRun.build(UUIDs.timeBased());
-    BatchStatement repairRunBatch = new BatchStatement(BatchStatement.Type.UNLOGGED);
-    List<ResultSetFuture> futures = Lists.newArrayList();
+    RepairRun newRepairRun = repairRun.build(Uuids.timeBased());
+    BatchStatementBuilder repairRunBatch = BatchStatement.builder(BatchType.UNLOGGED);
     Boolean isIncremental = null;
 
-    repairRunBatch.add(
+    Instant creationTime = newRepairRun.getCreationTime() != null
+        ? Instant.ofEpochMilli(newRepairRun.getCreationTime().getMillis())
+        : null;
+    Instant startTime = newRepairRun.getStartTime() != null
+        ? Instant.ofEpochMilli(newRepairRun.getStartTime().getMillis())
+        : null;
+    Instant endTime = newRepairRun.getEndTime() != null
+        ? Instant.ofEpochMilli(newRepairRun.getEndTime().getMillis())
+        : null;
+    Instant pauseTime = newRepairRun.getPauseTime() != null
+        ? Instant.ofEpochMilli(newRepairRun.getPauseTime().getMillis())
+        : null;
+    List<CompletionStage<AsyncResultSet>> futures = Lists.newArrayList();
+    repairRunBatch.addStatement(
         insertRepairRunPrepStmt.bind(
             newRepairRun.getId(),
             newRepairRun.getClusterName(),
@@ -148,10 +165,10 @@ public class CassandraRepairRunDao implements IRepairRunDao {
             newRepairRun.getCause(),
             newRepairRun.getOwner(),
             newRepairRun.getRunState().toString(),
-            newRepairRun.getCreationTime(),
-            newRepairRun.getStartTime(),
-            newRepairRun.getEndTime(),
-            newRepairRun.getPauseTime(),
+            creationTime,
+            startTime,
+            endTime,
+            pauseTime,
             newRepairRun.getIntensity(),
             newRepairRun.getLastEvent(),
             newRepairRun.getSegmentCount(),
@@ -161,7 +178,7 @@ public class CassandraRepairRunDao implements IRepairRunDao {
 
     int nbRanges = 0;
     for (RepairSegment.Builder builder : newSegments) {
-      RepairSegment segment = builder.withRunId(newRepairRun.getId()).withId(UUIDs.timeBased()).build();
+      RepairSegment segment = builder.withRunId(newRepairRun.getId()).withId(Uuids.timeBased()).build();
       isIncremental = null == isIncremental ? null != segment.getCoordinatorHost() : isIncremental;
 
       assert RepairSegment.State.NOT_STARTED == segment.getState();
@@ -171,7 +188,7 @@ public class CassandraRepairRunDao implements IRepairRunDao {
       assert (null != segment.getCoordinatorHost()) == isIncremental;
 
       if (isIncremental) {
-        repairRunBatch.add(
+        repairRunBatch.addStatement(
             cassRepairSegmentDao.insertRepairSegmentIncrementalPrepStmt.bind(
                 segment.getRunId(),
                 segment.getId(),
@@ -187,7 +204,7 @@ public class CassandraRepairRunDao implements IRepairRunDao {
         );
       } else {
         try {
-          repairRunBatch.add(
+          repairRunBatch.addStatement(
               cassRepairSegmentDao.insertRepairSegmentPrepStmt.bind(
                   segment.getRunId(),
                   segment.getId(),
@@ -210,13 +227,13 @@ public class CassandraRepairRunDao implements IRepairRunDao {
 
       if (100 <= nbRanges) {
         // Limit batch size to prevent queries being rejected
-        futures.add(this.session.executeAsync(repairRunBatch));
-        repairRunBatch = new BatchStatement(BatchStatement.Type.UNLOGGED);
+        futures.add(this.session.executeAsync(repairRunBatch.build()));
+        repairRunBatch = BatchStatement.builder(BatchType.UNLOGGED);
         nbRanges = 0;
       }
     }
 
-    futures.add(this.session.executeAsync(repairRunBatch));
+    futures.add(this.session.executeAsync(repairRunBatch.build()));
     futures.add(
         this.session.executeAsync(
             insertRepairRunClusterIndexPrepStmt.bind(
@@ -228,8 +245,11 @@ public class CassandraRepairRunDao implements IRepairRunDao {
             insertRepairRunUnitIndexPrepStmt.bind(newRepairRun.getRepairUnitId(), newRepairRun.getId())));
 
     try {
-      Futures.allAsList(futures).get();
-    } catch (InterruptedException | ExecutionException ex) {
+      for (CompletionStage<AsyncResultSet> future : futures) {
+        // Wait for all inserts to complete
+        future.toCompletableFuture().join();
+      }
+    } catch (RuntimeException ex) {
       LOG.error("failed to quorum insert new repair run " + newRepairRun.getId(), ex);
     }
     return newRepairRun;
@@ -242,15 +262,26 @@ public class CassandraRepairRunDao implements IRepairRunDao {
 
   @Override
   public boolean updateRepairRun(RepairRun repairRun, Optional<Boolean> updateRepairState) {
+    Instant creationTime = repairRun.getCreationTime() != null
+        ? Instant.ofEpochMilli(repairRun.getCreationTime().getMillis())
+        : null;
+    Instant startTime = repairRun.getStartTime() != null
+        ? Instant.ofEpochMilli(repairRun.getStartTime().getMillis())
+        : null;
+    Instant endTime = repairRun.getEndTime() != null
+        ? Instant.ofEpochMilli(repairRun.getEndTime().getMillis())
+        : null;
+    Instant pauseTime = repairRun.getPauseTime() != null
+        ? Instant.ofEpochMilli(repairRun.getPauseTime().getMillis())
+        : null;
     if (updateRepairState.orElse(true)) {
-      BatchStatement updateRepairRunBatch = new BatchStatement(BatchStatement.Type.LOGGED);
+      BatchStatementBuilder updateRepairRunBatch = BatchStatement.builder(BatchType.LOGGED);
       // Updates of the last event impact the repair state.
       // We want to limit overwrites in this case.
-      updateRepairRunBatch.add(
+      updateRepairRunBatch.addStatement(
           insertRepairRunClusterIndexPrepStmt.bind(
               repairRun.getClusterName(), repairRun.getId(), repairRun.getRunState().toString()));
-      // Repair state will be updated
-      updateRepairRunBatch.add(
+      updateRepairRunBatch.addStatement(
           insertRepairRunPrepStmt.bind(
               repairRun.getId(),
               repairRun.getClusterName(),
@@ -258,17 +289,17 @@ public class CassandraRepairRunDao implements IRepairRunDao {
               repairRun.getCause(),
               repairRun.getOwner(),
               repairRun.getRunState().toString(),
-              repairRun.getCreationTime(),
-              repairRun.getStartTime(),
-              repairRun.getEndTime(),
-              repairRun.getPauseTime(),
+              creationTime,
+              startTime,
+              endTime,
+              pauseTime,
               repairRun.getIntensity(),
               repairRun.getLastEvent(),
               repairRun.getSegmentCount(),
               repairRun.getRepairParallelism().toString(),
               repairRun.getTables(),
               repairRun.getAdaptiveSchedule()));
-      this.session.execute(updateRepairRunBatch);
+      this.session.execute(updateRepairRunBatch.build());
     } else {
       this.session.execute(
           insertRepairRunNoStatePrepStmt.bind(
@@ -277,7 +308,7 @@ public class CassandraRepairRunDao implements IRepairRunDao {
               repairRun.getRepairUnitId(),
               repairRun.getCause(),
               repairRun.getOwner(),
-              repairRun.getCreationTime(),
+              creationTime,
               repairRun.getIntensity(),
               repairRun.getLastEvent(),
               repairRun.getSegmentCount(),
@@ -306,20 +337,20 @@ public class CassandraRepairRunDao implements IRepairRunDao {
   public RepairRun buildRepairRunFromRow(Row repairRunResult, UUID id) {
     LOG.trace("buildRepairRunFromRow {} / {}", id, repairRunResult);
 
-    Date startTime = repairRunResult.getTimestamp("start_time");
-    Date pauseTime = repairRunResult.getTimestamp("pause_time");
-    Date endTime = repairRunResult.getTimestamp("end_time");
+    Instant startTime = repairRunResult.getInstant("start_time");
+    Instant pauseTime = repairRunResult.getInstant("pause_time");
+    Instant endTime = repairRunResult.getInstant("end_time");
 
-    return RepairRun.builder(repairRunResult.getString("cluster_name"), repairRunResult.getUUID("repair_unit_id"))
-        .creationTime(new DateTime(repairRunResult.getTimestamp("creation_time")))
+    return RepairRun.builder(repairRunResult.getString("cluster_name"), repairRunResult.getUuid("repair_unit_id"))
+        .creationTime(new DateTime(repairRunResult.getInstant("creation_time").toEpochMilli()))
         .intensity(repairRunResult.getDouble("intensity"))
         .segmentCount(repairRunResult.getInt("segment_count"))
         .repairParallelism(RepairParallelism.fromName(repairRunResult.getString("repair_parallelism")))
         .cause(repairRunResult.getString("cause"))
         .owner(repairRunResult.getString("owner"))
-        .startTime(null != startTime ? new DateTime(startTime) : null)
-        .pauseTime(null != pauseTime ? new DateTime(pauseTime) : null)
-        .endTime(null != endTime ? new DateTime(endTime) : null)
+        .startTime(null != startTime ? new DateTime(startTime.toEpochMilli()) : null)
+        .pauseTime(null != pauseTime ? new DateTime(pauseTime.toEpochMilli()) : null)
+        .endTime(null != endTime ? new DateTime(endTime.toEpochMilli()) : null)
         .lastEvent(repairRunResult.getString("last_event"))
         .runState(RepairRun.RunState.valueOf(repairRunResult.getString("state")))
         .tables(repairRunResult.getSet("tables", String.class))
@@ -331,7 +362,7 @@ public class CassandraRepairRunDao implements IRepairRunDao {
 
   @Override
   public Collection<RepairRun> getRepairRunsForCluster(String clusterName, Optional<Integer> limit) {
-    List<ResultSetFuture> repairRunFutures = Lists.<ResultSetFuture>newArrayList();
+    List<CompletionStage<AsyncResultSet>> repairRunFutures = Lists.newArrayList();
 
     // Grab all ids for the given cluster name
     Collection<UUID> repairRunIds = getRepairRunIdsForCluster(clusterName, limit);
@@ -348,7 +379,7 @@ public class CassandraRepairRunDao implements IRepairRunDao {
 
   @Override
   public List<RepairRun> getRepairRunsForClusterPrioritiseRunning(String clusterName, Optional<Integer> limit) {
-    List<ResultSetFuture> repairUuidFuturesByState = Lists.<ResultSetFuture>newArrayList();
+    List<CompletionStage<AsyncResultSet>> repairUuidFuturesByState = Lists.newArrayList();
     // We've set up the RunState enum so that values are declared in order of "interestingness",
     // we iterate over the table via the secondary index according to that ordering.
     for (String state : Arrays.asList("RUNNING", "PAUSED", "NOT_STARTED")) {
@@ -356,65 +387,87 @@ public class CassandraRepairRunDao implements IRepairRunDao {
           // repairUUIDFutures will be a List of resultSetFutures, each of which contains a ResultSet of
           // UUIDs for one status.
           this.session
-              .executeAsync(getRepairRunForClusterWhereStatusPrepStmt
-                  .bind(clusterName, state, limit.orElse(MAX_RETURNED_REPAIR_RUNS)
-                  )
+            .executeAsync(getRepairRunForClusterWhereStatusPrepStmt
+              .bind(clusterName, state, limit.orElse(MAX_RETURNED_REPAIR_RUNS)
               )
+            )
       );
     }
-    ResultSetFuture repairUuidFuturesNoState = this.session
+    CompletionStage<AsyncResultSet> repairUuidFuturesNoState = this.session
         .executeAsync(getRepairRunForClusterPrepStmt
-            .bind(clusterName, limit.orElse(MAX_RETURNED_REPAIR_RUNS)
-            )
+          .bind(clusterName, limit.orElse(MAX_RETURNED_REPAIR_RUNS)
+          )
         );
 
     List<UUID> flattenedUuids = Lists.<UUID>newArrayList();
     // Flatten the UUIDs from each status down into a single array.
-    for (ResultSetFuture idResSetFuture : repairUuidFuturesByState) {
-      idResSetFuture
-          .getUninterruptibly()
-          .forEach(
-              row -> flattenedUuids.add(row.getUUID("id")));
+    for (CompletionStage<AsyncResultSet> idResSetFuture : repairUuidFuturesByState) {
+      AsyncResultSet results = idResSetFuture.toCompletableFuture().join();
+      while (true) {
+        for (Row row : results.currentPage()) {
+          flattenedUuids.add(row.getUuid("id"));
+        }
+        if (!results.hasMorePages()) {
+          break;
+        }
+        results = results.fetchNextPage().toCompletableFuture().join();
+      }
     }
     // Merge the two lists and trim.
-    repairUuidFuturesNoState.getUninterruptibly().forEach(row -> {
-          UUID uuid = row.getUUID("id");
-          if (!flattenedUuids.contains(uuid) && flattenedUuids.size() < limit.orElse(MAX_RETURNED_REPAIR_RUNS)) {
-            flattenedUuids.add(uuid);
-          }
+    AsyncResultSet results = repairUuidFuturesNoState.toCompletableFuture().join();
+    while (true) {
+      for (Row row : results.currentPage()) {
+        UUID uuid = row.getUuid("id");
+        if (!flattenedUuids.contains(uuid) && flattenedUuids.size() < limit.orElse(MAX_RETURNED_REPAIR_RUNS)) {
+          flattenedUuids.add(uuid);
         }
-    );
+      }
+      if (!results.hasMorePages()) {
+        break;
+      }
+      results = results.fetchNextPage().toCompletableFuture().join();
+    }
 
     // Run an async query on each UUID in the flattened list, against the main repair_run table with
     // all columns required as an input to `buildRepairRunFromRow`.
-    List<ResultSetFuture> repairRunFutures = Lists.<ResultSetFuture>newArrayList();
+    List<CompletionStage<AsyncResultSet>> repairRunFutures = Lists.newArrayList();
     flattenedUuids.forEach(uuid ->
         repairRunFutures.add(
-            this.session
-                .executeAsync(getRepairRunPrepStmt.bind(uuid)
-                )
+          this.session
+            .executeAsync(getRepairRunPrepStmt.bind(uuid)
+            )
         )
     );
 
     // Defuture the repair_run rows and build the strongly typed RepairRun objects from the contents.
-    return repairRunFutures
-        .stream()
-        .map(row -> row.getUninterruptibly().one())
-        .filter(Objects::nonNull)
-        .map(extractedRow -> buildRepairRunFromRow(extractedRow, extractedRow.getUUID("id")))
-        .collect(Collectors.toList());
+    List<RepairRun> repairRuns = Lists.newArrayList();
+    for (CompletionStage<AsyncResultSet> future : repairRunFutures) {
+      AsyncResultSet repairRunResults = future.toCompletableFuture().join();
+      while (true) {
+        for (Row row : repairRunResults.currentPage()) {
+          if (row != null) {
+            repairRuns.add(buildRepairRunFromRow(row, row.getUuid("id")));
+          }
+        }
+        if (!repairRunResults.hasMorePages()) {
+          break;
+        }
+        repairRunResults = repairRunResults.fetchNextPage().toCompletableFuture().join();
+      }
+    }
+    return Collections.unmodifiableList(repairRuns);
   }
 
   @Override
   public Collection<RepairRun> getRepairRunsForUnit(UUID repairUnitId) {
-    List<ResultSetFuture> repairRunFutures = Lists.<ResultSetFuture>newArrayList();
+    List<CompletionStage<AsyncResultSet>> repairRunFutures = Lists.newArrayList();
 
     // Grab all ids for the given cluster name
     ResultSet repairRunIds = this.session.execute(getRepairRunForUnitPrepStmt.bind(repairUnitId));
 
     // Grab repair runs asynchronously for all the ids returned by the index table
     for (Row repairRunId : repairRunIds) {
-      repairRunFutures.add(this.session.executeAsync(getRepairRunPrepStmt.bind(repairRunId.getUUID("id"))));
+      repairRunFutures.add(this.session.executeAsync(getRepairRunPrepStmt.bind(repairRunId.getUuid("id"))));
     }
 
     return getRepairRunsAsync(repairRunFutures);
@@ -424,13 +477,14 @@ public class CassandraRepairRunDao implements IRepairRunDao {
    * Create a collection of RepairRun objects out of a list of ResultSetFuture. Used to handle async queries on the
    * repair_run table with a list of ids.
    */
-  private Collection<RepairRun> getRepairRunsAsync(List<ResultSetFuture> repairRunFutures) {
+  private Collection<RepairRun> getRepairRunsAsync(List<CompletionStage<AsyncResultSet>> repairRunFutures) {
     Collection<RepairRun> repairRuns = Lists.<RepairRun>newArrayList();
 
-    for (ResultSetFuture repairRunFuture : repairRunFutures) {
-      Row repairRunResult = repairRunFuture.getUninterruptibly().one();
+    for (CompletionStage<AsyncResultSet> future : repairRunFutures) {
+      AsyncResultSet results = future.toCompletableFuture().join();
+      Row repairRunResult = results.one();
       if (repairRunResult != null) {
-        RepairRun repairRun = buildRepairRunFromRow(repairRunResult, repairRunResult.getUUID("id"));
+        RepairRun repairRun = buildRepairRunFromRow(repairRunResult, repairRunResult.getUuid("id"));
         repairRuns.add(repairRun);
       }
     }
@@ -461,19 +515,24 @@ public class CassandraRepairRunDao implements IRepairRunDao {
       RepairRun.RunState runState) {
 
     Collection<RepairRun> repairRuns = Sets.newHashSet();
-    List<ResultSetFuture> futures = Lists.newArrayList();
+    List<CompletionStage<AsyncResultSet>> futures = Lists.newArrayList();
 
     for (UUID repairRunId : clusterRepairRunsId) {
       futures.add(this.session.executeAsync(getRepairRunPrepStmt.bind(repairRunId)));
     }
 
-    for (ResultSetFuture future : futures) {
-      ResultSet repairRunResult = future.getUninterruptibly();
-      for (Row row : repairRunResult) {
-        repairRuns.add(buildRepairRunFromRow(row, row.getUUID("id")));
+    for (CompletionStage<AsyncResultSet> future : futures) {
+      AsyncResultSet results = future.toCompletableFuture().join();
+      while (true) {
+        for (Row row : results.currentPage()) {
+          repairRuns.add(buildRepairRunFromRow(row, row.getUuid("id")));
+        }
+        if (!results.hasMorePages()) {
+          break;
+        }
+        results = results.fetchNextPage().toCompletableFuture().join();
       }
     }
-
     return repairRuns.stream().filter(repairRun -> repairRun.getRunState() == runState).collect(Collectors.toSet());
   }
 
@@ -496,7 +555,7 @@ public class CassandraRepairRunDao implements IRepairRunDao {
     ResultSet results = this.session.execute(getRepairRunForClusterPrepStmt.bind(clusterName, limit.orElse(
         MAX_RETURNED_REPAIR_RUNS)));
     for (Row result : results) {
-      repairRunIds.add(result.getUUID("id"));
+      repairRunIds.add(result.getUuid("id"));
     }
 
     LOG.trace("repairRunIds : {}", repairRunIds);
@@ -511,8 +570,8 @@ public class CassandraRepairRunDao implements IRepairRunDao {
     results.all()
         .stream()
         .filter(run -> run.getString("repair_run_state").equals(runState.toString()))
-        .map(run -> run.getUUID("id"))
-        .forEach(runId -> repairRunIds.add(runId));
+        .map(run -> run.getUuid("id"))
+        .forEach(repairRunIds::add);
 
 
     LOG.trace("repairRunIds : {}", repairRunIds);

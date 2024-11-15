@@ -25,8 +25,9 @@ import io.cassandrareaper.storage.repairschedule.CassandraRepairScheduleDao;
 import io.cassandrareaper.storage.repairunit.CassandraRepairUnitDao;
 
 import java.io.IOException;
-import java.sql.Date;
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Set;
@@ -35,14 +36,12 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
-import com.datastax.driver.core.ConsistencyLevel;
-import com.datastax.driver.core.PreparedStatement;
-import com.datastax.driver.core.ResultSet;
-import com.datastax.driver.core.Row;
-import com.datastax.driver.core.Session;
-import com.datastax.driver.core.SimpleStatement;
-import com.datastax.driver.core.Statement;
-import com.datastax.driver.core.policies.DowngradingConsistencyRetryPolicy;
+import com.datastax.oss.driver.api.core.ConsistencyLevel;
+import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.cql.PreparedStatement;
+import com.datastax.oss.driver.api.core.cql.ResultSet;
+import com.datastax.oss.driver.api.core.cql.Row;
+import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
@@ -66,12 +65,12 @@ public class CassandraClusterDao implements IClusterDao {
   private final CassandraRepairUnitDao cassRepairUnitDao;
   private final CassandraEventsDao cassEventsDao;
 
-  private final Session session;
+  private final CqlSession session;
 
   public CassandraClusterDao(CassandraRepairScheduleDao cassRepairScheduleDao,
                              CassandraRepairUnitDao cassRepairUnitDao,
                              CassandraEventsDao cassEventsDao,
-                             Session session,
+                             CqlSession session,
                              ObjectMapper objectMapper) {
 
     this.session = session;
@@ -85,13 +84,13 @@ public class CassandraClusterDao implements IClusterDao {
   private void prepareStatements() {
     insertClusterPrepStmt = session
         .prepare(
-            "INSERT INTO cluster(name, partitioner, seed_hosts, properties, state, last_contact)"
+            SimpleStatement.builder("INSERT INTO cluster(name, partitioner, seed_hosts,"
+                + " properties, state, last_contact)"
                 + " values(?, ?, ?, ?, ?, ?)")
-        .setConsistencyLevel(ConsistencyLevel.QUORUM);
+              .setConsistencyLevel(ConsistencyLevel.QUORUM).build());
     getClusterPrepStmt = session
-        .prepare("SELECT * FROM cluster WHERE name = ?")
-        .setConsistencyLevel(ConsistencyLevel.QUORUM)
-        .setRetryPolicy(DowngradingConsistencyRetryPolicy.INSTANCE);
+        .prepare(SimpleStatement.builder("SELECT * FROM cluster WHERE name = ?")
+          .setConsistencyLevel(ConsistencyLevel.QUORUM).build());
     deleteClusterPrepStmt = session.prepare("DELETE FROM cluster WHERE name = ?");
     deleteRepairRunByClusterPrepStmt = session.prepare(
         "DELETE FROM repair_run_by_cluster_v2 WHERE cluster_name = ?");
@@ -103,7 +102,7 @@ public class CassandraClusterDao implements IClusterDao {
     if (System.currentTimeMillis() - clustersCacheAge.get() > TimeUnit.SECONDS.toMillis(10)) {
       clustersCacheAge.set(System.currentTimeMillis());
       Collection<Cluster> clusters = Lists.<Cluster>newArrayList();
-      for (Row row : session.execute(new SimpleStatement(SELECT_CLUSTER).setIdempotent(Boolean.TRUE))) {
+      for (Row row : session.execute(SimpleStatement.builder(SELECT_CLUSTER).setIdempotence(Boolean.TRUE).build())) {
         try {
           clusters.add(parseCluster(row));
         } catch (IOException ex) {
@@ -119,6 +118,11 @@ public class CassandraClusterDao implements IClusterDao {
   public boolean addCluster(Cluster cluster) {
     assert addClusterAssertions(cluster);
     try {
+      Instant lastContact = cluster.getLastContact().atStartOfDay(ZoneId.systemDefault()).toInstant();
+      if (cluster.getLastContact().equals(LocalDate.MIN)) {
+        lastContact = Instant.now();
+      }
+
       session.execute(
           insertClusterPrepStmt.bind(
               cluster.getName(),
@@ -126,7 +130,7 @@ public class CassandraClusterDao implements IClusterDao {
               cluster.getSeedHosts(),
               objectMapper.writeValueAsString(cluster.getProperties()),
               cluster.getState().name(),
-              Date.valueOf(cluster.getLastContact())));
+              lastContact));
     } catch (IOException e) {
       LOG.error("Failed serializing cluster information for database write", e);
       throw new IllegalStateException(e);
@@ -183,9 +187,9 @@ public class CassandraClusterDao implements IClusterDao {
         ? objectMapper.readValue(row.getString("properties"), ClusterProperties.class)
         : ClusterProperties.builder().withJmxPort(Cluster.DEFAULT_JMX_PORT).build();
 
-    LocalDate lastContact = row.getTimestamp("last_contact") == null
-        ? LocalDate.MIN
-        : new Date(row.getTimestamp("last_contact").getTime()).toLocalDate();
+    Instant lastContact = row.getInstant("last_contact") == null
+        ? Instant.MIN
+        : row.getInstant("last_contact");
 
     Cluster.Builder builder = Cluster.builder()
         .withName(row.getString("name"))
@@ -194,7 +198,7 @@ public class CassandraClusterDao implements IClusterDao {
         .withState(null != row.getString("state")
             ? Cluster.State.valueOf(row.getString("state"))
             : Cluster.State.UNREACHABLE)
-        .withLastContact(lastContact);
+        .withLastContact(lastContact.atZone(ZoneId.systemDefault()).toLocalDate());
 
     if (null != properties.getJmxCredentials()) {
       builder = builder.withJmxCredentials(properties.getJmxCredentials());
@@ -217,12 +221,12 @@ public class CassandraClusterDao implements IClusterDao {
         .filter(subscription -> subscription.getId().isPresent())
         .forEach(subscription -> cassEventsDao.deleteEventSubscription(subscription.getId().get()));
 
-    Statement stmt = new SimpleStatement(CassandraRepairUnitDao.SELECT_REPAIR_UNIT);
-    stmt.setIdempotent(true);
+    SimpleStatement stmt
+        = SimpleStatement.builder(CassandraRepairUnitDao.SELECT_REPAIR_UNIT).setIdempotence(true).build();
     ResultSet results = session.execute(stmt);
     for (Row row : results) {
       if (row.getString("cluster_name").equals(clusterName)) {
-        UUID id = row.getUUID("id");
+        UUID id = row.getUuid("id");
         session.executeAsync(cassRepairUnitDao.deleteRepairUnitPrepStmt.bind(id));
       }
     }

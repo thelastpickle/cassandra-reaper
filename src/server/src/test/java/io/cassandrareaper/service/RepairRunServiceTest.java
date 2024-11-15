@@ -50,7 +50,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Semaphore;
 
-import com.datastax.driver.core.utils.UUIDs;
+import com.datastax.oss.driver.api.core.uuid.Uuids;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
@@ -68,6 +68,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -270,6 +271,8 @@ public final class RepairRunServiceTest {
     AppContext context = new AppContext();
     context.storage = storage;
     context.config = new ReaperApplicationConfiguration();
+    context.schedulingManager = mock(SchedulingManager.class);
+    doNothing().when(context.schedulingManager).maybeRegisterRepairRunCompleted(any());
     final JmxCassandraManagementProxy jmx = CassandraManagementProxyTest.mockJmxProxyImpl();
     when(jmx.getClusterName()).thenReturn(cluster.getName());
     when(jmx.getRangeToEndpointMap(anyString())).thenReturn(RepairRunnerTest.sixNodeCluster());
@@ -309,7 +312,7 @@ public final class RepairRunServiceTest {
         .subrangeIncrementalRepair(false)
         .repairThreadCount(4)
         .timeout(segmentTimeout)
-        .build(UUIDs.timeBased());
+        .build(Uuids.timeBased());
     List<Segment> segments = repairRunService.generateSegments(cluster, 10, unit);
     assertEquals(32, segments.size());
     assertEquals(3, segments.get(0).getReplicas().keySet().size());
@@ -358,6 +361,8 @@ public final class RepairRunServiceTest {
     AppContext context = new AppContext();
     context.storage = storage;
     context.config = new ReaperApplicationConfiguration();
+    context.schedulingManager = mock(SchedulingManager.class);
+    doNothing().when(context.schedulingManager).maybeRegisterRepairRunCompleted(any());
     final Semaphore mutex = new Semaphore(0);
     final JmxCassandraManagementProxy jmx = CassandraManagementProxyTest.mockJmxProxyImpl();
     when(jmx.getClusterName()).thenReturn(cluster.getName());
@@ -398,7 +403,7 @@ public final class RepairRunServiceTest {
         .subrangeIncrementalRepair(false)
         .repairThreadCount(4)
         .timeout(segmentTimeout)
-        .build(UUIDs.timeBased());
+        .build(Uuids.timeBased());
     List<Segment> segments = repairRunService.generateSegments(cluster, 10, unit);
     assertEquals(32, segments.size());
     assertEquals(3, segments.get(0).getReplicas().keySet().size());
@@ -427,6 +432,8 @@ public final class RepairRunServiceTest {
     AppContext context = new AppContext();
     context.storage = storage;
     context.config = new ReaperApplicationConfiguration();
+    context.schedulingManager = mock(SchedulingManager.class);
+    doNothing().when(context.schedulingManager).maybeRegisterRepairRunCompleted(any());
     final ICassandraManagementProxy jmx = CassandraManagementProxyTest.mockJmxProxyImpl();
     Cluster cluster = Cluster.builder()
         .withName("test_" + RandomStringUtils.randomAlphabetic(12))
@@ -460,7 +467,7 @@ public final class RepairRunServiceTest {
         .datacenters(DATACENTERS)
         .blacklistedTables(BLACKLISTED_TABLES)
         .repairThreadCount(REPAIR_THREAD_COUNT)
-        .timeout(segmentTimeout).build(UUIDs.timeBased());
+        .timeout(segmentTimeout).build(Uuids.timeBased());
 
     repairRunService.registerRepairRun(
         cluster, repairUnit, Optional.of("cause"), "owner", 10, RepairParallelism.SEQUENTIAL, new Double(1), false);
@@ -488,6 +495,8 @@ public final class RepairRunServiceTest {
     AppContext context = new AppContext();
     context.storage = storage;
     context.config = new ReaperApplicationConfiguration();
+    context.schedulingManager = mock(SchedulingManager.class);
+    doNothing().when(context.schedulingManager).maybeRegisterRepairRunCompleted(any());
     final ICassandraManagementProxy jmx = CassandraManagementProxyTest.mockJmxProxyImpl();
     Cluster cluster = Cluster.builder()
         .withName("test_" + RandomStringUtils.randomAlphabetic(12))
@@ -528,7 +537,7 @@ public final class RepairRunServiceTest {
         .blacklistedTables(BLACKLISTED_TABLES)
         .repairThreadCount(REPAIR_THREAD_COUNT)
         .incrementalRepair(true)
-        .timeout(segmentTimeout).build(UUIDs.timeBased());
+        .timeout(segmentTimeout).build(Uuids.timeBased());
 
     repairRunService.registerRepairRun(
         cluster, repairUnit, Optional.of("cause"), "owner", 10, RepairParallelism.SEQUENTIAL, new Double(1), false);
@@ -553,6 +562,8 @@ public final class RepairRunServiceTest {
     context.storage = storage;
     Mockito.when(context.storage.getClusterDao()).thenReturn(Mockito.mock(IClusterDao.class));
     context.config = new ReaperApplicationConfiguration();
+    context.schedulingManager = mock(SchedulingManager.class);
+    doNothing().when(context.schedulingManager).maybeRegisterRepairRunCompleted(any());
     final JmxCassandraManagementProxy jmx = CassandraManagementProxyTest.mockJmxProxyImpl();
     context.managementConnectionFactory = new JmxManagementConnectionFactory(context, new NoopCrypotograph()) {
       @Override
@@ -590,7 +601,7 @@ public final class RepairRunServiceTest {
         .blacklistedTables(BLACKLISTED_TABLES)
         .repairThreadCount(REPAIR_THREAD_COUNT)
         .incrementalRepair(true)
-        .timeout(segmentTimeout).build(UUIDs.timeBased());
+        .timeout(segmentTimeout).build(Uuids.timeBased());
     RingRange range1 = new RingRange("1", "2");
     Segment segment = Segment.builder().withBaseRange(range1).withTokenRange(range1).build();
     Map<String, String> dcByNode = repairRunService.getDCsByNodeForRepairSegment(cluster, segment, KS_NAME, repairUnit);
@@ -615,6 +626,8 @@ public final class RepairRunServiceTest {
     AppContext context = new AppContext();
     context.storage = storage;
     context.config = new ReaperApplicationConfiguration();
+    context.schedulingManager = mock(SchedulingManager.class);
+    doNothing().when(context.schedulingManager).maybeRegisterRepairRunCompleted(any());
     Mockito.when(context.storage.getClusterDao()).thenReturn(Mockito.mock(IClusterDao.class));
     final JmxCassandraManagementProxy jmx = CassandraManagementProxyTest.mockJmxProxyImpl();
     context.managementConnectionFactory = new JmxManagementConnectionFactory(context, new NoopCrypotograph()) {
@@ -656,7 +669,7 @@ public final class RepairRunServiceTest {
         .blacklistedTables(BLACKLISTED_TABLES)
         .repairThreadCount(REPAIR_THREAD_COUNT)
         .incrementalRepair(true)
-        .timeout(segmentTimeout).build(UUIDs.timeBased());
+        .timeout(segmentTimeout).build(Uuids.timeBased());
     RingRange range1 = new RingRange("1", "2");
     Segment segment = Segment.builder().withBaseRange(range1).withTokenRange(range1).build();
     repairRunService.getDCsByNodeForRepairSegment(cluster, segment, KS_NAME, repairUnit);
@@ -701,7 +714,7 @@ public final class RepairRunServiceTest {
         .blacklistedTables(BLACKLISTED_TABLES)
         .repairThreadCount(REPAIR_THREAD_COUNT)
         .incrementalRepair(true)
-        .timeout(segmentTimeout).build(UUIDs.timeBased());
+        .timeout(segmentTimeout).build(Uuids.timeBased());
     List<RepairSegment.Builder> segmentBuilders
         = RepairRunService.createRepairSegmentsForIncrementalRepair(nodes, repairUnit, cluster, clusterFacade);
     assertEquals("Not enough segment builders were created", 2, segmentBuilders.size());
@@ -713,6 +726,8 @@ public final class RepairRunServiceTest {
     AppContext context = new AppContext();
     context.storage = storage;
     context.config = new ReaperApplicationConfiguration();
+    context.schedulingManager = mock(SchedulingManager.class);
+    doNothing().when(context.schedulingManager).maybeRegisterRepairRunCompleted(any());
     Cluster cluster = Cluster.builder()
         .withName("test_" + RandomStringUtils.randomAlphabetic(12))
         .withSeedHosts(ImmutableSet.of("127.0.0.1", "127.0.0.2", "127.0.0.3"))
@@ -733,6 +748,8 @@ public final class RepairRunServiceTest {
     AppContext context = new AppContext();
     context.storage = storage;
     context.config = new ReaperApplicationConfiguration();
+    context.schedulingManager = mock(SchedulingManager.class);
+    doNothing().when(context.schedulingManager).maybeRegisterRepairRunCompleted(any());
     Cluster cluster = Cluster.builder()
         .withName("test_" + RandomStringUtils.randomAlphabetic(12))
         .withSeedHosts(ImmutableSet.of("127.0.0.1", "127.0.0.2", "127.0.0.3"))
@@ -754,6 +771,8 @@ public final class RepairRunServiceTest {
     AppContext context = new AppContext();
     context.storage = storage;
     context.config = new ReaperApplicationConfiguration();
+    context.schedulingManager = mock(SchedulingManager.class);
+    doNothing().when(context.schedulingManager).maybeRegisterRepairRunCompleted(any());
     Cluster cluster = Cluster.builder()
         .withName("test_" + RandomStringUtils.randomAlphabetic(12))
         .withSeedHosts(ImmutableSet.of("127.0.0.1", "127.0.0.2", "127.0.0.3"))
@@ -774,6 +793,8 @@ public final class RepairRunServiceTest {
     AppContext context = new AppContext();
     context.storage = storage;
     context.config = new ReaperApplicationConfiguration();
+    context.schedulingManager = mock(SchedulingManager.class);
+    doNothing().when(context.schedulingManager).maybeRegisterRepairRunCompleted(any());
     Cluster cluster = Cluster.builder()
         .withName("test_" + RandomStringUtils.randomAlphabetic(12))
         .withSeedHosts(ImmutableSet.of("127.0.0.1", "127.0.0.2", "127.0.0.3"))
@@ -867,6 +888,8 @@ public final class RepairRunServiceTest {
     AppContext context = new AppContext();
     context.storage = storage;
     context.config = new ReaperApplicationConfiguration();
+    context.schedulingManager = mock(SchedulingManager.class);
+    doNothing().when(context.schedulingManager).maybeRegisterRepairRunCompleted(any());
     final Semaphore mutex = new Semaphore(0);
     final JmxCassandraManagementProxy jmx = CassandraManagementProxyTest.mockJmxProxyImpl();
     when(jmx.getClusterName()).thenReturn(cluster.getName());
@@ -907,7 +930,7 @@ public final class RepairRunServiceTest {
         .subrangeIncrementalRepair(false)
         .repairThreadCount(4)
         .timeout(segmentTimeout)
-        .build(UUIDs.timeBased());
+        .build(Uuids.timeBased());
     List<Segment> segments = repairRunService.generateSegments(cluster, 0, unit);
   }
 }

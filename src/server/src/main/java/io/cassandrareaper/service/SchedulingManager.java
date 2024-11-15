@@ -35,8 +35,7 @@ import java.util.TimerTask;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
-import com.datastax.driver.core.exceptions.DriverException;
-import com.datastax.driver.core.exceptions.DriverInternalError;
+import com.datastax.oss.driver.api.core.DriverException;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Supplier;
 import org.joda.time.DateTime;
@@ -138,8 +137,6 @@ public final class SchedulingManager extends TimerTask {
                 nextActivatedSchedule.getId());
           }
         }
-      } catch (DriverInternalError expected) {
-        LOG.debug("Driver connection closed, Reaper is shutting down.");
       } catch (DriverException e) {
         LOG.error("Error while scheduling repairs due to a connection problem with the database", e);
       } catch (Throwable ex) {

@@ -88,17 +88,28 @@ server:
     appenders: []
 
 cassandra:
-  clusterName: "test"
-  contactPoints: ["127.0.0.1"]
-  keyspace: reaper_db
+  type: basic
+  sessionName: "test"
+  contactPoints:
+    - host: 127.0.0.1
+      port: 9042
+  sessionKeyspaceName: reaper_db
   loadBalancingPolicy:
-    type: tokenAware
-    shuffleReplicas: true
-    subPolicy:
-      type: dcAwareRoundRobin
-      localDC:
-      usedHostsPerRemoteDC: 0
-      allowRemoteDCsForLocalConsistencyLevel: false
+    type: default
+    localDataCenter: dc1
+  retryPolicy:
+    type: default
+  schemaOptions:
+    agreementIntervalMilliseconds: 60000
+    agreementTimeoutSeconds: 60
+    agreementWarnOnFailure: true
+  requestOptionsFactory:
+    requestTimeout: 60s
+    requestDefaultIdempotence: true
+  authProvider:
+    type: plain-text
+    username: cassandra
+    password: cassandra
 autoScheduling:
   enabled: false
   initialDelayPeriod: PT15S

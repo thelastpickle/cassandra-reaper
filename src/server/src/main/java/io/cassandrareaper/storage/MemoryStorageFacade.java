@@ -17,6 +17,21 @@
 
 package io.cassandrareaper.storage;
 
+import java.nio.file.Paths;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
+import org.eclipse.serializer.persistence.types.PersistenceFieldEvaluator;
+import org.eclipse.store.storage.embedded.types.EmbeddedStorage;
+import org.eclipse.store.storage.embedded.types.EmbeddedStorageManager;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.DiagEventSubscription;
 import io.cassandrareaper.core.PercentRepairedMetric;
@@ -90,29 +105,40 @@ public final class MemoryStorageFacade implements IStorageDao {
   private final MemorySnapshotDao memSnapshotDao = new MemorySnapshotDao();
   private final MemoryMetricsDao memMetricsDao = new MemoryMetricsDao();
   private final ReplicaLockManagerWithTtl replicaLockManagerWithTtl;
+  private final String persistenceStoragePath;
 
   public MemoryStorageFacade(String persistenceStoragePath, long leadTime) {
     LOG.info("Using memory storage backend. Persistence storage path: {}", persistenceStoragePath);
-    this.embeddedStorage = EmbeddedStorage.Foundation(Paths.get(persistenceStoragePath))
-        .onConnectionFoundation(
-            c -> {
-              c.setFieldEvaluatorPersistable(TRANSIENT_FIELD_EVALUATOR);
-            }
-        ).createEmbeddedStorageManager();
-    this.embeddedStorage.start();
-    if (this.embeddedStorage.root() == null) {
-      LOG.info("Creating new data storage");
-      this.memoryStorageRoot = new MemoryStorageRoot();
-      this.embeddedStorage.setRoot(this.memoryStorageRoot);
+    this.persistenceStoragePath = persistenceStoragePath;
+    EmbeddedStorageManager storage = null;
+    MemoryStorageRoot root = null;
+    if (persistenceStoragePath != null && !persistenceStoragePath.isEmpty()) {
+      storage =
+          EmbeddedStorage.Foundation(Paths.get(this.persistenceStoragePath))
+              .onConnectionFoundation(
+                  c -> {
+                    c.setFieldEvaluatorPersistable(TRANSIENT_FIELD_EVALUATOR);
+                  })
+              .createEmbeddedStorageManager();
+      storage.start();
+      if (storage.root() == null) {
+        LOG.info("Creating new data storage");
+        root = new MemoryStorageRoot();
+        storage.setRoot(root);
+      } else {
+        LOG.info("Loading existing data from persistence storage");
+        root = (MemoryStorageRoot) storage.root();
+      }
     } else {
-      LOG.info("Loading existing data from persistence storage");
-      this.memoryStorageRoot = (MemoryStorageRoot) this.embeddedStorage.root();
+      root = new MemoryStorageRoot();
     }
+    this.embeddedStorage = storage;
+    this.memoryStorageRoot = root;
     this.replicaLockManagerWithTtl = new ReplicaLockManagerWithTtl(leadTime);
   }
 
   public MemoryStorageFacade() {
-    this(Files.createTempDir().getAbsolutePath(), DEFAULT_LEAD_TTL);
+    this("", DEFAULT_LEAD_TTL);
   }
 
   public MemoryStorageFacade(String persistenceStoragePath) {
@@ -120,7 +146,7 @@ public final class MemoryStorageFacade implements IStorageDao {
   }
 
   public MemoryStorageFacade(long leadTime) {
-    this(Files.createTempDir().getAbsolutePath(), leadTime);
+    this("", leadTime);
   }
 
   @Override
@@ -150,7 +176,9 @@ public final class MemoryStorageFacade implements IStorageDao {
 
   @Override
   public void stop() {
-    this.embeddedStorage.shutdown();
+    if (this.embeddedStorage != null) {
+      this.embeddedStorage.shutdown();
+    }
   }
 
   @Override
@@ -191,8 +219,10 @@ public final class MemoryStorageFacade implements IStorageDao {
   private void persist(Object... objects) {
     synchronized (memoryStorageRoot) {
       try {
-        this.embeddedStorage.storeAll(objects);
-        this.embeddedStorage.storeRoot();
+        if (this.embeddedStorage != null) {
+          this.embeddedStorage.storeAll(objects);
+          this.embeddedStorage.storeRoot();
+        }
       } catch (RuntimeException ex) {
         LOG.error("Failed persisting Reaper state to disk", ex);
         throw ex;

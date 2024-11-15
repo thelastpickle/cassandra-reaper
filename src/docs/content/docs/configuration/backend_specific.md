@@ -28,24 +28,30 @@ Records the CQL calls made to the Cassandra backend in the log output.
 
 ### `cassandra`
 
-Settings to configure Reaper to use Cassandra for storage of its control data. Reaper uses the Cassandra Java driver version [3.1.4](http://docs.datastax.com/en/developer/java-driver/3.1/) to perform operations on the cluster. An example of the configuration settings for the driver are as follows.
+Settings to configure Reaper to use Cassandra for storage of its control data. Reaper uses the Cassandra Java driver version [4.17.0](http://docs.datastax.com/en/developer/java-driver/4.17/) to perform operations on the cluster. An example of the configuration settings for the driver are as follows.
 
 ```yaml
 cassandra:
-  clusterName: "test"
-  contactPoints: ["127.0.0.1"]
-  port: 9042
-  keyspace: reaper_db
+  type: basic
+  sessionName: "test"
+  contactPoints:
+    - host: 127.0.0.1
+      port: 9042
+  sessionKeyspaceName: reaper_db
   loadBalancingPolicy:
-    type: tokenAware
-    shuffleReplicas: true
-    subPolicy:
-      type: dcAwareRoundRobin
-      localDC:
-      usedHostsPerRemoteDC: 0
-      allowRemoteDCsForLocalConsistencyLevel: false
+    type: default
+    localDataCenter: dc1
+  retryPolicy:
+    type: default
+  schemaOptions:
+    agreementIntervalMilliseconds: 2000
+    agreementTimeoutSeconds: 10
+    agreementWarnOnFailure: true
+  requestOptionsFactory:
+    requestTimeout: 20s
+    requestDefaultIdempotence: true
   authProvider:
-    type: plainText
+    type: plain-text
     username: cassandra
     password: cassandra
 ```
@@ -54,31 +60,33 @@ cassandra:
 
 Definitions for some of the above sub-settings are as follows.
 
-#### `clusterName`
+#### `sessionName`
 
 Type: *String*
 
-Name of the cluster to use to store the Reaper control data.
+Name of the session to create
 
 #### `contactPoints`
 
-Type: *Array* (comma separated *Strings*)
+Type: *Array*
 
-Seed nodes in the Cassandra cluster to contact.
+Seed nodes in the Cassandra cluster to contact, with their port each.
+Can be provided as a comma separated list of objects:
 
 ```yaml
-["127.0.0.1", "127.0.0.2", "127.0.0.3"]
+{"host": "host1", "port": "9042"}, {"host": "host2", "port": "9042"}
 ```
 
-#### `port`
+or as a list of objects:
 
-Type: *Integer*
+```yaml
+    - host: host1
+      port: 9042
+    - host: host2
+      port: 9042
+```
 
-Default: *9042*
-
-Cassandra's native port to connect to.
-
-#### `keyspace`
+#### `sessionKeyspaceName`
 
 Type: *String*
 
@@ -86,11 +94,7 @@ Name of the keyspace to store the Reaper control data.
 
 #### `loadBalancingPolicy`
 
-Settings to configure the policies used to generate the query plan which determines the nodes to connect to when performing query operations. Further information can be found in the Cassandra Java driver [Load balancing](http://docs.datastax.com/en/developer/java-driver/3.1/manual/load_balancing/) section.
-
-#### `subPolicy`
-
-Settings to configure a child policy which used if the initial policy fails to determine a node to connect to.
+Settings to configure the policies used to generate the query plan which determines the nodes to connect to when performing query operations. Further information can be found in the Cassandra Java driver [Load balancing](https://docs.datastax.com/en/developer/java-driver/4.17/manual/core/load_balancing/index.html) section.
 
 #### `type`
 
@@ -98,7 +102,7 @@ Type: *String*
 
 The policy type used to contribute to the computation of the query plan.
 
-#### `localDC`
+#### `localDataCenter`
 
 Type: *String*
 
@@ -120,57 +124,86 @@ Type: *String*
 
 Cassandra native protocol password.
 
+#### `requestTimeout`
+
+Type: *Duration*
+Default: *10s*
+
+The timeout for requests to the Cassandra cluster.
+
 #### Full Configuration Reference
 
+See [here](https://github.com/dropwizard/dropwizard-cassandra?tab=readme-ov-file#usage-1) for more information.
+
 ```yaml
-clusterName:
-keyspace:
-validationQuery:
-healthCheckTimeout:
-contactPoints:
-port:
-protocolVersion:
-compression:
-maxSchemaAgreementWait:
-ssl:
-  type:
-addressTranslator:
-  type:
-reconnectionPolicy:
-  type:
-authProvider:
-  type:
-retryPolicy:
-  type:
-loadBalancingPolicy:
-  type:
-speculativeExecutionPolicy:
-  type:
-socketOptions:
-  connectTimeoutMillis:
-  readTimeoutMillis:
-  keepAlive:
-  reuseAddress:
-  soLinger:
-  tcpNoDelay:
-  receiveBufferSize:
-  sendBufferSize:
-poolingOptions:
-  heartbeatInterval:
-  poolTimeout:
-  local:
-    maxRequestsPerConnection:
-    newConnectionThreshold:
-    coreConnections:
-    maxConnections:
-  remote:
-    maxRequestsPerConnection:
-    newConnectionThreshold:
-    coreConnections:
-    maxConnections:
-metricsEnabled:
-jmxEnabled:
-shutdownGracePeriod:
+cassandra:
+  type: basic
+  sessionName: name
+  sessionKeyspaceName: keyspace
+  requestOptionsFactory:
+    requestTimeout: 5s
+    requestConsistency: local
+    requestPageSize: 12
+    requestSerialConsistency: local
+    requestDefaultIdempotence: true
+  metricsEnabled: true
+  protocolVersion:
+    type: default
+    version: V5
+  ssl:
+    type: default
+    cipherSuites: ["a", "b"]
+    hostValidation: true
+    keyStorePassword: keyStorePassword
+    keyStorePath: keyStorePath
+    trustStorePassword: trustStorePassword
+    trustStorePath: trustStorePath
+  compression: lz4
+  contactPoints:
+    - host: localhost
+      port: 9041
+  authProvider:
+    type: plain-text
+    username: admin
+    password: hunter2
+  retryPolicy:
+    type: default
+  speculativeExecutionPolicy:
+    type: constant
+    delay: 1s
+    maxSpeculativeExecutions: 3
+  poolingOptions:
+    maxRequestsPerConnection: 5
+    maxRemoteConnections: 10
+    maxLocalConnections: 20
+    heartbeatInterval: 5s
+    connectionConnectTimeout: 10s
+  addressTranslator:
+    type: ec2-multi-region
+  timestampGenerator:
+    type: atomic
+  reconnectionPolicyFactory:
+    type: exponential
+    baseConnectionDelay: 10s
+    maxReconnectionDelay: 30s
+  loadBalancingPolicy:
+    type: default
+    localDataCenter: local
+    dataCenterFailoverAllowLocalConsistencyLevels: true
+    slowAvoidance: true
+    dcFailoverMaxNodesPerRemoteDc: 2
+  cassandraOptions: # to add options which are not supported by default. Full list can be found at https://docs.datastax.com/en/developer/java-driver/4.11/manual/core/
+    - type: long
+      name: advanced.protocol.max-frame-length
+      value: 12
+  sessionMetrics:
+    - continuous-cql-requests
+  nodeMetrics:
+    - bytes-sent
+  schema:
+    agreementIntervalMilliseconds: 200
+    agreementTimeoutSeconds: 10
+    agreementWarnOnFailure: true
 ```
 
 ## H2 or Postgres Database Settings

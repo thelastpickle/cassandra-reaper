@@ -15,8 +15,16 @@
  limitations under the License.
 -->
 <configuration>
-  <appender name="file" class="ch.qos.logback.core.FileAppender">
+  <appender name="file" class="ch.qos.logback.core.rolling.RollingFileAppender">
     <file>tests.log</file>
+    <rollingPolicy class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
+      <fileNamePattern>tests.%i.log</fileNamePattern>
+      <minIndex>1</minIndex>
+      <maxIndex>1000</maxIndex>
+    </rollingPolicy>
+    <triggeringPolicy class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
+      <maxFileSize>10MB</maxFileSize>
+    </triggeringPolicy>
     <encoder>
       <pattern>%d %-5p [%c{0}] %m%n</pattern>
     </encoder>

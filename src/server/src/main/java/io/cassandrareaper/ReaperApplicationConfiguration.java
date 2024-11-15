@@ -32,15 +32,16 @@ import javax.validation.constraints.Max;
 import javax.validation.constraints.NotNull;
 import javax.ws.rs.DefaultValue;
 
+import com.datastax.oss.driver.api.core.addresstranslation.AddressTranslator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.annotations.VisibleForTesting;
-import io.dropwizard.Configuration;
+import io.dropwizard.cassandra.BasicCassandraFactory;
+import io.dropwizard.cassandra.CassandraFactory;
 import io.dropwizard.client.HttpClientConfiguration;
+import io.dropwizard.core.Configuration;
 import org.apache.cassandra.repair.RepairParallelism;
 import org.hibernate.validator.constraints.NotEmpty;
 import org.secnod.dropwizard.shiro.ShiroConfiguration;
-import systems.composable.dropwizard.cassandra.CassandraFactory;
-import systems.composable.dropwizard.cassandra.network.AddressTranslatorFactory;
 
 public final class ReaperApplicationConfiguration extends Configuration {
 
@@ -89,7 +90,7 @@ public final class ReaperApplicationConfiguration extends Configuration {
   private Boolean useAddressTranslator;
 
   @Valid
-  private Optional<AddressTranslatorFactory> jmxAddressTranslator = Optional.empty();
+  private Optional<AddressTranslator> jmxAddressTranslator = Optional.empty();
 
   @JsonProperty
   @NotNull
@@ -156,7 +157,7 @@ public final class ReaperApplicationConfiguration extends Configuration {
   @Nullable
   @JsonProperty
   private Integer numberOfRunsToKeepPerUnit;
-  private CassandraFactory cassandra = new CassandraFactory();
+  private CassandraFactory cassandra = new BasicCassandraFactory();
   @JsonProperty
   private Optional<String> enforcedLocalNode = Optional.empty();
   @JsonProperty
@@ -512,12 +513,12 @@ public final class ReaperApplicationConfiguration extends Configuration {
   }
 
   @JsonProperty
-  public Optional<AddressTranslatorFactory> getJmxAddressTranslator() {
+  public Optional<AddressTranslator> getJmxAddressTranslator() {
     return jmxAddressTranslator;
   }
 
   @JsonProperty
-  public void setJmxAddressTranslator(Optional<AddressTranslatorFactory> jmxAddressTranslator) {
+  public void setJmxAddressTranslator(Optional<AddressTranslator> jmxAddressTranslator) {
     this.jmxAddressTranslator = jmxAddressTranslator;
   }
 

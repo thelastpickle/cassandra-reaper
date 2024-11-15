@@ -37,7 +37,7 @@ import javax.management.JMException;
 import javax.management.openmbean.CompositeData;
 import javax.validation.constraints.NotNull;
 
-import com.datastax.driver.core.VersionNumber;
+import com.datastax.oss.driver.api.core.Version;
 import org.apache.cassandra.repair.RepairParallelism;
 
 
@@ -170,8 +170,8 @@ public interface ICassandraManagementProxy {
    *     "1.10.0".
    */
   static Integer versionCompare(String str1, String str2) {
-    VersionNumber version1 = VersionNumber.parse(str1);
-    VersionNumber version2 = VersionNumber.parse(str2);
+    Version version1 = Version.parse(str1);
+    Version version2 = Version.parse(str2);
 
     return version1.compareTo(version2);
   }

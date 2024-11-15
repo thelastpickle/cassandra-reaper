@@ -23,8 +23,7 @@ import io.cassandrareaper.storage.cassandra.CassandraStorageFacade;
 import java.util.UUID;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Lists;
-import io.dropwizard.setup.Environment;
+import io.dropwizard.core.setup.Environment;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -61,10 +60,8 @@ public final class InitializeStorage {
       Preconditions.checkArgument(config.getPersistenceStoragePath() != null,
           "persistenceStoragePath is required for memory storage type");
       storage = new MemoryStorageFacade(config.getPersistenceStoragePath());
-    } else if (Lists.newArrayList("cassandra", "astra").contains(config.getStorageType())) {
-      CassandraStorageFacade.CassandraMode mode = config.getStorageType().equals("cassandra")
-          ? CassandraStorageFacade.CassandraMode.CASSANDRA
-          : CassandraStorageFacade.CassandraMode.ASTRA;
+    } else if ("cassandra".equalsIgnoreCase(config.getStorageType())) {
+      CassandraStorageFacade.CassandraMode mode = CassandraStorageFacade.CassandraMode.CASSANDRA;
       storage = new CassandraStorageFacade(reaperInstanceId, config, environment, mode);
     } else {
       LOG.error("invalid storageType: {}", config.getStorageType());

@@ -34,7 +34,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import com.datastax.driver.core.VersionNumber;
+import com.datastax.oss.driver.api.core.Version;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Supplier;
@@ -70,8 +70,8 @@ public final class RepairUnitService {
   }
 
   private static Integer versionCompare(String str1, String str2) {
-    VersionNumber version1 = VersionNumber.parse(str1);
-    VersionNumber version2 = VersionNumber.parse(str2);
+    Version version1 = Version.parse(str1);
+    Version version2 = Version.parse(str2);
     return version1.compareTo(version2);
   }
 
@@ -131,8 +131,8 @@ public final class RepairUnitService {
   /**
    * Applies blacklist filter on tables for the given repair unit.
    *
-   * @param proxy : a JMX proxy instance
-   * @param unit  : the repair unit for the current run
+   * @param cluster : a Cassandra cluster object
+   * @param repairUnit  : the repair unit for the current run
    * @return the list of tables to repair for the keyspace without the blacklisted ones
    */
   Set<String> getTablesToRepair(Cluster cluster, RepairUnit repairUnit) throws ReaperException {

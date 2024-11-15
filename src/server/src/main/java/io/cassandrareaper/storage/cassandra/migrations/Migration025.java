@@ -17,10 +17,10 @@
 
 package io.cassandrareaper.storage.cassandra.migrations;
 
-import com.datastax.driver.core.PreparedStatement;
-import com.datastax.driver.core.ResultSet;
-import com.datastax.driver.core.Row;
-import com.datastax.driver.core.Session;
+import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.cql.PreparedStatement;
+import com.datastax.oss.driver.api.core.cql.ResultSet;
+import com.datastax.oss.driver.api.core.cql.Row;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,20 +37,20 @@ public final class Migration025 {
   /**
    * Switch to v2 of repair_run_by_cluster
    */
-  public static void migrate(Session session, String keyspace) {
+  public static void migrate(CqlSession session, String keyspace) {
 
     try {
-      if (session.getCluster().getMetadata().getKeyspace(keyspace).getTable(V1_TABLE) != null) {
+      if (session.getMetadata().getKeyspace(keyspace).get().getTable(V1_TABLE) != null) {
         v2_insert = session.prepare(
-            "INSERT INTO " + V2_TABLE + "(cluster_name, id, repair_run_state) values (?, ?, ?)");
+          "INSERT INTO " + V2_TABLE + "(cluster_name, id, repair_run_state) values (?, ?, ?)");
         LOG.info("Converting {} table...", V1_TABLE);
         ResultSet results = session.execute("SELECT * FROM " + V1_TABLE);
         for (Row row : results) {
           ResultSet runResults = session.execute(
-              "SELECT distinct state from repair_run where id = " + row.getUUID("id"));
+              "SELECT distinct state from repair_run where id = " + row.getUuid("id"));
           for (Row runRow : runResults) {
             String state = runRow.getString("state");
-            session.execute(v2_insert.bind(row.getString("cluster_name"), row.getUUID("id"), state));
+            session.execute(v2_insert.bind(row.getString("cluster_name"), row.getUuid("id"), state));
           }
         }
         session.execute("DROP TABLE " + V1_TABLE);

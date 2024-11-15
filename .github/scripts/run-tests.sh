@@ -25,7 +25,6 @@ function set_java_home() {
     do 
         export JAVA_HOME="${jdk/}"
         echo "JAVA_HOME is set to $JAVA_HOME"
-        export JAVA_TOOL_OPTIONS="-Dcom.sun.jndi.rmiURLParsing=legacy"
     done
 }
 
@@ -217,33 +216,74 @@ case "${TEST_TYPE}" in
         sudo apt-get update
         sudo apt-get install jq -y
         mvn -B package -DskipTests
-        docker compose -f ./src/packaging/docker-build/docker-compose.yml build
-        docker compose -f ./src/packaging/docker-build/docker-compose.yml run build
         VERSION=$(printf 'VER\t${project.version}' | mvn help:evaluate | grep '^VER' | cut -f2)
-        docker build --build-arg SHADED_JAR=src/server/target/cassandra-reaper-${VERSION}.jar -f src/server/src/main/docker/Dockerfile -t cassandra-reaper:latest .
+        docker build --build-arg SHADED_JAR=src/server/target/cassandra-reaper-${VERSION}.jar -f src/server/src/main/docker/Dockerfile -t thelastpickle/cassandra-reaper:ci-build .
         docker images
 
-        # Clear out Cassandra data before starting a new cluster
-        sudo rm -vfr ./src/packaging/data/
+        # start a kind cluster with 2 worker nodes
+        cat <<EOF > /tmp/kind-config.yaml
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+nodes:
+  - role: control-plane
+  - role: worker
+  - role: worker
+EOF
 
-        docker compose -f ./src/packaging/docker-compose.yml up -d cassandra
-        sleep 30 && docker compose -f ./src/packaging/docker-compose.yml run cqlsh-initialize-reaper_db
-        sleep 10 && docker compose -f ./src/packaging/docker-compose.yml up -d reaper
-        docker ps -a
+        kind delete cluster --name reaper
+        kind create cluster --name reaper --config /tmp/kind-config.yaml
 
-        # requests python package is needed to use spreaper
-        pip install requests
-        mkdir -p ~/.reaper
-        echo "admin" > ~/.reaper/credentials
-        sleep 30 && src/packaging/bin/spreaper login admin
-        src/packaging/bin/spreaper add-cluster $(docker compose -f ./src/packaging/docker-compose.yml run nodetool status | grep UN | tr -s ' ' | cut -d' ' -f2) 7199 > cluster.json
-        cat cluster.json
-        cluster_name=$(cat cluster.json|grep -v "#" | jq -r '.name')
-        if [[ "$cluster_name" != "reaper-cluster" ]]; then
-            echo "Failed registering cluster in Reaper running in Docker"
+        kind load docker-image thelastpickle/cassandra-reaper:ci-build --name reaper
+
+        # Install cert-manager and cass-operator
+        kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v1.17.0/cert-manager.yaml
+        kubectl wait --for=condition=available --timeout=600s deployment/cert-manager -n cert-manager
+        kubectl wait --for=condition=available --timeout=600s deployment/cert-manager-webhook -n cert-manager
+        kubectl apply --force-conflicts --server-side -k github.com/k8ssandra/cass-operator/config/deployments/default?ref=v1.23.2
+        kubectl wait --for=condition=available --timeout=600s deployment/cass-operator-controller-manager -n cass-operator
+        if [ $? -ne 0 ]; then
+            echo "cass-operator failed to be ready"
             exit 1
         fi
-        sleep 5 && docker compose -f ./src/packaging/docker-compose.yml down
+
+        # Create CassandraDatacenter
+        kubectl apply -f .github/files/reaper-cql-secret.yaml
+        kubectl apply -f .github/files/reaper-ui-secret.yaml
+        kubectl apply -f .github/files/cassdc.yaml
+
+        # Wait for the Cassandra statefulset to be created
+        for i in `seq 1 30` ; do
+            DC_STS=`kubectl get sts/test-dc1-r1-sts -n cass-operator | wc -l`
+            if [ "${DC_STS}" != "0" ]
+            then
+                echo "Cassandra statefulset created successfully"
+                break
+            else
+                echo "Cassandra statefulset not created yet. Sleeping.... $i"
+            fi
+            sleep 10
+        done
+
+        # Wait for the Cassandra statefulset to be ready
+        kubectl rollout status --watch --timeout=600s statefulset/test-dc1-r1-sts -n cass-operator
+        if [ $? -ne 0 ]; then
+            echo "Cassandra statefulset failed to be ready"
+            exit 1
+        fi
+
+        # Create the reaper_db keyspace
+        REAPER_USERNAME=$(kubectl get secret reaper-cql-secret -n cass-operator -o jsonpath='{.data.username}' | base64 --decode | xargs)
+        REAPER_PASSWORD=$(kubectl get secret reaper-cql-secret -n cass-operator -o jsonpath='{.data.password}' | base64 --decode | xargs)
+        kubectl exec -it test-dc1-r1-sts-0 -n cass-operator -- cqlsh -u REAPER_USERNAME -p REAPER_PASSWORD -e "CREATE KEYSPACE reaper_db WITH REPLICATION = {'class': 'SimpleStrategy', 'replication_factor': 1};"
+        # Create Reaper deployment
+        kubectl apply -f .github/files/reaper.yaml
+        # Wait for the Reaper deployment to be ready
+        kubectl rollout status --watch --timeout=600s deployment/test-dc1-reaper -n cass-operator
+        if [ $? -ne 0 ]; then
+            echo "Reaper deployment failed to be ready"
+            exit 1
+        fi
+        echo "Reaper deployment created successfully"
         ;;
     *)
         echo "Skipping, no actions for TEST_TYPE=${TEST_TYPE}."

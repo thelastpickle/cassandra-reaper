@@ -26,7 +26,7 @@ cassandra:
   contactPoints: ["127.0.0.1"]
   keyspace: reaper_db
   authProvider:
-    type: plainText
+    type: plain-text
     username: cassandra
     password: cassandra
   ssl:

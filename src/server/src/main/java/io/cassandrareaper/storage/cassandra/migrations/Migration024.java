@@ -17,8 +17,11 @@
 
 package io.cassandrareaper.storage.cassandra.migrations;
 
-import com.datastax.driver.core.Session;
-import com.datastax.driver.core.VersionNumber;
+import java.util.Map;
+
+import com.datastax.oss.driver.api.core.CqlIdentifier;
+import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.Version;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,17 +36,17 @@ public final class Migration024 {
   /**
    * Apply TWCS for metrics tables if the Cassandra version allows it.
    */
-  public static void migrate(Session session, String keyspace) {
+  public static void migrate(CqlSession session, String keyspace) {
 
-    VersionNumber lowestNodeVersion = session.getCluster().getMetadata().getAllHosts()
+    Version lowestNodeVersion = session.getMetadata().getNodes().entrySet()
         .stream()
-        .map(host -> host.getCassandraVersion())
-        .min(VersionNumber::compareTo)
+        .map(host -> host.getValue().getCassandraVersion())
+        .min(Version::compareTo)
         .get();
 
-    if ((VersionNumber.parse("3.0.8").compareTo(lowestNodeVersion) <= 0
-        && VersionNumber.parse("3.0.99").compareTo(lowestNodeVersion) >= 0)
-        || VersionNumber.parse("3.8").compareTo(lowestNodeVersion) <= 0) {
+    if ((Version.parse("3.0.8").compareTo(lowestNodeVersion) <= 0
+        && Version.parse("3.0.99").compareTo(lowestNodeVersion) >= 0)
+        || Version.parse("3.8").compareTo(lowestNodeVersion) <= 0) {
       try {
         if (!isUsingTwcs(session, keyspace)) {
           LOG.info("Altering {} to use TWCS...", METRICS_V3_TABLE);
@@ -63,15 +66,13 @@ public final class Migration024 {
 
   }
 
-  private static boolean isUsingTwcs(Session session, String keyspace) {
-    return session
-        .getCluster()
+  private static boolean isUsingTwcs(CqlSession session, String keyspace) {
+    Map<String, String> compaction = (Map<String, String>) session
         .getMetadata()
-        .getKeyspace(keyspace)
-        .getTable(METRICS_V3_TABLE)
+        .getKeyspace(keyspace).get()
+        .getTable(METRICS_V3_TABLE).get()
         .getOptions()
-        .getCompaction()
-        .get("class")
-        .contains("TimeWindowCompactionStrategy");
+        .get(CqlIdentifier.fromCql("compaction"));
+    return compaction.get("class").equals("TimeWindowCompactionStrategy");
   }
 }

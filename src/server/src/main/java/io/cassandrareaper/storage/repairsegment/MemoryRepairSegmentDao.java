@@ -27,7 +27,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import com.datastax.driver.core.utils.UUIDs;
+import com.datastax.oss.driver.api.core.uuid.Uuids;
 import com.google.common.collect.Lists;
 
 public class MemoryRepairSegmentDao implements IRepairSegmentDao {
@@ -50,7 +50,7 @@ public class MemoryRepairSegmentDao implements IRepairSegmentDao {
 
   public void addRepairSegments(Collection<RepairSegment.Builder> segments, UUID runId) {
     for (RepairSegment.Builder segment : segments) {
-      RepairSegment newRepairSegment = segment.withRunId(runId).withId(UUIDs.timeBased()).build();
+      RepairSegment newRepairSegment = segment.withRunId(runId).withId(Uuids.timeBased()).build();
       memoryStorageFacade.addRepairSegment(newRepairSegment);
     }
   }

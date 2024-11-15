@@ -443,6 +443,7 @@ Feature: Using Reaper
   ${cucumber.upgrade-versions}
 
   @sidecar
+  @current
   Scenario Outline: Verify that ongoing repairs are prioritized over finished ones when listing the runs
     Given that reaper <version> is running
     And reaper has no cluster in storage

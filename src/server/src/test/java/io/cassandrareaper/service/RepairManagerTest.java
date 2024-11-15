@@ -45,7 +45,7 @@ import java.util.UUID;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-import com.datastax.driver.core.utils.UUIDs;
+import com.datastax.oss.driver.api.core.uuid.Uuids;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -60,6 +60,7 @@ import org.mockito.stubbing.Answer;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -101,13 +102,13 @@ public final class RepairManagerTest {
         .datacenters(datacenters)
         .repairThreadCount(repairThreadCount)
         .timeout(segmentTimeout)
-        .build(UUIDs.timeBased());
+        .build(Uuids.timeBased());
     final RepairRun run = RepairRun.builder(clusterName, cf.getId())
         .intensity(intensity)
         .segmentCount(1)
         .repairParallelism(RepairParallelism.PARALLEL)
         .tables(TABLES)
-        .build(UUIDs.timeBased());
+        .build(Uuids.timeBased());
     when(mockedRepairRunDao.getRepairRunsWithState(RepairRun.RunState.RUNNING)).thenReturn(Arrays.asList(run));
     when(mockedRepairRunDao.getRepairRunsWithState(RepairRun.RunState.PAUSED)).thenReturn(Collections.emptyList());
     when(storage.getRepairRunDao()).thenReturn(mockedRepairRunDao);
@@ -119,6 +120,8 @@ public final class RepairManagerTest {
     AppContext context = new AppContext();
     context.storage = storage;
     context.config = new ReaperApplicationConfiguration();
+    context.schedulingManager = mock(SchedulingManager.class);
+    doNothing().when(context.schedulingManager).maybeRegisterRepairRunCompleted(any());
 
     RepairManager repairManager = RepairManager.create(
         context,
@@ -133,7 +136,7 @@ public final class RepairManagerTest {
     final RepairSegment segment = RepairSegment.builder(
             Segment.builder().withTokenRange(new RingRange("-1", "1")).build(), cf.getId())
         .withRunId(run.getId())
-        .withId(UUIDs.timeBased())
+        .withId(Uuids.timeBased())
         .build();
     IRepairSegmentDao mockedRepairSegmentDao = mock(IRepairSegmentDao.class);
     Mockito.when(context.storage.getRepairSegmentDao()).thenReturn(mockedRepairSegmentDao);
@@ -189,6 +192,8 @@ public final class RepairManagerTest {
     AppContext context = new AppContext();
     context.storage = storage;
     context.config = new ReaperApplicationConfiguration();
+    context.schedulingManager = mock(SchedulingManager.class);
+    doNothing().when(context.schedulingManager).maybeRegisterRepairRunCompleted(any());
     RepairManager repairManager = RepairManager.create(
         context,
         Executors.newScheduledThreadPool(1),
@@ -208,19 +213,19 @@ public final class RepairManagerTest {
         .datacenters(datacenters)
         .repairThreadCount(repairThreadCount)
         .timeout(segmentTimeout)
-        .build(UUIDs.timeBased());
+        .build(Uuids.timeBased());
 
     final RepairRun run = RepairRun.builder(clusterName, cf.getId())
         .intensity(intensity)
         .segmentCount(1)
         .repairParallelism(RepairParallelism.PARALLEL)
         .tables(TABLES)
-        .build(UUIDs.timeBased());
+        .build(Uuids.timeBased());
 
     final RepairSegment segment = RepairSegment.builder(
             Segment.builder().withTokenRange(new RingRange("-1", "1")).build(), cf.getId())
         .withRunId(run.getId())
-        .withId(UUIDs.timeBased())
+        .withId(Uuids.timeBased())
         .build();
 
     context.repairManager.repairRunners.put(run.getId(), mock(RepairRunner.class));
@@ -285,7 +290,7 @@ public final class RepairManagerTest {
         .datacenters(datacenters)
         .repairThreadCount(repairThreadCount)
         .timeout(segmentTimeout)
-        .build(UUIDs.timeBased());
+        .build(Uuids.timeBased());
 
     IRepairUnitDao mockedRepairUnitDao = mock(IRepairUnitDao.class);
     Mockito.when(storage.getRepairUnitDao()).thenReturn(mockedRepairUnitDao);
@@ -293,6 +298,8 @@ public final class RepairManagerTest {
 
     AppContext context = new AppContext();
     context.config = new ReaperApplicationConfiguration();
+    context.schedulingManager = mock(SchedulingManager.class);
+    doNothing().when(context.schedulingManager).maybeRegisterRepairRunCompleted(any());
     context.storage = storage;
 
     RepairManager repairManager = RepairManager.create(
@@ -311,12 +318,12 @@ public final class RepairManagerTest {
         .segmentCount(1)
         .repairParallelism(RepairParallelism.PARALLEL)
         .tables(TABLES)
-        .build(UUIDs.timeBased());
+        .build(Uuids.timeBased());
 
     final RepairSegment segment = RepairSegment.builder(
             Segment.builder().withTokenRange(new RingRange("-1", "1")).build(), cf.getId())
         .withRunId(run.getId())
-        .withId(UUIDs.timeBased())
+        .withId(Uuids.timeBased())
         .build();
 
     IRepairSegmentDao mockedRepairSegmentDao = mock(IRepairSegmentDao.class);
@@ -368,6 +375,8 @@ public final class RepairManagerTest {
     AppContext context = new AppContext();
     context.storage = storage;
     context.config = new ReaperApplicationConfiguration();
+    context.schedulingManager = mock(SchedulingManager.class);
+    doNothing().when(context.schedulingManager).maybeRegisterRepairRunCompleted(any());
 
     RepairManager repairManager = RepairManager.create(
         context,
@@ -390,19 +399,19 @@ public final class RepairManagerTest {
         .datacenters(datacenters)
         .repairThreadCount(repairThreadCount)
         .timeout(segmentTimeout)
-        .build(UUIDs.timeBased());
+        .build(Uuids.timeBased());
 
     final RepairRun run = RepairRun.builder(clusterName, cf.getId())
         .intensity(intensity)
         .segmentCount(1)
         .repairParallelism(RepairParallelism.PARALLEL)
         .tables(TABLES)
-        .build(UUIDs.timeBased());
+        .build(Uuids.timeBased());
 
     final RepairSegment segment = RepairSegment.builder(
             Segment.builder().withTokenRange(new RingRange("-1", "1")).build(), cf.getId())
         .withRunId(run.getId())
-        .withId(UUIDs.timeBased())
+        .withId(Uuids.timeBased())
         .build();
 
     Mockito.doNothing().when(context.repairManager).abortSegments(any(), any());
@@ -431,6 +440,8 @@ public final class RepairManagerTest {
 
     AppContext context = new AppContext();
     context.config = new ReaperApplicationConfiguration();
+    context.schedulingManager = mock(SchedulingManager.class);
+    doNothing().when(context.schedulingManager).maybeRegisterRepairRunCompleted(any());
     context.storage = mock(CassandraStorageFacade.class);
     IRepairRunDao mockedRepairRunDao = mock(IRepairRunDao.class);
     when(context.storage.getRepairRunDao()).thenReturn(mockedRepairRunDao);
@@ -471,7 +482,7 @@ public final class RepairManagerTest {
         .datacenters(datacenters)
         .repairThreadCount(repairThreadCount)
         .timeout(segmentTimeout)
-        .build(UUIDs.timeBased());
+        .build(Uuids.timeBased());
 
     double intensity = 0.5f;
 
@@ -480,7 +491,7 @@ public final class RepairManagerTest {
         .segmentCount(1)
         .repairParallelism(RepairParallelism.PARALLEL)
         .tables(TABLES)
-        .build(UUIDs.timeBased());
+        .build(Uuids.timeBased());
 
     intensity = 0.1;
     RepairRun updated = context.repairManager.updateRepairRunIntensity(run, intensity);
@@ -495,6 +506,8 @@ public final class RepairManagerTest {
   public void countRepairRunnersPerClusterTest() throws ReaperException, InterruptedException {
     AppContext context = new AppContext();
     context.config = new ReaperApplicationConfiguration();
+    context.schedulingManager = mock(SchedulingManager.class);
+    doNothing().when(context.schedulingManager).maybeRegisterRepairRunCompleted(any());
     context.storage = mock(CassandraStorageFacade.class);
     IRepairRunDao mockedRepairRunDao = mock(IRepairRunDao.class);
     when(context.storage.getRepairRunDao()).thenReturn(mockedRepairRunDao);
@@ -590,7 +603,7 @@ public final class RepairManagerTest {
         .datacenters(datacenters)
         .repairThreadCount(repairThreadCount)
         .timeout(segmentTimeout)
-        .build(UUIDs.timeBased());
+        .build(Uuids.timeBased());
 
     return repairUnit;
   }
@@ -607,7 +620,7 @@ public final class RepairManagerTest {
         .segmentCount(1)
         .repairParallelism(RepairParallelism.PARALLEL)
         .tables(TABLES)
-        .build(UUIDs.timeBased());
+        .build(Uuids.timeBased());
     return run;
   }
 

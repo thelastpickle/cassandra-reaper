@@ -20,7 +20,7 @@
 
     <groupId>io.cassandrareaper</groupId>
     <artifactId>cassandra-reaper-pom</artifactId>
-    <version>3.9.0-SNAPSHOT</version>
+    <version>4.0.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>Reaper for Apache Cassandra project</name>
@@ -205,6 +205,7 @@
                 <exclude>**/*.pem</exclude>
                 <exclude>src/packaging/**</exclude>
                 <exclude>codecov.yml</exclude>
+                <exclude>.github/files/*.yaml</exclude>
               </excludes>
             </configuration>
             <executions>
@@ -344,8 +345,8 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <release.jdk>8</release.jdk>
-        <build.jdk.minimum>1.8</build.jdk.minimum>
+        <release.jdk>11</release.jdk>
+        <build.jdk.minimum>1.11</build.jdk.minimum>
         <!-- travis of July 2018 was still using maven-3.5.2 but our Docker image for building packages ships with 3.3.8 -->
         <maven.version.minimum>3.6.3</maven.version.minimum>
         <surefireArgLine></surefireArgLine>

@@ -69,7 +69,7 @@ public final class ShiroJwtProvider {
     String txt = System.getenv("JWT_SECRET");
     if (null == txt) {
       if (cxt.storage instanceof CassandraStorageFacade) {
-        txt = cxt.config.getCassandraFactory().getClusterName();
+        txt = cxt.config.getCassandraFactory().getSessionName();
       } else {
         txt = AppContext.REAPER_INSTANCE_ADDRESS;
       }

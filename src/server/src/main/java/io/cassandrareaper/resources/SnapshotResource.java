@@ -40,7 +40,7 @@ import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.UriInfo;
 
 import com.google.common.base.Optional;
-import io.dropwizard.setup.Environment;
+import io.dropwizard.core.setup.Environment;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

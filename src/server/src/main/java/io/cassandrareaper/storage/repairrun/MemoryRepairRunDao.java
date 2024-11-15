@@ -38,7 +38,7 @@ import java.util.TreeMap;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import com.datastax.driver.core.utils.UUIDs;
+import com.datastax.oss.driver.api.core.uuid.Uuids;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.joda.time.DateTime;
@@ -99,7 +99,7 @@ public class MemoryRepairRunDao implements IRepairRunDao {
 
   @Override
   public RepairRun addRepairRun(RepairRun.Builder repairRun, Collection<RepairSegment.Builder> newSegments) {
-    RepairRun newRepairRun = repairRun.build(UUIDs.timeBased());
+    RepairRun newRepairRun = repairRun.build(Uuids.timeBased());
     storage.addRepairRun(newRepairRun);
     memRepairSegment.addRepairSegments(newSegments, newRepairRun.getId());
     return newRepairRun;

@@ -20,7 +20,7 @@ package io.cassandrareaper.resources.view;
 import io.cassandrareaper.SimpleReaperClient;
 import io.cassandrareaper.core.RepairSchedule;
 
-import com.datastax.driver.core.utils.UUIDs;
+import com.datastax.oss.driver.api.core.uuid.Uuids;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
 import org.apache.cassandra.repair.RepairParallelism;
@@ -42,7 +42,7 @@ public final class RepairScheduleStatusTest {
     data.setColumnFamilies(Lists.<String>newArrayList());
     data.setCreationTime(DateTime.now().withMillis(0));
     data.setDaysBetween(2);
-    data.setId(UUIDs.timeBased());
+    data.setId(Uuids.timeBased());
     data.setIntensity(0.75);
     data.setIncrementalRepair(false);
     data.setSubrangeIncrementalRepair(false);

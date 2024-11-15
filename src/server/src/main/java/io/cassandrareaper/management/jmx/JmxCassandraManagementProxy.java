@@ -85,7 +85,7 @@ import javax.validation.constraints.NotNull;
 
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.MetricRegistry;
-import com.datastax.driver.core.policies.AddressTranslator;
+import com.datastax.oss.driver.api.core.addresstranslation.AddressTranslator;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.ImmutableBiMap;
@@ -101,7 +101,6 @@ import org.apache.cassandra.gms.FailureDetectorMBean;
 import org.apache.cassandra.locator.EndpointSnitchInfoMBean;
 import org.apache.cassandra.repair.RepairParallelism;
 import org.apache.cassandra.repair.messages.RepairOption;
-import org.apache.cassandra.service.ActiveRepairService;
 import org.apache.cassandra.service.StorageServiceMBean;
 import org.apache.cassandra.streaming.StreamManagerMBean;
 import org.apache.cassandra.utils.progress.ProgressEventType;
@@ -666,12 +665,7 @@ public final class JmxCassandraManagementProxy implements ICassandraManagementPr
         String type = notification.getType();
         Thread.currentThread().setName(clusterName + "–" + type + "–" + repairNo);
         LOG.debug("Received notification: {} with type {}", notification, type);
-
-        if (("repair").equals(type)) {
-          processOldApiNotification(notification);
-        } else if (("progress").equals(type)) {
-          processNewApiNotification(notification);
-        }
+        processNotification(notification);
       } finally {
         Thread.currentThread().setName(threadName);
       }
@@ -679,34 +673,9 @@ public final class JmxCassandraManagementProxy implements ICassandraManagementPr
   }
 
   /**
-   * Handles notifications from the old repair API (forceRepairAsync)
-   */
-  private void processOldApiNotification(Notification notification) {
-    try {
-      int[] data = (int[]) notification.getUserData();
-      // get the repair sequence number
-      int repairNo = data[0];
-      // get the repair status
-      ActiveRepairService.Status status = ActiveRepairService.Status.values()[data[1]];
-      // this is some text message like "Starting repair...", "Finished repair...", etc.
-      String message = notification.getMessage();
-      // let the handler process the even
-      if (repairStatusHandlers.containsKey(repairNo)) {
-        LOG.debug("Handling notification {} with repair handler {}", notification, repairStatusHandlers.get(repairNo));
-
-        repairStatusHandlers
-            .get(repairNo)
-            .handle(repairNo, Optional.of(status), Optional.empty(), message, this);
-      }
-    } catch (RuntimeException e) {
-      LOG.error("Error while processing JMX notification", e);
-    }
-  }
-
-  /**
    * Handles notifications from the new repair API (repairAsync)
    */
-  private void processNewApiNotification(Notification notification) {
+  private void processNotification(Notification notification) {
     Map<String, Integer> data = (Map<String, Integer>) notification.getUserData();
     try {
       // get the repair sequence number
@@ -716,12 +685,10 @@ public final class JmxCassandraManagementProxy implements ICassandraManagementPr
       // this is some text message like "Starting repair...", "Finished repair...", etc.
       String message = notification.getMessage();
       // let the handler process the even
-      if (repairStatusHandlers.containsKey(repairNo)) {
+      if (repairStatusHandlers.containsKey(repairNo) && repairNo > 0) {
         LOG.debug("Handling notification {} with repair handler {}", notification, repairStatusHandlers.get(repairNo));
 
-        repairStatusHandlers
-            .get(repairNo)
-            .handle(repairNo, Optional.empty(), Optional.of(progress), message, this);
+        repairStatusHandlers.get(repairNo).handle(repairNo, Optional.of(progress), message, this);
       }
     } catch (NumberFormatException e) {
       LOG.error("Error while processing JMX notification", e);

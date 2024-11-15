@@ -64,17 +64,17 @@ import com.fasterxml.jackson.datatype.joda.JodaModule;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
-import io.dropwizard.Application;
 import io.dropwizard.assets.AssetsBundle;
 import io.dropwizard.client.HttpClientBuilder;
 import io.dropwizard.configuration.EnvironmentVariableSubstitutor;
 import io.dropwizard.configuration.SubstitutingSourceProvider;
-import io.dropwizard.setup.Bootstrap;
-import io.dropwizard.setup.Environment;
+import io.dropwizard.core.Application;
+import io.dropwizard.core.setup.Bootstrap;
+import io.dropwizard.core.setup.Environment;
 import io.prometheus.client.CollectorRegistry;
 import io.prometheus.client.dropwizard.DropwizardExports;
 import io.prometheus.client.exporter.MetricsServlet;
-import org.apache.http.client.HttpClient;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.server.session.SessionHandler;
@@ -234,7 +234,7 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
     final CryptoResource addCryptoResource = new CryptoResource(cryptograph);
     environment.jersey().register(addCryptoResource);
 
-    HttpClient httpClient = createHttpClient(config, environment);
+    CloseableHttpClient httpClient = createHttpClient(config, environment);
 
     if (config.getHttpManagement() == null || !config.getHttpManagement().isEnabled()) {
       ScheduledExecutorService ses = environment.lifecycle().scheduledExecutorService("Diagnostics").threads(6).build();
@@ -361,7 +361,7 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
     return true;
   }
 
-  private HttpClient createHttpClient(ReaperApplicationConfiguration config, Environment environment) {
+  private CloseableHttpClient createHttpClient(ReaperApplicationConfiguration config, Environment environment) {
     return new HttpClientBuilder(environment).using(config.getHttpClientConfiguration()).build(getName());
   }
 

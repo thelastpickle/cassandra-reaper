@@ -33,7 +33,7 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 
-import org.apache.http.client.HttpClient;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.glassfish.jersey.media.sse.EventOutput;
 import org.glassfish.jersey.media.sse.SseFeature;
 import org.slf4j.Logger;
@@ -48,7 +48,7 @@ public final class DiagEventSseResource {
   private final DiagEventSubscriptionService diagEventService;
 
   public DiagEventSseResource(AppContext context,
-                              HttpClient httpClient,
+                              CloseableHttpClient httpClient,
                               ScheduledExecutorService executor,
                               IEventsDao eventsDao) {
     this.diagEventService = DiagEventSubscriptionService.create(context, httpClient, executor, eventsDao);

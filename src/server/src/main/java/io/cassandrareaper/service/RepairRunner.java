@@ -58,7 +58,7 @@ import java.util.stream.Collectors;
 
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.MetricRegistry;
-import com.datastax.driver.core.utils.UUIDs;
+import com.datastax.oss.driver.api.core.uuid.Uuids;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
@@ -257,7 +257,7 @@ final class RepairRunner implements Runnable {
             LOG.info("Maximum number of concurrent repairs reached. Repair {} will resume later.", repairRunId);
             LOG.info("Current active repair runners: {}",
                 repairRunIds.stream()
-                    .map(runId -> Pair.of(runId, UUIDs.unixTimestamp(runId)))
+                    .map(runId -> Pair.of(runId, Uuids.unixTimestamp(runId)))
                     .collect(Collectors.toList()));
             context.repairManager.scheduleRetry(this);
           }
@@ -287,7 +287,7 @@ final class RepairRunner implements Runnable {
 
   @VisibleForTesting
   boolean isAllowedToRun(List<UUID> runningRepairRunIds, UUID currentId) {
-    runningRepairRunIds.sort((id1, id2) -> Long.valueOf(UUIDs.unixTimestamp(id1)).compareTo(UUIDs.unixTimestamp(id2)));
+    runningRepairRunIds.sort((id1, id2) -> Long.valueOf(Uuids.unixTimestamp(id1)).compareTo(Uuids.unixTimestamp(id2)));
     for (int i = 0; i < context.config.getMaxParallelRepairs(); i++) {
       LOG.debug("Repair run #{} is in the list of running repair runs in position {}", runningRepairRunIds.get(i), i);
       if (runningRepairRunIds.get(i).equals(currentId)) {
@@ -526,6 +526,7 @@ final class RepairRunner implements Runnable {
         : context.storage.getRepairSegmentDao().getNextFreeSegments(
         repairRunId);
 
+    LOG.debug("Next repair segments: {}", nextRepairSegments.size());
     Optional<RepairSegment> nextRepairSegment = Optional.empty();
     final Collection<String> potentialReplicas = new HashSet<>();
     for (RepairSegment segment : nextRepairSegments) {
@@ -545,13 +546,19 @@ final class RepairRunner implements Runnable {
         potentialReplicas.addAll(potentialReplicaMap.keySet());
       }
       if (potentialReplicas.isEmpty()) {
+        LOG.debug("No potential replicas for segment {}: {}", segment.getId(), potentialReplicas);
         failRepairDueToOutdatedSegment(segment.getId(), segment.getTokenRange());
       }
       LOG.debug("Potential replicas for segment {}: {}", segment.getId(), potentialReplicas);
       ICassandraManagementProxy coordinator = clusterFacade.connect(cluster, potentialReplicas);
       if (nodesReadyForNewRepair(coordinator, segment, potentialReplicaMap, repairRunId)) {
+        LOG.debug("Ready for segment {}: {}", segment.getId(), potentialReplicas);
         nextRepairSegment = Optional.of(segment);
         break;
+      } else {
+        LOG.debug("Not ready for segment {}: {}", segment.getId(), potentialReplicas);
+        Set<UUID> lockedSegments = context.storage.getLockedSegmentsForRun(repairRunId);
+        LOG.debug("Locked segments for run {}: {}", repairRunId, lockedSegments);
       }
     }
     if (!nextRepairSegment.isPresent()) {

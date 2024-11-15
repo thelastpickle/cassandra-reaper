@@ -110,7 +110,12 @@ public final class HeartTest {
         }
       });
       Assertions.assertThat(heart.isCurrentlyUpdatingNodeMetrics().get()).isFalse();
-      Thread.sleep(500);
+      try {
+        Thread.sleep(500);
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        throw new AssertionError("Test interrupted", e);
+      }
     }
 
     Mockito.verify(mockedClusterDao, Mockito.times(1)).getClusters();
@@ -151,7 +156,12 @@ public final class HeartTest {
         }
       });
       Assertions.assertThat(heart.isCurrentlyUpdatingNodeMetrics().get()).isFalse();
-      Thread.sleep(500);
+      try {
+        Thread.sleep(500);
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        throw new AssertionError("Test interrupted", e);
+      }
     }
     Mockito.verify((CassandraStorageFacade) context.storage, Mockito.times(1)).saveHeartbeat();
     Mockito.verify(mockedClusterDao, Mockito.times(1)).getClusters();
@@ -174,7 +184,12 @@ public final class HeartTest {
     try (Heart heart = Heart.create(context)) {
       context.isDistributed.set(true);
       heart.beat();
-      Thread.sleep(500);
+      try {
+        Thread.sleep(500);
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        throw new AssertionError("Test interrupted", e);
+      }
     }
     Mockito.verify((CassandraStorageFacade) context.storage, Mockito.times(1)).saveHeartbeat();
   }
@@ -205,7 +220,12 @@ public final class HeartTest {
     try (Heart heart = Heart.create(context)) {
       context.isDistributed.set(true);
       heart.beat();
-      Thread.sleep(500);
+      try {
+        Thread.sleep(500);
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        throw new AssertionError("Test interrupted", e);
+      }
     }
     Mockito.verify((CassandraStorageFacade) context.storage, Mockito.times(1)).saveHeartbeat();
   }
@@ -235,7 +255,12 @@ public final class HeartTest {
     try (Heart heart = Heart.create(context)) {
       context.isDistributed.set(true);
       heart.beat();
-      Thread.sleep(500);
+      try {
+        Thread.sleep(500);
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        throw new AssertionError("Test interrupted", e);
+      }
     }
 
     Mockito.verify((CassandraStorageFacade) context.storage, Mockito.times(1)).saveHeartbeat();
@@ -274,7 +299,12 @@ public final class HeartTest {
     try (Heart heart = Heart.create(context)) {
       context.isDistributed.set(true);
       heart.beat();
-      Thread.sleep(500);
+      try {
+        Thread.sleep(500);
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        throw new AssertionError("Test interrupted", e);
+      }
     }
 
     Mockito.verify((CassandraStorageFacade) context.storage, Mockito.times(1)).saveHeartbeat();
@@ -324,7 +354,12 @@ public final class HeartTest {
     try (Heart heart = Heart.create(context)) {
       context.isDistributed.set(true);
       heart.beat();
-      Thread.sleep(500);
+      try {
+        Thread.sleep(500);
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        throw new AssertionError("Test interrupted", e);
+      }
     }
 
     Mockito.verify((CassandraStorageFacade) context.storage, Mockito.times(1)).saveHeartbeat();

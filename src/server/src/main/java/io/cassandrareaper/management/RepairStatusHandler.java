@@ -19,7 +19,6 @@ package io.cassandrareaper.management;
 
 import java.util.Optional;
 
-import org.apache.cassandra.service.ActiveRepairService;
 import org.apache.cassandra.utils.progress.ProgressEventType;
 
 
@@ -32,13 +31,11 @@ public interface RepairStatusHandler {
    * state.
    *
    * @param repairNumber repair sequence number, obtained when triggering a repair
-   * @param status       new status of the repair (old API)
-   * @param progress     new status of the repair (new API)
-   * @param message      additional information about the repair
+   * @param progress new status of the repair (new API)
+   * @param message additional information about the repair
    */
   void handle(
       int repairNumber,
-      Optional<ActiveRepairService.Status> status,
       Optional<ProgressEventType> progress,
       String message,
       ICassandraManagementProxy cassandraManagementProxy);
