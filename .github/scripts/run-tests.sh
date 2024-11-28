@@ -217,8 +217,8 @@ case "${TEST_TYPE}" in
         sudo apt-get update
         sudo apt-get install jq -y
         mvn -B package -DskipTests
-        docker-compose -f ./src/packaging/docker-build/docker-compose.yml build
-        docker-compose -f ./src/packaging/docker-build/docker-compose.yml run build
+        docker compose -f ./src/packaging/docker-build/docker-compose.yml build
+        docker compose -f ./src/packaging/docker-build/docker-compose.yml run build
         VERSION=$(printf 'VER\t${project.version}' | mvn help:evaluate | grep '^VER' | cut -f2)
         docker build --build-arg SHADED_JAR=src/server/target/cassandra-reaper-${VERSION}.jar -f src/server/src/main/docker/Dockerfile -t cassandra-reaper:latest .
         docker images
@@ -226,9 +226,9 @@ case "${TEST_TYPE}" in
         # Clear out Cassandra data before starting a new cluster
         sudo rm -vfr ./src/packaging/data/
 
-        docker-compose -f ./src/packaging/docker-compose.yml up -d cassandra
-        sleep 30 && docker-compose -f ./src/packaging/docker-compose.yml run cqlsh-initialize-reaper_db
-        sleep 10 && docker-compose -f ./src/packaging/docker-compose.yml up -d reaper
+        docker compose -f ./src/packaging/docker-compose.yml up -d cassandra
+        sleep 30 && docker compose -f ./src/packaging/docker-compose.yml run cqlsh-initialize-reaper_db
+        sleep 10 && docker compose -f ./src/packaging/docker-compose.yml up -d reaper
         docker ps -a
 
         # requests python package is needed to use spreaper
@@ -236,14 +236,14 @@ case "${TEST_TYPE}" in
         mkdir -p ~/.reaper
         echo "admin" > ~/.reaper/credentials
         sleep 30 && src/packaging/bin/spreaper login admin
-        src/packaging/bin/spreaper add-cluster $(docker-compose -f ./src/packaging/docker-compose.yml run nodetool status | grep UN | tr -s ' ' | cut -d' ' -f2) 7199 > cluster.json
+        src/packaging/bin/spreaper add-cluster $(docker compose -f ./src/packaging/docker-compose.yml run nodetool status | grep UN | tr -s ' ' | cut -d' ' -f2) 7199 > cluster.json
         cat cluster.json
         cluster_name=$(cat cluster.json|grep -v "#" | jq -r '.name')
         if [[ "$cluster_name" != "reaper-cluster" ]]; then
             echo "Failed registering cluster in Reaper running in Docker"
             exit 1
         fi
-        sleep 5 && docker-compose -f ./src/packaging/docker-compose.yml down
+        sleep 5 && docker compose -f ./src/packaging/docker-compose.yml down
         ;;
     *)
         echo "Skipping, no actions for TEST_TYPE=${TEST_TYPE}."

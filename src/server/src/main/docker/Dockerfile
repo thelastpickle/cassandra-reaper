@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM amazoncorretto:11.0.22-alpine
+FROM amazoncorretto:11.0.25-alpine
 
 ARG SHADED_JAR
 
@@ -84,6 +84,7 @@ ENV REAPER_SEGMENT_COUNT_PER_NODE=64 \
     REAPER_HTTP_MANAGEMENT_ENABLE="false" \
     REAPER_HTTP_MANAGEMENT_KEYSTORE_PATH="" \
     REAPER_HTTP_MANAGEMENT_TRUSTSTORE_PATH="" \
+    REAPER_HTTP_MANAGEMENT_TRUSTSTORES_DIR="" \
     REAPER_TMP_DIRECTORY="/var/tmp/cassandra-reaper" \
     REAPER_MEMORY_STORAGE_DIRECTORY="/var/lib/cassandra-reaper/storage"
 

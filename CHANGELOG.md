@@ -1,5 +1,15 @@
 ## Change Log
 
+### 3.7.0 (2024/11/15 12:02 +00:00)
+- [#1527](https://github.com/thelastpickle/cassandra-reaper/pull/1527) Upgrade the base docker image from Corretto 11.0.20 to 11.0.25 (#1527) (@adejanovski)
+- [#1510](https://github.com/thelastpickle/cassandra-reaper/pull/1510) update doc for persistenceStoragePath (#1510) (@SarthakSahu)
+- [#1457](https://github.com/thelastpickle/cassandra-reaper/pull/1457) Bump io.netty:netty-handler in /src/server (#1457) (@dependabot[bot])
+- [#1461](https://github.com/thelastpickle/cassandra-reaper/pull/1461) Bump org.apache.shiro:shiro-core from 1.12.0 to 1.13.0 in /src/server (#1461) (@dependabot[bot])
+- [#1524](https://github.com/thelastpickle/cassandra-reaper/pull/1524) Allow setting up per-cluster TLS connections (#1524) (@rzvoncek)
+- [#1523](https://github.com/thelastpickle/cassandra-reaper/pull/1523) Update java driver 3.11.0 to 3.11.5 (#1523) (@bschoening)
+- [#1516](https://github.com/thelastpickle/cassandra-reaper/pull/1516) Switch CI to docker-compose v2 (#1516) (@adejanovski)
+- [#1509](https://github.com/thelastpickle/cassandra-reaper/pull/1509) Subrange incremental repair (#1509) (@adejanovski)
+
 ### 3.6.1 (2024/06/11 07:14 +00:00)
 - [#1507](https://github.com/thelastpickle/cassandra-reaper/pull/1507) Allow mounting a volume to host the config and enable read only root FS (#1507) (@adejanovski)
 

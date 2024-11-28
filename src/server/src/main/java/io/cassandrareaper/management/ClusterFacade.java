@@ -893,12 +893,10 @@ public final class ClusterFacade {
   private ICassandraManagementProxy connectImpl(Cluster cluster, Collection<String> endpoints)
           throws ReaperException {
     try {
-      ICassandraManagementProxy proxy = context.managementConnectionFactory
-              .connectAny(
-          endpoints
-              .stream()
-              .map(host -> Node.builder().withCluster(cluster).withHostname(host).build())
-              .collect(Collectors.toList()));
+      ICassandraManagementProxy proxy = context.managementConnectionFactory.connectAny(endpoints.stream()
+          .map(host -> Node.builder().withCluster(cluster).withHostname(host).build())
+          .collect(Collectors.toList())
+      );
 
       Async.markClusterActive(cluster, context);
       return proxy;

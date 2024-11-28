@@ -220,7 +220,9 @@ public final class ClusterResource {
       @QueryParam("jmxPort") Optional<Integer> jmxPort) {
 
     LOG.info("POST addOrUpdateCluster called with seedHost: {}", seedHost.orElse(null));
-    return addOrUpdateCluster(uriInfo, Optional.empty(), seedHost, jmxPort, Optional.empty(), Optional.empty());
+    return addOrUpdateCluster(
+        uriInfo, Optional.empty(), seedHost, jmxPort, Optional.empty(), Optional.empty()
+    );
   }
 
   @POST
@@ -248,7 +250,9 @@ public final class ClusterResource {
         "PUT addOrUpdateCluster called with: cluster_name = {}, seedHost = {}",
         clusterName, seedHost.orElse(null));
 
-    return addOrUpdateCluster(uriInfo, Optional.of(clusterName), seedHost, jmxPort, Optional.empty(), Optional.empty());
+    return addOrUpdateCluster(
+        uriInfo, Optional.of(clusterName), seedHost, jmxPort, Optional.empty(), Optional.empty()
+    );
   }
 
   @PUT
@@ -297,8 +301,10 @@ public final class ClusterResource {
       }
     }
 
-    final Optional<Cluster> cluster = findClusterWithSeedHost(seedHost.get(), jmxPort,
-        Optional.ofNullable(jmxCredentials));
+    final Optional<Cluster> cluster = findClusterWithSeedHost(
+        seedHost.get(), jmxPort, Optional.ofNullable(jmxCredentials)
+    );
+
     if (!cluster.isPresent()) {
       return Response
           .status(Response.Status.BAD_REQUEST)
@@ -361,9 +367,11 @@ public final class ClusterResource {
     return Response.created(location).build();
   }
 
-  public Optional<Cluster> findClusterWithSeedHost(String seedHost,
-                                                   Optional<Integer> jmxPort,
-                                                   Optional<JmxCredentials> jmxCredentials) {
+  public Optional<Cluster> findClusterWithSeedHost(
+      String seedHost,
+      Optional<Integer> jmxPort,
+      Optional<JmxCredentials> jmxCredentials
+  ) {
     Set<String> seedHosts = parseSeedHosts(seedHost);
     try {
       Cluster.Builder clusterBuilder = Cluster.builder()
