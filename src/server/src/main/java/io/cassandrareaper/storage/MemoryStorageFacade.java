@@ -29,6 +29,7 @@ import io.cassandrareaper.storage.cluster.MemoryClusterDao;
 import io.cassandrareaper.storage.events.IEventsDao;
 import io.cassandrareaper.storage.events.MemoryEventsDao;
 import io.cassandrareaper.storage.memory.MemoryStorageRoot;
+import io.cassandrareaper.storage.memory.ReplicaLockManagerWithTtl;
 import io.cassandrareaper.storage.metrics.MemoryMetricsDao;
 import io.cassandrareaper.storage.repairrun.IRepairRunDao;
 import io.cassandrareaper.storage.repairrun.MemoryRepairRunDao;
@@ -46,6 +47,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -61,12 +63,14 @@ import org.slf4j.LoggerFactory;
  */
 public final class MemoryStorageFacade implements IStorageDao {
 
+  private static final long LEAD_TIME = 90;
   private static final Logger LOG = LoggerFactory.getLogger(MemoryStorageFacade.class);
-
+  private static final ReplicaLockManagerWithTtl REPAIR_RUN_LOCK_MANAGER = new ReplicaLockManagerWithTtl(LEAD_TIME);
   /** Field evaluator to find transient attributes. This is needed to deal with persisting Guava collections objects
    * that sometimes use the transient keyword for some of their implementation's backing stores**/
   private static final PersistenceFieldEvaluator TRANSIENT_FIELD_EVALUATOR =
       (clazz, field) -> !field.getName().startsWith("_");
+  private static final UUID REAPER_INSTANCE_ID = UUID.randomUUID();
 
   private final EmbeddedStorageManager embeddedStorage;
   private final MemoryStorageRoot memoryStorageRoot;
@@ -295,5 +299,25 @@ public final class MemoryStorageFacade implements IStorageDao {
   // RepairSubscription operations
   public Map<UUID, DiagEventSubscription> getSubscriptionsById() {
     return this.memoryStorageRoot.getSubscriptionsById();
+  }
+
+  @Override
+  public boolean lockRunningRepairsForNodes(UUID runId, UUID segmentId, Set<String> replicas) {
+    return REPAIR_RUN_LOCK_MANAGER.lockRunningRepairsForNodes(runId, segmentId, replicas);
+  }
+
+  @Override
+  public boolean renewRunningRepairsForNodes(UUID runId, UUID segmentId, Set<String> replicas) {
+    return REPAIR_RUN_LOCK_MANAGER.renewRunningRepairsForNodes(runId, segmentId, replicas);
+  }
+
+  @Override
+  public boolean releaseRunningRepairsForNodes(UUID runId, UUID segmentId, Set<String> replicas) {
+    return REPAIR_RUN_LOCK_MANAGER.releaseRunningRepairsForNodes(runId, segmentId, replicas);
+  }
+
+  @Override
+  public Set<UUID> getLockedSegmentsForRun(UUID runId) {
+    return REPAIR_RUN_LOCK_MANAGER.getLockedSegmentsForRun(runId);
   }
 }

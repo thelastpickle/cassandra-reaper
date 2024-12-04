@@ -1,0 +1,165 @@
+/*
+ * Copyright 2024-2024 DataStax, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package io.cassandrareaper.storage.memory;
+
+import java.util.Collections;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+
+import com.google.common.annotations.VisibleForTesting;
+
+public class ReplicaLockManagerWithTtl {
+
+  private final ConcurrentHashMap<String, LockInfo> replicaLocks = new ConcurrentHashMap<>();
+  private final ConcurrentHashMap<UUID, Set<UUID>> runToSegmentLocks = new ConcurrentHashMap<>();
+  private final Lock lock = new ReentrantLock();
+  private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+
+  private final long ttlSeconds; // 1 minute
+
+  public ReplicaLockManagerWithTtl(long ttlSeconds) {
+    this.ttlSeconds = ttlSeconds;
+    // Schedule cleanup of expired locks
+    scheduler.scheduleAtFixedRate(this::cleanupExpiredLocks, 1, 1, TimeUnit.SECONDS);
+  }
+
+  public boolean lockRunningRepairsForNodes(UUID runId, UUID segmentId, Set<String> replicas) {
+    lock.lock();
+    try {
+      long currentTime = System.currentTimeMillis();
+      // Check if any replica is already locked by another runId
+      for (String replica : replicas) {
+        LockInfo lockInfo = replicaLocks.get(replica + runId);
+        if (lockInfo != null && lockInfo.expirationTime > currentTime && lockInfo.runId.equals(runId)) {
+          return false; // Replica is locked by another runId and not expired
+        }
+      }
+
+      // Lock the replicas for the given runId and segmentId
+      long expirationTime = currentTime + (ttlSeconds * 1000);
+      for (String replica : replicas) {
+        replicaLocks.put(replica + runId, new LockInfo(runId, expirationTime));
+      }
+
+      // Update runId to segmentId mapping
+      runToSegmentLocks.computeIfAbsent(runId, k -> ConcurrentHashMap.newKeySet()).add(segmentId);
+      return true;
+    } finally {
+      lock.unlock();
+    }
+  }
+
+  public boolean renewRunningRepairsForNodes(UUID runId, UUID segmentId, Set<String> replicas) {
+    lock.lock();
+    try {
+      long currentTime = System.currentTimeMillis();
+
+      // Check if all replicas are already locked by this runId
+      for (String replica : replicas) {
+        LockInfo lockInfo = replicaLocks.get(replica + runId);
+        if (lockInfo == null || !lockInfo.runId.equals(runId) || lockInfo.expirationTime <= currentTime) {
+          return false; // Some replica is not validly locked by this runId
+        }
+      }
+
+      // Renew the lock by extending the expiration time
+      long newExpirationTime = currentTime + (ttlSeconds * 1000);
+      for (String replica : replicas) {
+        replicaLocks.put(replica + runId, new LockInfo(runId, newExpirationTime));
+      }
+
+      // Ensure the segmentId is linked to the runId
+      runToSegmentLocks.computeIfAbsent(runId, k -> ConcurrentHashMap.newKeySet()).add(segmentId);
+      return true;
+    } finally {
+      lock.unlock();
+    }
+  }
+
+  public boolean releaseRunningRepairsForNodes(UUID runId, UUID segmentId, Set<String> replicas) {
+    lock.lock();
+    try {
+      // Remove the lock for replicas
+      for (String replica : replicas) {
+        LockInfo lockInfo = replicaLocks.get(replica);
+        if (lockInfo != null && lockInfo.runId.equals(runId)) {
+          replicaLocks.remove(replica);
+        }
+      }
+
+      // Remove the segmentId from the runId mapping
+      Set<UUID> segments = runToSegmentLocks.get(runId);
+      if (segments != null) {
+        segments.remove(segmentId);
+        if (segments.isEmpty()) {
+          runToSegmentLocks.remove(runId);
+        }
+      }
+      return true;
+    } finally {
+      lock.unlock();
+    }
+  }
+
+  public Set<UUID> getLockedSegmentsForRun(UUID runId) {
+    return runToSegmentLocks.getOrDefault(runId, Collections.emptySet());
+  }
+
+  @VisibleForTesting
+  public void cleanupExpiredLocks() {
+    lock.lock();
+    try {
+      long currentTime = System.currentTimeMillis();
+
+      // Remove expired locks from replicaLocks
+      replicaLocks.entrySet().removeIf(entry -> entry.getValue().expirationTime <= currentTime);
+
+      // Clean up runToSegmentLocks by removing segments with no active replicas
+      runToSegmentLocks.entrySet().removeIf(entry -> {
+        UUID runId = entry.getKey();
+        Set<UUID> segments = entry.getValue();
+
+        // Retain only active segments
+        segments.removeIf(segmentId -> {
+          boolean active = replicaLocks.values().stream()
+              .anyMatch(info -> info.runId.equals(runId));
+          return !active;
+        });
+        return segments.isEmpty();
+      });
+    } finally {
+      lock.unlock();
+    }
+  }
+
+  // Class to store lock information
+  private static class LockInfo {
+    UUID runId;
+    long expirationTime;
+
+    LockInfo(UUID runId, long expirationTime) {
+      this.runId = runId;
+      this.expirationTime = expirationTime;
+    }
+  }
+}
