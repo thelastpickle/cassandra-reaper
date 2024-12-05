@@ -41,7 +41,6 @@ import io.cassandrareaper.storage.metrics.IDistributedMetrics;
 import io.cassandrareaper.storage.operations.IOperationsDao;
 
 import java.util.List;
-import java.util.Set;
 import java.util.UUID;
 
 
@@ -61,23 +60,6 @@ public interface IDistributedStorage extends IDistributedMetrics {
   List<UUID> getLeaders();
 
   void releaseLead(UUID leaderId);
-
-  boolean lockRunningRepairsForNodes(
-      UUID repairId,
-      UUID segmentId,
-      Set<String> replicas);
-
-  boolean renewRunningRepairsForNodes(
-      UUID repairId,
-      UUID segmentId,
-      Set<String> replicas);
-
-  boolean releaseRunningRepairsForNodes(
-      UUID repairId,
-      UUID segmentId,
-      Set<String> replicas);
-
-  Set<UUID> getLockedSegmentsForRun(UUID runId);
 
   int countRunningReapers();
 

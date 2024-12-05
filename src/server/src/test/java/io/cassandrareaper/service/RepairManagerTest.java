@@ -26,7 +26,6 @@ import io.cassandrareaper.core.RepairSegment;
 import io.cassandrareaper.core.RepairUnit;
 import io.cassandrareaper.core.Segment;
 import io.cassandrareaper.management.ClusterFacade;
-import io.cassandrareaper.storage.IDistributedStorage;
 import io.cassandrareaper.storage.IStorageDao;
 import io.cassandrareaper.storage.cassandra.CassandraStorageFacade;
 import io.cassandrareaper.storage.cluster.IClusterDao;
@@ -144,7 +143,7 @@ public final class RepairManagerTest {
     Mockito.doNothing().when(context.repairManager).abortSegments(any(), any());
     Mockito.doReturn(run).when(context.repairManager).startRepairRun(run);
 
-    when(((IDistributedStorage) context.storage).getLockedSegmentsForRun(any())).thenReturn(Collections.emptySet());
+    when(context.storage.getLockedSegmentsForRun(any())).thenReturn(Collections.emptySet());
     IRepairUnitDao mockedRepairUnitDao = mock(IRepairUnitDao.class);
     Mockito.when(((CassandraStorageFacade) context.storage).getRepairUnitDao()).thenReturn(mockedRepairUnitDao);
     Mockito.when(mockedRepairUnitDao.getRepairUnit(any(UUID.class))).thenReturn(cf);
@@ -238,7 +237,7 @@ public final class RepairManagerTest {
     Mockito.when(((CassandraStorageFacade) context.storage).getRepairUnitDao()).thenReturn(mockedRepairUnitDao);
     Mockito.when(mockedRepairUnitDao.getRepairUnit(any(UUID.class))).thenReturn(cf);
 
-    when(((IDistributedStorage) context.storage).getLockedSegmentsForRun(any())).thenReturn(
+    when(context.storage.getLockedSegmentsForRun(any())).thenReturn(
         new HashSet<UUID>(Arrays.asList(segment.getId())));
 
     context.repairManager.resumeRunningRepairRuns();
