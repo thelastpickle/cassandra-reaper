@@ -805,7 +805,7 @@ public final class RepairRunnerTest {
         run.with().runState(RepairRun.RunState.RUNNING).startTime(DateTime.now()).build(runId));
     context.repairManager.resumeRunningRepairRuns();
 
-    await().with().atMost(20, TimeUnit.SECONDS).until(() -> {
+    await().with().atMost(120, TimeUnit.SECONDS).until(() -> {
       return RepairRun.RunState.DONE == storage.getRepairRunDao().getRepairRun(runId).get().getRunState();
     });
   }

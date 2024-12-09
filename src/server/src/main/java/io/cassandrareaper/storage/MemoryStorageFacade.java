@@ -322,6 +322,7 @@ public final class MemoryStorageFacade implements IStorageDao {
 
   @Override
   public boolean releaseRunningRepairsForNodes(UUID runId, UUID segmentId, Set<String> replicas) {
+    LOG.info("Releasing locks for runId: {}, segmentId: {}, replicas: {}", runId, segmentId, replicas);
     return repairRunLockManager.releaseRunningRepairsForNodes(runId, segmentId, replicas);
   }
 
