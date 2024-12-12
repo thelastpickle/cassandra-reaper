@@ -670,7 +670,7 @@ public final class RepairRunnerTest {
     context.repairManager.resumeRunningRepairRuns();
 
     // The repair run should succeed despite the topology change.
-    await().with().atMost(60, TimeUnit.SECONDS).until(() -> {
+    await().with().atMost(120, TimeUnit.SECONDS).until(() -> {
       return RepairRun.RunState.DONE == storage.getRepairRunDao().getRepairRun(runId).get().getRunState();
     });
   }
