@@ -51,6 +51,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import com.google.common.io.Files;
 import org.eclipse.serializer.persistence.types.PersistenceFieldEvaluator;
 import org.eclipse.store.storage.embedded.types.EmbeddedStorage;
 import org.eclipse.store.storage.embedded.types.EmbeddedStorageManager;
@@ -111,7 +112,7 @@ public final class MemoryStorageFacade implements IStorageDao {
   }
 
   public MemoryStorageFacade() {
-    this("/tmp/" + UUID.randomUUID().toString(), DEFAULT_LEAD_TIME);
+    this(Files.createTempDir().getAbsolutePath(), DEFAULT_LEAD_TIME);
   }
 
   public MemoryStorageFacade(String persistenceStoragePath) {
@@ -119,7 +120,7 @@ public final class MemoryStorageFacade implements IStorageDao {
   }
 
   public MemoryStorageFacade(long leadTime) {
-    this("/tmp/" + UUID.randomUUID().toString(), leadTime);
+    this(Files.createTempDir().getAbsolutePath(), leadTime);
   }
 
   @Override
