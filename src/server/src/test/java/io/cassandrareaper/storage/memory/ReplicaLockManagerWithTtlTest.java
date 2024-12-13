@@ -39,7 +39,7 @@ public class ReplicaLockManagerWithTtlTest {
 
   @BeforeEach
   public void setUp() {
-    replicaLockManager = new ReplicaLockManagerWithTtl(1); // TTL of 60 seconds
+    replicaLockManager = new ReplicaLockManagerWithTtl(1000);
     runId = UUID.randomUUID();
     segmentId = UUID.randomUUID();
     replicas = new HashSet<>(Arrays.asList("replica1", "replica2", "replica3"));

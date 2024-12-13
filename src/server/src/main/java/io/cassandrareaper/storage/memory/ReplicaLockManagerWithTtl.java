@@ -31,42 +31,49 @@ import com.google.common.annotations.VisibleForTesting;
 public class ReplicaLockManagerWithTtl {
 
   private final ConcurrentHashMap<String, LockInfo> replicaLocks = new ConcurrentHashMap<>();
-  private final ConcurrentHashMap<UUID, Set<UUID>> runToSegmentLocks = new ConcurrentHashMap<>();
-  private final Lock lock = new ReentrantLock();
-  private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+  private final ConcurrentHashMap<UUID, Set<UUID>> repairRunToSegmentLocks = new ConcurrentHashMap<>();
+  private final ConcurrentHashMap<UUID, ReentrantLock> runIdLocks = new ConcurrentHashMap<>();
 
-  private final long ttlSeconds; // 1 minute
+  private final long ttlMilliSeconds;
 
-  public ReplicaLockManagerWithTtl(long ttlSeconds) {
-    this.ttlSeconds = ttlSeconds;
+  public ReplicaLockManagerWithTtl(long ttlMilliSeconds) {
+    this.ttlMilliSeconds = ttlMilliSeconds;
     // Schedule cleanup of expired locks
-    scheduler.scheduleAtFixedRate(this::cleanupExpiredLocks, 1, 1, TimeUnit.SECONDS);
+    ScheduledExecutorService lockCleanupScheduler = Executors.newScheduledThreadPool(1);
+    lockCleanupScheduler.scheduleAtFixedRate(this::cleanupExpiredLocks, 1, 1, TimeUnit.SECONDS);
   }
 
   private String getReplicaLockKey(String replica, UUID runId) {
     return replica + runId;
   }
 
+  private Lock getLockForRunId(UUID runId) {
+    return runIdLocks.computeIfAbsent(runId, k -> new ReentrantLock());
+  }
+
   public boolean lockRunningRepairsForNodes(UUID runId, UUID segmentId, Set<String> replicas) {
+    Lock lock = getLockForRunId(runId);
     lock.lock();
     try {
       long currentTime = System.currentTimeMillis();
       // Check if any replica is already locked by another runId
-      for (String replica : replicas) {
-        LockInfo lockInfo = replicaLocks.get(getReplicaLockKey(replica, runId));
-        if (lockInfo != null && lockInfo.expirationTime > currentTime && lockInfo.runId.equals(runId)) {
-          return false; // Replica is locked by another runId and not expired
-        }
+      boolean anyReplicaLocked = replicas.stream()
+          .map(replica -> replicaLocks.get(getReplicaLockKey(replica, runId)))
+          .anyMatch(lockInfo -> lockInfo != null
+            && lockInfo.expirationTime > currentTime && lockInfo.runId.equals(runId));
+
+      if (anyReplicaLocked) {
+        return false; // Replica is locked by another runId and not expired
       }
 
       // Lock the replicas for the given runId and segmentId
-      long expirationTime = currentTime + (ttlSeconds * 1000);
-      for (String replica : replicas) {
-        replicaLocks.put(getReplicaLockKey(replica, runId), new LockInfo(runId, expirationTime));
-      }
+      long expirationTime = currentTime + ttlMilliSeconds;
+      replicas.forEach(replica ->
+          replicaLocks.put(getReplicaLockKey(replica, runId), new LockInfo(runId, expirationTime))
+      );
 
       // Update runId to segmentId mapping
-      runToSegmentLocks.computeIfAbsent(runId, k -> ConcurrentHashMap.newKeySet()).add(segmentId);
+      repairRunToSegmentLocks.computeIfAbsent(runId, k -> ConcurrentHashMap.newKeySet()).add(segmentId);
       return true;
     } finally {
       lock.unlock();
@@ -74,26 +81,29 @@ public class ReplicaLockManagerWithTtl {
   }
 
   public boolean renewRunningRepairsForNodes(UUID runId, UUID segmentId, Set<String> replicas) {
+    Lock lock = getLockForRunId(runId);
     lock.lock();
     try {
       long currentTime = System.currentTimeMillis();
 
       // Check if all replicas are already locked by this runId
-      for (String replica : replicas) {
-        LockInfo lockInfo = replicaLocks.get(getReplicaLockKey(replica, runId));
-        if (lockInfo == null || !lockInfo.runId.equals(runId) || lockInfo.expirationTime <= currentTime) {
-          return false; // Some replica is not validly locked by this runId
-        }
+      boolean allReplicasLocked = replicas.stream()
+          .map(replica -> replicaLocks.get(getReplicaLockKey(replica, runId)))
+          .allMatch(lockInfo -> lockInfo != null && lockInfo.runId.equals(runId)
+            && lockInfo.expirationTime > currentTime);
+
+      if (!allReplicasLocked) {
+        return false; // Some replica is not validly locked by this runId
       }
 
       // Renew the lock by extending the expiration time
-      long newExpirationTime = currentTime + (ttlSeconds * 1000);
-      for (String replica : replicas) {
-        replicaLocks.put(getReplicaLockKey(replica, runId), new LockInfo(runId, newExpirationTime));
-      }
+      long newExpirationTime = currentTime + ttlMilliSeconds;
+      replicas.forEach(replica ->
+          replicaLocks.put(getReplicaLockKey(replica, runId), new LockInfo(runId, newExpirationTime))
+      );
 
       // Ensure the segmentId is linked to the runId
-      runToSegmentLocks.computeIfAbsent(runId, k -> ConcurrentHashMap.newKeySet()).add(segmentId);
+      repairRunToSegmentLocks.computeIfAbsent(runId, k -> ConcurrentHashMap.newKeySet()).add(segmentId);
       return true;
     } finally {
       lock.unlock();
@@ -101,22 +111,22 @@ public class ReplicaLockManagerWithTtl {
   }
 
   public boolean releaseRunningRepairsForNodes(UUID runId, UUID segmentId, Set<String> replicas) {
+    Lock lock = getLockForRunId(runId);
     lock.lock();
     try {
       // Remove the lock for replicas
-      for (String replica : replicas) {
-        LockInfo lockInfo = replicaLocks.get(getReplicaLockKey(replica, runId));
-        if (lockInfo != null && lockInfo.runId.equals(runId)) {
-          replicaLocks.remove(getReplicaLockKey(replica, runId));
-        }
-      }
+      replicas.stream()
+          .map(replica -> getReplicaLockKey(replica, runId))
+          .map(replicaLocks::get)
+          .filter(lockInfo -> lockInfo != null && lockInfo.runId.equals(runId))
+          .forEach(lockInfo -> replicaLocks.remove(getReplicaLockKey(lockInfo.runId.toString(), runId)));
 
       // Remove the segmentId from the runId mapping
-      Set<UUID> segments = runToSegmentLocks.get(runId);
+      Set<UUID> segments = repairRunToSegmentLocks.get(runId);
       if (segments != null) {
         segments.remove(segmentId);
         if (segments.isEmpty()) {
-          runToSegmentLocks.remove(runId);
+          repairRunToSegmentLocks.remove(runId);
         }
       }
       return true;
@@ -126,12 +136,12 @@ public class ReplicaLockManagerWithTtl {
   }
 
   public Set<UUID> getLockedSegmentsForRun(UUID runId) {
-    return runToSegmentLocks.getOrDefault(runId, Collections.emptySet());
+    return repairRunToSegmentLocks.getOrDefault(runId, Collections.emptySet());
   }
 
   @VisibleForTesting
   public void cleanupExpiredLocks() {
-    lock.lock();
+    runIdLocks.values().forEach(Lock::lock);
     try {
       long currentTime = System.currentTimeMillis();
 
@@ -139,7 +149,7 @@ public class ReplicaLockManagerWithTtl {
       replicaLocks.entrySet().removeIf(entry -> entry.getValue().expirationTime <= currentTime);
 
       // Clean up runToSegmentLocks by removing segments with no active replicas
-      runToSegmentLocks.entrySet().removeIf(entry -> {
+      repairRunToSegmentLocks.entrySet().removeIf(entry -> {
         UUID runId = entry.getKey();
         Set<UUID> segments = entry.getValue();
 
@@ -152,7 +162,7 @@ public class ReplicaLockManagerWithTtl {
         return segments.isEmpty();
       });
     } finally {
-      lock.unlock();
+      runIdLocks.values().forEach(Lock::unlock);
     }
   }
 

@@ -64,13 +64,13 @@ import org.slf4j.LoggerFactory;
  */
 public final class MemoryStorageFacade implements IStorageDao {
 
-  private static final long DEFAULT_LEAD_TIME = 90;
+  // Default time to live of leads taken on a segment
+  private static final long DEFAULT_LEAD_TTL = 90_000;
   private static final Logger LOG = LoggerFactory.getLogger(MemoryStorageFacade.class);
   /** Field evaluator to find transient attributes. This is needed to deal with persisting Guava collections objects
    * that sometimes use the transient keyword for some of their implementation's backing stores**/
   private static final PersistenceFieldEvaluator TRANSIENT_FIELD_EVALUATOR =
       (clazz, field) -> !field.getName().startsWith("_");
-  private static final UUID REAPER_INSTANCE_ID = UUID.randomUUID();
 
   private final EmbeddedStorageManager embeddedStorage;
   private final MemoryStorageRoot memoryStorageRoot;
@@ -89,7 +89,7 @@ public final class MemoryStorageFacade implements IStorageDao {
   );
   private final MemorySnapshotDao memSnapshotDao = new MemorySnapshotDao();
   private final MemoryMetricsDao memMetricsDao = new MemoryMetricsDao();
-  private final ReplicaLockManagerWithTtl repairRunLockManager;
+  private final ReplicaLockManagerWithTtl replicaLockManagerWithTtl;
 
   public MemoryStorageFacade(String persistenceStoragePath, long leadTime) {
     LOG.info("Using memory storage backend. Persistence storage path: {}", persistenceStoragePath);
@@ -108,15 +108,15 @@ public final class MemoryStorageFacade implements IStorageDao {
       LOG.info("Loading existing data from persistence storage");
       this.memoryStorageRoot = (MemoryStorageRoot) this.embeddedStorage.root();
     }
-    this.repairRunLockManager = new ReplicaLockManagerWithTtl(leadTime);
+    this.replicaLockManagerWithTtl = new ReplicaLockManagerWithTtl(leadTime);
   }
 
   public MemoryStorageFacade() {
-    this(Files.createTempDir().getAbsolutePath(), DEFAULT_LEAD_TIME);
+    this(Files.createTempDir().getAbsolutePath(), DEFAULT_LEAD_TTL);
   }
 
   public MemoryStorageFacade(String persistenceStoragePath) {
-    this(persistenceStoragePath, DEFAULT_LEAD_TIME);
+    this(persistenceStoragePath, DEFAULT_LEAD_TTL);
   }
 
   public MemoryStorageFacade(long leadTime) {
@@ -313,22 +313,22 @@ public final class MemoryStorageFacade implements IStorageDao {
 
   @Override
   public boolean lockRunningRepairsForNodes(UUID runId, UUID segmentId, Set<String> replicas) {
-    return repairRunLockManager.lockRunningRepairsForNodes(runId, segmentId, replicas);
+    return replicaLockManagerWithTtl.lockRunningRepairsForNodes(runId, segmentId, replicas);
   }
 
   @Override
   public boolean renewRunningRepairsForNodes(UUID runId, UUID segmentId, Set<String> replicas) {
-    return repairRunLockManager.renewRunningRepairsForNodes(runId, segmentId, replicas);
+    return replicaLockManagerWithTtl.renewRunningRepairsForNodes(runId, segmentId, replicas);
   }
 
   @Override
   public boolean releaseRunningRepairsForNodes(UUID runId, UUID segmentId, Set<String> replicas) {
     LOG.info("Releasing locks for runId: {}, segmentId: {}, replicas: {}", runId, segmentId, replicas);
-    return repairRunLockManager.releaseRunningRepairsForNodes(runId, segmentId, replicas);
+    return replicaLockManagerWithTtl.releaseRunningRepairsForNodes(runId, segmentId, replicas);
   }
 
   @Override
   public Set<UUID> getLockedSegmentsForRun(UUID runId) {
-    return repairRunLockManager.getLockedSegmentsForRun(runId);
+    return replicaLockManagerWithTtl.getLockedSegmentsForRun(runId);
   }
 }

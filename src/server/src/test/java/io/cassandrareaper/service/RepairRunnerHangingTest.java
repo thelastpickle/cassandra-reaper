@@ -83,7 +83,7 @@ import static org.mockito.Mockito.when;
 
 public final class RepairRunnerHangingTest {
 
-  private static final long LEAD_TIME = 1L;
+  private static final long LEAD_TTL = 1000L;
   private static final Logger LOG = LoggerFactory.getLogger(RepairRunnerHangingTest.class);
   private static final Set<String> TABLES = ImmutableSet.of("table1");
   private static final List<BigInteger> THREE_TOKENS = Lists.newArrayList(
@@ -243,7 +243,7 @@ public final class RepairRunnerHangingTest {
     final double intensity = 0.5f;
     final int repairThreadCount = 1;
     final int segmentTimeout = 1;
-    final IStorageDao storage = new MemoryStorageFacade(LEAD_TIME);
+    final IStorageDao storage = new MemoryStorageFacade(LEAD_TTL);
     storage.getClusterDao().addCluster(cluster);
     RepairUnit cf = storage.getRepairUnitDao().addRepairUnit(
         RepairUnit.builder()
@@ -398,7 +398,7 @@ public final class RepairRunnerHangingTest {
     final double intensity = 0.5f;
     final int repairThreadCount = 1;
     final int segmentTimeout = 1;
-    final IStorageDao storage = new MemoryStorageFacade(LEAD_TIME);
+    final IStorageDao storage = new MemoryStorageFacade(LEAD_TTL);
     storage.getClusterDao().addCluster(cluster);
     DateTimeUtils.setCurrentMillisFixed(timeRun);
     RepairUnit cf = storage.getRepairUnitDao().addRepairUnit(
@@ -554,7 +554,7 @@ public final class RepairRunnerHangingTest {
     final int repairThreadCount = 1;
     final int segmentTimeout = 30;
     final List<BigInteger> tokens = THREE_TOKENS;
-    final IStorageDao storage = new MemoryStorageFacade(LEAD_TIME);
+    final IStorageDao storage = new MemoryStorageFacade(LEAD_TTL);
     AppContext context = new AppContext();
     context.storage = storage;
     context.config = new ReaperApplicationConfiguration();

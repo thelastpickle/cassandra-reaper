@@ -99,7 +99,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 public final class RepairRunnerTest {
-  private static final long LEAD_TIME = 1L;
+  private static final long LEAD_TTL = 100L;
   private static final Set<String> TABLES = ImmutableSet.of("table1");
   private static final Duration POLL_INTERVAL = Duration.TWO_SECONDS;
   private static final List<BigInteger> THREE_TOKENS = Lists.newArrayList(
@@ -224,7 +224,7 @@ public final class RepairRunnerTest {
     final int repairThreadCount = 1;
     final int segmentTimeout = 30;
     final List<BigInteger> tokens = THREE_TOKENS;
-    final IStorageDao storage = new MemoryStorageFacade(LEAD_TIME);
+    final IStorageDao storage = new MemoryStorageFacade(LEAD_TTL);
     AppContext context = new AppContext();
     context.storage = storage;
     context.config = new ReaperApplicationConfiguration();
@@ -356,7 +356,7 @@ public final class RepairRunnerTest {
     final int repairThreadCount = 1;
     final int segmentTimeout = 30;
     final List<BigInteger> tokens = THREE_TOKENS;
-    final IStorageDao storage = new MemoryStorageFacade(LEAD_TIME);
+    final IStorageDao storage = new MemoryStorageFacade(LEAD_TTL);
     AppContext context = new AppContext();
     context.storage = storage;
     context.config = new ReaperApplicationConfiguration();
@@ -549,7 +549,7 @@ public final class RepairRunnerTest {
     final int repairThreadCount = 1;
     final int segmentTimeout = 30;
     final List<BigInteger> tokens = THREE_TOKENS;
-    final IStorageDao storage = new MemoryStorageFacade(LEAD_TIME);
+    final IStorageDao storage = new MemoryStorageFacade(LEAD_TTL);
     AppContext context = new AppContext();
     context.storage = storage;
     context.config = new ReaperApplicationConfiguration();
@@ -690,7 +690,7 @@ public final class RepairRunnerTest {
     final int repairThreadCount = 1;
     final int segmentTimeout = 30;
     final List<BigInteger> tokens = THREE_TOKENS;
-    final IStorageDao storage = new MemoryStorageFacade(LEAD_TIME);
+    final IStorageDao storage = new MemoryStorageFacade(LEAD_TTL);
     AppContext context = new AppContext();
     context.storage = storage;
     context.config = new ReaperApplicationConfiguration();
@@ -965,7 +965,7 @@ public final class RepairRunnerTest {
     final int repairThreadCount = 1;
     final int segmentTimeout = 30;
     final List<BigInteger> tokens = THREE_TOKENS;
-    final IStorageDao storage = new MemoryStorageFacade(LEAD_TIME);
+    final IStorageDao storage = new MemoryStorageFacade(LEAD_TTL);
     AppContext context = new AppContext();
     context.storage = storage;
     context.config = new ReaperApplicationConfiguration();
