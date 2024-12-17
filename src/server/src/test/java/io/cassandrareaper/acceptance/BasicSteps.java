@@ -562,6 +562,7 @@ public final class BasicSteps {
       params.put("intensity", "0.9");
       params.put("scheduleDaysBetween", "1");
       params.put("scheduleTriggerTime", DateTime.now().plusSeconds(1).toString());
+      params.put("segmentCountPerNode", "1");
       ReaperTestJettyRunner runner = RUNNERS.get(RAND.nextInt(RUNNERS.size()));
       Response response = runner.callReaper("POST", "/repair_schedule", Optional.of(params));
       int responseStatus = response.getStatus();

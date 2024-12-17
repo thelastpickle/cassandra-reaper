@@ -17,6 +17,13 @@
 
 package io.cassandrareaper.acceptance;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Comparator;
+import java.util.stream.Stream;
+
 import cucumber.api.CucumberOptions;
 import cucumber.api.junit.Cucumber;
 import org.junit.AfterClass;
@@ -24,6 +31,7 @@ import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 
 @RunWith(Cucumber.class)
 @CucumberOptions(
@@ -46,6 +54,8 @@ public class ReaperMetricsIT {
         "setting up testing Reaper runner with {} seed hosts defined and memory storage",
         TestContext.TEST_CLUSTER_SEED_HOSTS.size());
 
+    // We now have persistence in the memory store, so we need to clean up the storage folder before starting the tests
+    deleteFolderContents("/tmp/reaper/storage/");
     runner = new ReaperTestJettyRunner(MEMORY_CONFIG_FILE);
     BasicSteps.addReaperRunner(runner);
   }
@@ -54,6 +64,20 @@ public class ReaperMetricsIT {
   public static void tearDown() {
     LOG.info("Stopping reaper service...");
     runner.runnerInstance.after();
+  }
+
+  public static void deleteFolderContents(String folderPath) throws IOException {
+    Path path = Paths.get(folderPath);
+    try (Stream<Path> walk = Files.walk(path)) {
+      walk.sorted(Comparator.reverseOrder())
+          .forEach(p -> {
+            try {
+              Files.delete(p);
+            } catch (IOException e) {
+              throw new RuntimeException("Failed to delete " + p, e);
+            }
+          });
+    }
   }
 
 }
