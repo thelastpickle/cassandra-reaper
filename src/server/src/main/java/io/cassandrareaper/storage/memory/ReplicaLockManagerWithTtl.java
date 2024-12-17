@@ -32,7 +32,7 @@ public class ReplicaLockManagerWithTtl {
 
   private final ConcurrentHashMap<String, LockInfo> replicaLocks = new ConcurrentHashMap<>();
   private final ConcurrentHashMap<UUID, Set<UUID>> repairRunToSegmentLocks = new ConcurrentHashMap<>();
-  private final ConcurrentHashMap<UUID, ReentrantLock> runIdLocks = new ConcurrentHashMap<>();
+  private final Lock lock = new ReentrantLock();
 
   private final long ttlMilliSeconds;
 
@@ -47,12 +47,7 @@ public class ReplicaLockManagerWithTtl {
     return replica + runId;
   }
 
-  private Lock getLockForRunId(UUID runId) {
-    return runIdLocks.computeIfAbsent(runId, k -> new ReentrantLock());
-  }
-
   public boolean lockRunningRepairsForNodes(UUID runId, UUID segmentId, Set<String> replicas) {
-    Lock lock = getLockForRunId(runId);
     lock.lock();
     try {
       long currentTime = System.currentTimeMillis();
@@ -81,7 +76,6 @@ public class ReplicaLockManagerWithTtl {
   }
 
   public boolean renewRunningRepairsForNodes(UUID runId, UUID segmentId, Set<String> replicas) {
-    Lock lock = getLockForRunId(runId);
     lock.lock();
     try {
       long currentTime = System.currentTimeMillis();
@@ -111,7 +105,6 @@ public class ReplicaLockManagerWithTtl {
   }
 
   public boolean releaseRunningRepairsForNodes(UUID runId, UUID segmentId, Set<String> replicas) {
-    Lock lock = getLockForRunId(runId);
     lock.lock();
     try {
       // Remove the lock for replicas
@@ -141,7 +134,7 @@ public class ReplicaLockManagerWithTtl {
 
   @VisibleForTesting
   public void cleanupExpiredLocks() {
-    runIdLocks.values().forEach(Lock::lock);
+    lock.lock();
     try {
       long currentTime = System.currentTimeMillis();
 
@@ -162,7 +155,7 @@ public class ReplicaLockManagerWithTtl {
         return segments.isEmpty();
       });
     } finally {
-      runIdLocks.values().forEach(Lock::unlock);
+      lock.unlock();
     }
   }
 

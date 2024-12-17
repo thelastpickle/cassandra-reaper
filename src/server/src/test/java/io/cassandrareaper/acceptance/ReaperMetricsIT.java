@@ -67,7 +67,11 @@ public class ReaperMetricsIT {
   }
 
   public static void deleteFolderContents(String folderPath) throws IOException {
+    // Check if the path exists
     Path path = Paths.get(folderPath);
+    if (!Files.exists(path)) {
+      return;
+    }
     try (Stream<Path> walk = Files.walk(path)) {
       walk.sorted(Comparator.reverseOrder())
           .forEach(p -> {
