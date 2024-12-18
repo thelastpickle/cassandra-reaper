@@ -72,7 +72,11 @@ public class ReplicaLockManagerWithTtlTest {
   @Test
   public void testReleaseRunningRepairsForNodes() {
     assertTrue(replicaLockManager.lockRunningRepairsForNodes(runId, segmentId, replicas));
+    // Same replicas can't be locked twice
+    assertFalse(replicaLockManager.lockRunningRepairsForNodes(runId, UUID.randomUUID(), replicas));
     assertTrue(replicaLockManager.releaseRunningRepairsForNodes(runId, segmentId, replicas));
+    // After unlocking, we can lock again
+    assertTrue(replicaLockManager.lockRunningRepairsForNodes(runId, UUID.randomUUID(), replicas));
   }
 
   @Test
