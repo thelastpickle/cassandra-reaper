@@ -193,6 +193,7 @@ public final class SegmentRunnerTest {
     RepairRunner rr = mock(RepairRunner.class);
     RepairUnit ru = mock(RepairUnit.class);
     when(ru.getKeyspaceName()).thenReturn("reaper");
+    when(rr.getRepairRunId()).thenReturn(runId);
 
     ClusterFacade clusterFacade = mock(ClusterFacade.class);
     when(clusterFacade.connect(any(Cluster.class), any())).thenReturn(jmx);
@@ -348,6 +349,7 @@ public final class SegmentRunnerTest {
     RepairRunner rr = mock(RepairRunner.class);
     RepairUnit ru = mock(RepairUnit.class);
     when(ru.getKeyspaceName()).thenReturn("reaper");
+    when(rr.getRepairRunId()).thenReturn(runId);
 
     ClusterFacade clusterFacade = mock(ClusterFacade.class);
     when(clusterFacade.connect(any(Cluster.class), any())).thenReturn(jmx);
@@ -496,6 +498,7 @@ public final class SegmentRunnerTest {
     RepairRunner rr = mock(RepairRunner.class);
     RepairUnit ru = mock(RepairUnit.class);
     when(ru.getKeyspaceName()).thenReturn("reaper");
+    when(rr.getRepairRunId()).thenReturn(runId);
 
     ClusterFacade clusterFacade = mock(ClusterFacade.class);
     when(clusterFacade.connect(any(Cluster.class), any())).thenReturn(jmx);
@@ -639,6 +642,7 @@ public final class SegmentRunnerTest {
     RepairRunner rr = mock(RepairRunner.class);
     RepairUnit ru = mock(RepairUnit.class);
     when(ru.getKeyspaceName()).thenReturn("reaper");
+    when(rr.getRepairRunId()).thenReturn(runId);
 
     ClusterFacade clusterFacade = mock(ClusterFacade.class);
     when(clusterFacade.connect(any(Cluster.class), any())).thenReturn(jmx);
@@ -782,6 +786,7 @@ public final class SegmentRunnerTest {
     RepairRunner rr = mock(RepairRunner.class);
     RepairUnit ru = mock(RepairUnit.class);
     when(ru.getKeyspaceName()).thenReturn("reaper");
+    when(rr.getRepairRunId()).thenReturn(runId);
 
     ClusterFacade clusterFacade = mock(ClusterFacade.class);
     when(clusterFacade.connect(any(Cluster.class), any())).thenReturn(jmx);
@@ -927,6 +932,7 @@ public final class SegmentRunnerTest {
     RepairRunner rr = mock(RepairRunner.class);
     RepairUnit ru = mock(RepairUnit.class);
     when(ru.getKeyspaceName()).thenReturn("reaper");
+    when(rr.getRepairRunId()).thenReturn(runId);
 
     ClusterFacade clusterFacade = mock(ClusterFacade.class);
     when(clusterFacade.connect(any(Cluster.class), any())).thenReturn(jmx);
@@ -1073,6 +1079,7 @@ public final class SegmentRunnerTest {
     RepairRunner rr = mock(RepairRunner.class);
     RepairUnit ru = mock(RepairUnit.class);
     when(ru.getKeyspaceName()).thenReturn("reaper");
+    when(rr.getRepairRunId()).thenReturn(runId);
 
     ClusterFacade clusterFacade = mock(ClusterFacade.class);
     when(clusterFacade.connect(any(Cluster.class), any())).thenReturn(jmx);
@@ -1205,6 +1212,7 @@ public final class SegmentRunnerTest {
     RepairRunner rr = mock(RepairRunner.class);
     RepairUnit ru = mock(RepairUnit.class);
     when(ru.getKeyspaceName()).thenReturn("reaper");
+    when(rr.getRepairRunId()).thenReturn(runId);
 
     ClusterFacade clusterFacade = mock(ClusterFacade.class);
     when(clusterFacade.connect(any(Cluster.class), any())).thenReturn(jmx);
@@ -1300,6 +1308,7 @@ public final class SegmentRunnerTest {
     RepairRunner rr = mock(RepairRunner.class);
     RepairUnit ru = mock(RepairUnit.class);
     when(ru.getKeyspaceName()).thenReturn("reaper");
+    when(rr.getRepairRunId()).thenReturn(runId);
 
     ClusterFacade clusterFacade = mock(ClusterFacade.class);
     when(clusterFacade.connect(any(Cluster.class), any())).thenReturn(jmx);

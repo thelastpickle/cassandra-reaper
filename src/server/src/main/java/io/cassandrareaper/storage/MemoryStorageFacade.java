@@ -29,6 +29,7 @@ import io.cassandrareaper.storage.cluster.MemoryClusterDao;
 import io.cassandrareaper.storage.events.IEventsDao;
 import io.cassandrareaper.storage.events.MemoryEventsDao;
 import io.cassandrareaper.storage.memory.MemoryStorageRoot;
+import io.cassandrareaper.storage.memory.ReplicaLockManagerWithTtl;
 import io.cassandrareaper.storage.metrics.MemoryMetricsDao;
 import io.cassandrareaper.storage.repairrun.IRepairRunDao;
 import io.cassandrareaper.storage.repairrun.MemoryRepairRunDao;
@@ -46,9 +47,11 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import com.google.common.io.Files;
 import org.eclipse.serializer.persistence.types.PersistenceFieldEvaluator;
 import org.eclipse.store.storage.embedded.types.EmbeddedStorage;
 import org.eclipse.store.storage.embedded.types.EmbeddedStorageManager;
@@ -61,8 +64,9 @@ import org.slf4j.LoggerFactory;
  */
 public final class MemoryStorageFacade implements IStorageDao {
 
+  // Default time to live of leads taken on a segment
+  private static final long DEFAULT_LEAD_TTL = 90_000;
   private static final Logger LOG = LoggerFactory.getLogger(MemoryStorageFacade.class);
-
   /** Field evaluator to find transient attributes. This is needed to deal with persisting Guava collections objects
    * that sometimes use the transient keyword for some of their implementation's backing stores**/
   private static final PersistenceFieldEvaluator TRANSIENT_FIELD_EVALUATOR =
@@ -85,8 +89,9 @@ public final class MemoryStorageFacade implements IStorageDao {
   );
   private final MemorySnapshotDao memSnapshotDao = new MemorySnapshotDao();
   private final MemoryMetricsDao memMetricsDao = new MemoryMetricsDao();
+  private final ReplicaLockManagerWithTtl replicaLockManagerWithTtl;
 
-  public MemoryStorageFacade(String persistenceStoragePath) {
+  public MemoryStorageFacade(String persistenceStoragePath, long leadTime) {
     LOG.info("Using memory storage backend. Persistence storage path: {}", persistenceStoragePath);
     this.embeddedStorage = EmbeddedStorage.Foundation(Paths.get(persistenceStoragePath))
         .onConnectionFoundation(
@@ -103,10 +108,19 @@ public final class MemoryStorageFacade implements IStorageDao {
       LOG.info("Loading existing data from persistence storage");
       this.memoryStorageRoot = (MemoryStorageRoot) this.embeddedStorage.root();
     }
+    this.replicaLockManagerWithTtl = new ReplicaLockManagerWithTtl(leadTime);
   }
 
   public MemoryStorageFacade() {
-    this("/tmp/" + UUID.randomUUID().toString());
+    this(Files.createTempDir().getAbsolutePath(), DEFAULT_LEAD_TTL);
+  }
+
+  public MemoryStorageFacade(String persistenceStoragePath) {
+    this(persistenceStoragePath, DEFAULT_LEAD_TTL);
+  }
+
+  public MemoryStorageFacade(long leadTime) {
+    this(Files.createTempDir().getAbsolutePath(), leadTime);
   }
 
   @Override
@@ -295,5 +309,26 @@ public final class MemoryStorageFacade implements IStorageDao {
   // RepairSubscription operations
   public Map<UUID, DiagEventSubscription> getSubscriptionsById() {
     return this.memoryStorageRoot.getSubscriptionsById();
+  }
+
+  @Override
+  public boolean lockRunningRepairsForNodes(UUID runId, UUID segmentId, Set<String> replicas) {
+    return replicaLockManagerWithTtl.lockRunningRepairsForNodes(runId, segmentId, replicas);
+  }
+
+  @Override
+  public boolean renewRunningRepairsForNodes(UUID runId, UUID segmentId, Set<String> replicas) {
+    return replicaLockManagerWithTtl.renewRunningRepairsForNodes(runId, segmentId, replicas);
+  }
+
+  @Override
+  public boolean releaseRunningRepairsForNodes(UUID runId, UUID segmentId, Set<String> replicas) {
+    LOG.info("Releasing locks for runId: {}, segmentId: {}, replicas: {}", runId, segmentId, replicas);
+    return replicaLockManagerWithTtl.releaseRunningRepairsForNodes(runId, segmentId, replicas);
+  }
+
+  @Override
+  public Set<UUID> getLockedSegmentsForRun(UUID runId) {
+    return replicaLockManagerWithTtl.getLockedSegmentsForRun(runId);
   }
 }
