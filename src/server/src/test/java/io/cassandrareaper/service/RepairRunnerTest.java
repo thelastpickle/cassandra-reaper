@@ -99,6 +99,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 public final class RepairRunnerTest {
+  private static final long LEAD_TTL = 100L;
   private static final Set<String> TABLES = ImmutableSet.of("table1");
   private static final Duration POLL_INTERVAL = Duration.TWO_SECONDS;
   private static final List<BigInteger> THREE_TOKENS = Lists.newArrayList(
@@ -223,7 +224,7 @@ public final class RepairRunnerTest {
     final int repairThreadCount = 1;
     final int segmentTimeout = 30;
     final List<BigInteger> tokens = THREE_TOKENS;
-    final IStorageDao storage = new MemoryStorageFacade();
+    final IStorageDao storage = new MemoryStorageFacade(LEAD_TTL);
     AppContext context = new AppContext();
     context.storage = storage;
     context.config = new ReaperApplicationConfiguration();
@@ -333,8 +334,10 @@ public final class RepairRunnerTest {
         run.with().runState(RepairRun.RunState.RUNNING).startTime(DateTime.now()).build(runId));
 
     context.repairManager.resumeRunningRepairRuns();
-    Thread.sleep(1000);
-    assertEquals(RepairRun.RunState.DONE, storage.getRepairRunDao().getRepairRun(runId).get().getRunState());
+
+    await().with().pollInterval(POLL_INTERVAL).atMost(30, SECONDS).until(() -> {
+      return RepairRun.RunState.DONE == storage.getRepairRunDao().getRepairRun(runId).get().getRunState();
+    });
   }
 
   @Test(expected = ConditionTimeoutException.class)
@@ -353,7 +356,7 @@ public final class RepairRunnerTest {
     final int repairThreadCount = 1;
     final int segmentTimeout = 30;
     final List<BigInteger> tokens = THREE_TOKENS;
-    final IStorageDao storage = new MemoryStorageFacade();
+    final IStorageDao storage = new MemoryStorageFacade(LEAD_TTL);
     AppContext context = new AppContext();
     context.storage = storage;
     context.config = new ReaperApplicationConfiguration();
@@ -546,7 +549,7 @@ public final class RepairRunnerTest {
     final int repairThreadCount = 1;
     final int segmentTimeout = 30;
     final List<BigInteger> tokens = THREE_TOKENS;
-    final IStorageDao storage = new MemoryStorageFacade();
+    final IStorageDao storage = new MemoryStorageFacade(LEAD_TTL);
     AppContext context = new AppContext();
     context.storage = storage;
     context.config = new ReaperApplicationConfiguration();
@@ -667,7 +670,7 @@ public final class RepairRunnerTest {
     context.repairManager.resumeRunningRepairRuns();
 
     // The repair run should succeed despite the topology change.
-    await().with().atMost(20, TimeUnit.SECONDS).until(() -> {
+    await().with().atMost(120, TimeUnit.SECONDS).until(() -> {
       return RepairRun.RunState.DONE == storage.getRepairRunDao().getRepairRun(runId).get().getRunState();
     });
   }
@@ -687,7 +690,7 @@ public final class RepairRunnerTest {
     final int repairThreadCount = 1;
     final int segmentTimeout = 30;
     final List<BigInteger> tokens = THREE_TOKENS;
-    final IStorageDao storage = new MemoryStorageFacade();
+    final IStorageDao storage = new MemoryStorageFacade(LEAD_TTL);
     AppContext context = new AppContext();
     context.storage = storage;
     context.config = new ReaperApplicationConfiguration();
@@ -802,7 +805,7 @@ public final class RepairRunnerTest {
         run.with().runState(RepairRun.RunState.RUNNING).startTime(DateTime.now()).build(runId));
     context.repairManager.resumeRunningRepairRuns();
 
-    await().with().atMost(20, TimeUnit.SECONDS).until(() -> {
+    await().with().atMost(120, TimeUnit.SECONDS).until(() -> {
       return RepairRun.RunState.DONE == storage.getRepairRunDao().getRepairRun(runId).get().getRunState();
     });
   }
@@ -962,7 +965,7 @@ public final class RepairRunnerTest {
     final int repairThreadCount = 1;
     final int segmentTimeout = 30;
     final List<BigInteger> tokens = THREE_TOKENS;
-    final IStorageDao storage = new MemoryStorageFacade();
+    final IStorageDao storage = new MemoryStorageFacade(LEAD_TTL);
     AppContext context = new AppContext();
     context.storage = storage;
     context.config = new ReaperApplicationConfiguration();

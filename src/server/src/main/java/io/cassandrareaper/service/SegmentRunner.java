@@ -869,10 +869,8 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
             ? ((IDistributedStorage) context.storage).takeLead(leaderElectionId)
             : true;
       } else {
-        result = context.storage instanceof IDistributedStorage
-            ? ((IDistributedStorage) context.storage).lockRunningRepairsForNodes(this.repairRunner.getRepairRunId(),
-            segment.getId(), segment.getReplicas().keySet())
-            : true;
+        result = context.storage.lockRunningRepairsForNodes(this.repairRunner.getRepairRunId(),
+            segment.getId(), segment.getReplicas().keySet());
       }
       if (!result) {
         context.metricRegistry.counter(MetricRegistry.name(SegmentRunner.class, "takeLead", "failed")).inc();
@@ -895,10 +893,8 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
         }
         return result;
       } else {
-        boolean resultLock2 = context.storage instanceof IDistributedStorage
-            ? ((IDistributedStorage) context.storage).renewRunningRepairsForNodes(this.repairRunner.getRepairRunId(),
-            segment.getId(), segment.getReplicas().keySet())
-            : true;
+        boolean resultLock2 = context.storage.renewRunningRepairsForNodes(this.repairRunner.getRepairRunId(),
+            segment.getId(), segment.getReplicas().keySet());
         if (!resultLock2) {
           context.metricRegistry.counter(MetricRegistry.name(SegmentRunner.class, "renewLead", "failed")).inc();
           releaseLead(segment);
@@ -912,13 +908,14 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
   private void releaseLead(RepairSegment segment) {
     try (Timer.Context cx
              = context.metricRegistry.timer(MetricRegistry.name(SegmentRunner.class, "releaseLead")).time()) {
-      if (context.storage instanceof IDistributedStorage) {
-        if (repairUnit.getIncrementalRepair() && !repairUnit.getSubrangeIncrementalRepair()) {
+
+      if (repairUnit.getIncrementalRepair() && !repairUnit.getSubrangeIncrementalRepair()) {
+        if (context.storage instanceof IDistributedStorage) {
           ((IDistributedStorage) context.storage).releaseLead(leaderElectionId);
-        } else {
-          ((IDistributedStorage) context.storage).releaseRunningRepairsForNodes(this.repairRunner.getRepairRunId(),
-              segment.getId(), segment.getReplicas().keySet());
         }
+      } else {
+        context.storage.releaseRunningRepairsForNodes(this.repairRunner.getRepairRunId(),
+            segment.getId(), segment.getReplicas().keySet());
       }
     }
   }
