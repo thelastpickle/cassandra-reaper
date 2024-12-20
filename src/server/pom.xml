@@ -31,7 +31,7 @@
     <properties>
         <dropwizard.version>2.1.12</dropwizard.version>
         <jersey.version>2.35</jersey.version>
-        <logback.version>1.3.14</logback.version>
+        <logback.version>1.5.13</logback.version>
         <cxf.version>3.4.5</cxf.version>
         <shiro.version>1.13.0</shiro.version>
         <prometheus.version>0.12.0</prometheus.version>
