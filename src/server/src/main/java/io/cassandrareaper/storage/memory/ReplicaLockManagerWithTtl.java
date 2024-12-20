@@ -27,9 +27,12 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 import com.google.common.annotations.VisibleForTesting;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ReplicaLockManagerWithTtl {
 
+  private static final Logger LOG = LoggerFactory.getLogger(ReplicaLockManagerWithTtl.class);
   private final ConcurrentHashMap<String, LockInfo> replicaLocks = new ConcurrentHashMap<>();
   private final ConcurrentHashMap<UUID, Set<UUID>> repairRunToSegmentLocks = new ConcurrentHashMap<>();
   private final Lock lock = new ReentrantLock();
@@ -58,6 +61,7 @@ public class ReplicaLockManagerWithTtl {
             && lockInfo.expirationTime > currentTime && lockInfo.runId.equals(runId));
 
       if (anyReplicaLocked) {
+        LOG.debug("One of the replicas is already locked by another segment for runId: {}", runId);
         return false; // Replica is locked by another runId and not expired
       }
 
@@ -110,16 +114,21 @@ public class ReplicaLockManagerWithTtl {
       // Remove the lock for replicas
       replicas.stream()
           .map(replica -> getReplicaLockKey(replica, runId))
-          .map(replicaLocks::get)
-          .filter(lockInfo -> lockInfo != null && lockInfo.runId.equals(runId))
-          .forEach(lockInfo -> replicaLocks.remove(getReplicaLockKey(lockInfo.runId.toString(), runId)));
+          .forEach(replica -> LOG.debug("releasing lock for replica: {}", replica));
 
+      replicas.stream()
+          .map(replica -> getReplicaLockKey(replica, runId))
+          .forEach(replicaLocks::remove);
+
+      LOG.debug("Locked replicas after release: {}", replicaLocks.keySet());
       // Remove the segmentId from the runId mapping
       Set<UUID> segments = repairRunToSegmentLocks.get(runId);
       if (segments != null) {
         segments.remove(segmentId);
         if (segments.isEmpty()) {
           repairRunToSegmentLocks.remove(runId);
+        } else {
+          repairRunToSegmentLocks.put(runId, segments);
         }
       }
       return true;
