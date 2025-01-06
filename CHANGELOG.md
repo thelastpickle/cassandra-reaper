@@ -1,5 +1,9 @@
 ## Change Log
 
+### 3.7.1 (2025/01/06 07:19 +00:00)
+- [#1535](https://github.com/thelastpickle/cassandra-reaper/pull/1535) Fix bug in replica lock release in the mem store (#1535) (@adejanovski)
+- [#1533](https://github.com/thelastpickle/cassandra-reaper/pull/1533) Memory store segment leader election (#1533) (@adejanovski)
+
 ### 3.7.0 (2024/11/15 12:02 +00:00)
 - [#1527](https://github.com/thelastpickle/cassandra-reaper/pull/1527) Upgrade the base docker image from Corretto 11.0.20 to 11.0.25 (#1527) (@adejanovski)
 - [#1510](https://github.com/thelastpickle/cassandra-reaper/pull/1510) update doc for persistenceStoragePath (#1510) (@SarthakSahu)
