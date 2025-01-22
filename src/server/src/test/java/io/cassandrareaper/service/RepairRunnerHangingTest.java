@@ -248,9 +248,12 @@ public final class RepairRunnerHangingTest {
     final IStorageDao storage = new MemoryStorageFacade(LEAD_TTL);
     storage.getClusterDao().addCluster(cluster);
     RepairUnit cf = storage.getRepairUnitDao().addRepairUnit(
-        RepairUnit.builder().clusterName(cluster.getName())
-            .keyspaceName("reaper").columnFamilies(cfNames)
-            .incrementalRepair(false).subrangeIncrementalRepair(false)
+        RepairUnit.builder()
+            .clusterName(cluster.getName())
+            .keyspaceName("reaper")
+            .columnFamilies(cfNames)
+            .incrementalRepair(false)
+            .subrangeIncrementalRepair(false)
             .nodes(nodeSet)
             .datacenters(datacenters)
             .blacklistedTables(blacklistedTables)
@@ -405,8 +408,10 @@ public final class RepairRunnerHangingTest {
     DateTimeUtils.setCurrentMillisFixed(timeRun);
     RepairUnit cf = storage.getRepairUnitDao().addRepairUnit(
         RepairUnit.builder()
-            .clusterName(cluster.getName()).keyspaceName(ksName)
-            .columnFamilies(cfNames).incrementalRepair(incrementalRepair)
+            .clusterName(cluster.getName())
+            .keyspaceName(ksName)
+            .columnFamilies(cfNames)
+            .incrementalRepair(incrementalRepair)
             .subrangeIncrementalRepair(incrementalRepair)
             .nodes(nodeSet)
             .datacenters(datacenters)
