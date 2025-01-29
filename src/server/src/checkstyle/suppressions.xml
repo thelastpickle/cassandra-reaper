@@ -20,5 +20,6 @@
   <!-- suppressions for tests -->
   <suppress checks="MethodName" files="[/\\]src[/\\]test[/\\]java[/\\]" />
   <suppress checks="AbbreviationAsWordInName" files="[/\\]src[/\\]test[/\\]java[/\\]" />
+  <suppress checks="MethodLength" files="[/\\]src[/\\]test[/\\]java[/\\]" />
 
 </suppressions>
