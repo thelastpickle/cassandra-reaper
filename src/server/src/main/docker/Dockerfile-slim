@@ -88,6 +88,11 @@ ENV REAPER_SEGMENT_COUNT_PER_NODE=64 \
     REAPER_TMP_DIRECTORY="/var/tmp/cassandra-reaper" \
     REAPER_MEMORY_STORAGE_DIRECTORY="/var/lib/cassandra-reaper/storage"
 
+
+RUN apk add --update \
+    bash \
+  && rm -rf /var/cache/apk/* \
+
 ADD src/server/src/main/docker/cassandra-reaper.yml /etc/cassandra-reaper/cassandra-reaper.yml
 ADD src/server/src/main/docker/shiro.ini /etc/cassandra-reaper/shiro.ini
 ADD src/server/src/main/docker/entrypoint.sh /usr/local/bin/entrypoint.sh
