@@ -91,7 +91,7 @@ ENV REAPER_SEGMENT_COUNT_PER_NODE=64 \
 
 RUN apk add --update \
     bash \
-  && rm -rf /var/cache/apk/* \
+  && rm -rf /var/cache/apk/*
 
 ADD src/server/src/main/docker/cassandra-reaper.yml /etc/cassandra-reaper/cassandra-reaper.yml
 ADD src/server/src/main/docker/shiro.ini /etc/cassandra-reaper/shiro.ini
