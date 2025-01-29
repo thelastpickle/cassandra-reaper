@@ -566,16 +566,16 @@ jobs:
           platforms: linux/amd64,linux/arm64
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache
-      - name: Build Slim image and push
-        id: docker_build_slim
+      - name: Build spreaper image and push
+        id: docker_build_spreaper
         uses: docker/build-push-action@v4
         with:
-          file: src/server/src/main/docker/Dockerfile-slim
+          file: src/server/src/main/docker/Dockerfile-spreaper
           context: .
           build-args: |
             SHADED_JAR=${{ env.SHADED_JAR }}
           push: true
-          tags: ${{ env.DOCKER_TAG1 }}-slim,${{ env.DOCKER_TAG2 }}-slim
+          tags: ${{ env.DOCKER_TAG1 }}-spreaper,${{ env.DOCKER_TAG2 }}-spreaper
           platforms: linux/amd64,linux/arm64
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache

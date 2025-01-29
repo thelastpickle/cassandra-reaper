@@ -88,14 +88,10 @@ ENV REAPER_SEGMENT_COUNT_PER_NODE=64 \
     REAPER_TMP_DIRECTORY="/var/tmp/cassandra-reaper" \
     REAPER_MEMORY_STORAGE_DIRECTORY="/var/lib/cassandra-reaper/storage"
 
-# used to run spreaper cli
-RUN apk add --update \
-    python3 \
-    py3-pip \
-    bash \
-    py3-requests \
-  && rm -rf /var/cache/apk/*
 
+RUN apk add --update \
+    bash \
+  && rm -rf /var/cache/apk/*
 
 ADD src/server/src/main/docker/cassandra-reaper.yml /etc/cassandra-reaper/cassandra-reaper.yml
 ADD src/server/src/main/docker/shiro.ini /etc/cassandra-reaper/shiro.ini
@@ -105,7 +101,6 @@ ADD src/server/src/main/docker/configure-metrics.sh /usr/local/bin/configure-met
 ADD src/server/src/main/docker/configure-webui-authentication.sh /usr/local/bin/configure-webui-authentication.sh
 ADD src/server/src/main/docker/configure-jmx-credentials.sh /usr/local/bin/configure-jmx-credentials.sh
 ADD ${SHADED_JAR} /usr/local/lib/cassandra-reaper.jar
-ADD src/packaging/bin/spreaper /usr/local/bin/spreaper
 
 
 RUN addgroup -g 1001 -S reaper && adduser -G reaper -S -u 1001 reaper && \
@@ -122,7 +117,6 @@ RUN addgroup -g 1001 -S reaper && adduser -G reaper -S -u 1001 reaper && \
         /usr/local/bin/configure-webui-authentication.sh \
         /usr/local/bin/configure-metrics.sh \
         /usr/local/bin/configure-jmx-credentials.sh \
-        /usr/local/bin/spreaper \
         /etc/cassandra-reaper/shiro.ini \
         ${REAPER_TMP_DIRECTORY} && \
     chown -R reaper:reaper \
@@ -135,8 +129,7 @@ RUN addgroup -g 1001 -S reaper && adduser -G reaper -S -u 1001 reaper && \
         /usr/local/bin/configure-persistence.sh \
         /usr/local/bin/configure-webui-authentication.sh \
         /usr/local/bin/configure-metrics.sh \
-        /usr/local/bin/configure-jmx-credentials.sh \
-        /usr/local/bin/spreaper
+        /usr/local/bin/configure-jmx-credentials.sh
 
 VOLUME /var/lib/cassandra-reaper
 VOLUME /etc/cassandra-reaper/shiro
