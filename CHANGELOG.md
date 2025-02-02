@@ -1,5 +1,9 @@
 ## Change Log
 
+### 3.8.0 (2025/02/02 07:56 +00:00)
+- [#1538](https://github.com/thelastpickle/cassandra-reaper/pull/1538) Remove python from the Docker image (#1538) (@adejanovski)
+- [#1521](https://github.com/thelastpickle/cassandra-reaper/pull/1521) Fail repair after additive change in cluster topology (#1521) (@andresbeckruiz)
+
 ### 3.7.1 (2025/01/06 07:19 +00:00)
 - [#1535](https://github.com/thelastpickle/cassandra-reaper/pull/1535) Fix bug in replica lock release in the mem store (#1535) (@adejanovski)
 - [#1533](https://github.com/thelastpickle/cassandra-reaper/pull/1533) Memory store segment leader election (#1533) (@adejanovski)
