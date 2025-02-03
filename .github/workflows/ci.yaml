@@ -326,7 +326,7 @@ jobs:
 
       - name: Archive logs
         if: ${{ failure() }}
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: reaper-logs-${{ env.ARTIFACT_NAME }}
           path: /tmp/log
