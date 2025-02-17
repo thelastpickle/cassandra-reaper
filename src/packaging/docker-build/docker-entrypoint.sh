@@ -25,23 +25,14 @@ arch=$(dpkg-architecture -q DEB_BUILD_ARCH)
 pushd ${WORKDIR}/cassandra-reaper > /dev/null
 export VERSION=$(printf 'VER\t${project.version}' | mvn help:evaluate 2>/dev/null | grep '^VER' | cut -f2)
 echo "Building package for version ${VERSION}"
-# From version 3.1 onwards JDK11 is needed to build Reaper (e9cfc20)
 java_home=""
 java_path=""
 javac_path=""
 javadoc_path=""
-if [ "$(cut -d'.' -f1 <<<${VERSION})" -ge 3 ] && [ "$(cut -d'.' -f2 <<<${VERSION})" -ge 1 ]
-then
-  java_home="/usr/lib/jvm/java-11-openjdk-${arch}"
-  java_path="bin/java"
-  javac_path="bin/javac"
-  javadoc_path="bin/javadoc"
-else
-  java_home="/usr/lib/jvm/java-8-openjdk-${arch}"
-  java_path="jre/bin/java"
-  javac_path="bin/javac"
-  javadoc_path="bin/javadoc"
-fi
+java_home="/usr/lib/jvm/java-21-openjdk-${arch}"
+java_path="bin/java"
+javac_path="bin/javac"
+javadoc_path="bin/javadoc"
 export JAVA_HOME=${java_home}
 update-alternatives --set java "${JAVA_HOME}/${java_path}"
 update-alternatives --set javac "${JAVA_HOME}/${javac_path}"
