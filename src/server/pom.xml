@@ -64,7 +64,7 @@
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
             <version>24.1.1-jre</version>
-        </dependency>
+        </dependency> 
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-core</artifactId>
@@ -130,7 +130,7 @@
         <dependency>
             <groupId>org.apache.cassandra</groupId>
             <artifactId>cassandra-all</artifactId>
-            <version>2.2.12</version>
+            <version>3.11.17</version>
             <exclusions>
                 <exclusion>
                     <groupId>org.slf4j</groupId>
@@ -143,11 +143,7 @@
                 <exclusion>
                    <groupId>com.google.guava</groupId>
                    <artifactId>guava</artifactId>
-               </exclusion>
-                <exclusion>
-                    <groupId>io.netty</groupId>
-                    <artifactId>netty-all</artifactId>
-                </exclusion>
+               </exclusion> 
                 <exclusion>
                     <groupId>org.hibernate</groupId>
                     <artifactId>hibernate-validator</artifactId>
@@ -171,6 +167,26 @@
             <artifactId>netty-handler</artifactId>
             <version>4.1.94.Final</version>
         </dependency>
+        <dependency>
+           <groupId>com.boundary</groupId>
+           <artifactId>high-scale-lib</artifactId>
+           <version>1.0.6</version>
+        </dependency>
+        <dependency>
+           <groupId>com.github.jbellis</groupId>
+           <artifactId>jamm</artifactId>
+           <version>0.3.0</version>
+        </dependency>
+        <dependency>
+           <groupId>io.netty</groupId>
+           <artifactId>netty-all</artifactId>
+           <version>4.1.116.Final</version>
+        </dependency>
+        <dependency>
+           <groupId>com.fasterxml.jackson.datatype</groupId>
+           <artifactId>jackson-datatype-joda</artifactId>
+           <version>2.15.2</version>
+        </dependency>                                 
         <dependency>
             <groupId>com.datastax.cassandra</groupId>
             <artifactId>cassandra-driver-core</artifactId>
@@ -265,8 +281,6 @@
           <artifactId>jersey-guava</artifactId>
           <version>2.26-b03</version>
         </dependency>
-		<!-- https://mvnrepository.com/artifact/org.glassfish.main.external/jmxremote_optional-repackaged -->
-        <!-- Used to connect to Cassandra through JMXMP protocol-->
         <dependency>
             <groupId>org.glassfish.main.external</groupId>
             <artifactId>jmxremote_optional-repackaged</artifactId>
@@ -278,11 +292,15 @@
             <version>${management.api.version}</version>
         </dependency>
         <dependency>
+            <groupId>com.squareup.okio</groupId>
+             <artifactId>okio-jvm</artifactId>
+             <version>3.4.0</version>
+       </dependency>
+        <dependency>
             <groupId>org.eclipse.store</groupId>
             <artifactId>storage-embedded</artifactId>
             <version>${eclipsestore.version}</version>
         </dependency>
-
 
         <!--test scope -->
 
