@@ -33,7 +33,7 @@ jobs:
       REAPER_ENCRYPTION_KEY: SECRET_KEY
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup
         uses: ./.github/actions/setup
@@ -44,7 +44,7 @@ jobs:
           mv src/server/target/site/jacoco src/server/target/site/jacoco_ut    
           mvn -B org.jacoco:jacoco-maven-plugin:${{ env.JACOCO_VERSION }}:prepare-agent surefire:test org.jacoco:jacoco-maven-plugin:${{ env.JACOCO_VERSION }}:report -Dtest=ReaperShiroIT
 
-      - uses: codecov/codecov-action@v1
+      - uses: codecov/codecov-action@v5
 
   docker-tests:
     name: Docker Image Tests
@@ -56,7 +56,7 @@ jobs:
         test-type: [docker]
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup
         uses: ./.github/actions/setup
@@ -99,7 +99,7 @@ jobs:
           #  jdk-version: '11'
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup
         uses: ./.github/actions/setup
@@ -161,7 +161,7 @@ jobs:
           #  jdk-version: '11'
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup
         uses: ./.github/actions/setup
@@ -227,7 +227,7 @@ jobs:
           #  jdk-version: '11'
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup
         uses: ./.github/actions/setup
@@ -286,7 +286,7 @@ jobs:
             jdk-version: '8'
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup
         uses: ./.github/actions/setup
@@ -361,7 +361,7 @@ jobs:
           #  experimental: true
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup
         uses: ./.github/actions/setup
@@ -421,7 +421,7 @@ jobs:
           #  jdk-version: '11'
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup
         uses: ./.github/actions/setup
@@ -475,7 +475,7 @@ jobs:
           #  jdk-version: '11'
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup
         uses: ./.github/actions/setup
@@ -514,7 +514,7 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup
         uses: ./.github/actions/setup
