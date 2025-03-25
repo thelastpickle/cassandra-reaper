@@ -176,7 +176,8 @@ public final class JmxCassandraManagementProxy implements ICassandraManagementPr
       int connectionTimeout,
       MetricRegistry metricRegistry,
       Cryptograph cryptograph,
-      Jmxmp jmxmp)
+      Jmxmp jmxmp,
+      String clusterName)
       throws ReaperException, InterruptedException {
 
     if (host == null) {
@@ -193,7 +194,8 @@ public final class JmxCassandraManagementProxy implements ICassandraManagementPr
         connectionTimeout,
         metricRegistry,
         cryptograph,
-        jmxmp);
+        jmxmp,
+        clusterName);
   }
 
   /**
@@ -213,7 +215,8 @@ public final class JmxCassandraManagementProxy implements ICassandraManagementPr
       int connectionTimeout,
       MetricRegistry metricRegistry,
       Cryptograph cryptograph,
-      Jmxmp jmxmp) throws ReaperException, InterruptedException {
+      Jmxmp jmxmp,
+      String clusterName) throws ReaperException, InterruptedException {
 
     JMXServiceURL jmxUrl;
     String host = originalHost;
@@ -227,7 +230,7 @@ public final class JmxCassandraManagementProxy implements ICassandraManagementPr
       LOG.debug("Connecting to {}...", host);
       jmxUrl = JmxAddresses.getJmxServiceUrl(host, port, jmxmp.isEnabled());
     } catch (MalformedURLException e) {
-      LOG.error(String.format("Failed to prepare the JMX connection to %s:%s", host, port));
+      LOG.error(String.format("Failed to prepare the JMX connection to %s:%s in cluster %s", host, port, clusterName));
       throw new ReaperException("Failure during preparations for JMX connection", e);
     }
     try {
@@ -287,17 +290,19 @@ public final class JmxCassandraManagementProxy implements ICassandraManagementPr
       if (smProxy.isPresent()) {
         mbeanServerConn.addNotificationListener(ObjectNames.STREAM_MANAGER, proxy, null, null);
       }
-      LOG.debug("JMX connection to {} properly connected: {}", host, jmxUrl.toString());
+      LOG.debug("JMX connection to {} in cluster {} properly connected: {}", host, clusterName, jmxUrl.toString());
 
       return proxy;
     } catch (IOException | ExecutionException | TimeoutException | InstanceNotFoundException e) {
-      throw new ReaperException("Failure when establishing JMX connection to " + host + ":" + port, e);
+      throw new ReaperException("Failure when establishing JMX connection to "
+              + host + ":" + port + " in cluster " + clusterName, e);
     } catch (InterruptedException expected) {
       LOG.debug(
-          "JMX connection to {}:{} was interrupted by Reaper. "
+          "JMX connection to {}:{} in cluster {} was interrupted by Reaper. "
               + "Another JMX connection must have succeeded before this one.",
           host,
-          port);
+          port,
+          clusterName);
       throw expected;
     }
   }
