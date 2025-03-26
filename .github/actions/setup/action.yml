@@ -17,7 +17,7 @@ runs:
   using: "composite"
   steps:
       - name: Setup Maven Cache
-        uses: actions/cache@v3
+        uses: actions/cache@v2
         with:
           path: ~/.m2/repository
           key: ${{ runner.os }}-maven3-${{ hashFiles('**/pom.xml') }}
