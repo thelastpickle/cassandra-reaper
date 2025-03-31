@@ -933,8 +933,11 @@ public final class JmxCassandraManagementProxy implements ICassandraManagementPr
     this.getStorageServiceMBean().takeSnapshot(var1, var2);
   }
 
-  public void takeColumnFamilySnapshot(String var1, String var2, String var3) throws IOException {
-    this.getStorageServiceMBean().takeColumnFamilySnapshot(var1, var2, var3);
+  public void takeColumnFamilySnapshot(String keySpaceName, String columnFamilyName, String tag) throws IOException {
+    Map<String, String> options = new HashMap<>();
+    String target = (columnFamilyName == null || columnFamilyName.trim().isEmpty()) ? keySpaceName
+        : keySpaceName + "." + columnFamilyName;
+    this.getStorageServiceMBean().takeSnapshot(tag, options, target);
   }
 
   public Map<String, String> getTokenToEndpointMap() {

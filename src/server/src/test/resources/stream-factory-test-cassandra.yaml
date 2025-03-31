@@ -1,0 +1,14 @@
+commitlog_sync: periodic
+commitlog_sync_period_in_ms: 10000
+partitioner: org.apache.cassandra.dht.Murmur3Partitioner
+data_file_directories:
+    - /tmp/cassandra/data
+commitlog_directory: /tmp/cassandra/commitlog
+saved_caches_directory: /tmp/cassandra/saved_caches
+hints_directory: /tmp/cassandra/hints
+cdc_raw_directory: /tmp/cassandra/cdc_raw
+endpoint_snitch: org.apache.cassandra.locator.SimpleSnitch
+seed_provider:
+  - class_name: org.apache.cassandra.locator.SimpleSeedProvider
+    parameters:
+      - seeds: "127.0.0.1"
