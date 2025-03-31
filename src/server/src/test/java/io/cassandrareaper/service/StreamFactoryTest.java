@@ -39,24 +39,23 @@ import static org.junit.Assert.assertEquals;
 
 
 public final class StreamFactoryTest {
+  private static final String STREAM_FACTORY_TEST_CASSANDRA_FILE = "stream-factory-test-cassandra.yaml";
 
-   private static final String STREAM_FACTORY_TEST_CASSANDRA_FILE = "stream-factory-test-cassandra.yaml";
-
-   @BeforeClass
-   public static void setupClass() {
-     String configPath = Thread.currentThread().getContextClassLoader()
-       .getResource(STREAM_FACTORY_TEST_CASSANDRA_FILE).toString();
-     if (configPath == null) {
-        throw new IllegalStateException("Cassandra configuration file not found in resources!");
-     }
-     System.setProperty("cassandra.config", configPath);
-     new File("/tmp/cassandra/data").mkdirs();
-     new File("/tmp/cassandra/commitlog").mkdirs();
-     new File("/tmp/cassandra/saved_caches").mkdirs();
-     new File("/tmp/cassandra/hints").mkdirs();
-     new File("/tmp/cassandra/cdc_raw").mkdirs();
-     DatabaseDescriptor.daemonInitialization();
-   }
+  @BeforeClass
+  public static void setupClass() {
+    String configPath = Thread.currentThread().getContextClassLoader()
+        .getResource(STREAM_FACTORY_TEST_CASSANDRA_FILE).toString();
+    if (configPath == null) {
+      throw new IllegalStateException("Cassandra configuration file not found in resources!");
+    }
+    System.setProperty("cassandra.config", configPath);
+    new File("/tmp/cassandra/data").mkdirs();
+    new File("/tmp/cassandra/commitlog").mkdirs();
+    new File("/tmp/cassandra/saved_caches").mkdirs();
+    new File("/tmp/cassandra/hints").mkdirs();
+    new File("/tmp/cassandra/cdc_raw").mkdirs();
+    DatabaseDescriptor.daemonInitialization();
+  }
 
   @Test
   public void testCountProgressPerTableWithTable() throws UnknownHostException {

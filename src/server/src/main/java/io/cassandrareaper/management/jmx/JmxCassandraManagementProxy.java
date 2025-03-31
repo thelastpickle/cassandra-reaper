@@ -936,7 +936,7 @@ public final class JmxCassandraManagementProxy implements ICassandraManagementPr
   public void takeColumnFamilySnapshot(String keySpaceName, String columnFamilyName, String tag) throws IOException {
     Map<String, String> options = new HashMap<>();
     String target = (columnFamilyName == null || columnFamilyName.trim().isEmpty()) ? keySpaceName
-     : keySpaceName + "." + columnFamilyName;
+        : keySpaceName + "." + columnFamilyName;
     this.getStorageServiceMBean().takeSnapshot(tag, options, target);
   }
 
