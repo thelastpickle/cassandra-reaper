@@ -58,7 +58,7 @@ jmxCredentials:
   test:
     username: cassandra
     password: cassandrapassword
-  
+
 ccassandra:
   type: basic
   sessionName: "test"
@@ -69,8 +69,6 @@ ccassandra:
   loadBalancingPolicy:
     type: default
     localDataCenter: dc1
-  retryPolicy:
-    type: default
   schemaOptions:
     agreementIntervalMilliseconds: 60000
     agreementTimeoutSeconds: 60

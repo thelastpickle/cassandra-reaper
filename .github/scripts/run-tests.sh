@@ -44,6 +44,9 @@ add_management_api () {
      elif [[ "$CASSANDRA_VERSION" == *"4.1"* ]]; then
         mvn dependency:copy -Dartifact=io.k8ssandra:datastax-mgmtapi-agent-4.1.x:$MGMT_API_VERSION -f src/server/pom.xml -DoutputDirectory=/tmp -Dmdep.stripVersion=true -Dmdep.overWriteReleases=true
         ln -s /tmp/datastax-mgmtapi-agent-4.1.x.jar /tmp/datastax-mgmtapi-agent.jar
+     elif [[ "$CASSANDRA_VERSION" == *"5.0"* ]]; then
+        mvn dependency:copy -Dartifact=io.k8ssandra:datastax-mgmtapi-agent-5.0.x:$MGMT_API_VERSION -f src/server/pom.xml -DoutputDirectory=/tmp -Dmdep.stripVersion=true -Dmdep.overWriteReleases=true
+        ln -s /tmp/datastax-mgmtapi-agent-5.0.x.jar /tmp/datastax-mgmtapi-agent.jar
      fi
    fi
   echo "JVM_OPTS=\"\$JVM_OPTS -javaagent:/tmp/datastax-mgmtapi-agent.jar\"" >> ~/.ccm/test/node$1/conf/cassandra-env.sh

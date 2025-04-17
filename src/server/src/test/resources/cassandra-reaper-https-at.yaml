@@ -79,8 +79,6 @@ cassandra:
   loadBalancingPolicy:
     type: default
     localDataCenter: dc1
-  retryPolicy:
-    type: default
 
 cryptograph:
   type: symmetric

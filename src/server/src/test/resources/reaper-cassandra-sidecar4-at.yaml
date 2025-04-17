@@ -58,7 +58,7 @@ jmxCredentials:
   test:
     username: cassandra
     password: cassandrapassword
-  
+
 cassandra:
   type: basic
   sessionName: "test"

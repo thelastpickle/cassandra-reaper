@@ -1,22 +1,38 @@
 /*
- * Copyright 2016-2017 Spotify AB
- * Copyright 2016-2019 The Last Pickle Ltd
- * Copyright 2020-2020 DataStax, Inc.
+ * Copyright 2016-2017 Spotify AB Copyright 2016-2019 The Last Pickle Ltd Copyright 2020-2020
+ * DataStax, Inc.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License. You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software distributed under the License
+ * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+ * or implied. See the License for the specific language governing permissions and limitations under
+ * the License.
  */
 
 package io.cassandrareaper.storage.cassandra;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+import org.joda.time.DateTime;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.datastax.oss.driver.api.core.ConsistencyLevel;
+import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.Version;
+import com.datastax.oss.driver.api.core.cql.PreparedStatement;
+import com.datastax.oss.driver.api.core.cql.ResultSet;
+import com.datastax.oss.driver.api.core.cql.SimpleStatement;
+import com.datastax.oss.driver.api.core.uuid.Uuids;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperApplicationConfiguration;
@@ -69,9 +85,7 @@ import com.datastax.oss.driver.api.core.uuid.Uuids;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Preconditions;
 import io.dropwizard.cassandra.CassandraFactory;
-import io.dropwizard.cassandra.DropwizardProgrammaticDriverConfigLoaderBuilder;
 import io.dropwizard.cassandra.request.RequestOptionsFactory;
-import io.dropwizard.cassandra.retry.RetryPolicyFactory;
 import io.dropwizard.core.setup.Environment;
 import org.jetbrains.annotations.NotNull;
 import org.joda.time.DateTime;
@@ -100,11 +114,8 @@ public final class CassandraStorageFacade implements IStorageDao, IDistributedSt
   private PreparedStatement saveHeartbeatPrepStmt;
   private PreparedStatement deleteHeartbeatPrepStmt;
 
-  public CassandraStorageFacade(
-      UUID reaperInstanceId,
-      ReaperApplicationConfiguration config,
-      Environment environment,
-      CassandraMode mode) throws ReaperException {
+  public CassandraStorageFacade(UUID reaperInstanceId, ReaperApplicationConfiguration config,
+      Environment environment, CassandraMode mode) throws ReaperException {
 
     this.reaperInstanceId = reaperInstanceId;
     this.defaultTimeout = config.getHangingRepairTimeoutMins();
@@ -113,24 +124,18 @@ public final class CassandraStorageFacade implements IStorageDao, IDistributedSt
     overrideRetryPolicy(cassandraFactory);
 
     // https://docs.datastax.com/en/developer/java-driver/3.5/manual/metrics/#metrics-4-compatibility
-    //cassandraFactory.setJmxEnabled(false);
+    // cassandraFactory.setJmxEnabled(false);
     if (!CassandraStorageFacade.UNINITIALISED.compareAndSet(true, false)) {
       // If there's been a past connection attempt, metrics are already registered
       cassandraFactory.setMetricsEnabled(false);
     }
 
     cassandraFactory.setSessionName("main-" + Uuids.random());
-    cassandra = cassandraFactory.build(
-      environment.metrics(),
-      environment.lifecycle(),
-      environment.healthChecks(),
-      Tracing.newBuilder().build());
+    cassandra = cassandraFactory.build(environment.metrics(), environment.lifecycle(),
+        environment.healthChecks(), Tracing.newBuilder().build());
 
-    version = cassandra.getMetadata().getNodes().entrySet()
-        .stream()
-        .map(h -> h.getValue().getCassandraVersion())
-        .min(Version::compareTo)
-        .get();
+    version = cassandra.getMetadata().getNodes().entrySet().stream()
+        .map(h -> h.getValue().getCassandraVersion()).min(Version::compareTo).get();
 
     boolean skipMigration = System.getenv().containsKey("REAPER_SKIP_SCHEMA_MIGRATION")
         ? Boolean.parseBoolean(System.getenv("REAPER_SKIP_SCHEMA_MIGRATION"))
@@ -139,7 +144,8 @@ public final class CassandraStorageFacade implements IStorageDao, IDistributedSt
     if (skipMigration) {
       LOG.info("Skipping schema migration as requested.");
     } else {
-      MigrationManager.initializeAndUpgradeSchema(cassandraFactory, environment, config, version, mode);
+      MigrationManager.initializeAndUpgradeSchema(cassandraFactory, environment, config, version,
+          mode);
     }
 
     this.cassEventsDao = new CassandraEventsDao(cassandra);
@@ -148,19 +154,13 @@ public final class CassandraStorageFacade implements IStorageDao, IDistributedSt
     this.operationsDao = new CassandraOperationsDao(cassandra);
     this.concurrency = new CassandraConcurrencyDao(version, reaperInstanceId, cassandra);
     this.cassRepairUnitDao = new CassandraRepairUnitDao(defaultTimeout, cassandra);
-    this.cassRepairSegmentDao = new CassandraRepairSegmentDao(concurrency, cassRepairUnitDao, cassandra);
+    this.cassRepairSegmentDao =
+        new CassandraRepairSegmentDao(concurrency, cassRepairUnitDao, cassandra);
     this.cassRepairScheduleDao = new CassandraRepairScheduleDao(cassRepairUnitDao, cassandra);
-    this.cassClusterDao = new CassandraClusterDao(cassRepairScheduleDao,
-        cassRepairUnitDao,
-        cassEventsDao,
-        cassandra,
-        objectMapper);
-    this.cassRepairRunDao = new CassandraRepairRunDao(
-        cassRepairUnitDao,
-        cassClusterDao,
-        cassRepairSegmentDao,
-        cassandra,
-        objectMapper);
+    this.cassClusterDao = new CassandraClusterDao(cassRepairScheduleDao, cassRepairUnitDao,
+        cassEventsDao, cassandra, objectMapper);
+    this.cassRepairRunDao = new CassandraRepairRunDao(cassRepairUnitDao, cassClusterDao,
+        cassRepairSegmentDao, cassandra, objectMapper);
     prepareStatements();
   }
 
@@ -177,20 +177,13 @@ public final class CassandraStorageFacade implements IStorageDao, IDistributedSt
     cassandraFactory.setRetryPolicy(new ReaperRetryPolicyFactory());
   }
 
-  private static boolean withinRange(RepairSegment segment, Optional<RingRange> range) {
-    return !range.isPresent() || CassandraRepairSegmentDao.segmentIsWithinRange(segment, range.get());
-  }
-
   private void prepareStatements() {
-    saveHeartbeatPrepStmt = cassandra
-        .prepare(
-            SimpleStatement.builder("INSERT INTO running_reapers(reaper_instance_id,"
-                + " reaper_instance_host, last_heartbeat)"
-                + " VALUES(?,?,toTimestamp(now()))")
-              .setIdempotence(false).build());
+    saveHeartbeatPrepStmt = cassandra.prepare(SimpleStatement
+        .builder("INSERT INTO running_reapers(reaper_instance_id,"
+            + " reaper_instance_host, last_heartbeat)" + " VALUES(?,?,toTimestamp(now()))")
+        .setIdempotence(false).build());
     deleteHeartbeatPrepStmt = cassandra
-        .prepare(
-          SimpleStatement.builder("DELETE FROM running_reapers WHERE reaper_instance_id = ?")
+        .prepare(SimpleStatement.builder("DELETE FROM running_reapers WHERE reaper_instance_id = ?")
             .setIdempotence(true).build());
 
   }
@@ -201,9 +194,7 @@ public final class CassandraStorageFacade implements IStorageDao, IDistributedSt
   }
 
   @Override
-  public List<RepairSegment> getNextFreeSegmentsForRanges(
-      UUID runId,
-      List<RingRange> ranges) {
+  public List<RepairSegment> getNextFreeSegmentsForRanges(UUID runId, List<RingRange> ranges) {
 
     return cassRepairSegmentDao.getNextFreeSegmentsForRanges(runId, ranges);
   }
@@ -267,12 +258,8 @@ public final class CassandraStorageFacade implements IStorageDao, IDistributedSt
   }
 
   @Override
-  public List<GenericMetric> getMetrics(
-      String clusterName,
-      Optional<String> host,
-      String metricDomain,
-      String metricType,
-      long since) {
+  public List<GenericMetric> getMetrics(String clusterName, Optional<String> host,
+      String metricDomain, String metricType, long since) {
     return cassMetricsDao.getMetrics(clusterName, host, metricDomain, metricType, since);
   }
 
@@ -298,10 +285,7 @@ public final class CassandraStorageFacade implements IStorageDao, IDistributedSt
   }
 
   @Override
-  public boolean lockRunningRepairsForNodes(
-      UUID repairId,
-      UUID segmentId,
-      Set<String> replicas) {
+  public boolean lockRunningRepairsForNodes(UUID repairId, UUID segmentId, Set<String> replicas) {
 
     // Attempt to lock all the nodes involved in the segment
 
@@ -309,10 +293,7 @@ public final class CassandraStorageFacade implements IStorageDao, IDistributedSt
   }
 
   @Override
-  public boolean renewRunningRepairsForNodes(
-      UUID repairId,
-      UUID segmentId,
-      Set<String> replicas) {
+  public boolean renewRunningRepairsForNodes(UUID repairId, UUID segmentId, Set<String> replicas) {
     // Attempt to renew lock on all the nodes involved in the segment
 
     return concurrency.renewRunningRepairsForNodes(repairId, segmentId, replicas);
@@ -323,9 +304,7 @@ public final class CassandraStorageFacade implements IStorageDao, IDistributedSt
   }
 
   @Override
-  public boolean releaseRunningRepairsForNodes(
-      UUID repairId,
-      UUID segmentId,
+  public boolean releaseRunningRepairsForNodes(UUID repairId, UUID segmentId,
       Set<String> replicas) {
     // Attempt to release all the nodes involved in the segment
 
@@ -344,7 +323,8 @@ public final class CassandraStorageFacade implements IStorageDao, IDistributedSt
   }
 
   @Override
-  public List<PercentRepairedMetric> getPercentRepairedMetrics(String clusterName, UUID repairScheduleId, Long since) {
+  public List<PercentRepairedMetric> getPercentRepairedMetrics(String clusterName,
+      UUID repairScheduleId, Long since) {
 
     return cassMetricsDao.getPercentRepairedMetrics(clusterName, repairScheduleId, since);
   }
@@ -408,92 +388,5 @@ public final class CassandraStorageFacade implements IStorageDao, IDistributedSt
 
   public enum CassandraMode {
     CASSANDRA
-  }
-
-  /**
-   * Retry all statements.
-   *
-   * <p>
-   * All reaper statements are idempotent. Reaper generates few read and writes requests, so it's ok to keep
-   * retrying.
-   *
-   * <p>
-   * Sleep 100 milliseconds in between subsequent read retries. Fail after the tenth read retry.
-   *
-   * <p>
-   * Writes keep retrying forever.
-   */
-  private static final class ReaperRetryPolicyFactory implements RetryPolicyFactory {
-
-    @Override
-    public void accept(DropwizardProgrammaticDriverConfigLoaderBuilder builder) {
-      builder.withClass(DefaultDriverOption.RETRY_POLICY, RetryPolicyImpl.class);
-    }
-  }
-
-  private static final class RetryPolicyImpl implements RetryPolicy {
-
-    @Override
-    public RetryDecision onReadTimeout(
-        @NotNull Request request,
-        @NotNull ConsistencyLevel cl,
-        int required,
-        int received,
-        boolean retrieved,
-        int retry) {
-
-      if (retry > 1) {
-        try {
-          Thread.sleep(100);
-        } catch (InterruptedException expected) {
-        }
-      }
-      return Objects.equals(Boolean.TRUE, request.isIdempotent())
-          ? retry < 10 ? RetryDecision.RETRY_NEXT : RetryDecision.RETHROW
-          : RetryDecision.RETHROW;
-    }
-
-    @Override
-    public RetryDecision onWriteTimeout(
-        Request request,
-        ConsistencyLevel cl,
-        WriteType type,
-        int required,
-        int received,
-        int retry) {
-
-      Preconditions.checkState(WriteType.CAS != type || ConsistencyLevel.SERIAL == cl);
-
-      return Objects.equals(Boolean.TRUE, request.isIdempotent())
-          ? RetryDecision.RETRY_NEXT
-          : RetryDecision.RETHROW;
-    }
-
-    @Override
-    public RetryDecision onUnavailable(
-        @NotNull Request request,
-        @NotNull ConsistencyLevel consistencyLevel,
-        int required,
-        int received,
-        int retry) {
-      return RetryDecision.RETHROW;
-    }
-
-    @Override
-    public RetryDecision onRequestAborted(@NotNull Request request, @NotNull Throwable throwable, int received) {
-      return RetryDecision.RETHROW;
-    }
-
-    @Override
-    public RetryDecision onErrorResponse(
-        @NotNull Request request,
-        @NotNull CoordinatorException exception,
-        int received) {
-      return RetryDecision.RETHROW;
-    }
-
-    @Override
-    public void close() {
-    }
   }
 }

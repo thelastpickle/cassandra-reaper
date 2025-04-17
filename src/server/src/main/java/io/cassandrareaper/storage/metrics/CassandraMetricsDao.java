@@ -176,7 +176,7 @@ public class CassandraMetricsDao implements IMetricsDao, IDistributedMetrics {
                 metric.getHost(),
                 metric.getMetricScope(),
                 metric.getMetricName(),
-                computeMetricsPartition(metric.getTs()),
+                Instant.ofEpochMilli(computeMetricsPartition(metric.getTs()).getMillis()),
                 metric.getMetricAttribute(),
                 metric.getValue()));
       }

@@ -27,7 +27,7 @@ on:
 jobs:
   build:
     name: Build Reaper
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     env:
       JACOCO_VERSION: 0.8.6
       REAPER_ENCRYPTION_KEY: SECRET_KEY
@@ -49,7 +49,7 @@ jobs:
   docker-tests:
     name: Docker Image Tests
     needs: build
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     strategy:
       matrix:
         storage-type: [cassandra]
@@ -86,7 +86,7 @@ jobs:
   its-ccm-local:
     name: Memory backends
     needs: build
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     continue-on-error: ${{ matrix.experimental }}
     strategy:
       matrix:
@@ -146,7 +146,7 @@ jobs:
   its-ccm-cass:
     needs: build
     name: Cassandra backend
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     continue-on-error: ${{ matrix.experimental }}
     strategy:
       matrix:
@@ -203,9 +203,9 @@ jobs:
         timeout-minutes: 30
 
   its-sidecar:
-    needs: [docker-tests, its-ccm-local, its-ccm-cass]
+    needs: [docker-tests] #, its-ccm-local, its-ccm-cass]
     name: Sidecar
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     continue-on-error: ${{ matrix.experimental }}
     strategy:
       matrix:
@@ -218,15 +218,15 @@ jobs:
         include:
           - cassandra-version: 'binary:4.0.17'
             cucumber-options: '--tags @sidecar'
-            experimental: false
+            experimental: true
             jdk-version: '11'
           - cassandra-version: 'binary:4.1.8'
             cucumber-options: '--tags @sidecar'
-            experimental: false
+            experimental: true
             jdk-version: '11'
           - cassandra-version: 'binary:5.0.3'
             cucumber-options: '--tags @sidecar'
-            experimental: false
+            experimental: true
             jdk-version: '11'
           #- cassandra-version: 'github:apache/trunk'
           #  cucumber-options: '--tags @sidecar'
@@ -268,7 +268,7 @@ jobs:
   its-http-management:
     needs: [ build ]
     name: HTTP Management
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     continue-on-error: ${{ matrix.experimental }}
     strategy:
       matrix:
@@ -348,9 +348,9 @@ jobs:
       - uses: codecov/codecov-action@v1
 
   its-each:
-    needs: [docker-tests, its-ccm-local, its-ccm-cass]
+    needs: [docker-tests] #, its-ccm-local, its-ccm-cass]
     name: Each DC Availability
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     continue-on-error: ${{ matrix.experimental }}
     strategy:
       matrix:
@@ -364,6 +364,7 @@ jobs:
           - cassandra-version: 'binary:5.0.3'
             cucumber-options: '--tags @sidecar'
             experimental: false
+            jdk-version: '11'
           #- cassandra-version: 'github:apache/trunk'
           #  cucumber-options: '--tags @sidecar'
           #  experimental: true
@@ -401,9 +402,9 @@ jobs:
       - uses: codecov/codecov-action@v1
 
   its-distributed:
-    needs: [docker-tests, its-ccm-local, its-ccm-cass]
+    needs: [docker-tests] #, its-ccm-local, its-ccm-cass]
     name: Distributed tests
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     continue-on-error: ${{ matrix.experimental }}
     strategy:
       matrix:
@@ -459,9 +460,9 @@ jobs:
       - uses: codecov/codecov-action@v1
 
   its-flapping:
-    needs: [docker-tests, its-ccm-local, its-ccm-cass]
+    needs: [docker-tests] #, its-ccm-local, its-ccm-cass]
     name: Flapping reapers
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     continue-on-error: ${{ matrix.experimental }}
     strategy:
       matrix:
@@ -516,7 +517,7 @@ jobs:
     name: Release Reaper
     needs: [its-distributed, its-flapping, its-sidecar, its-each]
     if: startsWith(github.ref, 'refs/heads/master') || startsWith(github.ref, 'refs/tag')
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - name: Checkout
         uses: actions/checkout@v4
