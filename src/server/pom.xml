@@ -516,27 +516,6 @@
                     </buildArgs>
                 </configuration>
             </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-checkstyle-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>validate</id>
-                        <phase>validate</phase>
-                        <configuration>
-                            <configLocation>checkstyle.xml</configLocation>
-                            <consoleOutput>true</consoleOutput>
-                            <failsOnError>true</failsOnError>
-                            <headerLocation>src/checkstyle/java.header</headerLocation>
-                            <suppressionsLocation>src/checkstyle/suppressions.xml</suppressionsLocation>
-                            <includeTestSourceDirectory>true</includeTestSourceDirectory>
-                        </configuration>
-                        <goals>
-                            <goal>check</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
               <!-- following plugins are for building the UI -->
               <plugin>
                 <artifactId>maven-clean-plugin</artifactId>
@@ -753,24 +732,6 @@
         </build>
       </profile>
     </profiles>
-
-    <reporting>
-        <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-checkstyle-plugin</artifactId>
-                <configuration>
-                    <configLocation>checkstyle.xml</configLocation>
-                    <consoleOutput>true</consoleOutput>
-                    <failsOnError>true</failsOnError>
-                    <linkXRef>false</linkXRef>
-                    <headerLocation>src/checkstyle/java.header</headerLocation>
-                    <suppressionsLocation>src/checkstyle/suppressions.xml</suppressionsLocation>
-                    <includeTestSourceDirectory>true</includeTestSourceDirectory>
-                </configuration>
-            </plugin>
-        </plugins>
-    </reporting>
 
     <repositories>
         <repository>

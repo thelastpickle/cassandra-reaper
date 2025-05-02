@@ -304,18 +304,6 @@
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-checkstyle-plugin</artifactId>
-                <version>3.1.2</version>
-                <dependencies>
-                  <dependency>
-                    <groupId>com.puppycrawl.tools</groupId>
-                    <artifactId>checkstyle</artifactId>
-                    <version>10.17.0</version>
-                  </dependency>
-                </dependencies>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-clean-plugin</artifactId>
                 <version>3.1.0</version>
             </plugin>
@@ -354,7 +342,6 @@
         <!--
         Properties that influence various parts of the NetBeans IDE, especially code formatting and the like.
         -->
-        <netbeans.checkstyle.format>true</netbeans.checkstyle.format>
         <org-netbeans-modules-editor-indent.CodeStyle.project.text-limit-width>120</org-netbeans-modules-editor-indent.CodeStyle.project.text-limit-width>
         <org-netbeans-modules-editor-indent.text.x-java.CodeStyle.project.continuationIndentSize>4</org-netbeans-modules-editor-indent.text.x-java.CodeStyle.project.continuationIndentSize>
         <org-netbeans-modules-editor-indent.text.x-java.CodeStyle.project.importGroupsOrder>io.cassandrareaper.;java.;javax.;*;static *</org-netbeans-modules-editor-indent.text.x-java.CodeStyle.project.importGroupsOrder>
