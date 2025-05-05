@@ -32,10 +32,6 @@ import java.util.TimerTask;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
-import org.joda.time.DateTime;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.datastax.oss.driver.api.core.NoNodeAvailableException;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Supplier;
