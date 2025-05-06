@@ -1,5 +1,10 @@
 ## Change Log
 
+### 4.0.0-beta1 (2025/05/06 15:08 +00:00)
+- [#1556](https://github.com/thelastpickle/cassandra-reaper/pull/1556) Upgrade Dropwizard and dropwizard-cassandra to v3 (#1556) (@adejanovski)
+- [#1550](https://github.com/thelastpickle/cassandra-reaper/pull/1550) Upgrade GH actions (#1550) (@adejanovski)
+- [640307f](https://github.com/thelastpickle/cassandra-reaper/commit/640307ff9a387a4aace4562a3dc730bb9cdfc42d) Upgrade the upload-artifact github action to v4 (@adejanovski)
+
 ### 3.8.0 (2025/02/02 07:56 +00:00)
 - [#1538](https://github.com/thelastpickle/cassandra-reaper/pull/1538) Remove python from the Docker image (#1538) (@adejanovski)
 - [#1521](https://github.com/thelastpickle/cassandra-reaper/pull/1521) Fail repair after additive change in cluster topology (#1521) (@andresbeckruiz)
