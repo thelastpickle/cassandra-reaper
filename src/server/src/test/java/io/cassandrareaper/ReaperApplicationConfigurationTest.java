@@ -20,13 +20,19 @@ package io.cassandrareaper;
 import javax.validation.Validation;
 import javax.validation.Validator;
 
+import brave.Tracing;
+import com.codahale.metrics.MetricRegistry;
+import com.codahale.metrics.health.HealthCheckRegistry;
+import com.datastax.oss.driver.api.core.CqlSession;
+import io.dropwizard.cassandra.CassandraFactory;
+import io.dropwizard.lifecycle.setup.LifecycleEnvironment;
 import org.apache.cassandra.repair.RepairParallelism;
 import org.hibernate.validator.HibernateValidator;
 import org.junit.Before;
 import org.junit.Test;
-import systems.composable.dropwizard.cassandra.CassandraFactory;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 
 public final class ReaperApplicationConfigurationTest {
 
@@ -38,11 +44,21 @@ public final class ReaperApplicationConfigurationTest {
 
   private final ReaperApplicationConfiguration config = new ReaperApplicationConfiguration();
 
+  private final class TestCassandraFactory extends CassandraFactory {
+    @Override
+    public CqlSession build(
+        MetricRegistry metricRegistry,
+        LifecycleEnvironment lifecycleEnvironment,
+        HealthCheckRegistry healthCheckRegistry,
+        Tracing tracing) {
+      return mock(CqlSession.class);
+    }
+  }
+
   @Before
   public void setUp() {
     //create a valid config
-    CassandraFactory cassandraFactory = new CassandraFactory();
-    cassandraFactory.setContactPoints(new String[]{"127.0.0.1"});
+    CassandraFactory cassandraFactory = new TestCassandraFactory();
     config.setCassandraFactory(cassandraFactory);
     config.setHangingRepairTimeoutMins(1);
     config.setRepairParallelism(RepairParallelism.DATACENTER_AWARE);

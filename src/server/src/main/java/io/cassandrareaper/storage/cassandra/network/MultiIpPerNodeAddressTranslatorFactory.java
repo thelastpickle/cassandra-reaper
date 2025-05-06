@@ -17,13 +17,16 @@
 
 package io.cassandrareaper.storage.cassandra.network;
 
+import java.util.ArrayList;
 import java.util.List;
 
-import com.datastax.driver.core.policies.AddressTranslator;
+import com.datastax.oss.driver.api.core.config.DefaultDriverOption;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
+import com.google.common.annotations.VisibleForTesting;
+import io.dropwizard.cassandra.DropwizardProgrammaticDriverConfigLoaderBuilder;
+import io.dropwizard.cassandra.network.AddressTranslatorFactory;
 import org.hibernate.validator.constraints.NotEmpty;
-import systems.composable.dropwizard.cassandra.network.AddressTranslatorFactory;
 
 /**
  * A factory for configuring and building custom {@link com.datastax.driver.core.policies.AddressTranslator} instance.
@@ -31,19 +34,16 @@ import systems.composable.dropwizard.cassandra.network.AddressTranslatorFactory;
 @JsonTypeName("multiIpPerNode")
 public class MultiIpPerNodeAddressTranslatorFactory implements AddressTranslatorFactory {
   @JsonProperty("ipTranslations")
-  private List<AddressTranslation> addressTranslations;
+  @VisibleForTesting
+  public static List<AddressTranslation> addressTranslations = new ArrayList<>();
 
-  public List<AddressTranslation> getAddressTranslations() {
-    return addressTranslations;
-  }
-
-  public void setAddressTranslations(List<AddressTranslation> addressTranslations) {
-    this.addressTranslations = addressTranslations;
+  public static void setAddressTranslations(List<AddressTranslation> addressTranslations) {
+    MultiIpPerNodeAddressTranslatorFactory.addressTranslations = addressTranslations;
   }
 
   @Override
-  public AddressTranslator build() {
-    return new MultiIpPerNodeAddressTranslator(addressTranslations);
+  public void accept(DropwizardProgrammaticDriverConfigLoaderBuilder builder) {
+    builder.withClass(DefaultDriverOption.ADDRESS_TRANSLATOR_CLASS, MultiIpPerNodeAddressTranslator.class);
   }
 
   public static class AddressTranslation {

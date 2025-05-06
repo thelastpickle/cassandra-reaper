@@ -1,0 +1,40 @@
+apiVersion: cassandra.datastax.com/v1beta1
+kind: CassandraDatacenter
+metadata:
+  name: dc1
+  namespace: cass-operator
+spec:
+  clusterName: test
+  config:
+    jvm-options:
+      additional-jvm-opts:
+        - -Dcassandra.system_distributed_replication_dc_names=dc1
+        - -Dcassandra.system_distributed_replication_per_dc=1
+        - -Dcassandra.jmx.remote.login.config=CassandraLogin
+        - -Djava.security.auth.login.config=/etc/cassandra/cassandra-jaas.config
+        - -Dcassandra.jmx.authorizer=org.apache.cassandra.auth.jmx.AuthorizationProxy
+      initial_heap_size: 512m
+      max_heap_size: 512m
+  users:
+    - secretName: reaper-cql-secret
+      superuser: true
+  serverType: cassandra
+  serverVersion: 5.0.3
+  size: 1
+  racks:
+    - name: r1
+  storageConfig:
+    cassandraDataVolumeClaimSpec:
+      accessModes:
+        - ReadWriteOnce
+      resources:
+        requests:
+          storage: 5Gi
+      storageClassName: standard
+  podTemplateSpec:
+    spec:
+      containers:
+        - name: cassandra
+          env:
+            - name: "LOCAL_JMX"
+              value: "no"

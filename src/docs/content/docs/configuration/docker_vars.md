@@ -102,28 +102,6 @@ jmxAddressTranslator:
 <br/>
 **Note:**
 
-Some variable names have changed between the release of Docker-support and Reaper for Apache Cassandra 1.0. The following Reaper specific variable name changes have occurred in an effort to match closely with the YAML parameter names:
-
-<h4>Pre Reaper 1.0</h4> | <h4>Post Reaper 1.0</h4>
----|---
-`REAPER_ENABLE_CORS` | `REAPER_ENABLE_CROSS_ORIGIN`
-`REAPER_ENABLE_DYNAMIC_SEEDS` | `REAPER_ENABLE_DYNAMIC_SEED_LIST`
-`REAPER_AUTO_SCHEDULE_ENABLED` | `REAPER_AUTO_SCHEDULING_ENABLED`
-`REAPER_AUTO_SCHEDULE_INITIAL_DELAY_PERIOD` | `REAPER_AUTO_SCHEDULING_INITIAL_DELAY_PERIOD`
-`REAPER_AUTO_SCHEDULE_PERIOD_BETWEEN_POLLS` | `REAPER_AUTO_SCHEDULING_PERIOD_BETWEEN_POLLS`
-`REAPER_AUTO_SCHEDULE_TIME_BETWEEN_FIRST_SCHEDULE` | `REAPER_AUTO_SCHEDULING_TIME_BEFORE_FIRST_SCHEDULE`
-`REAPER_AUTO_SCHEDULE_EXCLUDED_KEYSPACES` | `REAPER_AUTO_SCHEDULING_EXCLUDED_KEYSPACES`
-`REAPER_AUTO_SCHEDULE_EXCLUDED_CLUSTERS` | `REAPER_AUTO_SCHEDULING_EXCLUDED_CLUSTERS`
-`REAPER_JMX_USERNAME` | `REAPER_JMX_AUTH_USERNAME`
-`REAPER_JMX_PASSWORD` | `REAPER_JMX_AUTH_PASSWORD`
-`REAPER_LOGGERS` | `REAPER_LOGGING_LOGGERS`
-`REAPER_LOGGING_FORMAT` | `REAPER_LOGGING_APPENDERS_CONSOLE_LOG_FORMAT`
-`REAPER_APP_PORT` | `REAPER_SERVER_APP_PORT`
-`REAPER_APP_BIND_HOST` | `REAPER_SERVER_APP_BIND_HOST`
-`REAPER_ADMIN_PORT` | `REAPER_SERVER_ADMIN_PORT`
-`REAPER_ADMIN_BIND_HOST` | `REAPER_SERVER_ADMIN_BIND_HOST`
-`REAPER_ACTIVATE_QUERY_LOGGER` | `REAPER_CASS_ACTIVATE_QUERY_LOGGER`
-
 ## Associated Reaper Specific Configuration Settings
 
 The following Docker environment variables have no direct mapping to a setting in the *cassandra-reaper.yaml* configuration file. However, they do affect the content contained in the file that is Reaper specific.
@@ -168,16 +146,18 @@ In order for the Cassandra backend to be used, `REAPER_STORAGE_TYPE` must be set
 
 <br/>
 
-<h4>Environment Variable</h4> | <h4>Configuration Setting</h4> | <h4>Default Value</h4>
----|---|---
-<code class="codeLarge">REAPER_CASS_ACTIVATE_QUERY_LOGGER</code> | [activateQueryLogger]({{< relref "backend_specific.md#activatequerylogger" >}}) | false
-<code class="codeLarge">REAPER_CASS_CLUSTER_NAME</code> | [clusterName]({{< relref "backend_specific.md#clustername" >}}) | clustername
-<code class="codeLarge">REAPER_CASS_CONTACT_POINTS</code> | [contactPoints]({{< relref "backend_specific.md#contactpoints" >}}) | []
-<code class="codeLarge">REAPER_CASS_PORT</code> | [port]({{< relref "backend_specific.md#port" >}}) | []
-<code class="codeLarge">REAPER_CASS_KEYSPACE</code> | [keyspace]({{< relref "backend_specific.md#keyspace" >}}) | reaper_db
-<code class="codeLarge">REAPER_CASS_LOCAL_DC</code> | [localDC]({{< relref "backend_specific.md#localdc" >}}) |
-<code class="codeLarge">REAPER_CASS_AUTH_USERNAME</code> | [username]({{< relref "backend_specific.md#username" >}}) | cassandra
-<code class="codeLarge">REAPER_CASS_AUTH_PASSWORD</code> | [password]({{< relref "backend_specific.md#password" >}}) | cassandra
+<h4>Environment Variable</h4> | <h4>Configuration Setting</h4>                                                                      | <h4>Default Value</h4>
+---|-----------------------------------------------------------------------------------------------------|---
+<code class="codeLarge">REAPER_CASS_ACTIVATE_QUERY_LOGGER</code> | [activateQueryLogger]({{< relref "backend_specific.md#activatequerylogger" >}})                     | false
+<code class="codeLarge">REAPER_CASS_CLUSTER_NAME</code> | [clusterName]({{< relref "backend_specific.md#clustername" >}})                                     | clustername
+<code class="codeLarge">REAPER_CASS_CONTACT_POINTS</code> | [contactPoints]({{< relref "backend_specific.md#contactpoints" >}})                                 | {"host": "127.0.0.1", "port": "9042"}, {"host": "127.0.0.2", "port": "9042"}
+<code class="codeLarge">REAPER_CASS_KEYSPACE</code> | [keyspace]({{< relref "backend_specific.md#keyspace" >}})                                           | reaper_db
+<code class="codeLarge">REAPER_CASS_LOCAL_DC</code> | [localDC]({{< relref "backend_specific.md#localdc" >}})                                             |
+<code class="codeLarge">REAPER_CASS_AUTH_USERNAME</code> | [username]({{< relref "backend_specific.md#username" >}})                                           | cassandra
+<code class="codeLarge">REAPER_CASS_AUTH_PASSWORD</code> | [password]({{< relref "backend_specific.md#password" >}})                                           | cassandra
+<code class="codeLarge">REAPER_CASS_SCHEMA_AGREEMENT_INTERVAL</code> | [agreementIntervalMilliseconds]({{< relref "backend_specific.md#agreementIntervalMilliseconds" >}}) | 2000
+<code class="codeLarge">REAPER_CASS_SCHEMA_AGREEMENT_TIMEOUT</code> | [agreementTimeoutSeconds]({{< relref "backend_specific.md#agreementTimeoutSeconds" >}})             | 2000
+<code class="codeLarge">REAPER_CASS_REQUEST_TIMEOUT</code> | [requestTimeout]({{< relref "backend_specific.md#requestTimeout" >}})                        | 10s
 
 <br/>
 

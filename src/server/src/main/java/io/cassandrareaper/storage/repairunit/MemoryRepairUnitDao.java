@@ -23,7 +23,7 @@ import io.cassandrareaper.storage.MemoryStorageFacade;
 import java.util.Optional;
 import java.util.UUID;
 
-import com.datastax.driver.core.utils.UUIDs;
+import com.datastax.oss.driver.api.core.uuid.Uuids;
 import com.google.common.base.Preconditions;
 
 public class MemoryRepairUnitDao implements IRepairUnitDao {
@@ -47,7 +47,7 @@ public class MemoryRepairUnitDao implements IRepairUnitDao {
         && repairUnitBuilder.subrangeIncrementalRepair == existing.get().getSubrangeIncrementalRepair()) {
       return existing.get();
     } else {
-      RepairUnit newRepairUnit = repairUnitBuilder.build(UUIDs.timeBased());
+      RepairUnit newRepairUnit = repairUnitBuilder.build(Uuids.timeBased());
       storage.addRepairUnit(Optional.ofNullable(repairUnitBuilder), newRepairUnit);
       return newRepairUnit;
     }

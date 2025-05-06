@@ -50,7 +50,7 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.UriInfo;
 
-import com.datastax.driver.core.utils.UUIDs;
+import com.datastax.oss.driver.api.core.uuid.Uuids;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -390,7 +390,7 @@ public final class RepairRunResourceTest {
   public void testTriggerNotExistingRun() throws ReaperException {
     RepairRunResource resource = new RepairRunResource(context, context.storage.getRepairRunDao());
     Optional<String> newState = Optional.of(RepairRun.RunState.RUNNING.toString());
-    Response response = resource.modifyRunState(uriInfo, UUIDs.timeBased(), newState);
+    Response response = resource.modifyRunState(uriInfo, Uuids.timeBased(), newState);
     assertEquals(Response.Status.NOT_FOUND.getStatusCode(), response.getStatus());
     assertTrue(response.getEntity() instanceof String);
     assertTrue(response.getEntity().toString().contains("doesn't exist"));
@@ -409,7 +409,12 @@ public final class RepairRunResourceTest {
     DateTimeUtils.setCurrentMillisFixed(TIME_START);
     Optional<String> newState = Optional.of(RepairRun.RunState.RUNNING.toString());
     resource.modifyRunState(uriInfo, runId, newState);
-    Thread.sleep(1000);
+    try {
+      Thread.sleep(1000);
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new AssertionError("Test interrupted", e);
+    }
     response = resource.modifyRunState(uriInfo, runId, newState);
     assertEquals(Response.Status.NO_CONTENT.getStatusCode(), response.getStatus());
   }
@@ -426,7 +431,12 @@ public final class RepairRunResourceTest {
     DateTimeUtils.setCurrentMillisFixed(TIME_START);
     Optional<String> newState = Optional.of(RepairRun.RunState.RUNNING.toString());
     resource.modifyRunState(uriInfo, runId, newState);
-    Thread.sleep(1000);
+    try {
+      Thread.sleep(1000);
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new AssertionError("Test interrupted", e);
+    }
     response = resource.modifyRunState(uriInfo, runId, newState);
     assertEquals(Response.Status.NO_CONTENT.getStatusCode(), response.getStatus());
 
@@ -483,9 +493,14 @@ public final class RepairRunResourceTest {
     RepairRunStatus repairRunStatus = (RepairRunStatus) response.getEntity();
     UUID runId = repairRunStatus.getId();
 
-    response = resource.modifyRunState(uriInfo, runId,
-        Optional.of(RepairRun.RunState.PAUSED.toString()));
-    Thread.sleep(200);
+    response =
+        resource.modifyRunState(uriInfo, runId, Optional.of(RepairRun.RunState.PAUSED.toString()));
+    try {
+      Thread.sleep(200);
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new AssertionError("Test interrupted", e);
+    }
 
     assertEquals(409, response.getStatus());
     RepairRun repairRun = context.storage.getRepairRunDao().getRepairRun(runId).get();
@@ -500,7 +515,7 @@ public final class RepairRunResourceTest {
   @Test
   public void testPauseNotExistingRun() throws InterruptedException, ReaperException {
     RepairRunResource resource = new RepairRunResource(context, context.storage.getRepairRunDao());
-    Response response = resource.modifyRunState(uriInfo, UUIDs.timeBased(),
+    Response response = resource.modifyRunState(uriInfo, Uuids.timeBased(),
         Optional.of(RepairRun.RunState.PAUSED.toString()));
     assertEquals(Response.Status.NOT_FOUND.getStatusCode(), response.getStatus());
     assertEquals(0, context.storage.getRepairRunDao().getRepairRunsWithState(RepairRun.RunState.RUNNING).size());

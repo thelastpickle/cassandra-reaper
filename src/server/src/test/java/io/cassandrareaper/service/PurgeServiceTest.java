@@ -32,7 +32,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
-import com.datastax.driver.core.utils.UUIDs;
+import com.datastax.oss.driver.api.core.uuid.Uuids;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import org.apache.cassandra.repair.RepairParallelism;
@@ -72,7 +72,7 @@ public final class PurgeServiceTest {
     List<RepairRun> repairRuns = Lists.newArrayList();
     DateTime currentDate = DateTime.now();
     for (int i = 0; i < 10; i++) {
-      UUID repairUnitId = UUIDs.timeBased();
+      UUID repairUnitId = Uuids.timeBased();
       DateTime startTime = currentDate.minusDays(i).minusHours(1);
 
       repairRuns.add(
@@ -84,7 +84,7 @@ public final class PurgeServiceTest {
               .tables(TABLES)
               .endTime(startTime.plusSeconds(1))
               .runState(RunState.DONE)
-              .build(UUIDs.timeBased()));
+              .build(Uuids.timeBased()));
     }
     IRepairRunDao mockedRepairRunDao = mock(IRepairRunDao.class);
     when(context.storage.getRepairRunDao()).thenReturn(mockedRepairRunDao);
@@ -114,7 +114,7 @@ public final class PurgeServiceTest {
     // Add repair runs to the mock
     List<RepairRun> repairRuns = Lists.newArrayList();
     DateTime currentDate = DateTime.now();
-    UUID repairUnitId = UUIDs.timeBased();
+    UUID repairUnitId = Uuids.timeBased();
     for (int i = 0; i < 20; i++) {
       DateTime startTime = currentDate.minusDays(i).minusHours(1);
 
@@ -127,7 +127,7 @@ public final class PurgeServiceTest {
               .tables(TABLES)
               .endTime(startTime.plusSeconds(1))
               .runState(RunState.DONE)
-              .build(UUIDs.timeBased()));
+              .build(Uuids.timeBased()));
     }
 
     IRepairRunDao mockedRepairRunDao = mock(IRepairRunDao.class);
@@ -160,7 +160,7 @@ public final class PurgeServiceTest {
     List<RepairRun> repairRuns = Lists.newArrayList();
     DateTime currentDate = DateTime.now();
     for (int i = 0; i < 10; i++) {
-      UUID repairUnitId = UUIDs.timeBased();
+      UUID repairUnitId = Uuids.timeBased();
       DateTime startTime = currentDate.minusDays(i).minusHours(1);
 
       repairRuns.add(
@@ -172,7 +172,7 @@ public final class PurgeServiceTest {
               .tables(TABLES)
               .pauseTime(startTime.plusSeconds(1))
               .runState(RunState.PAUSED)
-              .build(UUIDs.timeBased()));
+              .build(Uuids.timeBased()));
     }
 
     IRepairRunDao mockedRepairRunDao = mock(IRepairRunDao.class);

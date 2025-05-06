@@ -630,12 +630,18 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
               // remove "repair-" prefix
               int repairNo = Integer.parseInt(job.getId().substring(7));
               ProgressEventType progressType = ProgressEventType.valueOf(statusChange.getStatus());
-              repairStatusExecutors.get(repairNo).submit(() -> {
-                repairStatusHandlers
-                    .get(repairNo)
-                    .handle(repairNo, Optional.empty(), Optional.of(progressType),
-                        statusChange.getMessage(), this);
-              });
+              repairStatusExecutors
+                  .get(repairNo)
+                  .submit(
+                      () -> {
+                        repairStatusHandlers
+                            .get(repairNo)
+                            .handle(
+                                repairNo,
+                                Optional.of(progressType),
+                                statusChange.getMessage(),
+                                this);
+                      });
 
               // Update the count as we process them
               entry.getValue().latestNotificationCount.incrementAndGet();

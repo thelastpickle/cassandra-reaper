@@ -1,18 +1,15 @@
 /*
- * Copyright 2015-2017 Spotify AB
- * Copyright 2016-2019 The Last Pickle Ltd
+ * Copyright 2015-2017 Spotify AB Copyright 2016-2019 The Last Pickle Ltd
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License. You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software distributed under the License
+ * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+ * or implied. See the License for the specific language governing permissions and limitations under
+ * the License.
  */
 
 package io.cassandrareaper.service;
@@ -35,8 +32,7 @@ import java.util.TimerTask;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
-import com.datastax.driver.core.exceptions.DriverException;
-import com.datastax.driver.core.exceptions.DriverInternalError;
+import com.datastax.oss.driver.api.core.NoNodeAvailableException;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Supplier;
 import org.joda.time.DateTime;
@@ -56,26 +52,27 @@ public final class SchedulingManager extends TimerTask {
   private IRepairRunDao repairRunDao;
 
   private SchedulingManager(AppContext context, Supplier<RepairRunService> repairRunServiceSupplier,
-                            IRepairRunDao repairRunDao) {
+      IRepairRunDao repairRunDao) {
     this.context = context;
     this.repairRunService = repairRunServiceSupplier.get();
     this.repairRunDao = repairRunDao;
   }
 
   public static SchedulingManager create(AppContext context, IRepairRunDao repairRunDao) {
-    return new SchedulingManager(context, () -> RepairRunService.create(context, repairRunDao), repairRunDao);
+    return new SchedulingManager(context, () -> RepairRunService.create(context, repairRunDao),
+        repairRunDao);
   }
 
   @VisibleForTesting
-  static SchedulingManager create(AppContext context, Supplier<RepairRunService> repairRunServiceSupplier,
-                                  IRepairRunDao repairRunDao) {
+  static SchedulingManager create(AppContext context,
+      Supplier<RepairRunService> repairRunServiceSupplier, IRepairRunDao repairRunDao) {
     return new SchedulingManager(context, repairRunServiceSupplier, repairRunDao);
   }
 
   private static boolean repairRunComesFromSchedule(RepairRun repairRun, RepairSchedule schedule) {
     return repairRun.getRunState().isActive()
         || (RepairRun.RunState.NOT_STARTED == repairRun.getRunState()
-        && repairRun.getCause().equals(getCauseName(schedule)));
+            && repairRun.getCause().equals(getCauseName(schedule)));
   }
 
   private static String getCauseName(RepairSchedule schedule) {
@@ -86,28 +83,28 @@ public final class SchedulingManager extends TimerTask {
     LOG.info("Starting new SchedulingManager instance");
     Timer timer = new Timer("SchedulingManagerTimer");
 
-    timer.schedule(
-        this,
-        ThreadLocalRandom.current().nextLong(1000, 2000),
+    timer.schedule(this, ThreadLocalRandom.current().nextLong(1000, 2000),
         1000L * Integer.getInteger(SchedulingManager.class.getName() + ".period_seconds", 60));
   }
 
   public RepairSchedule pauseRepairSchedule(RepairSchedule schedule) {
-    RepairSchedule updatedSchedule
-        = schedule.with().state(RepairSchedule.State.PAUSED).pauseTime(DateTime.now()).build(schedule.getId());
+    RepairSchedule updatedSchedule = schedule.with().state(RepairSchedule.State.PAUSED)
+        .pauseTime(DateTime.now()).build(schedule.getId());
 
     if (!context.storage.getRepairScheduleDao().updateRepairSchedule(updatedSchedule)) {
-      throw new IllegalStateException(String.format("failed updating repair schedule %s", updatedSchedule.getId()));
+      throw new IllegalStateException(
+          String.format("failed updating repair schedule %s", updatedSchedule.getId()));
     }
     return updatedSchedule;
   }
 
   public RepairSchedule resumeRepairSchedule(RepairSchedule schedule) {
-    RepairSchedule updatedSchedule
-        = schedule.with().state(RepairSchedule.State.ACTIVE).pauseTime(null).build(schedule.getId());
+    RepairSchedule updatedSchedule =
+        schedule.with().state(RepairSchedule.State.ACTIVE).pauseTime(null).build(schedule.getId());
 
     if (!context.storage.getRepairScheduleDao().updateRepairSchedule(updatedSchedule)) {
-      throw new IllegalStateException(String.format("failed updating repair schedule %s", updatedSchedule.getId()));
+      throw new IllegalStateException(
+          String.format("failed updating repair schedule %s", updatedSchedule.getId()));
     }
     return updatedSchedule;
   }
@@ -121,7 +118,8 @@ public final class SchedulingManager extends TimerTask {
       LOG.debug("Checking for repair schedules...");
       UUID lastId = null;
       try {
-        Collection<RepairSchedule> schedules = context.storage.getRepairScheduleDao().getAllRepairSchedules();
+        Collection<RepairSchedule> schedules =
+            context.storage.getRepairScheduleDao().getAllRepairSchedules();
         // Cleanup metric registry from deleted schedules
         cleanupMetricsRegistry(schedules);
         // Start repairs for schedules that require it
@@ -134,14 +132,13 @@ public final class SchedulingManager extends TimerTask {
           if (!anyRunStarted && nextActivatedSchedule != null) {
             LOG.debug(
                 "not scheduling new repairs yet, next activation is '{}' for schedule id '{}'",
-                nextActivatedSchedule.getNextActivation(),
-                nextActivatedSchedule.getId());
+                nextActivatedSchedule.getNextActivation(), nextActivatedSchedule.getId());
           }
         }
-      } catch (DriverInternalError expected) {
-        LOG.debug("Driver connection closed, Reaper is shutting down.");
-      } catch (DriverException e) {
-        LOG.error("Error while scheduling repairs due to a connection problem with the database", e);
+      } catch (IllegalStateException | NoNodeAvailableException e) {
+        // Reaper is shutting down and the session is closed already
+        LOG.error("Error while scheduling repairs due to a connection problem with the database",
+            e);
       } catch (Throwable ex) {
         if (lastId == null) {
           LOG.error("Failed managing repair schedules", ex);
@@ -162,14 +159,15 @@ public final class SchedulingManager extends TimerTask {
 
   // Cleanup metric registry from deleted schedules
   // Such metrics are named after the following pattern:
-  //   "millisSinceLastRepairForSchedule.<cluster>.<keyspace>.<schedule id>"
+  // "millisSinceLastRepairForSchedule.<cluster>.<keyspace>.<schedule id>"
   @VisibleForTesting
   void cleanupMetricsRegistry(Collection<RepairSchedule> schedules) {
-    // Cycle through the metrics registry and delete any metrics that are not in the current schedules
+    // Cycle through the metrics registry and delete any metrics that are not in the current
+    // schedules
     context.metricRegistry.getMetrics().keySet().stream()
         .filter(key -> key.startsWith(RepairScheduleService.MILLIS_SINCE_LAST_REPAIR_METRIC_NAME))
-        .filter(key -> !schedules.stream().anyMatch(
-            schedule -> schedule.getId().toString().equals(key.split("\\.")[3])))
+        .filter(key -> !schedules.stream()
+            .anyMatch(schedule -> schedule.getId().toString().equals(key.split("\\.")[3])))
         .forEach(context.metricRegistry::remove);
   }
 
@@ -184,33 +182,31 @@ public final class SchedulingManager extends TimerTask {
     RepairUnit unit = context.storage.getRepairUnitDao().getRepairUnit(schdle.getRepairUnitId());
     boolean overUnrepairedThreshold = false;
     if (unit.getIncrementalRepair() && schdle.getPercentUnrepairedThreshold() > 0) {
-      List<PercentRepairedMetric> percentRepairedMetrics = context.storage.getPercentRepairedMetrics(
-          unit.getClusterName(),
-          schdle.getId(),
-          DateTime.now().minusMinutes(context.config.getPercentRepairedCheckIntervalMinutes() + 1).getMillis());
-      int maxUnrepairedPercent
-          = 100 - percentRepairedMetrics.stream().mapToInt(PercentRepairedMetric::getPercentRepaired).max().orElse(100);
-      LOG.debug(
-          "Current unrepaired percent for schedule {} is {} and threshold is {}",
-          schdle.getId(), maxUnrepairedPercent,
-          schdle.getPercentUnrepairedThreshold());
+      List<PercentRepairedMetric> percentRepairedMetrics =
+          context.storage.getPercentRepairedMetrics(unit.getClusterName(), schdle.getId(),
+              DateTime.now()
+                  .minusMinutes(context.config.getPercentRepairedCheckIntervalMinutes() + 1)
+                  .getMillis());
+      int maxUnrepairedPercent = 100 - percentRepairedMetrics.stream()
+          .mapToInt(PercentRepairedMetric::getPercentRepaired).max().orElse(100);
+      LOG.debug("Current unrepaired percent for schedule {} is {} and threshold is {}",
+          schdle.getId(), maxUnrepairedPercent, schdle.getPercentUnrepairedThreshold());
       if (maxUnrepairedPercent >= schdle.getPercentUnrepairedThreshold()) {
         overUnrepairedThreshold = true;
       }
     }
     switch (schdle.getState()) {
       case ACTIVE:
-        if (schdle.getNextActivation().isBeforeNow() || (overUnrepairedThreshold && lastRepairRunIsOldEnough(schdle))) {
+        if (schdle.getNextActivation().isBeforeNow()
+            || (overUnrepairedThreshold && lastRepairRunIsOldEnough(schdle))) {
 
-          RepairSchedule schedule
-              = schdle.with().nextActivation(schdle.getFollowingActivation()).build(schdle.getId());
+          RepairSchedule schedule =
+              schdle.with().nextActivation(schdle.getFollowingActivation()).build(schdle.getId());
 
           context.storage.getRepairScheduleDao().updateRepairSchedule(schedule);
 
-          LOG.info(
-              "repair unit '{}' should be repaired based on RepairSchedule with id '{}'",
-              schedule.getRepairUnitId(),
-              schedule.getId());
+          LOG.info("repair unit '{}' should be repaired based on RepairSchedule with id '{}'",
+              schedule.getRepairUnitId(), schedule.getId());
 
           if (repairRunAlreadyScheduled(schedule, unit)) {
             return false;
@@ -235,43 +231,39 @@ public final class SchedulingManager extends TimerTask {
         LOG.info("Repair schedule '{}' is paused", schdle.getId());
         return false;
       default:
-        throw new AssertionError("illegal schedule state in call to manageSchedule(..): " + schdle.getState());
+        throw new AssertionError(
+            "illegal schedule state in call to manageSchedule(..): " + schdle.getState());
     }
     return false;
   }
 
   private boolean repairRunAlreadyScheduled(RepairSchedule schedule, RepairUnit repairUnit) {
-    Collection<RepairRun> repairRuns = repairRunDao.getRepairRunsForUnit(schedule.getRepairUnitId());
+    Collection<RepairRun> repairRuns =
+        repairRunDao.getRepairRunsForUnit(schedule.getRepairUnitId());
     for (RepairRun repairRun : repairRuns) {
       if (repairRunComesFromSchedule(repairRun, schedule)) {
         LOG.info(
             "there is repair (id {}) in state '{}' for repair unit '{}', "
                 + "postponing current schedule trigger until next scheduling",
-            repairRun.getId(),
-            repairRun.getRunState(),
-            repairUnit.getId());
+            repairRun.getId(), repairRun.getRunState(), repairUnit.getId());
         return true;
       }
     }
     return false;
   }
 
-  private RepairRun createNewRunForUnit(RepairSchedule schedule, RepairUnit repairUnit) throws ReaperException {
+  private RepairRun createNewRunForUnit(RepairSchedule schedule, RepairUnit repairUnit)
+      throws ReaperException {
 
     return repairRunService.registerRepairRun(
-        context.storage.getClusterDao().getCluster(repairUnit.getClusterName()),
-        repairUnit,
-        Optional.of(getCauseName(schedule)),
-        schedule.getOwner(),
-        schedule.getSegmentCountPerNode(),
-        schedule.getRepairParallelism(),
-        schedule.getIntensity(),
-        schedule.getAdaptive());
+        context.storage.getClusterDao().getCluster(repairUnit.getClusterName()), repairUnit,
+        Optional.of(getCauseName(schedule)), schedule.getOwner(), schedule.getSegmentCountPerNode(),
+        schedule.getRepairParallelism(), schedule.getIntensity(), schedule.getAdaptive());
   }
 
   /**
-   * When multiple Reapers are running, only the older one can start schedules.
-   * In non distributed modes, this method always returns true.
+   * When multiple Reapers are running, only the older one can start schedules. In non distributed
+   * modes, this method always returns true.
    *
    * @return true or false
    */
@@ -293,8 +285,8 @@ public final class SchedulingManager extends TimerTask {
   }
 
   /**
-   * A schedule triggered by percent repaired metrics must wait for those metrics to refresh between runs.
-   * We give two metrics refresh cycles before allowing a new run.
+   * A schedule triggered by percent repaired metrics must wait for those metrics to refresh between
+   * runs. We give two metrics refresh cycles before allowing a new run.
    *
    * @return true or false
    */
@@ -304,8 +296,8 @@ public final class SchedulingManager extends TimerTask {
       Optional<RepairRun> lastRun = repairRunDao.getRepairRun(schedule.getLastRun());
       if (lastRun.isPresent()) {
         DateTime lastRunEndTime = lastRun.get().getEndTime();
-        DateTime nextAllowedRunTime
-            = lastRunEndTime.plusMinutes(context.config.getPercentRepairedCheckIntervalMinutes() * 2);
+        DateTime nextAllowedRunTime =
+            lastRunEndTime.plusMinutes(context.config.getPercentRepairedCheckIntervalMinutes() * 2);
         DateTime currentTime = DateTime.now();
         boolean canRun = currentTime.isAfter(nextAllowedRunTime);
         return canRun;
@@ -318,8 +310,8 @@ public final class SchedulingManager extends TimerTask {
     Collection<RepairSchedule> repairSchedulesForCluster = context.storage.getRepairScheduleDao()
         .getRepairSchedulesForCluster(repairRun.getClusterName());
 
-    repairSchedulesForCluster.stream().filter(schedule -> repairRunComesFromSchedule(repairRun, schedule))
-        .findFirst()
+    repairSchedulesForCluster.stream()
+        .filter(schedule -> repairRunComesFromSchedule(repairRun, schedule)).findFirst()
         .ifPresent(schedule -> context.storage.getRepairScheduleDao().updateRepairSchedule(
             schedule.with().lastRun(repairRun.getId()).build(schedule.getId())));
   }

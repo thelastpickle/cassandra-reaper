@@ -17,7 +17,7 @@
 
 package io.cassandrareaper.storage.cassandra.migrations;
 
-import com.datastax.driver.core.Session;
+import com.datastax.oss.driver.api.core.CqlSession;
 
 public final class Migration019 {
 
@@ -27,7 +27,7 @@ public final class Migration019 {
   /**
    * fix repair start, pause and end times in the repair_run table.
    */
-  public static void migrate(Session session) {
+  public static void migrate(CqlSession session) {
     FixRepairRunTimestamps.migrate(session);
   }
 }

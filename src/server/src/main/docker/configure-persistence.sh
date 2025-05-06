@@ -44,24 +44,29 @@ cat <<EOT >> /etc/cassandra-reaper/config/cassandra-reaper.yml
 activateQueryLogger: ${REAPER_CASS_ACTIVATE_QUERY_LOGGER}
 
 cassandra:
-  clusterName: ${REAPER_CASS_CLUSTER_NAME}
+  type: basic
+  sessionName: ${REAPER_CASS_CLUSTER_NAME}
   contactPoints: ${REAPER_CASS_CONTACT_POINTS}
-  port: ${REAPER_CASS_PORT}
-  keyspace: ${REAPER_CASS_KEYSPACE}
+  sessionKeyspaceName: ${REAPER_CASS_KEYSPACE}
   loadBalancingPolicy:
-    type: tokenAware
-    shuffleReplicas: true
-    subPolicy:
-      type: dcAwareRoundRobin
-      localDC: ${REAPER_CASS_LOCAL_DC}
-      usedHostsPerRemoteDC: 0
-      allowRemoteDCsForLocalConsistencyLevel: false
+    type: default
+    localDataCenter: ${REAPER_CASS_LOCAL_DC}
+  retryPolicy:
+    type: default
+  schemaOptions:
+    agreementIntervalMilliseconds: ${REAPER_CASS_SCHEMA_AGREEMENT_INTERVAL}
+    agreementTimeoutSeconds: ${REAPER_CASS_SCHEMA_AGREEMENT_TIMEOUT}
+    agreementWarnOnFailure: true
+  requestOptionsFactory:
+    requestTimeout: ${REAPER_CASS_REQUEST_TIMEOUT}
+    requestDefaultIdempotence: true
+
 EOT
 
 if [ "true" = "${REAPER_CASS_AUTH_ENABLED}" ]; then
 cat <<EOT >> /etc/cassandra-reaper/config/cassandra-reaper.yml
   authProvider:
-    type: plainText
+    type: plain-text
     username: "$(echo "${REAPER_CASS_AUTH_USERNAME}" | sed 's/"/\\"/g')"
     password: "$(echo "${REAPER_CASS_AUTH_PASSWORD}" | sed 's/"/\\"/g')"
 EOT

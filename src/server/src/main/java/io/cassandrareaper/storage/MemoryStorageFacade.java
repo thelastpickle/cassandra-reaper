@@ -1,21 +1,33 @@
 /*
- * Copyright 2014-2017 Spotify AB
- * Copyright 2016-2019 The Last Pickle Ltd
+ * Copyright 2014-2017 Spotify AB Copyright 2016-2019 The Last Pickle Ltd
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License. You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software distributed under the License
+ * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+ * or implied. See the License for the specific language governing permissions and limitations under
+ * the License.
  */
 
 package io.cassandrareaper.storage;
+
+import java.nio.file.Paths;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
+import org.eclipse.serializer.persistence.types.PersistenceFieldEvaluator;
+import org.eclipse.store.storage.embedded.types.EmbeddedStorage;
+import org.eclipse.store.storage.embedded.types.EmbeddedStorageManager;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.DiagEventSubscription;
@@ -67,8 +79,11 @@ public final class MemoryStorageFacade implements IStorageDao {
   // Default time to live of leads taken on a segment
   private static final long DEFAULT_LEAD_TTL = 90_000;
   private static final Logger LOG = LoggerFactory.getLogger(MemoryStorageFacade.class);
-  /** Field evaluator to find transient attributes. This is needed to deal with persisting Guava collections objects
-   * that sometimes use the transient keyword for some of their implementation's backing stores**/
+  /**
+   * Field evaluator to find transient attributes. This is needed to deal with persisting Guava
+   * collections objects that sometimes use the transient keyword for some of their implementation's
+   * backing stores
+   **/
   private static final PersistenceFieldEvaluator TRANSIENT_FIELD_EVALUATOR =
       (clazz, field) -> !field.getName().startsWith("_");
 
@@ -78,41 +93,47 @@ public final class MemoryStorageFacade implements IStorageDao {
   private final MemoryRepairUnitDao memoryRepairUnitDao = new MemoryRepairUnitDao(this);
   private final MemoryRepairRunDao memoryRepairRunDao =
       new MemoryRepairRunDao(this, memRepairSegment, memoryRepairUnitDao);
-  private final MemoryRepairScheduleDao memRepairScheduleDao = new MemoryRepairScheduleDao(this, memoryRepairUnitDao);
+  private final MemoryRepairScheduleDao memRepairScheduleDao =
+      new MemoryRepairScheduleDao(this, memoryRepairUnitDao);
   private final MemoryEventsDao memEventsDao = new MemoryEventsDao(this);
-  private final MemoryClusterDao memClusterDao = new MemoryClusterDao(
-      this,
-      memoryRepairUnitDao,
-      memoryRepairRunDao,
-      memRepairScheduleDao,
-      memEventsDao
-  );
+  private final MemoryClusterDao memClusterDao = new MemoryClusterDao(this, memoryRepairUnitDao,
+      memoryRepairRunDao, memRepairScheduleDao, memEventsDao);
   private final MemorySnapshotDao memSnapshotDao = new MemorySnapshotDao();
   private final MemoryMetricsDao memMetricsDao = new MemoryMetricsDao();
   private final ReplicaLockManagerWithTtl replicaLockManagerWithTtl;
+  private final String persistenceStoragePath;
 
   public MemoryStorageFacade(String persistenceStoragePath, long leadTime) {
     LOG.info("Using memory storage backend. Persistence storage path: {}", persistenceStoragePath);
-    this.embeddedStorage = EmbeddedStorage.Foundation(Paths.get(persistenceStoragePath))
-        .onConnectionFoundation(
-            c -> {
-              c.setFieldEvaluatorPersistable(TRANSIENT_FIELD_EVALUATOR);
-            }
-        ).createEmbeddedStorageManager();
-    this.embeddedStorage.start();
-    if (this.embeddedStorage.root() == null) {
-      LOG.info("Creating new data storage");
-      this.memoryStorageRoot = new MemoryStorageRoot();
-      this.embeddedStorage.setRoot(this.memoryStorageRoot);
+    this.persistenceStoragePath = persistenceStoragePath;
+    EmbeddedStorageManager storage = null;
+    MemoryStorageRoot root = null;
+    if (persistenceStoragePath != null && !persistenceStoragePath.isEmpty()) {
+      // If persistence storage path is provided, create a new embedded storage manager
+      storage = EmbeddedStorage.Foundation(Paths.get(this.persistenceStoragePath))
+          .onConnectionFoundation(c -> {
+            c.setFieldEvaluatorPersistable(TRANSIENT_FIELD_EVALUATOR);
+          }).createEmbeddedStorageManager();
+      storage.start();
+      if (storage.root() == null) {
+        LOG.info("Creating new data storage");
+        root = new MemoryStorageRoot();
+        storage.setRoot(root);
+      } else {
+        LOG.info("Loading existing data from persistence storage");
+        root = (MemoryStorageRoot) storage.root();
+      }
     } else {
-      LOG.info("Loading existing data from persistence storage");
-      this.memoryStorageRoot = (MemoryStorageRoot) this.embeddedStorage.root();
+      // If persistence storage path is not provided, create a new in-memory storage root
+      root = new MemoryStorageRoot();
     }
+    this.embeddedStorage = storage;
+    this.memoryStorageRoot = root;
     this.replicaLockManagerWithTtl = new ReplicaLockManagerWithTtl(leadTime);
   }
 
   public MemoryStorageFacade() {
-    this(Files.createTempDir().getAbsolutePath(), DEFAULT_LEAD_TTL);
+    this("", DEFAULT_LEAD_TTL);
   }
 
   public MemoryStorageFacade(String persistenceStoragePath) {
@@ -120,7 +141,7 @@ public final class MemoryStorageFacade implements IStorageDao {
   }
 
   public MemoryStorageFacade(long leadTime) {
-    this(Files.createTempDir().getAbsolutePath(), leadTime);
+    this("", leadTime);
   }
 
   @Override
@@ -134,7 +155,8 @@ public final class MemoryStorageFacade implements IStorageDao {
   }
 
   @Override
-  public List<PercentRepairedMetric> getPercentRepairedMetrics(String clusterName, UUID repairScheduleId, Long since) {
+  public List<PercentRepairedMetric> getPercentRepairedMetrics(String clusterName,
+      UUID repairScheduleId, Long since) {
     return memMetricsDao.getPercentRepairedMetrics(clusterName, repairScheduleId, since);
   }
 
@@ -150,7 +172,9 @@ public final class MemoryStorageFacade implements IStorageDao {
 
   @Override
   public void stop() {
-    this.embeddedStorage.shutdown();
+    if (this.embeddedStorage != null) {
+      this.embeddedStorage.shutdown();
+    }
   }
 
   @Override
@@ -191,8 +215,10 @@ public final class MemoryStorageFacade implements IStorageDao {
   private void persist(Object... objects) {
     synchronized (memoryStorageRoot) {
       try {
-        this.embeddedStorage.storeAll(objects);
-        this.embeddedStorage.storeRoot();
+        if (this.embeddedStorage != null) {
+          this.embeddedStorage.storeAll(objects);
+          this.embeddedStorage.storeRoot();
+        }
       } catch (RuntimeException ex) {
         LOG.error("Failed persisting Reaper state to disk", ex);
         throw ex;
@@ -212,7 +238,7 @@ public final class MemoryStorageFacade implements IStorageDao {
   }
 
   public Cluster removeCluster(String clusterName) {
-    Cluster cluster =  this.memoryStorageRoot.removeCluster(clusterName);
+    Cluster cluster = this.memoryStorageRoot.removeCluster(clusterName);
     this.persist(memoryStorageRoot.getClusters());
     return cluster;
   }
@@ -266,13 +292,15 @@ public final class MemoryStorageFacade implements IStorageDao {
 
   public RepairUnit addRepairUnit(Optional<RepairUnit.Builder> key, RepairUnit unit) {
     RepairUnit newUnit = this.memoryStorageRoot.addRepairUnit(key.get(), unit);
-    this.persist(this.memoryStorageRoot.getRepairUnits(), this.memoryStorageRoot.getRepairUnitsByKey());
+    this.persist(this.memoryStorageRoot.getRepairUnits(),
+        this.memoryStorageRoot.getRepairUnitsByKey());
     return newUnit;
   }
 
   public RepairUnit removeRepairUnit(Optional<RepairUnit.Builder> key, UUID id) {
     RepairUnit unit = this.memoryStorageRoot.removeRepairUnit(key.get(), id);
-    this.persist(this.memoryStorageRoot.getRepairUnits(), this.memoryStorageRoot.getRepairUnitsByKey());
+    this.persist(this.memoryStorageRoot.getRepairUnits(),
+        this.memoryStorageRoot.getRepairUnitsByKey());
     return unit;
   }
 
@@ -323,7 +351,8 @@ public final class MemoryStorageFacade implements IStorageDao {
 
   @Override
   public boolean releaseRunningRepairsForNodes(UUID runId, UUID segmentId, Set<String> replicas) {
-    LOG.info("Releasing locks for runId: {}, segmentId: {}, replicas: {}", runId, segmentId, replicas);
+    LOG.info("Releasing locks for runId: {}, segmentId: {}, replicas: {}", runId, segmentId,
+        replicas);
     return replicaLockManagerWithTtl.releaseRunningRepairsForNodes(runId, segmentId, replicas);
   }
 

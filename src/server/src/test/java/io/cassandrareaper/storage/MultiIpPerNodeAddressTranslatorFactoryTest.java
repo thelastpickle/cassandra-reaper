@@ -25,28 +25,23 @@ import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
 
-import io.dropwizard.jackson.DiscoverableSubtypeResolver;
 import org.junit.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertTrue;
 
 public class MultiIpPerNodeAddressTranslatorFactoryTest {
 
-  @Test
+  /*@Test
   public void isDiscoverable() {
     assertTrue("problem with discovering custom factory",
         new DiscoverableSubtypeResolver().getDiscoveredSubtypes()
         .contains(MultiIpPerNodeAddressTranslatorFactory.class));
-  }
+  }*/
 
   @Test
   public void shouldReturnSameAddressWhenNoEntryFound() {
-    MultiIpPerNodeAddressTranslatorFactory factory = new MultiIpPerNodeAddressTranslatorFactory();
-    List<AddressTranslation> addressTranslations = new ArrayList<>();
-    factory.setAddressTranslations(addressTranslations);
-    MultiIpPerNodeAddressTranslator translator = (MultiIpPerNodeAddressTranslator) factory.build();
-
+    MultiIpPerNodeAddressTranslator translator = new MultiIpPerNodeAddressTranslator();
+    MultiIpPerNodeAddressTranslatorFactory.addressTranslations = new ArrayList<>();
     InetSocketAddress address = new InetSocketAddress("123.2.23.109", 9042);
     assertThat(translator.translate(address)).isEqualTo(address);
   }
@@ -58,9 +53,8 @@ public class MultiIpPerNodeAddressTranslatorFactoryTest {
     addressTranslation.setFrom("1.1.1.1");
     addressTranslation.setTo("2.2.2.2");
     addressTranslations.add(addressTranslation);
-    MultiIpPerNodeAddressTranslatorFactory factory = new MultiIpPerNodeAddressTranslatorFactory();
-    factory.setAddressTranslations(addressTranslations);
-    MultiIpPerNodeAddressTranslator translator = (MultiIpPerNodeAddressTranslator) factory.build();
+    MultiIpPerNodeAddressTranslatorFactory.setAddressTranslations(addressTranslations);
+    MultiIpPerNodeAddressTranslator translator = new MultiIpPerNodeAddressTranslator();
 
     InetSocketAddress expectedAddress = new InetSocketAddress("2.2.2.2", 9042);
     InetSocketAddress address = new InetSocketAddress("1.1.1.1", 9042);

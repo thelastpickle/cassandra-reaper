@@ -31,7 +31,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import com.datastax.driver.core.utils.UUIDs;
+import com.datastax.oss.driver.api.core.uuid.Uuids;
 import com.google.common.collect.Lists;
 
 public class MemoryRepairScheduleDao implements IRepairScheduleDao {
@@ -46,7 +46,7 @@ public class MemoryRepairScheduleDao implements IRepairScheduleDao {
 
   @Override
   public RepairSchedule addRepairSchedule(RepairSchedule.Builder repairSchedule) {
-    RepairSchedule newRepairSchedule = repairSchedule.build(UUIDs.timeBased());
+    RepairSchedule newRepairSchedule = repairSchedule.build(Uuids.timeBased());
     storage.addRepairSchedule(newRepairSchedule);
     return newRepairSchedule;
   }

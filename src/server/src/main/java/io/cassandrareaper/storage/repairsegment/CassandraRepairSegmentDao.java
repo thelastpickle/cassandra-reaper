@@ -25,24 +25,28 @@ import io.cassandrareaper.storage.JsonParseUtils;
 import io.cassandrareaper.storage.cassandra.CassandraConcurrencyDao;
 import io.cassandrareaper.storage.repairunit.CassandraRepairUnitDao;
 
-import java.math.BigInteger;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 
-import com.datastax.driver.core.BatchStatement;
-import com.datastax.driver.core.ConsistencyLevel;
-import com.datastax.driver.core.PreparedStatement;
-import com.datastax.driver.core.ResultSet;
-import com.datastax.driver.core.Row;
-import com.datastax.driver.core.Session;
-import com.datastax.driver.core.Statement;
-import com.datastax.driver.core.exceptions.InvalidQueryException;
+import com.datastax.oss.driver.api.core.ConsistencyLevel;
+import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.cql.BatchStatement;
+import com.datastax.oss.driver.api.core.cql.BatchStatementBuilder;
+import com.datastax.oss.driver.api.core.cql.BatchType;
+import com.datastax.oss.driver.api.core.cql.BoundStatement;
+import com.datastax.oss.driver.api.core.cql.PreparedStatement;
+import com.datastax.oss.driver.api.core.cql.ResultSet;
+import com.datastax.oss.driver.api.core.cql.Row;
+import com.datastax.oss.driver.api.core.cql.SimpleStatement;
+import com.datastax.oss.driver.api.core.servererrors.InvalidQueryException;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -62,12 +66,12 @@ public class CassandraRepairSegmentDao implements IRepairSegmentDao {
   PreparedStatement getRepairSegmentCountByRunIdAndStatePrepStmt = null;
   private final CassandraConcurrencyDao cassandraConcurrencyDao;
   private final CassandraRepairUnitDao cassRepairUnitDao;
-  private final Session session;
+  private final CqlSession session;
 
   //TODO: Consider removing Cassandra 2 support so we don't need to look at the version.
   public CassandraRepairSegmentDao(CassandraConcurrencyDao cassandraConcurrencyDao,
                                    CassandraRepairUnitDao cassRepairUnitDao,
-                                   Session session) {
+                                   CqlSession session) {
     this.session = session;
     this.cassandraConcurrencyDao = cassandraConcurrencyDao;
     this.cassRepairUnitDao = cassRepairUnitDao;
@@ -94,66 +98,69 @@ public class CassandraRepairSegmentDao implements IRepairSegmentDao {
       // legacy path, for segments that don't have a token range list
       segmentBuilder.withTokenRange(
           new RingRange(
-              new BigInteger(segmentRow.getVarint("start_token") + ""),
-              new BigInteger(segmentRow.getVarint("end_token") + "")));
+            Objects.requireNonNull(segmentRow.getBigInteger("start_token")),
+            Objects.requireNonNull(segmentRow.getBigInteger("end_token"))
+          )
+      );
     }
 
     RepairSegment.Builder builder
-        = RepairSegment.builder(segmentBuilder.build(), segmentRow.getUUID("repair_unit_id"))
-        .withRunId(segmentRow.getUUID("id"))
+        = RepairSegment.builder(segmentBuilder.build(), segmentRow.getUuid("repair_unit_id"))
+        .withRunId(segmentRow.getUuid("id"))
         .withState(RepairSegment.State.values()[segmentRow.getInt("segment_state")])
         .withFailCount(segmentRow.getInt("fail_count"));
 
     if (null != segmentRow.getString("coordinator_host")) {
       builder = builder.withCoordinatorHost(segmentRow.getString("coordinator_host"));
     }
-    if (null != segmentRow.getTimestamp("segment_start_time")) {
-      builder = builder.withStartTime(new DateTime(segmentRow.getTimestamp("segment_start_time")));
+    if (null != segmentRow.getInstant("segment_start_time")) {
+      builder = builder.withStartTime(new DateTime(segmentRow.getInstant("segment_start_time").toEpochMilli()));
     }
-    if (null != segmentRow.getTimestamp("segment_end_time")) {
-      builder = builder.withEndTime(new DateTime(segmentRow.getTimestamp("segment_end_time")));
+    if (null != segmentRow.getInstant("segment_end_time")) {
+      builder = builder.withEndTime(new DateTime(segmentRow.getInstant("segment_end_time").toEpochMilli()));
     }
     if (null != segmentRow.getMap("replicas", String.class, String.class)) {
       builder = builder.withReplicas(segmentRow.getMap("replicas", String.class, String.class));
     }
 
-    if (null != segmentRow.getUUID("host_id")) {
-      builder = builder.withHostID(segmentRow.getUUID("host_id"));
+    if (null != segmentRow.getUuid("host_id")) {
+      builder = builder.withHostID(segmentRow.getUuid("host_id"));
     }
 
-    return builder.withId(segmentRow.getUUID("segment_id")).build();
+    return builder.withId(segmentRow.getUuid("segment_id")).build();
   }
 
   private void prepareStatements() {
     insertRepairSegmentPrepStmt = session
         .prepare(
-            "INSERT INTO repair_run"
+            SimpleStatement.builder("INSERT INTO repair_run"
                 + "(id,segment_id,repair_unit_id,start_token,end_token,"
                 + " segment_state,fail_count, token_ranges, replicas,host_id)"
                 + " VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
-        .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM);
+              .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM).build());
     insertRepairSegmentIncrementalPrepStmt = session
         .prepare(
-            "INSERT INTO repair_run"
+          SimpleStatement.builder("INSERT INTO repair_run"
                 + "(id,segment_id,repair_unit_id,start_token,end_token,"
                 + "segment_state,coordinator_host,fail_count,replicas,host_id)"
                 + " VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
-        .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM);
+            .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM).build());
     updateRepairSegmentPrepStmt = session
         .prepare(
-            "INSERT INTO repair_run"
+          SimpleStatement.builder("INSERT INTO repair_run"
                 + "(id,segment_id,segment_state,coordinator_host,segment_start_time,fail_count,host_id)"
                 + " VALUES(?, ?, ?, ?, ?, ?, ?)")
-        .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM);
+            .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM).build());
     insertRepairSegmentEndTimePrepStmt = session
-        .prepare("INSERT INTO repair_run(id, segment_id, segment_end_time) VALUES(?, ?, ?)")
-        .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM);
+        .prepare(
+          SimpleStatement.builder("INSERT INTO repair_run(id, segment_id, segment_end_time) VALUES(?, ?, ?)")
+            .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM).build());
     getRepairSegmentPrepStmt = session
         .prepare(
-            "SELECT id,repair_unit_id,segment_id,start_token,end_token,segment_state,coordinator_host,"
-                + "segment_start_time,segment_end_time,fail_count, token_ranges, replicas, host_id"
+          SimpleStatement.builder("SELECT id,repair_unit_id,segment_id,start_token,end_token,segment_state,"
+                + "coordinator_host,segment_start_time,segment_end_time,fail_count, token_ranges, replicas, host_id"
                 + " FROM repair_run WHERE id = ? and segment_id = ?")
-        .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM);
+            .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM).build());
     getRepairSegmentsByRunIdPrepStmt = session.prepare(
         "SELECT id,repair_unit_id,segment_id,start_token,end_token,segment_state,coordinator_host,segment_start_time,"
             + "segment_end_time,fail_count, token_ranges, replicas, host_id FROM repair_run WHERE id = ?");
@@ -210,15 +217,15 @@ public class CassandraRepairSegmentDao implements IRepairSegmentDao {
   @Override
   public boolean updateRepairSegmentUnsafe(RepairSegment segment) {
 
-    BatchStatement updateRepairSegmentBatch = new BatchStatement(BatchStatement.Type.UNLOGGED);
+    BatchStatementBuilder updateRepairSegmentBatch = BatchStatement.builder(BatchType.UNLOGGED);
 
-    updateRepairSegmentBatch.add(
+    updateRepairSegmentBatch.addStatement(
         updateRepairSegmentPrepStmt.bind(
             segment.getRunId(),
             segment.getId(),
             segment.getState().ordinal(),
             segment.getCoordinatorHost(),
-            segment.hasStartTime() ? segment.getStartTime().toDate() : null,
+            segment.hasStartTime() ? Instant.ofEpochMilli(segment.getStartTime().getMillis()) : null,
             segment.getFailCount(),
             segment.getHostID()
         )
@@ -238,15 +245,15 @@ public class CassandraRepairSegmentDao implements IRepairSegmentDao {
           RepairSegment.State.DONE != segment.getState() || segment.hasEndTime(),
           "endTime can't be null when state is DONE");
 
-      updateRepairSegmentBatch.add(
+      updateRepairSegmentBatch.addStatement(
           insertRepairSegmentEndTimePrepStmt.bind(
               segment.getRunId(),
               segment.getId(),
-              segment.hasEndTime() ? segment.getEndTime().toDate() : null));
+              segment.hasEndTime() ? Instant.ofEpochMilli(segment.getEndTime().getMillis()) : null));
     } else if (RepairSegment.State.STARTED == segment.getState()) {
       updateRepairSegmentBatch.setConsistencyLevel(ConsistencyLevel.EACH_QUORUM);
     }
-    session.execute(updateRepairSegmentBatch);
+    session.execute(updateRepairSegmentBatch.build());
     return true;
   }
 
@@ -320,7 +327,7 @@ public class CassandraRepairSegmentDao implements IRepairSegmentDao {
   public Collection<RepairSegment> getSegmentsWithState(UUID runId, RepairSegment.State segmentState) {
     Collection<RepairSegment> segments = Lists.newArrayList();
 
-    Statement statement = null != getRepairSegmentsByRunIdAndStatePrepStmt
+    BoundStatement statement = null != getRepairSegmentsByRunIdAndStatePrepStmt
         ? getRepairSegmentsByRunIdAndStatePrepStmt.bind(runId, segmentState.ordinal())
         // legacy mode for Cassandra-2 backends
         : getRepairSegmentsByRunIdPrepStmt.bind(runId);

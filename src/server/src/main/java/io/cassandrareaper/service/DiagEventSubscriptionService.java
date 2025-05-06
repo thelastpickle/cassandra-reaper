@@ -60,12 +60,13 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.MultimapBuilder;
 import com.google.common.collect.SetMultimap;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.ContentType;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.util.EntityUtils;
+import org.apache.hc.client5.http.classic.methods.HttpPost;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
+import org.apache.hc.core5.http.ClassicHttpRequest;
+import org.apache.hc.core5.http.ContentType;
+import org.apache.hc.core5.http.io.entity.EntityUtils;
+import org.apache.hc.core5.http.io.entity.StringEntity;
 import org.glassfish.jersey.media.sse.EventOutput;
 import org.glassfish.jersey.media.sse.OutboundEvent;
 import org.glassfish.jersey.media.sse.SseBroadcaster;
@@ -84,13 +85,14 @@ public final class DiagEventSubscriptionService {
   private final IEventsDao eventsDao;
   private final Map<Node, NotificationListener> listenerByNode = new ConcurrentHashMap<>();
   private final AppContext context;
-  private final HttpClient httpClient;
+  private final CloseableHttpClient httpClient;
   private final ScheduledExecutorService scheduler;
   private final AtomicLong lastUpdateCheck = new AtomicLong(0);
 
   private Set<DiagEventSubscription> subsAlwaysActive;
 
-  private DiagEventSubscriptionService(AppContext context, HttpClient httpClient, ScheduledExecutorService executor,
+  private DiagEventSubscriptionService(AppContext context, CloseableHttpClient httpClient,
+                                       ScheduledExecutorService executor,
                                        IEventsDao eventsDao) {
     this.context = context;
     this.httpClient = httpClient;
@@ -102,7 +104,8 @@ public final class DiagEventSubscriptionService {
     scheduler.scheduleWithFixedDelay(this::pingSseClients, 5, 5, TimeUnit.SECONDS);
   }
 
-  public static DiagEventSubscriptionService create(AppContext cxt, HttpClient client, ScheduledExecutorService exec,
+  public static DiagEventSubscriptionService create(AppContext cxt, CloseableHttpClient client,
+                                                    ScheduledExecutorService exec,
                                                     IEventsDao eventsDao) {
     Preconditions.checkState(cxt.managementConnectionFactory instanceof JmxManagementConnectionFactory,
         "JMX diagnostic events are only available when JMX connections are used.");
@@ -382,10 +385,10 @@ public final class DiagEventSubscriptionService {
             }
           }
           if (sub.getExportHttpEndpoint() != null) {
-            HttpPost req = new HttpPost(sub.getExportHttpEndpoint());
+            ClassicHttpRequest req = new HttpPost(sub.getExportHttpEndpoint());
             req.setEntity(new StringEntity(json, ContentType.APPLICATION_JSON));
             try {
-              HttpResponse resp = httpClient.execute(req);
+              CloseableHttpResponse resp = httpClient.execute(req);
               // consume response to return connection to pool
               EntityUtils.consumeQuietly(resp.getEntity());
             } catch (IOException e) {

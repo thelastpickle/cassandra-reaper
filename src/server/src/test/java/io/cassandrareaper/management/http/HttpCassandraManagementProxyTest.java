@@ -195,8 +195,8 @@ public class HttpCassandraManagementProxyTest {
     // Since we don't have existing implementation of RepairStatusHandler interface, we'll create a small "mock
     // implementation" here to catch all the calls to the handler() method
     final AtomicInteger callTimes = new AtomicInteger(0);
-    RepairStatusHandler workAroundHandler = (repairNumber, status, progress, message, cassandraManagementProxy)
-        -> callTimes.incrementAndGet();
+    RepairStatusHandler workAroundHandler =
+        (repairNumber, progress, message, cassandraManagementProxy) -> callTimes.incrementAndGet();
 
     int repairNo = httpCassandraManagementProxy.triggerRepair("ks",
         RepairParallelism.PARALLEL,

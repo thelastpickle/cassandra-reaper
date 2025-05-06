@@ -25,9 +25,9 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import com.datastax.driver.core.PreparedStatement;
-import com.datastax.driver.core.Row;
-import com.datastax.driver.core.Session;
+import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.cql.PreparedStatement;
+import com.datastax.oss.driver.api.core.cql.Row;
 import com.google.common.base.Preconditions;
 
 public class CassandraEventsDao implements IEventsDao {
@@ -35,9 +35,9 @@ public class CassandraEventsDao implements IEventsDao {
   PreparedStatement getDiagnosticEventPrepStmt;
   PreparedStatement deleteDiagnosticEventPrepStmt;
   PreparedStatement saveDiagnosticEventPrepStmt;
-  private final Session session;
+  private final CqlSession session;
 
-  public CassandraEventsDao(Session session) {
+  public CassandraEventsDao(CqlSession session) {
     this.session = session;
     prepareStatements();
   }
@@ -54,7 +54,7 @@ public class CassandraEventsDao implements IEventsDao {
 
   static DiagEventSubscription createDiagEventSubscription(Row row) {
     return new DiagEventSubscription(
-        Optional.of(row.getUUID("id")),
+        Optional.of(row.getUuid("id")),
         row.getString("cluster"),
         Optional.ofNullable(row.getString("description")),
         row.getSet("nodes", String.class),

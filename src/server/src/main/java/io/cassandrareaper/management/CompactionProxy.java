@@ -32,6 +32,7 @@ import javax.management.ReflectionException;
 
 import com.codahale.metrics.InstrumentedExecutorService;
 import com.codahale.metrics.MetricRegistry;
+import com.datastax.oss.driver.api.core.uuid.Uuids;
 import com.google.common.collect.Lists;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -47,7 +48,10 @@ public final class CompactionProxy {
   private CompactionProxy(ICassandraManagementProxy proxy, MetricRegistry metrics) {
     this.proxy = proxy;
     if (null == EXECUTOR.get()) {
-      EXECUTOR.set(new InstrumentedExecutorService(Executors.newCachedThreadPool(), metrics, "CompactionProxy"));
+      EXECUTOR.set(
+            new InstrumentedExecutorService(Executors.newCachedThreadPool(),
+            metrics,
+            "CompactionProxy-" + Uuids.random()));
     }
   }
 

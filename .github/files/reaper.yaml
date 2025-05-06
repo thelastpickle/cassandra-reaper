@@ -1,0 +1,204 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test-dc1-reaper
+  namespace: cass-operator
+spec:
+  replicas: 1
+  selector:
+    matchExpressions:
+      - key: app.kubernetes.io/managed-by
+        operator: In
+        values:
+          - cass-operator
+      - key: k8ssandra.io/reaper
+        operator: In
+        values:
+          - test-dc1-reaper
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/component: reaper
+        app.kubernetes.io/managed-by: cass-operator
+        app.kubernetes.io/name: cass-operator
+        app.kubernetes.io/part-of: k8ssandra
+        k8ssandra.io/cluster-name: test
+        k8ssandra.io/cluster-namespace: cass-operator
+        k8ssandra.io/reaper: test-dc1-reaper
+    spec:
+      volumes:
+        - name: conf
+          emptyDir: {}
+      initContainers:
+        - name: reaper-schema-init
+          image: docker.io/thelastpickle/cassandra-reaper:ci-build
+          args:
+            - schema-migration
+          env:
+            - name: REAPER_STORAGE_TYPE
+              value: cassandra
+            - name: REAPER_ENABLE_DYNAMIC_SEED_LIST
+              value: 'false'
+            - name: REAPER_DATACENTER_AVAILABILITY
+              value: ALL
+            - name: REAPER_CASS_LOCAL_DC
+              value: dc1
+            - name: REAPER_CASS_KEYSPACE
+              value: reaper_db
+            - name: REAPER_CASS_CONTACT_POINTS
+              value: '[{"host": "test-dc1-service", "port": 9042}]'
+            - name: REAPER_HEAP_SIZE
+              value: '268435456'
+            - name: REAPER_CASS_AUTH_ENABLED
+              value: 'true'
+            - name: REAPER_CASS_AUTH_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: reaper-cql-secret
+                  key: username
+            - name: REAPER_CASS_AUTH_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: reaper-cql-secret
+                  key: password
+            - name: REAPER_JMX_AUTH_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: reaper-cql-secret
+                  key: username
+            - name: REAPER_JMX_AUTH_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: reaper-cql-secret
+                  key: password
+            - name: REAPER_AUTH_ENABLED
+              value: 'true'
+            - name: REAPER_AUTH_USER
+              valueFrom:
+                secretKeyRef:
+                  name: reaper-ui-secret
+                  key: username
+            - name: REAPER_AUTH_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: reaper-ui-secret
+                  key: password
+          resources:
+            limits:
+              memory: 512Mi
+            requests:
+              cpu: 100m
+              memory: 128Mi
+          volumeMounts:
+            - name: conf
+              mountPath: /etc/cassandra-reaper/config
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          imagePullPolicy: IfNotPresent
+      containers:
+        - name: reaper
+          image: docker.io/thelastpickle/cassandra-reaper:ci-build
+          ports:
+            - name: app
+              containerPort: 8080
+              protocol: TCP
+            - name: admin
+              containerPort: 8081
+              protocol: TCP
+          env:
+            - name: REAPER_SKIP_SCHEMA_MIGRATION
+              value: 'true'
+            - name: REAPER_STORAGE_TYPE
+              value: cassandra
+            - name: REAPER_ENABLE_DYNAMIC_SEED_LIST
+              value: 'false'
+            - name: REAPER_DATACENTER_AVAILABILITY
+              value: ALL
+            - name: REAPER_CASS_LOCAL_DC
+              value: dc1
+            - name: REAPER_CASS_KEYSPACE
+              value: reaper_db
+            - name: REAPER_CASS_CONTACT_POINTS
+              value: '[{"host": "test-dc1-service", "port": 9042}]'
+            - name: REAPER_HEAP_SIZE
+              value: '268435456'
+            - name: REAPER_CASS_AUTH_ENABLED
+              value: 'true'
+            - name: REAPER_CASS_AUTH_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: reaper-cql-secret
+                  key: username
+            - name: REAPER_CASS_AUTH_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: reaper-cql-secret
+                  key: password
+            - name: REAPER_JMX_AUTH_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: reaper-cql-secret
+                  key: username
+            - name: REAPER_JMX_AUTH_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: reaper-cql-secret
+                  key: password
+            - name: REAPER_AUTH_ENABLED
+              value: 'true'
+            - name: REAPER_AUTH_USER
+              valueFrom:
+                secretKeyRef:
+                  name: reaper-ui-secret
+                  key: username
+            - name: REAPER_AUTH_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: reaper-ui-secret
+                  key: password
+          resources:
+            limits:
+              memory: 3Gi
+            requests:
+              cpu: 100m
+              memory: 256Mi
+          volumeMounts:
+            - name: conf
+              mountPath: /etc/cassandra-reaper/config
+          livenessProbe:
+            httpGet:
+              path: /healthcheck
+              port: 8081
+              scheme: HTTP
+            initialDelaySeconds: 45
+            timeoutSeconds: 1
+            periodSeconds: 15
+            successThreshold: 1
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /healthcheck
+              port: 8081
+              scheme: HTTP
+            initialDelaySeconds: 45
+            timeoutSeconds: 1
+            periodSeconds: 15
+            successThreshold: 1
+            failureThreshold: 3
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          imagePullPolicy: IfNotPresent
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30
+      dnsPolicy: ClusterFirst
+      serviceAccountName: default
+      serviceAccount: default
+      securityContext: {}
+      schedulerName: default-scheduler
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 25%
+      maxSurge: 25%
+  revisionHistoryLimit: 10
+  progressDeadlineSeconds: 600

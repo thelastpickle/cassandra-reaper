@@ -41,8 +41,7 @@ import java.util.concurrent.ConcurrentMap;
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
-import com.datastax.driver.core.policies.AddressTranslator;
-import com.datastax.driver.core.policies.EC2MultiRegionAddressTranslator;
+import com.datastax.oss.driver.api.core.addresstranslation.AddressTranslator;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
@@ -78,11 +77,8 @@ public class JmxManagementConnectionFactory implements IManagementConnectionFact
       LOG.debug("using JMX ports mapping: {}", jmxPorts);
       this.jmxPorts = context.config.getJmxPorts();
     }
-    if (context.config.useAddressTranslator()) {
-      setAddressTranslator(new EC2MultiRegionAddressTranslator());
-    }
     if (context.config.getJmxAddressTranslator().isPresent()) {
-      this.addressTranslator = context.config.getJmxAddressTranslator().get().build();
+      setAddressTranslator(context.config.getJmxAddressTranslator().get());
     }
     if (context.config.getJmxmp() != null) {
       if (context.config.getJmxmp().isEnabled()) {

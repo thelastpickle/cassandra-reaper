@@ -58,32 +58,24 @@ jmxCredentials:
   test:
     username: cassandra
     password: cassandrapassword
-  
-cassandra:
-  clusterName: "test"
-  contactPoints: ["127.0.0.1"]
-  keyspace: reaper_db
-  socketOptions:
-      connectTimeoutMillis: 20000
-      readTimeoutMillis: 40000
+
+ccassandra:
+  type: basic
+  sessionName: "test"
+  contactPoints:
+    - host: 127.0.0.1
+      port: 9042
+  sessionKeyspaceName: reaper_db
   loadBalancingPolicy:
-    type: tokenAware
-    shuffleReplicas: true
-    subPolicy:
-      type: dcAwareRoundRobin
-      localDC: 
-      usedHostsPerRemoteDC: 0
-      allowRemoteDCsForLocalConsistencyLevel: false
-  poolingOptions:
-      idleTimeout: 5s
-      local:
-        coreConnections: 1
-        maxConnections: 4
-        maxRequestsPerConnection: 16
-      remote:
-        coreConnections: 0
-        maxConnections: 0
-        maxRequestsPerConnection: 0
+    type: default
+    localDataCenter: dc1
+  schemaOptions:
+    agreementIntervalMilliseconds: 60000
+    agreementTimeoutSeconds: 60
+    agreementWarnOnFailure: true
+  requestOptionsFactory:
+    requestTimeout: 60s
+    requestDefaultIdempotence: true
 
 metrics:
   frequency: 1 second

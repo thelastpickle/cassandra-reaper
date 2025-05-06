@@ -18,13 +18,16 @@
 package io.cassandrareaper.acceptance;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.time.Duration;
+import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import com.datastax.driver.core.Cluster;
-import com.datastax.driver.core.Session;
-import com.datastax.driver.core.SocketOptions;
+import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.config.DefaultDriverOption;
+import com.datastax.oss.driver.api.core.config.DriverConfigLoader;
 import cucumber.api.CucumberOptions;
 import cucumber.api.junit.Cucumber;
 import org.junit.AfterClass;
@@ -68,22 +71,31 @@ public class ReaperHttpIT {
       createReaperTestJettyRunner();
     }
 
-    GRIM_REAPER = new Thread(() -> {
-      Thread.currentThread().setName("GRIM REAPER");
-      while (!Thread.currentThread().isInterrupted()) { //keep adding/removing reaper instances while test is running
-        try {
-          if (maxReaperInstances > RUNNER_INSTANCES.size()) {
-            createReaperTestJettyRunner();
-          } else {
-            int remove = minReaperInstances + RAND.nextInt(maxReaperInstances - minReaperInstances);
-            removeReaperTestJettyRunner(RUNNER_INSTANCES.get(remove));
-          }
-          Thread.sleep(5000);
-        } catch (RuntimeException | InterruptedException ex) {
-          LOG.error("failed adding/removing reaper instance", ex);
-        }
-      }
-    });
+    GRIM_REAPER =
+        new Thread(
+            () -> {
+              Thread.currentThread().setName("GRIM REAPER");
+              while (!Thread.currentThread()
+                  .isInterrupted()) { // keep adding/removing reaper instances while test is running
+                try {
+                  if (maxReaperInstances > RUNNER_INSTANCES.size()) {
+                    createReaperTestJettyRunner();
+                  } else {
+                    int remove =
+                        minReaperInstances + RAND.nextInt(maxReaperInstances - minReaperInstances);
+                    removeReaperTestJettyRunner(RUNNER_INSTANCES.get(remove));
+                  }
+                  try {
+                    Thread.sleep(5000);
+                  } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    throw e;
+                  }
+                } catch (RuntimeException | InterruptedException ex) {
+                  LOG.error("failed adding/removing reaper instance", ex);
+                }
+              }
+            });
     if (minReaperInstances < maxReaperInstances) {
       GRIM_REAPER.start();
     }
@@ -92,19 +104,29 @@ public class ReaperHttpIT {
   private static void createReaperTestJettyRunner() throws InterruptedException {
     ReaperTestJettyRunner runner = new ReaperTestJettyRunner(CASS_CONFIG_FILE);
     RUNNER_INSTANCES.add(runner);
-    Thread.sleep(100);
+    try {
+      Thread.sleep(100);
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw e;
+    }
     BasicSteps.addReaperRunner(runner);
   }
 
   private static void removeReaperTestJettyRunner(ReaperTestJettyRunner runner) throws InterruptedException {
     BasicSteps.removeReaperRunner(runner);
-    Thread.sleep(200);
+    try {
+      Thread.sleep(200);
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw e;
+    }
     RUNNER_INSTANCES.remove(runner);
     runner.runnerInstance.after();
   }
 
   public static void initSchema() throws IOException {
-    try (Cluster cluster = buildCluster(); Session tmpSession = cluster.connect()) {
+    try (CqlSession tmpSession = buildSession()) {
       await().with().pollInterval(3, SECONDS).atMost(2, MINUTES).until(() -> {
         try {
           tmpSession.execute("DROP KEYSPACE IF EXISTS reaper_db");
@@ -114,7 +136,7 @@ public class ReaperHttpIT {
         }
       });
       tmpSession.execute(
-          "CREATE KEYSPACE reaper_db WITH replication = {" + BasicSteps.buildNetworkTopologyStrategyString(cluster)
+          "CREATE KEYSPACE reaper_db WITH replication = {" + BasicSteps.buildNetworkTopologyStrategyString(tmpSession)
               + "}");
     }
   }
@@ -126,11 +148,18 @@ public class ReaperHttpIT {
     RUNNER_INSTANCES.forEach(r -> r.runnerInstance.after());
   }
 
-  private static Cluster buildCluster() {
-    return Cluster.builder()
-        .addContactPoint("127.0.0.1")
-        .withSocketOptions(new SocketOptions().setConnectTimeoutMillis(20000).setReadTimeoutMillis(40000))
-        .withoutJMXReporting()
-        .build();
+  private static CqlSession buildSession() {
+    DriverConfigLoader loader =
+        DriverConfigLoader.programmaticBuilder()
+          .withDuration(DefaultDriverOption.REQUEST_TIMEOUT, Duration.ofSeconds(40))
+          .withDuration(DefaultDriverOption.CONNECTION_CONNECT_TIMEOUT, Duration.ofSeconds(20))
+          .endProfile()
+          .build();
+
+    return CqlSession.builder()
+      .addContactPoints(Collections.singleton(InetSocketAddress.createUnresolved("127.0.0.1", 9042)))
+      .withLocalDatacenter("dc1")
+      .withConfigLoader(loader)
+      .build();
   }
 }

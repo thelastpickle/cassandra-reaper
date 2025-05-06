@@ -50,7 +50,6 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
 import com.sun.management.UnixOperatingSystemMXBean;
 import org.apache.cassandra.repair.RepairParallelism;
-import org.apache.cassandra.service.ActiveRepairService;
 import org.apache.cassandra.utils.progress.ProgressEventType;
 import org.joda.time.DateTime;
 import org.joda.time.Seconds;
@@ -387,6 +386,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
     try {
       final long startTime = System.currentTimeMillis();
       final long maxTime = startTime + segmentTimeout;
+
       final long waitTime = Math.min(segmentTimeout, 60000);
 
       while (System.currentTimeMillis() < maxTime) {
@@ -474,7 +474,6 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
   @Override
   public void handle(
       int repairNo,
-      Optional<ActiveRepairService.Status> status,
       Optional<ProgressEventType> progress,
       String message,
       ICassandraManagementProxy cassandraManagementProxy) {
@@ -485,14 +484,15 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
     LOG.debug(
         "handle called for repairCommandId {}, outcome {} / {} and message: {}",
         repairNo,
-        status,
         progress,
         message);
 
     Preconditions.checkArgument(
         repairNo == this.repairNo,
         "Handler for command id %s not handling message %s with number %s",
-        this.repairNo, (status.isPresent() ? status.get() : progress.get()), repairNo);
+        this.repairNo,
+        progress.get(),
+        repairNo);
 
     boolean failOutsideSynchronizedBlock = false;
     // DO NOT ADD EXTERNAL CALLS INSIDE THIS SYNCHRONIZED BLOCK (JMX PROXY ETC)
@@ -501,20 +501,9 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
           repairRunner.getRepairRunId(), segmentId).get();
 
       Preconditions.checkState(
-          RepairSegment.State.NOT_STARTED != currentSegment.getState() || successOrFailedNotified.get(),
-          "received " + (status.isPresent() ? status.get() : progress.get()) + " on unstarted segment " + segmentId);
-
-      // See status explanations at: https://wiki.apache.org/cassandra/RepairAsyncAPI
-      // Old repair API – up to Cassandra-2.1.x
-      if (status.isPresent()) {
-        failOutsideSynchronizedBlock = handleJmxNotificationForCassandra21(
-            status,
-            currentSegment,
-            repairNo,
-            failOutsideSynchronizedBlock,
-            progress,
-            cassandraManagementProxy);
-      }
+          RepairSegment.State.NOT_STARTED != currentSegment.getState()
+              || successOrFailedNotified.get(),
+          "received " + progress.get() + " on unstarted segment " + segmentId);
 
       // New repair API – Cassandra-2.2 onwards
       if (progress.isPresent()) {
@@ -669,143 +658,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
     return failOutsideSynchronizedBlock;
   }
 
-  private boolean handleJmxNotificationForCassandra21(
-      Optional<ActiveRepairService.Status> status,
-      RepairSegment currentSegment,
-      int repairNumber,
-      boolean failOutsideSynchronizedBlock,
-      Optional<ProgressEventType> progress,
-      ICassandraManagementProxy cassandraManagementProxy) {
-
-    switch (status.get()) {
-      case STARTED:
-        try {
-          // avoid changing state to RUNNING if later notifications have already arrived
-          if (!successOrFailedNotified.get()
-              && RepairSegment.State.STARTED == currentSegment.getState()
-              && renewLead(currentSegment)) {
-
-            context.storage.getRepairSegmentDao().updateRepairSegment(
-                currentSegment
-                    .with()
-                    .withState(RepairSegment.State.RUNNING)
-                    .withId(segmentId)
-                    .build());
-
-            LOG.debug("updated segment {} with state {}", segmentId, RepairSegment.State.RUNNING);
-            break;
-          }
-        } catch (AssertionError er) {
-          // ignore. segment repair has since timed out.
-        }
-        segmentFailed.set(true);
-        break;
-
-      case SESSION_SUCCESS:
-        // Cassandra 2.1 sends several SUCCESS/FAILED notifications during incremental repair
-        if (!(repairUnit.getIncrementalRepair() && successOrFailedNotified.get())) {
-          Preconditions.checkState(
-              !successOrFailedNotified.get(),
-              "illegal multiple 'SUCCESS' and 'FAILURE', %s:%s",
-              repairRunner.getRepairRunId(),
-              segmentId);
-          successOrFailedNotified.set(true);
-
-          try {
-            if (segmentFailed.get()) {
-              LOG.debug(
-                  "Got SESSION_SUCCESS for segment with id '{}' and repair number '{}', but it had already timed out",
-                  segmentId,
-                  repairNumber);
-            } else if (renewLead(currentSegment)) {
-              LOG.debug(
-                  "repair session succeeded for segment with id '{}' and repair number '{}'",
-                  segmentId,
-                  repairNumber);
-
-              context.storage.getRepairSegmentDao().updateRepairSegment(
-                  currentSegment
-                      .with()
-                      .withState(RepairSegment.State.DONE)
-                      .withEndTime(DateTime.now())
-                      .withId(segmentId)
-                      .build());
-
-              // Since we can get out of order notifications,
-              // we need to exit if we already got the COMPLETE notification.
-              if (completeNotified.get()) {
-                condition.signalAll();
-                cassandraManagementProxy.removeRepairStatusHandler(repairNumber);
-              }
-
-              break;
-            }
-          } catch (AssertionError er) {
-            // ignore. segment repair has since timed out.
-          }
-          segmentFailed.set(true);
-          break;
-        }
-        break;
-
-      case SESSION_FAILED:
-        // Cassandra 2.1 sends several SUCCESS/FAILED notifications during incremental repair
-        if (!(repairUnit.getIncrementalRepair() && successOrFailedNotified.get())) {
-          Preconditions.checkState(
-              !successOrFailedNotified.get(),
-              "illegal multiple 'SUCCESS' and 'FAILURE', %s:%s",
-              repairRunner.getRepairRunId(),
-              segmentId);
-
-          LOG.warn(
-              "repair session failed for segment with id '{}' and repair number '{}'",
-              segmentId,
-              repairNumber);
-          failOutsideSynchronizedBlock = true;
-          // Since we can get out of order notifications,
-          // we need to exit if we already got the COMPLETE notification.
-          successOrFailedNotified.set(true);
-          if (completeNotified.get()) {
-            condition.signalAll();
-            cassandraManagementProxy.removeRepairStatusHandler(repairNumber);
-          }
-          break;
-        }
-        break;
-
-      case FINISHED:
-
-        Preconditions.checkState(
-            !completeNotified.get(),
-            "illegal multiple 'COMPLETE', %s:%s", repairRunner.getRepairRunId(), segmentId);
-
-        // This gets called through the JMX proxy at the end
-        // regardless of succeeded or failed sessions.
-        // Since we can get out of order notifications,
-        // we won't exit unless we already got a SUCCESS or ERROR notification.
-        completeNotified.set(true);
-        LOG.debug(
-            "repair session finished for segment with id '{}' and repair number '{}'",
-            segmentId,
-            repairNumber);
-        if (successOrFailedNotified.get()) {
-          condition.signalAll();
-          cassandraManagementProxy.removeRepairStatusHandler(repairNumber);
-        }
-        break;
-      default:
-        LOG.debug(
-            "Unidentified progressStatus {} for segment with id '{}' and repair number '{}'",
-            progress.get(),
-            segmentId,
-            repairNumber);
-    }
-    return failOutsideSynchronizedBlock;
-  }
-
-  /**
-   * Attempts to clear snapshots that are possibly left behind after failed repair sessions.
-   */
+  /** Attempts to clear snapshots that are possibly left behind after failed repair sessions. */
   void tryClearSnapshots(String message) {
     String keyspace = repairUnit.getKeyspaceName();
     String repairId = parseRepairId(message);

@@ -45,7 +45,7 @@ import javax.ws.rs.core.UriInfo;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableSet;
-import org.apache.http.client.HttpClient;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -61,7 +61,7 @@ public final class DiagEventSubscriptionResource {
   private final DiagEventSubscriptionService diagEventService;
 
   public DiagEventSubscriptionResource(AppContext context,
-                                       HttpClient httpClient,
+                                       CloseableHttpClient httpClient,
                                        ScheduledExecutorService executor,
                                        IEventsDao eventsDao) {
     this.context = context;

@@ -23,14 +23,13 @@ import io.cassandrareaper.core.RepairUnit;
 import java.util.Optional;
 import java.util.UUID;
 
-import com.datastax.driver.core.ConsistencyLevel;
-import com.datastax.driver.core.PreparedStatement;
-import com.datastax.driver.core.ResultSet;
-import com.datastax.driver.core.Row;
-import com.datastax.driver.core.Session;
-import com.datastax.driver.core.SimpleStatement;
-import com.datastax.driver.core.Statement;
-import com.datastax.driver.core.utils.UUIDs;
+import com.datastax.oss.driver.api.core.ConsistencyLevel;
+import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.cql.PreparedStatement;
+import com.datastax.oss.driver.api.core.cql.ResultSet;
+import com.datastax.oss.driver.api.core.cql.Row;
+import com.datastax.oss.driver.api.core.cql.SimpleStatement;
+import com.datastax.oss.driver.api.core.uuid.Uuids;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
@@ -52,9 +51,9 @@ public class CassandraRepairUnitDao implements IRepairUnitDao {
           }
         });
   private final int defaultTimeout;
-  private final Session session;
+  private final CqlSession session;
 
-  public CassandraRepairUnitDao(int defaultTimeout, Session session) {
+  public CassandraRepairUnitDao(int defaultTimeout, CqlSession session) {
     this.defaultTimeout = defaultTimeout;
     this.session = session;
     prepareStatements();
@@ -63,20 +62,20 @@ public class CassandraRepairUnitDao implements IRepairUnitDao {
   private void prepareStatements() {
     insertRepairUnitPrepStmt = session
         .prepare(
-            "INSERT INTO repair_unit_v1(id, cluster_name, keyspace_name, column_families, "
+            SimpleStatement.newInstance("INSERT INTO repair_unit_v1(id, cluster_name, keyspace_name, column_families, "
                 + "incremental_repair, subrange_incremental, nodes, \"datacenters\", blacklisted_tables,"
                 + "repair_thread_count, timeout) "
                 + "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
-        .setConsistencyLevel(ConsistencyLevel.QUORUM);
+              .setConsistencyLevel(ConsistencyLevel.QUORUM));
     getRepairUnitPrepStmt = session
-        .prepare("SELECT * FROM repair_unit_v1 WHERE id = ?")
-        .setConsistencyLevel(ConsistencyLevel.QUORUM);
+        .prepare(SimpleStatement.newInstance("SELECT * FROM repair_unit_v1 WHERE id = ?")
+          .setConsistencyLevel(ConsistencyLevel.QUORUM));
     deleteRepairUnitPrepStmt = session.prepare("DELETE FROM repair_unit_v1 WHERE id = ?");
   }
 
   @Override
   public RepairUnit addRepairUnit(RepairUnit.Builder newRepairUnit) {
-    RepairUnit repairUnit = newRepairUnit.build(UUIDs.timeBased());
+    RepairUnit repairUnit = newRepairUnit.build(Uuids.timeBased());
     updateRepairUnit(repairUnit);
 
     repairUnits.put(repairUnit.getId(), repairUnit);
@@ -128,8 +127,7 @@ public class CassandraRepairUnitDao implements IRepairUnitDao {
   public Optional<RepairUnit> getRepairUnit(RepairUnit.Builder params) {
     // brute force again
     RepairUnit repairUnit = null;
-    Statement stmt = new SimpleStatement(SELECT_REPAIR_UNIT);
-    stmt.setIdempotent(Boolean.TRUE);
+    SimpleStatement stmt = SimpleStatement.newInstance(SELECT_REPAIR_UNIT).setIdempotent(Boolean.TRUE);
     ResultSet results = session.execute(stmt);
     for (Row repairUnitRow : results) {
       RepairUnit existingRepairUnit = RepairUnit.builder()
@@ -143,10 +141,10 @@ public class CassandraRepairUnitDao implements IRepairUnitDao {
           .blacklistedTables(repairUnitRow.getSet("blacklisted_tables", String.class))
           .repairThreadCount(repairUnitRow.getInt("repair_thread_count"))
           .timeout(repairUnitRow.isNull("timeout") ? defaultTimeout : repairUnitRow.getInt("timeout"))
-          .build(repairUnitRow.getUUID("id"));
+          .build(repairUnitRow.getUuid("id"));
       if (existingRepairUnit.with().equals(params)) {
         repairUnit = existingRepairUnit;
-        LOG.info("Found matching repair unit: {}", repairUnitRow.getUUID("id"));
+        LOG.info("Found matching repair unit: {}", repairUnitRow.getUuid("id"));
         // exit the loop once we find a match
         break;
       }
