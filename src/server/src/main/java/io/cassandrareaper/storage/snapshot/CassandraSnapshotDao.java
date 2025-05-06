@@ -1,19 +1,16 @@
 /*
- * Copyright 2016-2017 Spotify AB
- * Copyright 2016-2019 The Last Pickle Ltd
- * Copyright 2020-2020 DataStax, Inc.
+ * Copyright 2016-2017 Spotify AB Copyright 2016-2019 The Last Pickle Ltd Copyright 2020-2020
+ * DataStax, Inc.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License. You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software distributed under the License
+ * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+ * or implied. See the License for the specific language governing permissions and limitations under
+ * the License.
  */
 
 package io.cassandrareaper.storage.snapshot;
@@ -42,23 +39,21 @@ public class CassandraSnapshotDao implements ISnapshotDao {
   }
 
   private void prepareStatements() {
-    getSnapshotPrepStmt = session.prepare("SELECT * FROM snapshot WHERE cluster = ? and snapshot_name = ?");
-    deleteSnapshotPrepStmt = session.prepare("DELETE FROM snapshot WHERE cluster = ? and snapshot_name = ?");
-    saveSnapshotPrepStmt = session.prepare(
-        "INSERT INTO snapshot (cluster, snapshot_name, owner, cause, creation_time)"
+    getSnapshotPrepStmt =
+        session.prepare("SELECT * FROM snapshot WHERE cluster = ? and snapshot_name = ?");
+    deleteSnapshotPrepStmt =
+        session.prepare("DELETE FROM snapshot WHERE cluster = ? and snapshot_name = ?");
+    saveSnapshotPrepStmt =
+        session.prepare("INSERT INTO snapshot (cluster, snapshot_name, owner, cause, creation_time)"
             + " VALUES(?,?,?,?,?)");
 
   }
 
   @Override
   public boolean saveSnapshot(Snapshot snapshot) {
-    session.execute(
-        saveSnapshotPrepStmt.bind(
-            snapshot.getClusterName(),
-            snapshot.getName(),
-            snapshot.getOwner().orElse("reaper"),
-            snapshot.getCause().orElse("taken with reaper"),
-            Instant.ofEpochMilli(snapshot.getCreationDate().get().getMillis())));
+    session.execute(saveSnapshotPrepStmt.bind(snapshot.getClusterName(), snapshot.getName(),
+        snapshot.getOwner().orElse("reaper"), snapshot.getCause().orElse("taken with reaper"),
+        Instant.ofEpochMilli(snapshot.getCreationDate().get().getMillis())));
 
     return true;
   }
@@ -71,13 +66,12 @@ public class CassandraSnapshotDao implements ISnapshotDao {
 
   @Override
   public Snapshot getSnapshot(String clusterName, String snapshotName) {
-    Snapshot.Builder snapshotBuilder = Snapshot.builder().withClusterName(clusterName).withName(snapshotName);
+    Snapshot.Builder snapshotBuilder =
+        Snapshot.builder().withClusterName(clusterName).withName(snapshotName);
 
     ResultSet result = session.execute(getSnapshotPrepStmt.bind(clusterName, snapshotName));
-    for (Row row : result.all() ) {
-      snapshotBuilder
-          .withCause(row.getString("cause"))
-          .withOwner(row.getString("owner"))
+    for (Row row : result.all()) {
+      snapshotBuilder.withCause(row.getString("cause")).withOwner(row.getString("owner"))
           .withCreationDate(new DateTime(row.getInstant("creation_time").toEpochMilli()));
     }
 

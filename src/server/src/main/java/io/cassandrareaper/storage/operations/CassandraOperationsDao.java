@@ -67,10 +67,8 @@ public class CassandraOperationsDao implements IOperationsDao {
             DateTime.now().minusMinutes(1).toString(TIME_BUCKET_FORMATTER), host)));
     for (CompletionStage<AsyncResultSet> future : futures) {
       AsyncResultSet results = future.toCompletableFuture().join();
-      while (true) {
-        for (Row row : results.currentPage()) {
-          return row.getString("data");
-        }
+      for (Row row : results.currentPage()) {
+        return row.getString("data");
       }
     }
     return "";
