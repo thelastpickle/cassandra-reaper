@@ -158,7 +158,7 @@ public class JmxManagementConnectionFactory implements IManagementConnectionFact
     try {
       JmxConnectionProvider provider = new JmxConnectionProvider(
           host, jmxCredentials, context.config.getJmxConnectionTimeoutInSeconds(),
-          this.metricRegistry, cryptograph, this.jmxmp);
+          this.metricRegistry, cryptograph, this.jmxmp, node.getClusterName());
       JMX_CONNECTIONS.computeIfAbsent(host, provider::apply);
       JmxCassandraManagementProxy proxy = JMX_CONNECTIONS.get(host);
       if (!proxy.isConnectionAlive()) {
@@ -274,6 +274,7 @@ public class JmxManagementConnectionFactory implements IManagementConnectionFact
     private final MetricRegistry metricRegistry;
     private final Cryptograph cryptograph;
     private final Jmxmp jmxmp;
+    private final String clusterName;
 
     JmxConnectionProvider(
         String host,
@@ -281,13 +282,15 @@ public class JmxManagementConnectionFactory implements IManagementConnectionFact
         int connectionTimeout,
         MetricRegistry metricRegistry,
         Cryptograph cryptograph,
-        Jmxmp jmxmp) {
+        Jmxmp jmxmp,
+        String clusterName) {
       this.host = host;
       this.jmxCredentials = jmxCredentials;
       this.connectionTimeout = connectionTimeout;
       this.metricRegistry = metricRegistry;
       this.cryptograph = cryptograph;
       this.jmxmp = jmxmp;
+      this.clusterName = clusterName;
     }
 
     @Override
@@ -295,7 +298,8 @@ public class JmxManagementConnectionFactory implements IManagementConnectionFact
       Preconditions.checkArgument(host.equals(this.host));
       try {
         JmxCassandraManagementProxy proxy = JmxCassandraManagementProxy.connect(
-            host, jmxCredentials, addressTranslator, connectionTimeout, metricRegistry, cryptograph, jmxmp);
+            host, jmxCredentials, addressTranslator, connectionTimeout, metricRegistry,
+            cryptograph, jmxmp, clusterName);
         return proxy;
       } catch (ReaperException | InterruptedException ex) {
         throw new RuntimeException(ex);
