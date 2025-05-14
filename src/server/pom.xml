@@ -40,6 +40,7 @@
         <maven.build.timestamp.format>yyyy-MM-dd HH:mm:ss</maven.build.timestamp.format>
         <management.api.version>0.1.74</management.api.version>
         <eclipsestore.version>1.3.1</eclipsestore.version>
+        <swagger-core.version>2.2.31</swagger-core.version>
 
         <!-- Cucumber Scenario Outline Examples listing released versions to test db migration against -->
         <!-- anything added here must first be added as a artifact in build/plugins/plugins@maven-dependency-plugin -->
@@ -281,6 +282,16 @@
             <groupId>org.eclipse.store</groupId>
             <artifactId>storage-embedded</artifactId>
             <version>${eclipsestore.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.swagger.core.v3</groupId>
+            <artifactId>swagger-jaxrs2</artifactId>
+            <version>${swagger-core.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.swagger.core.v3</groupId>
+            <artifactId>swagger-jaxrs2-servlet-initializer-v2</artifactId>
+            <version>${swagger-core.version}</version>
         </dependency>
 
 

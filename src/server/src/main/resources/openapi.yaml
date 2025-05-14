@@ -1,0 +1,18 @@
+resourcePackages:
+  - io.cassandrareaper.resources
+prettyPrint: true
+cacheTTL: 0
+openAPI:
+  info:
+    version: '3.8.0'
+    title: Swagger for Cassandra Reaper
+    description: |
+      Reaper is a centralized, stateful, and highly configurable tool for running Apache Cassandra repairs against single or multi-site clusters.
+
+      The current version supports running Apache Cassandra cluster repairs in a segmented manner, opportunistically running multiple parallel repairs at the same time on different nodes within the cluster. Basic repair scheduling functionality is also supported.
+#    termsOfService: http://swagger.io/terms/
+#    contact:
+#      email: apiteam@swagger.io
+    license:
+      name: Apache 2.0
+      url: http://www.apache.org/licenses/LICENSE-2.0.html
