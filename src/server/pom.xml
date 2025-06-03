@@ -81,11 +81,6 @@
             <version>${logback.version}</version>
         </dependency>
         <dependency>
-            <groupId>javax.mail</groupId>
-            <artifactId>javax.mail-api</artifactId>
-            <version>1.6.2</version>
-        </dependency>
-        <dependency>
             <groupId>io.dropwizard</groupId>
             <artifactId>dropwizard-core</artifactId>
             <version>${dropwizard.version}</version>
@@ -106,17 +101,6 @@
             <version>${dropwizard.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.coursera</groupId>
-            <artifactId>dropwizard-metrics-datadog</artifactId>
-            <version>1.1.14</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>commons-logging</groupId>
-                    <artifactId>commons-logging</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        <dependency>
             <groupId>io.dropwizard.modules</groupId>
             <artifactId>dropwizard-cassandra</artifactId>
             <version>3.0.0</version>
@@ -124,7 +108,7 @@
         <dependency>
             <groupId>com.fasterxml.jackson.datatype</groupId>
             <artifactId>jackson-datatype-joda</artifactId>
-            <version>2.18.3</version>
+            <version>2.18.4</version>
         </dependency>
         <dependency>
             <groupId>org.apache.cassandra</groupId>
@@ -168,7 +152,7 @@
         <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty-handler</artifactId>
-            <version>4.1.94.Final</version>
+            <version>4.1.121.Final</version> 
         </dependency>
         <dependency>
             <groupId>org.cognitor.cassandra</groupId>
@@ -227,12 +211,12 @@
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-configuration2</artifactId>
-            <version>2.10.1</version>
+            <version>2.12.0</version>
         </dependency>
         <dependency>
             <groupId>io.jsonwebtoken</groupId>
             <artifactId>jjwt</artifactId>
-            <version>0.9.1</version>
+            <version>0.12.6</version>
         </dependency>
         <dependency>
             <groupId>org.glassfish.jersey.core</groupId>

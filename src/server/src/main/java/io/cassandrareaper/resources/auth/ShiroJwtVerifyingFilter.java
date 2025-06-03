@@ -2,17 +2,15 @@
  *
  * Copyright 2019-2019 The Last Pickle Ltd
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License. You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software distributed under the License
+ * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+ * or implied. See the License for the specific language governing permissions and limitations under
+ * the License.
  */
 
 package io.cassandrareaper.resources.auth;
@@ -48,7 +46,8 @@ public final class ShiroJwtVerifyingFilter extends AccessControlFilter {
   }
 
   @Override
-  protected boolean isAccessAllowed(ServletRequest req, ServletResponse res, Object mappedValue) throws Exception {
+  protected boolean isAccessAllowed(ServletRequest req, ServletResponse res, Object mappedValue)
+      throws Exception {
     if (isCorsEnabled() && RequestUtils.isOptionsRequest(req)) {
       return true;
     }
@@ -56,23 +55,24 @@ public final class ShiroJwtVerifyingFilter extends AccessControlFilter {
     Subject nonJwt = getSubject(req, res);
 
     return null != nonJwt.getPrincipal() && (nonJwt.isRemembered() || nonJwt.isAuthenticated())
-      ? true
-      : getJwtUser(req).isPresent();
+        ? true
+        : getJwtUser(req).isPresent();
   }
 
   static Subject getJwtSubject(Subject nonJwt, ServletRequest req, ServletResponse res) {
     return null != nonJwt.getPrincipal() && (nonJwt.isRemembered() || nonJwt.isAuthenticated())
-      ? nonJwt
-      : new WebSubject.Builder(req, res)
-          .principals(new SimplePrincipalCollection(getJwtUser(req).get(), "jwtRealm"))
-          .buildSubject();
+        ? nonJwt
+        : new WebSubject.Builder(req, res)
+            .principals(new SimplePrincipalCollection(getJwtUser(req).get(), "jwtRealm"))
+            .buildSubject();
   }
 
   @Override
   protected boolean onAccessDenied(ServletRequest req, ServletResponse res) throws Exception {
     WebUtils.toHttp(res).setStatus(HttpServletResponse.SC_FORBIDDEN);
     WebUtils.toHttp(res).setHeader("Content-Type", "text/plain");
-    WebUtils.toHttp(res).getOutputStream().print("Forbidden access. Please login to access this page.");
+    WebUtils.toHttp(res).getOutputStream()
+        .print("Forbidden access. Please login to access this page.");
     WebUtils.toHttp(res).flushBuffer();
     return false;
   }
@@ -82,8 +82,10 @@ public final class ShiroJwtVerifyingFilter extends AccessControlFilter {
     if (null != jwt && jwt.startsWith("Bearer ")) {
       try {
         jwt = jwt.substring(jwt.indexOf(' ') + 1);
-        Jws<Claims> claims = Jwts.parser().setSigningKey(ShiroJwtProvider.SIGNING_KEY).parseClaimsJws(jwt);
-        String user = claims.getBody().getSubject();
+        Jws<Claims> claims =
+            Jwts.parser().verifyWith((javax.crypto.SecretKey) ShiroJwtProvider.SIGNING_KEY).build()
+                .parseSignedClaims(jwt);
+        String user = claims.getPayload().getSubject();
         return Strings.hasText(user) ? Optional.of(user) : Optional.empty();
       } catch (JwtException | IllegalArgumentException e) {
         LOG.error("Failed validating JWT {} from {}", jwt, WebUtils.toHttp(req).getRemoteAddr());

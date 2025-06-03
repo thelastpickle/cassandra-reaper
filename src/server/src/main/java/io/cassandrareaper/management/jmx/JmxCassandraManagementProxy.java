@@ -847,8 +847,13 @@ public final class JmxCassandraManagementProxy
   }
 
   public void takeSnapshot(String snapshotName, String... keyspaces) throws IOException {
-    this.getStorageServiceMBean().takeSnapshot(snapshotName, Collections.EMPTY_MAP,
-        String.join(",", keyspaces));
+    if (keyspaces.length > 0) {
+      this.getStorageServiceMBean().takeSnapshot(snapshotName, Collections.EMPTY_MAP,
+          String.join(" ", keyspaces));
+    } else {
+      this.getStorageServiceMBean().takeSnapshot(snapshotName, Collections.EMPTY_MAP,
+          String.join(" ", getKeyspaces()));
+    }
   }
 
   public void takeColumnFamilySnapshot(String keyspace, String table, String snapshotName)
