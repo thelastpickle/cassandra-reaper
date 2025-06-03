@@ -43,7 +43,6 @@ scheduleRetryDelay: ${REAPER_SCHEDULE_RETRY_DELAY:-PT1H}
 # The default is ALL
 datacenterAvailability: ${REAPER_DATACENTER_AVAILABILITY}
 
-
 autoScheduling:
   enabled: ${REAPER_AUTO_SCHEDULING_ENABLED}
   initialDelayPeriod: ${REAPER_AUTO_SCHEDULING_INITIAL_DELAY_PERIOD}
@@ -57,10 +56,6 @@ autoScheduling:
   excludedClusters: ${REAPER_AUTO_SCHEDULING_EXCLUDED_CLUSTERS}
 
 jmxPorts: ${REAPER_JMX_PORTS}
-
-jmxmp:
-  enabled: ${REAPER_JMXMP_ENABLED}
-  ssl: ${REAPER_JMXMP_SSL}
 
 logging:
   level: ${REAPER_LOGGING_ROOT_LEVEL}
@@ -89,4 +84,3 @@ httpManagement:
   keystore: ${REAPER_HTTP_MANAGEMENT_KEYSTORE_PATH}
   truststore: ${REAPER_HTTP_MANAGEMENT_TRUSTSTORE_PATH}
   truststoresDir: ${REAPER_HTTP_MANAGEMENT_TRUSTSTORES_DIR}
-
