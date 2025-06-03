@@ -140,11 +140,11 @@ public final class ReaperApplicationConfiguration extends Configuration {
   @JsonProperty
   private Integer repairThreadCount;
   /**
-   * If set to more than 0, defines how many days of run history should be kept.
+   * If set to more than 0, defines how many days of run history should be kept. Default: 30
    */
   @Nullable
   @JsonProperty
-  private Integer purgeRecordsAfterInDays;
+  private Integer purgeRecordsAfterInDays = 30;
   /**
    * If set to more than 0, defines how many runs to keep per repair unit.
    */
@@ -429,7 +429,7 @@ public final class ReaperApplicationConfiguration extends Configuration {
   }
 
   public Integer getPurgeRecordsAfterInDays() {
-    return purgeRecordsAfterInDays == null ? 0 : purgeRecordsAfterInDays;
+    return purgeRecordsAfterInDays == null ? 30 : purgeRecordsAfterInDays;
   }
 
   @JsonProperty("purgeRecordsAfterInDays")
