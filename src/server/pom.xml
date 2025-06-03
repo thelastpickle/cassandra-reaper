@@ -63,7 +63,7 @@
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
-            <version>24.1.1-jre</version>
+            <version>33.4.8-jre</version>
         </dependency>
         <dependency>
             <groupId>ch.qos.logback</groupId>
@@ -126,21 +126,10 @@
             <artifactId>jackson-datatype-joda</artifactId>
             <version>2.18.3</version>
         </dependency>
-        <!-- <dependency>
-            <groupId>systems.composable</groupId>
-            <artifactId>dropwizard-cassandra</artifactId>
-            <version>4.1.0</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>com.google.guava</groupId>
-                    <artifactId>guava</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency> -->
         <dependency>
             <groupId>org.apache.cassandra</groupId>
             <artifactId>cassandra-all</artifactId>
-            <version>2.2.12</version>
+            <version>4.1.8</version>
             <exclusions>
                 <exclusion>
                     <groupId>org.slf4j</groupId>
@@ -255,11 +244,11 @@
             <artifactId>jersey-media-sse</artifactId>
             <version>${jersey.version}</version>
         </dependency>
-        <dependency>
+<!--        <dependency>
           <groupId>org.glassfish.jersey.bundles.repackaged</groupId>
           <artifactId>jersey-guava</artifactId>
           <version>2.26-b03</version>
-        </dependency>
+        </dependency> -->
 		<!-- https://mvnrepository.com/artifact/org.glassfish.main.external/jmxremote_optional-repackaged -->
         <!-- Used to connect to Cassandra through JMXMP protocol-->
         <dependency>
@@ -342,7 +331,7 @@
         <dependency>
             <groupId>org.zapodot</groupId>
             <artifactId>embedded-ldap-junit</artifactId>
-            <version>0.7</version>
+            <version>0.9.0</version>
             <scope>test</scope>
         </dependency>
         <dependency>
