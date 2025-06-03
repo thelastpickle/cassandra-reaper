@@ -1,18 +1,15 @@
 /*
- * Copyright 2014-2017 Spotify AB
- * Copyright 2016-2019 The Last Pickle Ltd
+ * Copyright 2014-2017 Spotify AB Copyright 2016-2019 The Last Pickle Ltd
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License. You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software distributed under the License
+ * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+ * or implied. See the License for the specific language governing permissions and limitations under
+ * the License.
  */
 
 package io.cassandrareaper;
@@ -113,9 +110,6 @@ public final class ReaperApplicationConfiguration extends Configuration {
   private Map<String, Integer> jmxPorts;
 
   @JsonProperty
-  private Jmxmp jmxmp = new Jmxmp();
-
-  @JsonProperty
   private Map<String, JmxCredentials> jmxCredentials;
 
   @JsonProperty
@@ -190,14 +184,6 @@ public final class ReaperApplicationConfiguration extends Configuration {
 
   public void setHttpManagement(HttpManagement httpManagement) {
     this.httpManagement = httpManagement;
-  }
-
-  public Jmxmp getJmxmp() {
-    return jmxmp;
-  }
-
-  public void setJmxmp(Jmxmp jmxmp) {
-    this.jmxmp = jmxmp;
   }
 
   public int getSegmentCount() {
@@ -281,9 +267,7 @@ public final class ReaperApplicationConfiguration extends Configuration {
   }
 
   public int getMaxParallelRepairs() {
-    return maxParallelRepairs == null
-        ? 2
-        : maxParallelRepairs;
+    return maxParallelRepairs == null ? 2 : maxParallelRepairs;
   }
 
   public void setMaxParallelRepairs(int maxParallelRepairs) {
@@ -311,11 +295,13 @@ public final class ReaperApplicationConfiguration extends Configuration {
   }
 
   public int getRepairManagerSchedulingIntervalSeconds() {
-    return this.repairManagerSchedulingIntervalSeconds == null ? 30 : this.repairManagerSchedulingIntervalSeconds;
+    return this.repairManagerSchedulingIntervalSeconds == null ? 30
+        : this.repairManagerSchedulingIntervalSeconds;
   }
 
   @JsonProperty
-  public void setRepairManagerSchedulingIntervalSeconds(int repairManagerSchedulingIntervalSeconds) {
+  public void setRepairManagerSchedulingIntervalSeconds(
+      int repairManagerSchedulingIntervalSeconds) {
     this.repairManagerSchedulingIntervalSeconds = repairManagerSchedulingIntervalSeconds;
   }
 
@@ -417,7 +403,8 @@ public final class ReaperApplicationConfiguration extends Configuration {
   }
 
   public DatacenterAvailability getDatacenterAvailability() {
-    return this.datacenterAvailability != null ? this.datacenterAvailability : DatacenterAvailability.ALL;
+    return this.datacenterAvailability != null ? this.datacenterAvailability
+        : DatacenterAvailability.ALL;
   }
 
   @JsonProperty("datacenterAvailability")
@@ -561,14 +548,18 @@ public final class ReaperApplicationConfiguration extends Configuration {
     ALL,
     /* We require jmx access to all nodes in the local datacenter */
     LOCAL,
-    /* Each datacenter requires at minimum one reaper instance that has jmx access to all nodes in that datacenter */
+    /*
+     * Each datacenter requires at minimum one reaper instance that has jmx access to all nodes in
+     * that datacenter
+     */
     EACH,
     /* Sets Reaper in sidecar mode where each Cassandra node has a collocated Reaper instance */
     SIDECAR;
 
 
     /**
-     * Check if the current datacenter availability mode is to have collocation between Reaper and a DC/node.
+     * Check if the current datacenter availability mode is to have collocation between Reaper and a
+     * DC/node.
      *
      * @return true if we're in a collocated mode, false otherwise
      */
@@ -669,7 +660,8 @@ public final class ReaperApplicationConfiguration extends Configuration {
     }
 
     public void setExcludedKeyspaces(List<String> excludedKeyspaces) {
-      this.excludedKeyspaces = null != excludedKeyspaces ? excludedKeyspaces : Collections.emptyList();
+      this.excludedKeyspaces =
+          null != excludedKeyspaces ? excludedKeyspaces : Collections.emptyList();
     }
 
     public List<String> getExcludedClusters() {
@@ -714,20 +706,10 @@ public final class ReaperApplicationConfiguration extends Configuration {
 
     @Override
     public String toString() {
-      return "AutoSchedulingConfiguration{"
-          + "enabled="
-          + enabled
-          + ", initialDelayPeriod="
-          + initialDelayPeriod
-          + ", periodBetweenPolls="
-          + periodBetweenPolls
-          + ", timeBeforeFirstSchedule="
-          + timeBeforeFirstSchedule
-          + ", scheduleSpreadPeriod="
-          + scheduleSpreadPeriod
-          + ", adaptive="
-          + adaptive
-          + '}';
+      return "AutoSchedulingConfiguration{" + "enabled=" + enabled + ", initialDelayPeriod="
+          + initialDelayPeriod + ", periodBetweenPolls=" + periodBetweenPolls
+          + ", timeBeforeFirstSchedule=" + timeBeforeFirstSchedule + ", scheduleSpreadPeriod="
+          + scheduleSpreadPeriod + ", adaptive=" + adaptive + '}';
     }
   }
 
@@ -744,25 +726,6 @@ public final class ReaperApplicationConfiguration extends Configuration {
 
     public Duration getSessionTimeout() {
       return sessionTimeout != null ? sessionTimeout : Duration.ofMinutes(10);
-    }
-
-
-  }
-
-  public static final class Jmxmp {
-
-    @JsonProperty
-    private Boolean ssl = false;
-
-    @JsonProperty
-    private Boolean enabled = false;
-
-    public Boolean useSsl() {
-      return ssl;
-    }
-
-    public Boolean isEnabled() {
-      return enabled;
     }
   }
 

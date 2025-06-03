@@ -14,7 +14,6 @@
 
 package io.cassandrareaper.management.jmx;
 
-import io.cassandrareaper.ReaperApplicationConfiguration.Jmxmp;
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.JmxCredentials;
@@ -135,14 +134,13 @@ public final class JmxCassandraManagementProxy
   private final Optional<StreamManagerMBean> smProxy;
   private final DiagnosticEventPersistenceMBean diagEventProxy;
   private final LastEventIdBroadcasterMBean lastEventIdProxy;
-  private final Jmxmp jmxmp;
 
   private JmxCassandraManagementProxy(String host, String hostBeforeTranslation,
       JMXConnector jmxConnector, StorageServiceMBean ssProxy, MBeanServerConnection mbeanServer,
       CompactionManagerMBean cmProxy, EndpointSnitchInfoMBean endpointSnitchMbean,
       FailureDetectorMBean fdProxy, MetricRegistry metricRegistry,
       Optional<StreamManagerMBean> smProxy, DiagnosticEventPersistenceMBean diagEventProxy,
-      LastEventIdBroadcasterMBean lastEventIdProxy, Jmxmp jmxmp) {
+      LastEventIdBroadcasterMBean lastEventIdProxy) {
 
     this.host = host;
     this.hostBeforeTranslation = hostBeforeTranslation;
@@ -157,13 +155,12 @@ public final class JmxCassandraManagementProxy
     this.lastEventIdProxy = lastEventIdProxy;
     this.metricRegistry = metricRegistry;
     this.smProxy = smProxy;
-    this.jmxmp = jmxmp;
     registerConnectionsGauge();
   }
 
   static JmxCassandraManagementProxy connect(String host, Optional<JmxCredentials> jmxCredentials,
       final AddressTranslator addressTranslator, int connectionTimeout,
-      MetricRegistry metricRegistry, Cryptograph cryptograph, Jmxmp jmxmp, String clusterName)
+      MetricRegistry metricRegistry, Cryptograph cryptograph, String clusterName)
       throws ReaperException, InterruptedException {
 
     if (host == null) {
@@ -173,7 +170,7 @@ public final class JmxCassandraManagementProxy
     final HostAndPort hostAndPort = HostAndPort.fromString(host);
 
     return connect(hostAndPort.getHost(), hostAndPort.getPortOrDefault(Cluster.DEFAULT_JMX_PORT),
-        jmxCredentials, addressTranslator, connectionTimeout, metricRegistry, cryptograph, jmxmp,
+        jmxCredentials, addressTranslator, connectionTimeout, metricRegistry, cryptograph,
         clusterName);
   }
 
@@ -188,7 +185,7 @@ public final class JmxCassandraManagementProxy
    */
   private static JmxCassandraManagementProxy connect(String originalHost, int port,
       Optional<JmxCredentials> jmxCredentials, final AddressTranslator addressTranslator,
-      int connectionTimeout, MetricRegistry metricRegistry, Cryptograph cryptograph, Jmxmp jmxmp,
+      int connectionTimeout, MetricRegistry metricRegistry, Cryptograph cryptograph,
       String clusterName) throws ReaperException, InterruptedException {
 
     JMXServiceURL jmxUrl;
@@ -202,7 +199,7 @@ public final class JmxCassandraManagementProxy
 
     try {
       LOG.debug("Connecting to {}...", host);
-      jmxUrl = JmxAddresses.getJmxServiceUrl(host, port, jmxmp.isEnabled());
+      jmxUrl = JmxAddresses.getJmxServiceUrl(host, port);
     } catch (MalformedURLException e) {
       LOG.error(String.format("Failed to prepare the JMX connection to %s:%s in cluster %s", host,
           port, clusterName));
@@ -210,21 +207,12 @@ public final class JmxCassandraManagementProxy
     }
     try {
       final Map<String, Object> env = new HashMap<>();
-      if (jmxmp.useSsl() && jmxCredentials.isPresent()) {
-        String[] creds = {jmxCredentials.get().getUsername(), jmxCredentials.get().getPassword()};
+      if (jmxCredentials.isPresent()) {
+        String jmxPassword = cryptograph.decrypt(jmxCredentials.get().getPassword());
+        String[] creds = {jmxCredentials.get().getUsername(), jmxPassword};
         env.put(JMXConnector.CREDENTIALS, creds);
-        LOG.debug("Use SSL with profile 'TLS SASL/PLAIN' with JMXMP");
-        env.put("jmx.remote.profiles", "TLS SASL/PLAIN");
-        env.put("jmx.remote.sasl.callback.handler", new UserPasswordCallbackHandler(
-            jmxCredentials.get().getUsername(), jmxCredentials.get().getPassword()));
-      } else {
-        if (jmxCredentials.isPresent()) {
-          String jmxPassword = cryptograph.decrypt(jmxCredentials.get().getPassword());
-          String[] creds = {jmxCredentials.get().getUsername(), jmxPassword};
-          env.put(JMXConnector.CREDENTIALS, creds);
-        }
-        env.put("com.sun.jndi.rmi.factory.socket", getRmiClientSocketFactory());
       }
+      env.put("com.sun.jndi.rmi.factory.socket", getRmiClientSocketFactory());
       JMXConnector jmxConn = connectWithTimeout(jmxUrl, connectionTimeout, TimeUnit.SECONDS, env);
       MBeanServerConnection mbeanServerConn = jmxConn.getMBeanServerConnection();
 
@@ -258,8 +246,7 @@ public final class JmxCassandraManagementProxy
               JMX.newMBeanProxy(mbeanServerConn, ObjectNames.DIAGNOSTICS_EVENTS,
                   DiagnosticEventPersistenceMBean.class),
               JMX.newMBeanProxy(mbeanServerConn, ObjectNames.LAST_EVENT_ID,
-                  LastEventIdBroadcasterMBean.class),
-              jmxmp);
+                  LastEventIdBroadcasterMBean.class));
 
       // registering listeners throws bunch of exceptions, so do it here rather than in the
       // constructor
