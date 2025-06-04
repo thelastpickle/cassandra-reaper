@@ -62,12 +62,13 @@ public final class Cluster implements Comparable<Cluster> {
   }
 
   public Builder with() {
-    Builder builder = new Builder()
-        .withName(name)
-        .withSeedHosts(seedHosts)
-        .withState(state)
-        .withLastContact(lastContact)
-        .withJmxPort(getJmxPort());
+    Builder builder =
+        new Builder()
+            .withName(name)
+            .withSeedHosts(seedHosts)
+            .withState(state)
+            .withLastContact(lastContact)
+            .withJmxPort(getJmxPort());
 
     Optional<JmxCredentials> jmxCredentials = getJmxCredentials();
     if (jmxCredentials.isPresent()) {
@@ -148,10 +149,10 @@ public final class Cluster implements Comparable<Cluster> {
     private Set<String> seedHosts;
     private State state = State.UNKNOWN;
     private LocalDate lastContact = LocalDate.MIN;
-    private final ClusterProperties.Builder properties = ClusterProperties.builder().withJmxPort(DEFAULT_JMX_PORT);
+    private final ClusterProperties.Builder properties =
+        ClusterProperties.builder().withJmxPort(DEFAULT_JMX_PORT);
 
-    private Builder() {
-    }
+    private Builder() {}
 
     public Builder withName(String name) {
       Preconditions.checkState(null == this.name);
@@ -200,7 +201,13 @@ public final class Cluster implements Comparable<Cluster> {
       Preconditions.checkNotNull(name);
       Preconditions.checkNotNull(seedHosts);
 
-      return new Cluster(name, Optional.ofNullable(partitioner), seedHosts, state, lastContact, properties.build());
+      return new Cluster(
+          name,
+          Optional.ofNullable(partitioner),
+          seedHosts,
+          state,
+          lastContact,
+          properties.build());
     }
   }
 }

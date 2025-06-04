@@ -25,32 +25,34 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import org.junit.Test;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import org.junit.Test;
 
 public final class SegmentGeneratorTest {
 
   @Test
   public void testGenerateSegments() throws Exception {
 
-    List<BigInteger> tokens = Lists.transform(Lists.newArrayList(
-            "0",
-            "1",
-            "56713727820156410577229101238628035242",
-            "56713727820156410577229101238628035243",
-            "113427455640312821154458202477256070484",
-            "113427455640312821154458202477256070485"),
-        (String string) -> new BigInteger(string));
+    List<BigInteger> tokens =
+        Lists.transform(
+            Lists.newArrayList(
+                "0",
+                "1",
+                "56713727820156410577229101238628035242",
+                "56713727820156410577229101238628035243",
+                "113427455640312821154458202477256070484",
+                "113427455640312821154458202477256070485"),
+            (String string) -> new BigInteger(string));
 
     SegmentGenerator generator = new SegmentGenerator("foo.bar.RandomPartitioner");
 
-    List<Segment> segments
-        = generator.generateSegments(10, tokens, Boolean.FALSE, Maps.newHashMap(), "2.2.10");
+    List<Segment> segments =
+        generator.generateSegments(10, tokens, Boolean.FALSE, Maps.newHashMap(), "2.2.10");
 
     assertEquals(15, segments.size());
 
@@ -64,14 +66,16 @@ public final class SegmentGeneratorTest {
         "(113427455640312821154458202477256070484,113427455640312821154458202477256070485]",
         segments.get(10).getBaseRange().toString());
 
-    tokens = Lists.transform(Lists.newArrayList(
-            "5",
-            "6",
-            "56713727820156410577229101238628035242",
-            "56713727820156410577229101238628035243",
-            "113427455640312821154458202477256070484",
-            "113427455640312821154458202477256070485"),
-        (String string) -> new BigInteger(string));
+    tokens =
+        Lists.transform(
+            Lists.newArrayList(
+                "5",
+                "6",
+                "56713727820156410577229101238628035242",
+                "56713727820156410577229101238628035243",
+                "113427455640312821154458202477256070484",
+                "113427455640312821154458202477256070485"),
+            (String string) -> new BigInteger(string));
 
     segments = generator.generateSegments(10, tokens, Boolean.FALSE, Maps.newHashMap(), "2.2.10");
     assertEquals(15, segments.size());
@@ -90,15 +94,17 @@ public final class SegmentGeneratorTest {
   @Test(expected = ReaperException.class)
   public void testZeroSizeRange() throws Exception {
 
-    List<String> tokenStrings = Lists.newArrayList(
-        "0",
-        "1",
-        "56713727820156410577229101238628035242",
-        "56713727820156410577229101238628035242",
-        "113427455640312821154458202477256070484",
-        "113427455640312821154458202477256070485");
+    List<String> tokenStrings =
+        Lists.newArrayList(
+            "0",
+            "1",
+            "56713727820156410577229101238628035242",
+            "56713727820156410577229101238628035242",
+            "113427455640312821154458202477256070484",
+            "113427455640312821154458202477256070485");
 
-    List<BigInteger> tokens = Lists.transform(tokenStrings, (String string) -> new BigInteger(string));
+    List<BigInteger> tokens =
+        Lists.transform(tokenStrings, (String string) -> new BigInteger(string));
 
     SegmentGenerator generator = new SegmentGenerator("foo.bar.RandomPartitioner");
     generator.generateSegments(10, tokens, Boolean.FALSE, Maps.newHashMap(), "2.2.10");
@@ -106,20 +112,22 @@ public final class SegmentGeneratorTest {
 
   @Test
   public void testRotatedRing() throws Exception {
-    List<String> tokenStrings = Lists.newArrayList(
-        "56713727820156410577229101238628035243",
-        "113427455640312821154458202477256070484",
-        "113427455640312821154458202477256070485",
-        "5",
-        "6",
-        "56713727820156410577229101238628035242");
+    List<String> tokenStrings =
+        Lists.newArrayList(
+            "56713727820156410577229101238628035243",
+            "113427455640312821154458202477256070484",
+            "113427455640312821154458202477256070485",
+            "5",
+            "6",
+            "56713727820156410577229101238628035242");
 
-    List<BigInteger> tokens = Lists.transform(tokenStrings, (String string) -> new BigInteger(string));
+    List<BigInteger> tokens =
+        Lists.transform(tokenStrings, (String string) -> new BigInteger(string));
 
     SegmentGenerator generator = new SegmentGenerator("foo.bar.RandomPartitioner");
 
-    List<Segment> segments
-        = generator.generateSegments(10, tokens, Boolean.FALSE, Maps.newHashMap(), "2.2.10");
+    List<Segment> segments =
+        generator.generateSegments(10, tokens, Boolean.FALSE, Maps.newHashMap(), "2.2.10");
 
     assertEquals(15, segments.size());
 
@@ -137,15 +145,17 @@ public final class SegmentGeneratorTest {
   @Test(expected = ReaperException.class)
   public void testDisorderedRing() throws Exception {
 
-    List<String> tokenStrings = Lists.newArrayList(
-        "0",
-        "113427455640312821154458202477256070485",
-        "1",
-        "56713727820156410577229101238628035242",
-        "56713727820156410577229101238628035243",
-        "113427455640312821154458202477256070484");
+    List<String> tokenStrings =
+        Lists.newArrayList(
+            "0",
+            "113427455640312821154458202477256070485",
+            "1",
+            "56713727820156410577229101238628035242",
+            "56713727820156410577229101238628035243",
+            "113427455640312821154458202477256070484");
 
-    List<BigInteger> tokens = Lists.transform(tokenStrings, (String string) -> new BigInteger(string));
+    List<BigInteger> tokens =
+        Lists.transform(tokenStrings, (String string) -> new BigInteger(string));
 
     SegmentGenerator generator = new SegmentGenerator("foo.bar.RandomPartitioner");
     generator.generateSegments(10, tokens, Boolean.FALSE, Maps.newHashMap(), "2.2.10");
@@ -210,8 +220,8 @@ public final class SegmentGeneratorTest {
     rangeToEndpoint.put(Arrays.asList("800", "1000"), Arrays.asList("node1", "node2"));
     rangeToEndpoint.put(Arrays.asList("1100", "1200"), Arrays.asList("node2", "node3", "node1"));
 
-    Map<List<String>, List<RingRange>> replicasToRangeMap
-        = RepairRunService.buildReplicasToRangeMap(rangeToEndpoint);
+    Map<List<String>, List<RingRange>> replicasToRangeMap =
+        RepairRunService.buildReplicasToRangeMap(rangeToEndpoint);
 
     List<Segment> segments = sg.coalesceTokenRanges(BigInteger.valueOf(1200), replicasToRangeMap);
 
@@ -233,8 +243,8 @@ public final class SegmentGeneratorTest {
     rangeToEndpoint.put(Arrays.asList("1300", "1400"), Arrays.asList("node2", "node3", "node1"));
     rangeToEndpoint.put(Arrays.asList("1400", "1500"), Arrays.asList("node2", "node3", "node1"));
 
-    Map<List<String>, List<RingRange>> replicasToRangeMap
-        = RepairRunService.buildReplicasToRangeMap(rangeToEndpoint);
+    Map<List<String>, List<RingRange>> replicasToRangeMap =
+        RepairRunService.buildReplicasToRangeMap(rangeToEndpoint);
 
     List<Segment> segments = sg.coalesceTokenRanges(BigInteger.valueOf(1), replicasToRangeMap);
 
@@ -257,8 +267,8 @@ public final class SegmentGeneratorTest {
     rangeToEndpoint.put(Arrays.asList("1300", "1400"), Arrays.asList("node1", "node2", "node3"));
     rangeToEndpoint.put(Arrays.asList("1400", "1500"), Arrays.asList("node1", "node2", "node3"));
 
-    Map<List<String>, List<RingRange>> replicasToRangeMap
-        = RepairRunService.buildReplicasToRangeMap(rangeToEndpoint);
+    Map<List<String>, List<RingRange>> replicasToRangeMap =
+        RepairRunService.buildReplicasToRangeMap(rangeToEndpoint);
 
     List<Segment> segments = sg.coalesceTokenRanges(BigInteger.valueOf(200), replicasToRangeMap);
 

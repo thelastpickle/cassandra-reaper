@@ -29,22 +29,21 @@ import java.util.stream.Collectors;
 import com.google.common.collect.Maps;
 
 public class MemoryMetricsDao implements IMetricsDao {
-  public final ConcurrentMap<String, Map<String, PercentRepairedMetric>> percentRepairedMetrics
-        = Maps.newConcurrentMap();
+  public final ConcurrentMap<String, Map<String, PercentRepairedMetric>> percentRepairedMetrics =
+      Maps.newConcurrentMap();
 
-  public MemoryMetricsDao() {
-  }
+  public MemoryMetricsDao() {}
 
   @Override
-  public List<PercentRepairedMetric> getPercentRepairedMetrics(String clusterName, UUID repairScheduleId, Long since) {
+  public List<PercentRepairedMetric> getPercentRepairedMetrics(
+      String clusterName, UUID repairScheduleId, Long since) {
     return percentRepairedMetrics.entrySet().stream()
-          .filter(entry -> entry.getKey().equals(clusterName + "-" + repairScheduleId))
-          .map(entry -> entry.getValue().entrySet())
-          .flatMap(Collection::stream)
-          .map(Map.Entry::getValue)
-          .collect(Collectors.toList());
+        .filter(entry -> entry.getKey().equals(clusterName + "-" + repairScheduleId))
+        .map(entry -> entry.getValue().entrySet())
+        .flatMap(Collection::stream)
+        .map(Map.Entry::getValue)
+        .collect(Collectors.toList());
   }
-
 
   @Override
   public void storePercentRepairedMetric(PercentRepairedMetric metric) {
@@ -58,5 +57,4 @@ public class MemoryMetricsDao implements IMetricsDao {
       percentRepairedMetrics.put(metricKey, newValue);
     }
   }
-
 }

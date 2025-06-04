@@ -32,11 +32,11 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+
 import javax.management.JMException;
 
 import com.google.common.collect.Lists;
 import org.joda.time.DateTime;
-
 
 public interface MetricsProxy {
 
@@ -63,22 +63,24 @@ public interface MetricsProxy {
   List<GenericMetric> collectPercentRepairedMetrics(String keyspaceName)
       throws JMException, IOException;
 
-  static List<GenericMetric> convertToGenericMetrics(Map<String, List<JmxStat>> jmxStats, Node node) {
+  static List<GenericMetric> convertToGenericMetrics(
+      Map<String, List<JmxStat>> jmxStats, Node node) {
     List<GenericMetric> metrics = Lists.newArrayList();
     DateTime now = DateTime.now();
     for (Entry<String, List<JmxStat>> jmxStatEntry : jmxStats.entrySet()) {
       for (JmxStat jmxStat : jmxStatEntry.getValue()) {
-        GenericMetric metric = GenericMetric.builder()
-            .withClusterName(node.getClusterName())
-            .withHost(node.getHostname())
-            .withMetricDomain(jmxStat.getDomain())
-            .withMetricType(jmxStat.getType())
-            .withMetricScope(jmxStat.getScope())
-            .withMetricName(jmxStat.getName())
-            .withMetricAttribute(jmxStat.getAttribute())
-            .withValue(jmxStat.getValue())
-            .withTs(now)
-            .build();
+        GenericMetric metric =
+            GenericMetric.builder()
+                .withClusterName(node.getClusterName())
+                .withHost(node.getHostname())
+                .withMetricDomain(jmxStat.getDomain())
+                .withMetricType(jmxStat.getType())
+                .withMetricScope(jmxStat.getScope())
+                .withMetricName(jmxStat.getName())
+                .withMetricAttribute(jmxStat.getAttribute())
+                .withValue(jmxStat.getValue())
+                .withTs(now)
+                .build();
         metrics.add(metric);
       }
     }
@@ -86,8 +88,8 @@ public interface MetricsProxy {
     return metrics;
   }
 
-  static ThreadPoolStat.Builder updateGenericMetricAttribute(GenericMetric stat,
-                                                                    ThreadPoolStat.Builder builder) {
+  static ThreadPoolStat.Builder updateGenericMetricAttribute(
+      GenericMetric stat, ThreadPoolStat.Builder builder) {
     switch (stat.getMetricName()) {
       case "MaxPoolSize":
         return builder.withMaxPoolSize((int) stat.getValue());
@@ -106,8 +108,8 @@ public interface MetricsProxy {
     }
   }
 
-  static DroppedMessages.Builder updateGenericMetricAttribute(GenericMetric stat,
-                                                                     DroppedMessages.Builder builder) {
+  static DroppedMessages.Builder updateGenericMetricAttribute(
+      GenericMetric stat, DroppedMessages.Builder builder) {
     switch (stat.getMetricAttribute()) {
       case "Count":
         return builder.withCount((int) stat.getValue());
@@ -124,8 +126,8 @@ public interface MetricsProxy {
     }
   }
 
-  static MetricsHistogram.Builder updateGenericMetricAttribute(GenericMetric stat,
-                                                                      MetricsHistogram.Builder builder) {
+  static MetricsHistogram.Builder updateGenericMetricAttribute(
+      GenericMetric stat, MetricsHistogram.Builder builder) {
     switch (stat.getMetricAttribute()) {
       case "Count":
         return builder.withCount((int) stat.getValue());

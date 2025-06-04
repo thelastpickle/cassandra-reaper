@@ -21,22 +21,23 @@ import java.security.NoSuchAlgorithmException;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.apache.commons.lang3.RandomStringUtils;
-import org.assertj.core.util.Throwables;
-import org.junit.Test;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import org.apache.commons.lang3.RandomStringUtils;
+import org.assertj.core.util.Throwables;
+import org.junit.Test;
+
 public class SymmetricCryptographTest {
 
   @Test
   public void decryptionAllowsForClearTextIfNotPrefixedProperly() {
     String secretText = "someText";
-    SymmetricCryptograph symmetricCryptograph = SymmetricCryptograph.builder()
+    SymmetricCryptograph symmetricCryptograph =
+        SymmetricCryptograph.builder()
             .withSystemPropertySecret(RandomStringUtils.randomAlphabetic(20))
             .build();
 
@@ -50,15 +51,16 @@ public class SymmetricCryptographTest {
     String secretText = "someText";
     String systemPropertyKey = RandomStringUtils.randomAlphabetic(20);
     System.setProperty(systemPropertyKey, "any_secret_value");
-    SymmetricCryptograph symmetricCryptograph = SymmetricCryptograph.builder()
-            .withSystemPropertySecret(systemPropertyKey)
-            .build();
+    SymmetricCryptograph symmetricCryptograph =
+        SymmetricCryptograph.builder().withSystemPropertySecret(systemPropertyKey).build();
 
     String encryptedText = symmetricCryptograph.encrypt(secretText);
     String decryptedText = symmetricCryptograph.decrypt(encryptedText);
 
     assertNotEquals(secretText, encryptedText);
-    assertTrue(encryptedText + " must start with {cipher} but does not", encryptedText.startsWith("{cipher}"));
+    assertTrue(
+        encryptedText + " must start with {cipher} but does not",
+        encryptedText.startsWith("{cipher}"));
     assertEquals(secretText, decryptedText);
   }
 
@@ -67,21 +69,22 @@ public class SymmetricCryptographTest {
     String secretText = "someText";
     String systemPropertyKey = RandomStringUtils.randomAlphabetic(20);
     System.setProperty(systemPropertyKey, "any_secret_value");
-    SymmetricCryptograph symmetricCryptograph = SymmetricCryptograph.builder()
-            .withSystemPropertySecret(systemPropertyKey)
-            .build();
+    SymmetricCryptograph symmetricCryptograph =
+        SymmetricCryptograph.builder().withSystemPropertySecret(systemPropertyKey).build();
 
     Set<String> encryptedValues = new HashSet<>();
     for (int i = 0; i < 10; i++) {
       String encryptedText = symmetricCryptograph.encrypt(secretText);
-      assertFalse(encryptedText + " has been created already", encryptedValues.contains(encryptedText));
+      assertFalse(
+          encryptedText + " has been created already", encryptedValues.contains(encryptedText));
       encryptedValues.add(encryptedText);
     }
   }
 
   @Test(expected = IllegalStateException.class)
   public void failEncryptionWhenSystemPropertyKeyNotSet() {
-    SymmetricCryptograph symmetricCryptograph = SymmetricCryptograph.builder()
+    SymmetricCryptograph symmetricCryptograph =
+        SymmetricCryptograph.builder()
             .withSystemPropertySecret(RandomStringUtils.randomAlphabetic(20))
             .build();
 
@@ -90,7 +93,8 @@ public class SymmetricCryptographTest {
 
   @Test(expected = IllegalStateException.class)
   public void failDecryptionWhenSystemPropertyKeyNotSet() {
-    SymmetricCryptograph symmetricCryptograph = SymmetricCryptograph.builder()
+    SymmetricCryptograph symmetricCryptograph =
+        SymmetricCryptograph.builder()
             .withSystemPropertySecret(RandomStringUtils.randomAlphabetic(20))
             .build();
 
@@ -102,7 +106,8 @@ public class SymmetricCryptographTest {
     String secretText = "someText";
     String systemPropertyKey = RandomStringUtils.randomAlphabetic(20);
     System.setProperty(systemPropertyKey, "any_secret_value");
-    SymmetricCryptograph symmetricCryptograph = SymmetricCryptograph.builder()
+    SymmetricCryptograph symmetricCryptograph =
+        SymmetricCryptograph.builder()
             .withAlgorithm("FOO")
             .withCipher("BAR")
             .withCipherType("ZAR")
@@ -116,10 +121,11 @@ public class SymmetricCryptographTest {
       fail("Should not be able to encrypt text using a bogus cipher: BAR");
     } catch (IllegalStateException e) {
       if (!(Throwables.getRootCause(e) instanceof NoSuchAlgorithmException)) {
-        fail("Should fail with NoSuchAlgorithmException but found "
-                + Throwables.getRootCause(e).getClass().getName() + " instead");
+        fail(
+            "Should fail with NoSuchAlgorithmException but found "
+                + Throwables.getRootCause(e).getClass().getName()
+                + " instead");
       }
     }
   }
-
 }

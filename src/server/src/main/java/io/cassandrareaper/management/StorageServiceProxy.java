@@ -24,7 +24,6 @@ import java.util.stream.Collectors;
 
 import com.google.common.base.Preconditions;
 
-
 public final class StorageServiceProxy {
 
   private final ICassandraManagementProxy proxy;
@@ -42,14 +41,9 @@ public final class StorageServiceProxy {
     Preconditions.checkNotNull(proxy, "Looks like the proxy is not connected");
 
     Map<String, String> tokenToEndpointMap = proxy.getTokenToEndpointMap();
-    return tokenToEndpointMap
-        .entrySet()
-        .stream()
+    return tokenToEndpointMap.entrySet().stream()
         .collect(
             Collectors.groupingBy(
                 Entry::getValue, Collectors.mapping(Entry::getKey, Collectors.toList())));
-
   }
-
-
 }

@@ -33,9 +33,7 @@ import com.google.common.base.Preconditions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * Single class to hold all application global interfacing objects, and app global options.
- */
+/** Single class to hold all application global interfacing objects, and app global options. */
 public final class AppContext {
 
   public static final String REAPER_INSTANCE_ADDRESS = Private.initialiseInstanceAddress();

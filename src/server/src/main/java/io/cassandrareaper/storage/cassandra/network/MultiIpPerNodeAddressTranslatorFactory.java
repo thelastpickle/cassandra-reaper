@@ -29,7 +29,8 @@ import io.dropwizard.cassandra.network.AddressTranslatorFactory;
 import org.hibernate.validator.constraints.NotEmpty;
 
 /**
- * A factory for configuring and building custom {@link com.datastax.driver.core.policies.AddressTranslator} instance.
+ * A factory for configuring and building custom {@link
+ * com.datastax.driver.core.policies.AddressTranslator} instance.
  */
 @JsonTypeName("multiIpPerNode")
 public class MultiIpPerNodeAddressTranslatorFactory implements AddressTranslatorFactory {
@@ -43,22 +44,19 @@ public class MultiIpPerNodeAddressTranslatorFactory implements AddressTranslator
 
   @Override
   public void accept(DropwizardProgrammaticDriverConfigLoaderBuilder builder) {
-    builder.withClass(DefaultDriverOption.ADDRESS_TRANSLATOR_CLASS, MultiIpPerNodeAddressTranslator.class);
+    builder.withClass(
+        DefaultDriverOption.ADDRESS_TRANSLATOR_CLASS, MultiIpPerNodeAddressTranslator.class);
   }
 
   public static class AddressTranslation {
     /**
-     * An IP address as returned by {@link java.net.InetAddress#getHostAddress()}. This IP address will be tranlated to
-     * the "to" hostname.
+     * An IP address as returned by {@link java.net.InetAddress#getHostAddress()}. This IP address
+     * will be tranlated to the "to" hostname.
      */
-    @NotEmpty
-    @JsonProperty
-    private String from;
-    /**
-     * An IP address or hostname to translate to.
-     */
-    @JsonProperty
-    private String to;
+    @NotEmpty @JsonProperty private String from;
+
+    /** An IP address or hostname to translate to. */
+    @JsonProperty private String to;
 
     public String getFrom() {
       return from;

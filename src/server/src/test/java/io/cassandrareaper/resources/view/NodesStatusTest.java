@@ -22,56 +22,34 @@ import io.cassandrareaper.resources.view.NodesStatus.EndpointState;
 import java.util.List;
 import java.util.Map;
 
-import com.google.common.base.Preconditions;
-import com.google.common.collect.Maps;
-import org.junit.Test;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import com.google.common.base.Preconditions;
+import com.google.common.collect.Maps;
+import org.junit.Test;
 
 public final class NodesStatusTest {
 
   @Test
   public void testParseIPv4EndpointStatusString() {
-    testParseEndpoint22StatusString(
-        "127.0.0.1",
-        "/127.0.0.1",
-        "/127.0.0.2",
-        "/127.0.0.3");
+    testParseEndpoint22StatusString("127.0.0.1", "/127.0.0.1", "/127.0.0.2", "/127.0.0.3");
 
-    testParseEndpoint21StatusString(
-        "127.0.0.1",
-        "/127.0.0.1",
-        "/127.0.0.2",
-        "/127.0.0.3");
+    testParseEndpoint21StatusString("127.0.0.1", "/127.0.0.1", "/127.0.0.2", "/127.0.0.3");
 
-    testParseEndpoint40StatusString(
-          "127.0.0.1",
-          "/127.0.0.1",
-          "/127.0.0.2",
-          "/127.0.0.3");
+    testParseEndpoint40StatusString("127.0.0.1", "/127.0.0.1", "/127.0.0.2", "/127.0.0.3");
   }
 
   @Test
   public void testParseIPv4EndpointWithHostnameStatusString() {
     testParseEndpoint22StatusString(
-        "127.0.0.1",
-        "localhost/127.0.0.1",
-        "/127.0.0.2",
-        "localhost3/127.0.0.3");
+        "127.0.0.1", "localhost/127.0.0.1", "/127.0.0.2", "localhost3/127.0.0.3");
 
     testParseEndpoint21StatusString(
-        "127.0.0.1",
-        "localhost/127.0.0.1",
-        "/127.0.0.2",
-        "localhost3/127.0.0.3");
+        "127.0.0.1", "localhost/127.0.0.1", "/127.0.0.2", "localhost3/127.0.0.3");
 
     testParseEndpoint40StatusString(
-          "127.0.0.1",
-          "localhost/127.0.0.1",
-          "/127.0.0.2",
-          "localhost3/127.0.0.3");
+        "127.0.0.1", "localhost/127.0.0.1", "/127.0.0.2", "localhost3/127.0.0.3");
   }
 
   @Test
@@ -112,20 +90,13 @@ public final class NodesStatusTest {
 
   @Test
   public void testParseIPv4EndpointCassandraStatusString() {
-    testParseEndpointCassandraStatusString(
-        "10.0.0.1",
-        "/10.0.0.1",
-        "/10.0.0.2",
-        "/10.0.0.3");
+    testParseEndpointCassandraStatusString("10.0.0.1", "/10.0.0.1", "/10.0.0.2", "/10.0.0.3");
   }
 
   @Test
   public void testParseIPv4EndpointCassandraWithHostnameStatusString() {
     testParseEndpointCassandraStatusString(
-        "10.0.0.1",
-        "one/10.0.0.1",
-        "two/10.0.0.2",
-        "three/10.0.0.3");
+        "10.0.0.1", "one/10.0.0.1", "two/10.0.0.2", "three/10.0.0.3");
   }
 
   @Test
@@ -146,11 +117,13 @@ public final class NodesStatusTest {
         "c.example.com/2a:6:b0:61aa:34b3:7805:1d3d:32");
   }
 
-  private void testParseEndpoint22StatusString(String sourceNode,
-                                               String endpoint1, String endpoint2, String endpoint3) {
+  private void testParseEndpoint22StatusString(
+      String sourceNode, String endpoint1, String endpoint2, String endpoint3) {
     Map<String, String> simpleStates = Maps.newHashMap();
 
-    String endpointsStatusString = endpoint1 + "\n"
+    String endpointsStatusString =
+        endpoint1
+            + "\n"
             + "  generation:1496849190\n"
             + "  heartbeat:1231900\n"
             + "  STATUS:14:NORMAL,-9223372036854775808\n"
@@ -165,7 +138,8 @@ public final class NodesStatusTest {
             + "  HOST_ID:2:f091f82b-ce2c-40ee-b30c-6e761e94e821\n"
             + "  RPC_READY:16:true\n"
             + "  TOKENS:13:<hidden>\n"
-            + endpoint2 + "\n"
+            + endpoint2
+            + "\n"
             + "  generation:1497347537\n"
             + "  heartbeat:27077\n"
             + "  STATUS:14:NORMAL,-3074457345618258603\n"
@@ -180,7 +154,8 @@ public final class NodesStatusTest {
             + "  HOST_ID:2:08f819b5-d96f-444e-9d4d-ec4136e1b716\n"
             + "  RPC_READY:16:true\n"
             + "  TOKENS:13:<hidden>\n"
-            + endpoint3 + "\n"
+            + endpoint3
+            + "\n"
             + "  generation:1496849191\n"
             + "  heartbeat:1230183\n"
             + "  STATUS:16:NORMAL,3074457345618258602\n"
@@ -204,14 +179,17 @@ public final class NodesStatusTest {
     assertEquals(1, nodesStatus.endpointStates.size());
     assertEquals(sourceNode, nodesStatus.endpointStates.get(0).sourceNode);
 
-    Map<String, Map<String, List<EndpointState>>> endpoints = nodesStatus.endpointStates.get(0).endpoints;
+    Map<String, Map<String, List<EndpointState>>> endpoints =
+        nodesStatus.endpointStates.get(0).endpoints;
     assertEquals(1, endpoints.get("datacenter1").keySet().size());
     assertEquals(1, endpoints.get("datacenter1").get("rack1").size());
     assertEquals("NORMAL - DOWN", endpoints.get("datacenter1").get("rack1").get(0).status);
     assertEquals("NORMAL - UNKNOWN", endpoints.get("datacenter2").get("rack2").get(0).status);
     assertEquals("NORMAL - UP", endpoints.get("us-west-1").get("rack3").get(0).status);
     assertEquals(afterSlash(endpoint1), endpoints.get("datacenter1").get("rack1").get(0).endpoint);
-    assertEquals("f091f82b-ce2c-40ee-b30c-6e761e94e821", endpoints.get("datacenter1").get("rack1").get(0).hostId);
+    assertEquals(
+        "f091f82b-ce2c-40ee-b30c-6e761e94e821",
+        endpoints.get("datacenter1").get("rack1").get(0).hostId);
     assertEquals("13", endpoints.get("datacenter1").get("rack1").get(0).tokens);
     assertTrue(endpoints.get("datacenter1").get("rack1").get(0).severity.equals(0.0));
     assertEquals("3.0.8", endpoints.get("datacenter1").get("rack1").get(0).releaseVersion);
@@ -227,12 +205,13 @@ public final class NodesStatusTest {
     assertTrue(nodesStatus.endpointStates.get(0).endpointNames.contains(afterSlash(endpoint3)));
   }
 
-
-  private void testParseEndpoint40StatusString(String sourceNode,
-                                               String endpoint1, String endpoint2, String endpoint3) {
+  private void testParseEndpoint40StatusString(
+      String sourceNode, String endpoint1, String endpoint2, String endpoint3) {
     Map<String, String> simpleStates = Maps.newHashMap();
 
-    String endpointsStatusString = endpoint1 + "\n"
+    String endpointsStatusString =
+        endpoint1
+            + "\n"
             + "  generation:1496849190\n"
             + "  heartbeat:1231900\n"
             + "  STATUS_WITH_PORT:14:NORMAL,-9223372036854775808\n"
@@ -247,7 +226,8 @@ public final class NodesStatusTest {
             + "  HOST_ID:2:f091f82b-ce2c-40ee-b30c-6e761e94e821\n"
             + "  RPC_READY:16:true\n"
             + "  TOKENS:13:<hidden>\n"
-            + endpoint2 + "\n"
+            + endpoint2
+            + "\n"
             + "  generation:1497347537\n"
             + "  heartbeat:27077\n"
             + "  STATUS:14:NORMAL,-3074457345618258603\n"
@@ -263,7 +243,8 @@ public final class NodesStatusTest {
             + "  HOST_ID:2:08f819b5-d96f-444e-9d4d-ec4136e1b716\n"
             + "  RPC_READY:16:true\n"
             + "  TOKENS:13:<hidden>\n"
-            + endpoint3 + "\n"
+            + endpoint3
+            + "\n"
             + "  generation:1496849191\n"
             + "  heartbeat:1230183\n"
             + "  STATUS_WITH_PORT:16:NORMAL,3074457345618258602\n"
@@ -287,14 +268,17 @@ public final class NodesStatusTest {
     assertEquals(1, nodesStatus.endpointStates.size());
     assertEquals(sourceNode, nodesStatus.endpointStates.get(0).sourceNode);
 
-    Map<String, Map<String, List<EndpointState>>> endpoints = nodesStatus.endpointStates.get(0).endpoints;
+    Map<String, Map<String, List<EndpointState>>> endpoints =
+        nodesStatus.endpointStates.get(0).endpoints;
     assertEquals(1, endpoints.get("datacenter1").keySet().size());
     assertEquals(1, endpoints.get("datacenter1").get("rack1").size());
     assertEquals("NORMAL - DOWN", endpoints.get("datacenter1").get("rack1").get(0).status);
     assertEquals("NORMAL - UNKNOWN", endpoints.get("datacenter2").get("rack2").get(0).status);
     assertEquals("NORMAL - UP", endpoints.get("us-west-1").get("rack3").get(0).status);
     assertEquals(afterSlash(endpoint1), endpoints.get("datacenter1").get("rack1").get(0).endpoint);
-    assertEquals("f091f82b-ce2c-40ee-b30c-6e761e94e821", endpoints.get("datacenter1").get("rack1").get(0).hostId);
+    assertEquals(
+        "f091f82b-ce2c-40ee-b30c-6e761e94e821",
+        endpoints.get("datacenter1").get("rack1").get(0).hostId);
     assertEquals("13", endpoints.get("datacenter1").get("rack1").get(0).tokens);
     assertTrue(endpoints.get("datacenter1").get("rack1").get(0).severity.equals(0.0));
     assertEquals("3.0.8", endpoints.get("datacenter1").get("rack1").get(0).releaseVersion);
@@ -310,11 +294,13 @@ public final class NodesStatusTest {
     assertTrue(nodesStatus.endpointStates.get(0).endpointNames.contains(afterSlash(endpoint3)));
   }
 
-  private void testParseEndpoint21StatusString(String sourceNode,
-                                               String endpoint1, String endpoint2, String endpoint3) {
+  private void testParseEndpoint21StatusString(
+      String sourceNode, String endpoint1, String endpoint2, String endpoint3) {
     Map<String, String> simpleStates = Maps.newHashMap();
 
-    String endpointsStatusString = endpoint1 + "\n"
+    String endpointsStatusString =
+        endpoint1
+            + "\n"
             + "  generation:1496849190\n"
             + "  heartbeat:1231900\n"
             + "  STATUS:NORMAL,-9223372036854775808\n"
@@ -329,7 +315,8 @@ public final class NodesStatusTest {
             + "  HOST_ID:f091f82b-ce2c-40ee-b30c-6e761e94e821\n"
             + "  RPC_READY:true\n"
             + "  TOKENS:<hidden>\n"
-            + endpoint2 + "\n"
+            + endpoint2
+            + "\n"
             + "  generation:1497347537\n"
             + "  heartbeat:27077\n"
             + "  STATUS:NORMAL,-3074457345618258603\n"
@@ -343,7 +330,8 @@ public final class NodesStatusTest {
             + "  NET_VERSION:10\n"
             + "  HOST_ID:08f819b5-d96f-444e-9d4d-ec4136e1b716\n"
             + "  RPC_READY:true\n"
-            + endpoint3 + "\n"
+            + endpoint3
+            + "\n"
             + "  generation:1496849191\n"
             + "  heartbeat:1230183\n"
             + "  STATUS:NORMAL,3074457345618258602\n"
@@ -367,14 +355,17 @@ public final class NodesStatusTest {
     assertEquals(1, nodesStatus.endpointStates.size());
     assertEquals(sourceNode, nodesStatus.endpointStates.get(0).sourceNode);
 
-    Map<String, Map<String, List<EndpointState>>> endpoints = nodesStatus.endpointStates.get(0).endpoints;
+    Map<String, Map<String, List<EndpointState>>> endpoints =
+        nodesStatus.endpointStates.get(0).endpoints;
     assertEquals(1, endpoints.get("datacenter1").keySet().size());
     assertEquals(1, endpoints.get("datacenter1").get("rack1").size());
     assertEquals("NORMAL - DOWN", endpoints.get("datacenter1").get("rack1").get(0).status);
     assertEquals("NORMAL - UNKNOWN", endpoints.get("datacenter2").get("rack2").get(0).status);
     assertEquals("NORMAL - UP", endpoints.get("us-west-1").get("rack3").get(0).status);
     assertEquals(afterSlash(endpoint1), endpoints.get("datacenter1").get("rack1").get(0).endpoint);
-    assertEquals("f091f82b-ce2c-40ee-b30c-6e761e94e821", endpoints.get("datacenter1").get("rack1").get(0).hostId);
+    assertEquals(
+        "f091f82b-ce2c-40ee-b30c-6e761e94e821",
+        endpoints.get("datacenter1").get("rack1").get(0).hostId);
     assertTrue(endpoints.get("datacenter1").get("rack1").get(0).severity.equals(0.0));
     assertEquals("3.0.8", endpoints.get("datacenter1").get("rack1").get(0).releaseVersion);
     assertEquals("datacenter2", endpoints.get("datacenter2").get("rack2").get(0).dc);
@@ -389,11 +380,13 @@ public final class NodesStatusTest {
     assertTrue(nodesStatus.endpointStates.get(0).endpointNames.contains(afterSlash(endpoint3)));
   }
 
-  private void testParseEndpointCassandraStatusString(String sourceNode,
-                                                      String endpoint1, String endpoint2, String endpoint3) {
+  private void testParseEndpointCassandraStatusString(
+      String sourceNode, String endpoint1, String endpoint2, String endpoint3) {
     Map<String, String> simpleStates = Maps.newHashMap();
 
-    String endpointsStatusString = endpoint1 + "\n"
+    String endpointsStatusString =
+        endpoint1
+            + "\n"
             + "  generation:1506371953\n"
             + "  heartbeat:360312\n"
             + "  STATUS:17:NORMAL,-1046276550383960957\n"
@@ -410,7 +403,8 @@ public final class NodesStatusTest {
             + "  X1:37:{\"siq_test1\":3,\"siq_test3\":3}\n"
             + "  X2:73550:9d0e8942-20dd-4bb8-878d-f20b4e847d8f/15\n"
             + "  TOKENS:16:<hidden>\n"
-            + endpoint2 + "\n"
+            + endpoint2
+            + "\n"
             + "  generation:1506368075\n"
             + "  heartbeat:364340\n"
             + "  STATUS:17:NORMAL,-1278741951029486876\n"
@@ -427,7 +421,8 @@ public final class NodesStatusTest {
             + "  X1:36:{\"siq_test1\":3,\"siq_test3\":3}\n"
             + "  X2:641:9d0e8942-20dd-4bb8-878d-f20b4e847d8f/15\n"
             + "  TOKENS:16:<hidden>\n"
-            + endpoint3 + "\n"
+            + endpoint3
+            + "\n"
             + "  generation:1506368359\n"
             + "  heartbeat:364021\n"
             + "  STATUS:17:NORMAL,-1065832441861161765\n"
@@ -453,8 +448,8 @@ public final class NodesStatusTest {
     assertEquals(1, nodesStatus.endpointStates.size());
     assertEquals(sourceNode, nodesStatus.endpointStates.get(0).sourceNode);
 
-    Map<String, Map<String, List<EndpointState>>> endpoints
-        = nodesStatus.endpointStates.get(0).endpoints;
+    Map<String, Map<String, List<EndpointState>>> endpoints =
+        nodesStatus.endpointStates.get(0).endpoints;
 
     assertEquals(1, endpoints.get("us-west-2").keySet().size());
     assertEquals(3, endpoints.get("us-west-2").get("a").size());
@@ -488,5 +483,4 @@ public final class NodesStatusTest {
     }
     throw new IllegalArgumentException("Too many slashes in " + value);
   }
-
 }

@@ -43,14 +43,12 @@ import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
 public final class RepairUnitService {
 
   private static final Logger LOG = LoggerFactory.getLogger(RepairUnitService.class);
 
-
-  private static final Set<String> BLACKLISTED_STRATEGEIS
-      = ImmutableSet.of("TimeWindowCompactionStrategy", "DateTieredCompactionStrategy");
+  private static final Set<String> BLACKLISTED_STRATEGEIS =
+      ImmutableSet.of("TimeWindowCompactionStrategy", "DateTieredCompactionStrategy");
 
   private final AppContext context;
   private final ClusterFacade clusterFacade;
@@ -61,7 +59,8 @@ public final class RepairUnitService {
   }
 
   @VisibleForTesting
-  static RepairUnitService create(AppContext context, Supplier<ClusterFacade> supplier) throws ReaperException {
+  static RepairUnitService create(AppContext context, Supplier<ClusterFacade> supplier)
+      throws ReaperException {
     return new RepairUnitService(context, supplier);
   }
 
@@ -82,7 +81,8 @@ public final class RepairUnitService {
 
   private static Set<String> listRepairTables(RepairUnit.Builder builder, Set<String> allTables) {
     // subtract blacklisted tables from all tables (or those explicitly listed)
-    Set<String> tables = Sets.newHashSet(builder.columnFamilies.isEmpty() ? allTables : builder.columnFamilies);
+    Set<String> tables =
+        Sets.newHashSet(builder.columnFamilies.isEmpty() ? allTables : builder.columnFamilies);
     tables.removeAll(builder.blacklistedTables);
     return tables;
   }
@@ -91,15 +91,20 @@ public final class RepairUnitService {
     return getOrCreateRepairUnit(cluster, params, false);
   }
 
-  public Optional<RepairUnit> getOrCreateRepairUnit(Cluster cluster, RepairUnit.Builder params, boolean force) {
+  public Optional<RepairUnit> getOrCreateRepairUnit(
+      Cluster cluster, RepairUnit.Builder params, boolean force) {
     if (params.incrementalRepair) {
       try {
         String version = clusterFacade.getCassandraVersion(cluster);
         if (null != version && ICassandraManagementProxy.versionCompare(version, "2.1.0") < 0) {
-          throw new IllegalArgumentException("Incremental repair does not work with Cassandra versions before 2.1");
+          throw new IllegalArgumentException(
+              "Incremental repair does not work with Cassandra versions before 2.1");
         }
       } catch (ReaperException e) {
-        LOG.warn("unknown version to cluster {}, maybe enabling incremental on 2.0...", cluster.getName(), e);
+        LOG.warn(
+            "unknown version to cluster {}, maybe enabling incremental on 2.0...",
+            cluster.getName(),
+            e);
       }
     }
     if (params.subrangeIncrementalRepair) {
@@ -110,8 +115,10 @@ public final class RepairUnitService {
               "Subrange incremental repair does not work with Cassandra versions before 4.0.0");
         }
       } catch (ReaperException e) {
-        LOG.warn("unknown version to cluster {}, maybe enabling subrange incremental before 4.0...",
-            cluster.getName(), e);
+        LOG.warn(
+            "unknown version to cluster {}, maybe enabling subrange incremental before 4.0...",
+            cluster.getName(),
+            e);
       }
     }
     Optional<RepairUnit> repairUnit = context.storage.getRepairUnitDao().getRepairUnit(params);
@@ -124,15 +131,13 @@ public final class RepairUnitService {
     } catch (IllegalArgumentException e) {
       return Optional.empty();
     }
-
-
   }
 
   /**
    * Applies blacklist filter on tables for the given repair unit.
    *
    * @param cluster : a Cassandra cluster object
-   * @param repairUnit  : the repair unit for the current run
+   * @param repairUnit : the repair unit for the current run
    * @return the list of tables to repair for the keyspace without the blacklisted ones
    */
   Set<String> getTablesToRepair(Cluster cluster, RepairUnit repairUnit) throws ReaperException {
@@ -143,16 +148,18 @@ public final class RepairUnitService {
       Set<Table> tables = clusterFacade.getTablesForKeyspace(cluster, keyspace);
       Set<String> twcsBlacklisted = findBlacklistedCompactionStrategyTables(cluster, tables);
 
-      result = tables.stream()
-          .map(Table::getName)
-          .filter(tableName -> !repairUnit.getBlacklistedTables().contains(tableName))
-          .filter(tableName -> !twcsBlacklisted.contains(tableName))
-          .collect(Collectors.toSet());
+      result =
+          tables.stream()
+              .map(Table::getName)
+              .filter(tableName -> !repairUnit.getBlacklistedTables().contains(tableName))
+              .filter(tableName -> !twcsBlacklisted.contains(tableName))
+              .collect(Collectors.toSet());
     } else {
       // if tables have been specified then don't apply the twcsBlacklisting
-      result = repairUnit.getColumnFamilies().stream()
-          .filter(tableName -> !repairUnit.getBlacklistedTables().contains(tableName))
-          .collect(Collectors.toSet());
+      result =
+          repairUnit.getColumnFamilies().stream()
+              .filter(tableName -> !repairUnit.getBlacklistedTables().contains(tableName))
+              .collect(Collectors.toSet());
     }
 
     Preconditions.checkState(
@@ -162,12 +169,12 @@ public final class RepairUnitService {
     return result;
   }
 
-  public Set<String> findBlacklistedCompactionStrategyTables(Cluster clstr, Set<Table> tables) throws ReaperException {
+  public Set<String> findBlacklistedCompactionStrategyTables(Cluster clstr, Set<Table> tables)
+      throws ReaperException {
     if (context.config.getBlacklistTwcsTables()
         && versionCompare(clusterFacade.getCassandraVersion(clstr), "2.1") >= 0) {
 
-      return tables
-          .stream()
+      return tables.stream()
           .filter(RepairUnitService::isBlackListedCompactionStrategy)
           .map(Table::getName)
           .collect(Collectors.toSet());
@@ -186,11 +193,15 @@ public final class RepairUnitService {
   @VisibleForTesting
   boolean unitConflicts(Cluster cluster, RepairUnit.Builder builder) {
 
-    Collection<RepairSchedule> repairSchedules = context.storage.getRepairScheduleDao()
-        .getRepairSchedulesForClusterAndKeyspace(builder.clusterName, builder.keyspaceName);
+    Collection<RepairSchedule> repairSchedules =
+        context
+            .storage
+            .getRepairScheduleDao()
+            .getRepairSchedulesForClusterAndKeyspace(builder.clusterName, builder.keyspaceName);
 
     for (RepairSchedule sched : repairSchedules) {
-      RepairUnit repairUnitForSched = context.storage.getRepairUnitDao().getRepairUnit(sched.getRepairUnitId());
+      RepairUnit repairUnitForSched =
+          context.storage.getRepairUnitDao().getRepairUnit(sched.getRepairUnitId());
       Preconditions.checkState(repairUnitForSched.getClusterName().equals(builder.clusterName));
       Preconditions.checkState(repairUnitForSched.getKeyspaceName().equals(builder.keyspaceName));
 
@@ -208,12 +219,15 @@ public final class RepairUnitService {
 
     Preconditions.checkState(unit.getKeyspaceName().equals(builder.keyspaceName));
 
-    Set<String> tables = unit.getColumnFamilies().isEmpty() || builder.columnFamilies.isEmpty()
-        ? getTableNamesForKeyspace(cluster, unit.getKeyspaceName())
-        : Collections.emptySet();
+    Set<String> tables =
+        unit.getColumnFamilies().isEmpty() || builder.columnFamilies.isEmpty()
+            ? getTableNamesForKeyspace(cluster, unit.getKeyspaceName())
+            : Collections.emptySet();
 
     // a conflict exists if any table is listed to be repaired by both repair units
-    return !Sets.intersection(listRepairTables(unit.with(), tables), listRepairTables(builder, tables)).isEmpty();
+    return !Sets.intersection(
+            listRepairTables(unit.with(), tables), listRepairTables(builder, tables))
+        .isEmpty();
   }
 
   boolean identicalUnits(Cluster cluster, RepairUnit unit, RepairUnit.Builder builder) {
@@ -236,9 +250,10 @@ public final class RepairUnitService {
     // check the set of tables to be repaired
     Preconditions.checkState(unit.getKeyspaceName().equals(builder.keyspaceName));
 
-    Set<String> tables = unit.getColumnFamilies().isEmpty() || builder.columnFamilies.isEmpty()
-        ? getTableNamesForKeyspace(cluster, unit.getKeyspaceName())
-        : Collections.emptySet();
+    Set<String> tables =
+        unit.getColumnFamilies().isEmpty() || builder.columnFamilies.isEmpty()
+            ? getTableNamesForKeyspace(cluster, unit.getKeyspaceName())
+            : Collections.emptySet();
 
     // if the set of tables to repair is not the same, the units are not identical
     if (!Objects.equals(listRepairTables(unit.with(), tables), listRepairTables(builder, tables))) {
@@ -268,9 +283,7 @@ public final class RepairUnitService {
 
   public Set<String> getTableNamesForKeyspace(Cluster cluster, String keyspace) {
     try {
-      return clusterFacade
-          .getTablesForKeyspace(cluster, keyspace)
-          .stream()
+      return clusterFacade.getTablesForKeyspace(cluster, keyspace).stream()
           .map(Table::getName)
           .collect(Collectors.toSet());
     } catch (ReaperException e) {
@@ -284,17 +297,15 @@ public final class RepairUnitService {
       return builder.nodes;
     }
     try {
-      return clusterFacade
-          .getLiveNodes(cluster)
-          .stream()
-          .collect(Collectors.toSet());
+      return clusterFacade.getLiveNodes(cluster).stream().collect(Collectors.toSet());
     } catch (ReaperException e) {
       LOG.warn("Unable to get list of live nodes for cluster {}", cluster.getName());
       return Collections.emptySet();
     }
   }
 
-  private Set<String> getRepairUnitDatacenters(Cluster cluster, RepairUnit.Builder builder, Set<String> nodes) {
+  private Set<String> getRepairUnitDatacenters(
+      Cluster cluster, RepairUnit.Builder builder, Set<String> nodes) {
     if (!builder.datacenters.isEmpty()) {
       return builder.datacenters;
     }

@@ -91,25 +91,30 @@ public class JmxManagementConnectionFactory implements IManagementConnectionFact
 
   private void initializeJmxSeedsForAllClusters() {
     LOG.info("Initializing JMX seed list for all clusters...");
-    try (
-        JmxConnectionsInitializer jmxConnectionsIntializer =
+    try (JmxConnectionsInitializer jmxConnectionsIntializer =
             JmxConnectionsInitializer.create(context);
-        Timer.Context cxt = context.metricRegistry.timer(
-            MetricRegistry.name(JmxManagementConnectionFactory.class, "jmxConnectionsIntializer"))
-            .time()) {
+        Timer.Context cxt =
+            context
+                .metricRegistry
+                .timer(
+                    MetricRegistry.name(
+                        JmxManagementConnectionFactory.class, "jmxConnectionsIntializer"))
+                .time()) {
 
-      context.storage.getClusterDao().getClusters().parallelStream().sorted()
+      context.storage.getClusterDao().getClusters().parallelStream()
+          .sorted()
           .forEach(cluster -> jmxConnectionsIntializer.on(cluster));
 
       LOG.info("Initialized JMX seed list for all clusters.");
     }
   }
 
-
   private void registerConnectionsGauge() {
     try {
-      if (!this.metricRegistry.getGauges().containsKey(
-          MetricRegistry.name(JmxManagementConnectionFactory.class, "openJmxConnections"))) {
+      if (!this.metricRegistry
+          .getGauges()
+          .containsKey(
+              MetricRegistry.name(JmxManagementConnectionFactory.class, "openJmxConnections"))) {
         this.metricRegistry.register(
             MetricRegistry.name(JmxManagementConnectionFactory.class, "openJmxConnections"),
             (Gauge<Integer>) () -> JMX_CONNECTIONS.size());
@@ -142,9 +147,14 @@ public class JmxManagementConnectionFactory implements IManagementConnectionFact
     Optional<JmxCredentials> jmxCredentials = getJmxCredentialsForCluster(node.getCluster());
 
     try {
-      JmxConnectionProvider provider = new JmxConnectionProvider(host, jmxCredentials,
-          context.config.getJmxConnectionTimeoutInSeconds(), this.metricRegistry, cryptograph,
-          node.getClusterName());
+      JmxConnectionProvider provider =
+          new JmxConnectionProvider(
+              host,
+              jmxCredentials,
+              context.config.getJmxConnectionTimeoutInSeconds(),
+              this.metricRegistry,
+              cryptograph,
+              node.getClusterName());
       JMX_CONNECTIONS.computeIfAbsent(host, provider::apply);
       JmxCassandraManagementProxy proxy = JMX_CONNECTIONS.get(host);
       if (!proxy.isConnectionAlive()) {
@@ -170,8 +180,8 @@ public class JmxManagementConnectionFactory implements IManagementConnectionFact
   public final JmxCassandraManagementProxy connectAny(Collection<Node> nodes)
       throws ReaperException {
 
-    Preconditions.checkArgument(null != nodes && !nodes.isEmpty(),
-        "no hosts provided to connectAny");
+    Preconditions.checkArgument(
+        null != nodes && !nodes.isEmpty(), "no hosts provided to connectAny");
 
     List<Node> nodeList = new ArrayList<>(nodes);
     Collections.shuffle(nodeList);
@@ -182,14 +192,16 @@ public class JmxManagementConnectionFactory implements IManagementConnectionFact
         if (getHostConnectionCounters().getSuccessfulConnections(node.getHostname()) >= 0
             || 1 == i) {
           try {
-            LOG.debug("Trying to connect to node {} with {} successful connections with i = {}",
+            LOG.debug(
+                "Trying to connect to node {} with {} successful connections with i = {}",
                 node.getHostname(),
-                getHostConnectionCounters().getSuccessfulConnections(node.getHostname()), i);
+                getHostConnectionCounters().getSuccessfulConnections(node.getHostname()),
+                i);
             JmxCassandraManagementProxy cassandraManagementProxy = connectImpl(node);
             getHostConnectionCounters().incrementSuccessfulConnections(node.getHostname());
             if (getHostConnectionCounters().getSuccessfulConnections(node.getHostname()) > 0) {
-              accessibleDatacenters
-                  .add(EndpointSnitchInfoProxy.create(cassandraManagementProxy).getDataCenter());
+              accessibleDatacenters.add(
+                  EndpointSnitchInfoProxy.create(cassandraManagementProxy).getDataCenter());
             }
             return cassandraManagementProxy;
           } catch (ReaperException | RuntimeException e) {
@@ -258,8 +270,12 @@ public class JmxManagementConnectionFactory implements IManagementConnectionFact
     private final Cryptograph cryptograph;
     private final String clusterName;
 
-    JmxConnectionProvider(String host, Optional<JmxCredentials> jmxCredentials,
-        int connectionTimeout, MetricRegistry metricRegistry, Cryptograph cryptograph,
+    JmxConnectionProvider(
+        String host,
+        Optional<JmxCredentials> jmxCredentials,
+        int connectionTimeout,
+        MetricRegistry metricRegistry,
+        Cryptograph cryptograph,
         String clusterName) {
       this.host = host;
       this.jmxCredentials = jmxCredentials;
@@ -274,8 +290,14 @@ public class JmxManagementConnectionFactory implements IManagementConnectionFact
       Preconditions.checkArgument(host.equals(this.host));
       try {
         JmxCassandraManagementProxy proxy =
-            JmxCassandraManagementProxy.connect(host, jmxCredentials, addressTranslator,
-                connectionTimeout, metricRegistry, cryptograph, clusterName);
+            JmxCassandraManagementProxy.connect(
+                host,
+                jmxCredentials,
+                addressTranslator,
+                connectionTimeout,
+                metricRegistry,
+                cryptograph,
+                clusterName);
         return proxy;
       } catch (ReaperException | InterruptedException ex) {
         throw new RuntimeException(ex);

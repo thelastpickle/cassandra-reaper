@@ -41,5 +41,4 @@ public final class CryptoResource {
   public Response encrypt(@PathParam("text") String text) {
     return Response.ok().entity(cryptograph.encrypt(text)).build();
   }
-
 }

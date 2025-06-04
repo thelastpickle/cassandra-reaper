@@ -1,7 +1,6 @@
 package io.cassandrareaper.storage.cassandra;
 
 import com.datastax.oss.driver.api.core.config.DefaultDriverOption;
-
 import io.dropwizard.cassandra.DropwizardProgrammaticDriverConfigLoaderBuilder;
 import io.dropwizard.cassandra.retry.RetryPolicyFactory;
 

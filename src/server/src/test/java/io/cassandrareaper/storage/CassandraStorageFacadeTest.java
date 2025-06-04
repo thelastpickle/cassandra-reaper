@@ -21,8 +21,6 @@ import org.assertj.core.api.Assertions;
 import org.cognitor.cassandra.migration.MigrationRepository;
 import org.junit.Test;
 
-
-
 public final class CassandraStorageFacadeTest {
 
   @Test
@@ -30,5 +28,4 @@ public final class CassandraStorageFacadeTest {
     MigrationRepository migration = new MigrationRepository("db/cassandra");
     Assertions.assertThat(migration.getLatestVersion()).isGreaterThan(0);
   }
-
 }

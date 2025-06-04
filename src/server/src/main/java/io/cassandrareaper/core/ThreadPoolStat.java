@@ -68,8 +68,6 @@ public final class ThreadPoolStat {
     return maxPoolSize;
   }
 
-
-
   public static Builder builder() {
     return new Builder();
   }

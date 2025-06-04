@@ -142,10 +142,12 @@ public final class RepairRun implements Comparable<RepairRun> {
   }
 
   /**
-   * Order RepairRun instances by time. Primarily endTime, secondarily startTime. Descending, i.e. latest first.
+   * Order RepairRun instances by time. Primarily endTime, secondarily startTime. Descending, i.e.
+   * latest first.
    *
    * @param other the RepairRun compared to
-   * @return negative if this RepairRun is later than the specified RepairRun. Positive if earlier. 0 if equal.
+   * @return negative if this RepairRun is later than the specified RepairRun. Positive if earlier.
+   *     0 if equal.
    */
   @Override
   public int compareTo(RepairRun other) {
@@ -218,7 +220,6 @@ public final class RepairRun implements Comparable<RepairRun> {
     private RepairParallelism repairParallelism;
     private Set<String> tables;
     private boolean adaptiveSchedule;
-
 
     private Builder(String clusterName, UUID repairUnitId) {
       this.clusterName = clusterName;
@@ -312,37 +313,50 @@ public final class RepairRun implements Comparable<RepairRun> {
     }
 
     public RepairRun build(UUID id) {
-      Preconditions.checkState(null != repairParallelism, "repairParallelism(..) must be called before build(..)");
+      Preconditions.checkState(
+          null != repairParallelism, "repairParallelism(..) must be called before build(..)");
       Preconditions.checkState(null != intensity, "intensity(..) must be called before build(..)");
-      Preconditions.checkState(null != segmentCount, "segmentCount(..) must be called before build(..)");
+      Preconditions.checkState(
+          null != segmentCount, "segmentCount(..) must be called before build(..)");
       Preconditions.checkState(null != tables, "tables(..) must be called before build(..)");
 
       Preconditions.checkState(
           RunState.NOT_STARTED == runState || null != startTime,
-          "startTime only valid when runState is not NOT_STARTED. %s %s", runState, startTime);
+          "startTime only valid when runState is not NOT_STARTED. %s %s",
+          runState,
+          startTime);
 
       Preconditions.checkState(
           RunState.NOT_STARTED != runState || null == startTime,
-          "startTime must be null when runState is NOT_STARTED. %s %s", runState, startTime);
+          "startTime must be null when runState is NOT_STARTED. %s %s",
+          runState,
+          startTime);
 
       Preconditions.checkState(
           RunState.PAUSED == runState || null == pauseTime,
-          "pausedTime only valid when runState is PAUSED. %s %s", runState, pauseTime);
+          "pausedTime only valid when runState is PAUSED. %s %s",
+          runState,
+          pauseTime);
 
       Preconditions.checkState(
           RunState.PAUSED != runState || null != pauseTime,
-          "pausedTime must be set when runState is PAUSED. %s %s", runState, pauseTime);
+          "pausedTime must be set when runState is PAUSED. %s %s",
+          runState,
+          pauseTime);
 
       Preconditions.checkState(
           runState.isTerminated() || null == endTime,
-          "endTime only valid when runState is terminated. %s %s", runState, endTime);
+          "endTime only valid when runState is terminated. %s %s",
+          runState,
+          endTime);
 
       Preconditions.checkState(
           !runState.isTerminated() || null != endTime,
-          "endTime must be set when runState is terminated. %s %s", runState, endTime);
+          "endTime must be set when runState is terminated. %s %s",
+          runState,
+          endTime);
 
       return new RepairRun(this, id);
     }
   }
-
 }

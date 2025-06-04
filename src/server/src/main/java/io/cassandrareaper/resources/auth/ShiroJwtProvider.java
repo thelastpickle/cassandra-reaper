@@ -25,6 +25,7 @@ import java.security.Key;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
+
 import javax.crypto.spec.SecretKeySpec;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.GET;
@@ -51,14 +52,19 @@ public final class ShiroJwtProvider {
   String getJwt(HttpServletRequest request) throws IOException {
     if (RequestUtils.getSessionTimeout().isNegative()) {
       // No session timeout set, so return a JWT with no expiration time
-      return Jwts.builder().subject(request.getUserPrincipal().getName())
-          .signWith((javax.crypto.SecretKey) SIGNING_KEY, Jwts.SIG.HS256).compact();
+      return Jwts.builder()
+          .subject(request.getUserPrincipal().getName())
+          .signWith((javax.crypto.SecretKey) SIGNING_KEY, Jwts.SIG.HS256)
+          .compact();
     } else {
       // Return a JWT with an expiration time based on the session timeout
-      return Jwts.builder().subject(request.getUserPrincipal().getName())
-          .expiration(new java.util.Date(
-              System.currentTimeMillis() + RequestUtils.getSessionTimeout().toMillis()))
-          .signWith((javax.crypto.SecretKey) SIGNING_KEY, Jwts.SIG.HS256).compact();
+      return Jwts.builder()
+          .subject(request.getUserPrincipal().getName())
+          .expiration(
+              new java.util.Date(
+                  System.currentTimeMillis() + RequestUtils.getSessionTimeout().toMillis()))
+          .signWith((javax.crypto.SecretKey) SIGNING_KEY, Jwts.SIG.HS256)
+          .compact();
     }
   }
 

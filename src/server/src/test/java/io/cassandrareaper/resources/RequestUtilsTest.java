@@ -20,11 +20,11 @@ package io.cassandrareaper.resources;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.HttpMethod;
 
-import org.assertj.core.api.Assertions;
-import org.junit.Test;
-
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
+
+import org.assertj.core.api.Assertions;
+import org.junit.Test;
 
 public class RequestUtilsTest {
   @Test

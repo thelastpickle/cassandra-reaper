@@ -35,7 +35,8 @@ public final class MetricNameUtils {
   }
 
   public static String cleanHostName(String hostname) {
-    return Optional.ofNullable(hostname).orElse("null")
+    return Optional.ofNullable(hostname)
+        .orElse("null")
         .replace('.', '-')
         .replaceAll("[^A-Za-z0-9\\-_]", "");
   }

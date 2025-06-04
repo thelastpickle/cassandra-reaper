@@ -31,6 +31,7 @@ import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+
 import javax.management.JMException;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -47,21 +48,21 @@ import org.slf4j.LoggerFactory;
 public final class HttpMetricsProxy implements MetricsProxy {
 
   static final String THREAD_POOL_METRICS_PREFIX = "org_apache_cassandra_metrics_thread_pools";
-  static final String TPSTATS_PENDING_METRIC_NAME = "org_apache_cassandra_metrics_thread_pools_pending_tasks";
-  static final String
-      DROPPED_MESSAGES_METRICS_PREFIX = "org_apache_cassandra_metrics_dropped_message";
-  static final String
-      CLIENT_REQUEST_LATENCY_METRICS_PREFIX = "org_apache_cassandra_metrics_client_request_latency";
-  static final String
-      PERCENT_REPAIRED_METRICS_PREFIX = "org_apache_cassandra_metrics_table_percent_repaired";
+  static final String TPSTATS_PENDING_METRIC_NAME =
+      "org_apache_cassandra_metrics_thread_pools_pending_tasks";
+  static final String DROPPED_MESSAGES_METRICS_PREFIX =
+      "org_apache_cassandra_metrics_dropped_message";
+  static final String CLIENT_REQUEST_LATENCY_METRICS_PREFIX =
+      "org_apache_cassandra_metrics_client_request_latency";
+  static final String PERCENT_REPAIRED_METRICS_PREFIX =
+      "org_apache_cassandra_metrics_table_percent_repaired";
   private static final Logger LOG = LoggerFactory.getLogger(HttpMetricsProxy.class);
   private final HttpCassandraManagementProxy proxy;
   private final OkHttpClient httpClient;
   private final Node node;
 
-  private HttpMetricsProxy(HttpCassandraManagementProxy proxy,
-                           Node node,
-                           Supplier<OkHttpClient> httpClientSupplier) {
+  private HttpMetricsProxy(
+      HttpCassandraManagementProxy proxy, Node node, Supplier<OkHttpClient> httpClientSupplier) {
     this.proxy = proxy;
     this.node = node;
     this.httpClient = httpClientSupplier.get();
@@ -105,20 +106,19 @@ public final class HttpMetricsProxy implements MetricsProxy {
     return collectMetrics(PERCENT_REPAIRED_METRICS_PREFIX, Optional.of(keyspaceName));
   }
 
-  private List<GenericMetric> collectMetrics(
-      String metricNamePrefix, Optional<String> keyspaceName) throws IOException {
-    HttpUrl url = new HttpUrl.Builder()
-        .scheme("http")
-        .host(proxy.getHost())
-        .port(proxy.getMetricsPort())
-        .addPathSegment("metrics")
-        .addQueryParameter("name", metricNamePrefix)
-        .build();
+  private List<GenericMetric> collectMetrics(String metricNamePrefix, Optional<String> keyspaceName)
+      throws IOException {
+    HttpUrl url =
+        new HttpUrl.Builder()
+            .scheme("http")
+            .host(proxy.getHost())
+            .port(proxy.getMetricsPort())
+            .addPathSegment("metrics")
+            .addQueryParameter("name", metricNamePrefix)
+            .build();
 
     LOG.debug("Collecting metrics from {}", url);
-    Request request = new Request.Builder()
-        .url(url)
-        .build();
+    Request request = new Request.Builder().url(url).build();
     String metrics;
     try (Response response = this.httpClient.newCall(request).execute()) {
       if (!response.isSuccessful()) {
@@ -134,8 +134,7 @@ public final class HttpMetricsProxy implements MetricsProxy {
     // Collect metrics with the tpstats pending tasks name
     List<GenericMetric> genericMetrics;
     try {
-      genericMetrics
-          = collectMetrics(TPSTATS_PENDING_METRIC_NAME, Optional.empty());
+      genericMetrics = collectMetrics(TPSTATS_PENDING_METRIC_NAME, Optional.empty());
     } catch (IOException e) {
       throw new ReaperException("Error collecting metrics", e);
     }
@@ -149,11 +148,11 @@ public final class HttpMetricsProxy implements MetricsProxy {
       String metricPrefix, String metrics, Optional<String> keyspaceName) {
     List<GenericMetric> parsedMetrics = Lists.newArrayList();
 
-    //Regex Pattern for Prometheus Metrics format
+    // Regex Pattern for Prometheus Metrics format
     Pattern pattern = Pattern.compile("(\\w+)(\\{.*\\})?\\s(\\d+\\.\\d+)");
     Matcher matcher = pattern.matcher(metrics);
 
-    //Pattern to extract labels
+    // Pattern to extract labels
     Pattern labelPattern = Pattern.compile("(\\w+)=\"(.*?)\"");
 
     while (matcher.find()) {
@@ -169,7 +168,8 @@ public final class HttpMetricsProxy implements MetricsProxy {
           labels.put(labelMatcher.group(1), labelMatcher.group(2));
         }
       }
-      Optional<GenericMetric> metric = parseMetric(this.node, metricName, labels, value, metricPrefix, keyspaceName);
+      Optional<GenericMetric> metric =
+          parseMetric(this.node, metricName, labels, value, metricPrefix, keyspaceName);
       // add the stat to the list of stats for this metric
       if (metric.isPresent()) {
         parsedMetrics.add(metric.get());
@@ -193,8 +193,8 @@ public final class HttpMetricsProxy implements MetricsProxy {
   }
 
   /**
-   * Parses a metric and returns a GenericMetric object if it is a thread pool metric.
-   * Returns an empty optional if the metric is not a thread pool metric.
+   * Parses a metric and returns a GenericMetric object if it is a thread pool metric. Returns an
+   * empty optional if the metric is not a thread pool metric.
    *
    * @param metricName the name of the metric
    * @param labels the labels associated with the metric
@@ -217,7 +217,8 @@ public final class HttpMetricsProxy implements MetricsProxy {
       String type = getMetricType(metricPrefix);
       String attribute = "Count";
 
-      GenericMetric genericMetric = GenericMetric.builder()
+      GenericMetric genericMetric =
+          GenericMetric.builder()
               .withClusterName(node.getClusterName())
               .withHost(node.getHostname())
               .withMetricDomain("org.apache.cassandra.metrics")
@@ -237,38 +238,39 @@ public final class HttpMetricsProxy implements MetricsProxy {
 
   private String getMetricType(String metricPrefix) {
     switch (metricPrefix) {
-      case TPSTATS_PENDING_METRIC_NAME :
-      case THREAD_POOL_METRICS_PREFIX :
+      case TPSTATS_PENDING_METRIC_NAME:
+      case THREAD_POOL_METRICS_PREFIX:
         return "ThreadPools";
-      case DROPPED_MESSAGES_METRICS_PREFIX :
+      case DROPPED_MESSAGES_METRICS_PREFIX:
         return "DroppedMessage";
-      case CLIENT_REQUEST_LATENCY_METRICS_PREFIX :
+      case CLIENT_REQUEST_LATENCY_METRICS_PREFIX:
         return "ClientRequest";
-      case PERCENT_REPAIRED_METRICS_PREFIX :
+      case PERCENT_REPAIRED_METRICS_PREFIX:
         return "ColumnFamily";
-      default :
+      default:
         throw new IllegalArgumentException("Unsupported metric prefix: " + metricPrefix);
     }
   }
 
   private String getMetricScope(String metricPrefix) {
     switch (metricPrefix) {
-      case TPSTATS_PENDING_METRIC_NAME :
-      case THREAD_POOL_METRICS_PREFIX :
+      case TPSTATS_PENDING_METRIC_NAME:
+      case THREAD_POOL_METRICS_PREFIX:
         return "pool_name";
-      case DROPPED_MESSAGES_METRICS_PREFIX :
+      case DROPPED_MESSAGES_METRICS_PREFIX:
         return "message_type";
-      case CLIENT_REQUEST_LATENCY_METRICS_PREFIX :
+      case CLIENT_REQUEST_LATENCY_METRICS_PREFIX:
         return "request_type";
-      case PERCENT_REPAIRED_METRICS_PREFIX :
+      case PERCENT_REPAIRED_METRICS_PREFIX:
         return "table";
-      default :
+      default:
         throw new IllegalArgumentException("Unsupported metric prefix: " + metricPrefix);
     }
   }
 
   private Pattern getMetricParsePattern(String metricPrefix) {
-    if (PERCENT_REPAIRED_METRICS_PREFIX.equals(metricPrefix) || TPSTATS_PENDING_METRIC_NAME.equals(metricPrefix)) {
+    if (PERCENT_REPAIRED_METRICS_PREFIX.equals(metricPrefix)
+        || TPSTATS_PENDING_METRIC_NAME.equals(metricPrefix)) {
       return Pattern.compile(metricPrefix);
     }
     return Pattern.compile(metricPrefix + "_(.*)$");
@@ -285,7 +287,10 @@ public final class HttpMetricsProxy implements MetricsProxy {
   }
 
   private boolean metricMatches(
-      Matcher matcher, Map<String, String> labels, Optional<String> keyspaceName, String metricPrefix) {
+      Matcher matcher,
+      Map<String, String> labels,
+      Optional<String> keyspaceName,
+      String metricPrefix) {
     if (matcher.find()) {
       if (PERCENT_REPAIRED_METRICS_PREFIX.equals(metricPrefix)) {
         return (keyspaceName.isPresent()) && (keyspaceName.get().equals(labels.get("keyspace")));

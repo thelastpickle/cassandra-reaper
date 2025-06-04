@@ -15,6 +15,8 @@
 
 package io.cassandrareaper.storage.operations;
 
+import io.cassandrareaper.storage.OpType;
+
 import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
@@ -24,7 +26,6 @@ import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.PreparedStatement;
 import com.datastax.oss.driver.api.core.cql.Row;
 import com.google.common.collect.Lists;
-import io.cassandrareaper.storage.OpType;
 import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
@@ -44,27 +45,44 @@ public class CassandraOperationsDao implements IOperationsDao {
 
   private void prepareOperationsStatements() {
     insertOperationsPrepStmt =
-        session.prepare("INSERT INTO node_operations(cluster, type, time_bucket, host, ts, data) "
-            + "values(?,?,?,?,?,?)");
+        session.prepare(
+            "INSERT INTO node_operations(cluster, type, time_bucket, host, ts, data) "
+                + "values(?,?,?,?,?,?)");
 
     listOperationsForNodePrepStmt =
-        session.prepare("SELECT cluster, type, time_bucket, host, ts, data FROM node_operations "
-            + "WHERE cluster = ? AND type = ? and time_bucket = ? and host = ? LIMIT 1");
+        session.prepare(
+            "SELECT cluster, type, time_bucket, host, ts, data FROM node_operations "
+                + "WHERE cluster = ? AND type = ? and time_bucket = ? and host = ? LIMIT 1");
   }
 
-  public void storeOperations(String clusterName, OpType operationType, String host,
-      String operationsJson) {
-    session.executeAsync(insertOperationsPrepStmt.bind(clusterName, operationType.getName(),
-        DateTime.now().toString(TIME_BUCKET_FORMATTER), host, Instant.now(), operationsJson));
+  public void storeOperations(
+      String clusterName, OpType operationType, String host, String operationsJson) {
+    session.executeAsync(
+        insertOperationsPrepStmt.bind(
+            clusterName,
+            operationType.getName(),
+            DateTime.now().toString(TIME_BUCKET_FORMATTER),
+            host,
+            Instant.now(),
+            operationsJson));
   }
 
   public String listOperations(String clusterName, OpType operationType, String host) {
     List<CompletionStage<AsyncResultSet>> futures = Lists.newArrayList();
-    futures.add(session.executeAsync(listOperationsForNodePrepStmt.bind(clusterName,
-        operationType.getName(), DateTime.now().toString(TIME_BUCKET_FORMATTER), host)));
-    futures.add(session
-        .executeAsync(listOperationsForNodePrepStmt.bind(clusterName, operationType.getName(),
-            DateTime.now().minusMinutes(1).toString(TIME_BUCKET_FORMATTER), host)));
+    futures.add(
+        session.executeAsync(
+            listOperationsForNodePrepStmt.bind(
+                clusterName,
+                operationType.getName(),
+                DateTime.now().toString(TIME_BUCKET_FORMATTER),
+                host)));
+    futures.add(
+        session.executeAsync(
+            listOperationsForNodePrepStmt.bind(
+                clusterName,
+                operationType.getName(),
+                DateTime.now().minusMinutes(1).toString(TIME_BUCKET_FORMATTER),
+                host)));
     for (CompletionStage<AsyncResultSet> future : futures) {
       AsyncResultSet results = future.toCompletableFuture().join();
       for (Row row : results.currentPage()) {

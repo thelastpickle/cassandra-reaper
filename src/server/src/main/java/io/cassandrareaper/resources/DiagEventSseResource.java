@@ -24,6 +24,7 @@ import io.cassandrareaper.storage.events.IEventsDao;
 
 import java.util.UUID;
 import java.util.concurrent.ScheduledExecutorService;
+
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
@@ -39,7 +40,6 @@ import org.glassfish.jersey.media.sse.SseFeature;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
 @Path("/diag_event/sse_listen")
 public final class DiagEventSseResource {
 
@@ -47,11 +47,13 @@ public final class DiagEventSseResource {
 
   private final DiagEventSubscriptionService diagEventService;
 
-  public DiagEventSseResource(AppContext context,
-                              CloseableHttpClient httpClient,
-                              ScheduledExecutorService executor,
-                              IEventsDao eventsDao) {
-    this.diagEventService = DiagEventSubscriptionService.create(context, httpClient, executor, eventsDao);
+  public DiagEventSseResource(
+      AppContext context,
+      CloseableHttpClient httpClient,
+      ScheduledExecutorService executor,
+      IEventsDao eventsDao) {
+    this.diagEventService =
+        DiagEventSubscriptionService.create(context, httpClient, executor, eventsDao);
   }
 
   @GET
@@ -68,5 +70,4 @@ public final class DiagEventSseResource {
     diagEventService.subscribe(sub, eventOutput, request.getRemoteAddr());
     return eventOutput;
   }
-
 }

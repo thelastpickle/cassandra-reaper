@@ -30,10 +30,7 @@ import org.slf4j.LoggerFactory;
 final class ReaperDbMigrationCommand extends ConfiguredCommand<ReaperApplicationConfiguration> {
   private static final Logger LOG = LoggerFactory.getLogger(ReaperDbMigrationCommand.class);
 
-  protected ReaperDbMigrationCommand(
-      String name,
-      String description
-  ) {
+  protected ReaperDbMigrationCommand(String name, String description) {
     super(name, description);
   }
 
@@ -41,15 +38,17 @@ final class ReaperDbMigrationCommand extends ConfiguredCommand<ReaperApplication
   protected void run(
       Bootstrap<ReaperApplicationConfiguration> bootstrap,
       Namespace namespace,
-      ReaperApplicationConfiguration configuration
-  ) throws Exception {
-    final Environment environment = new Environment(bootstrap.getApplication().getName(),
-                                                        bootstrap.getObjectMapper(),
-                                                        Validation.buildDefaultValidatorFactory(),
-                                                        bootstrap.getMetricRegistry(),
-                                                        bootstrap.getClassLoader(),
-                                                        bootstrap.getHealthCheckRegistry(),
-                                                        configuration);
+      ReaperApplicationConfiguration configuration)
+      throws Exception {
+    final Environment environment =
+        new Environment(
+            bootstrap.getApplication().getName(),
+            bootstrap.getObjectMapper(),
+            Validation.buildDefaultValidatorFactory(),
+            bootstrap.getMetricRegistry(),
+            bootstrap.getClassLoader(),
+            bootstrap.getHealthCheckRegistry(),
+            configuration);
     InitializeStorage.initializeStorage(configuration, environment).initializeStorageBackend();
     System.exit(0);
   }

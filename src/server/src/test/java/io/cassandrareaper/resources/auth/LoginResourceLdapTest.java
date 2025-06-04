@@ -20,6 +20,8 @@ package io.cassandrareaper.resources.auth;
 import java.io.IOException;
 import java.io.InputStream;
 
+import static io.cassandrareaper.resources.auth.EmbeddedLdapTest.DOMAIN_DSN;
+
 import org.apache.shiro.authc.UsernamePasswordToken;
 import org.apache.shiro.config.Ini;
 import org.apache.shiro.io.ResourceUtils;
@@ -29,14 +31,14 @@ import org.junit.Test;
 import org.zapodot.junit.ldap.EmbeddedLdapRule;
 import org.zapodot.junit.ldap.EmbeddedLdapRuleBuilder;
 
-import static io.cassandrareaper.resources.auth.EmbeddedLdapTest.DOMAIN_DSN;
-
-
 public final class LoginResourceLdapTest {
 
   @Rule
-  public EmbeddedLdapRule embeddedLdapRule
-      = EmbeddedLdapRuleBuilder.newInstance().usingDomainDsn(DOMAIN_DSN).importingLdifs("test-ldap-users.ldif").build();
+  public EmbeddedLdapRule embeddedLdapRule =
+      EmbeddedLdapRuleBuilder.newInstance()
+          .usingDomainDsn(DOMAIN_DSN)
+          .importingLdifs("test-ldap-users.ldif")
+          .build();
 
   @Test
   public void testLoginLdap() throws IOException {
@@ -46,7 +48,9 @@ public final class LoginResourceLdapTest {
       ini.get("main").remove("filterChainResolver.globalFilters");
       int port = embeddedLdapRule.embeddedServerPort();
       ini.setSectionProperty("main", "ldapRealm.contextFactory.url", "ldap://localhost:" + port);
-      new WebIniSecurityManagerFactory(ini).getInstance().authenticate(new UsernamePasswordToken("sclaus", "abcdefg"));
+      new WebIniSecurityManagerFactory(ini)
+          .getInstance()
+          .authenticate(new UsernamePasswordToken("sclaus", "abcdefg"));
     }
   }
 }

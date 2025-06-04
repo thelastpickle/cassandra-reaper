@@ -22,13 +22,11 @@ import io.cassandrareaper.storage.OpType;
 
 public interface IOperationsDao {
 
-  void storeOperations(String clusterName, OpType operationType, String host, String operationsJson);
+  void storeOperations(
+      String clusterName, OpType operationType, String host, String operationsJson);
 
   String listOperations(String clusterName, OpType operationType, String host);
 
-  /**
-   * Purges old node operation info from the database (no-op for databases w/ TTL)
-   */
+  /** Purges old node operation info from the database (no-op for databases w/ TTL) */
   void purgeNodeOperations();
-
 }

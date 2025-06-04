@@ -29,9 +29,7 @@ import java.util.UUID;
 
 import com.google.common.collect.ImmutableSet;
 
-
 public final class DiagEventSubscriptionMapper {
-
 
   private Set<String> parseStringArray(Object obj) {
     Set<String> values = Collections.emptySet();

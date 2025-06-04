@@ -14,21 +14,6 @@
 
 package io.cassandrareaper.storage;
 
-import java.nio.file.Paths;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
-import java.util.stream.Collectors;
-
-import org.eclipse.serializer.persistence.types.PersistenceFieldEvaluator;
-import org.eclipse.store.storage.embedded.types.EmbeddedStorage;
-import org.eclipse.store.storage.embedded.types.EmbeddedStorageManager;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.DiagEventSubscription;
 import io.cassandrareaper.core.PercentRepairedMetric;
@@ -63,27 +48,24 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import com.google.common.io.Files;
 import org.eclipse.serializer.persistence.types.PersistenceFieldEvaluator;
 import org.eclipse.store.storage.embedded.types.EmbeddedStorage;
 import org.eclipse.store.storage.embedded.types.EmbeddedStorageManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
-/**
- * Implements the StorageAPI using transient Java classes.
- */
+/** Implements the StorageAPI using transient Java classes. */
 public final class MemoryStorageFacade implements IStorageDao {
 
   // Default time to live of leads taken on a segment
   private static final long DEFAULT_LEAD_TTL = 90_000;
   private static final Logger LOG = LoggerFactory.getLogger(MemoryStorageFacade.class);
+
   /**
    * Field evaluator to find transient attributes. This is needed to deal with persisting Guava
    * collections objects that sometimes use the transient keyword for some of their implementation's
    * backing stores
-   **/
+   */
   private static final PersistenceFieldEvaluator TRANSIENT_FIELD_EVALUATOR =
       (clazz, field) -> !field.getName().startsWith("_");
 
@@ -96,8 +78,9 @@ public final class MemoryStorageFacade implements IStorageDao {
   private final MemoryRepairScheduleDao memRepairScheduleDao =
       new MemoryRepairScheduleDao(this, memoryRepairUnitDao);
   private final MemoryEventsDao memEventsDao = new MemoryEventsDao(this);
-  private final MemoryClusterDao memClusterDao = new MemoryClusterDao(this, memoryRepairUnitDao,
-      memoryRepairRunDao, memRepairScheduleDao, memEventsDao);
+  private final MemoryClusterDao memClusterDao =
+      new MemoryClusterDao(
+          this, memoryRepairUnitDao, memoryRepairRunDao, memRepairScheduleDao, memEventsDao);
   private final MemorySnapshotDao memSnapshotDao = new MemorySnapshotDao();
   private final MemoryMetricsDao memMetricsDao = new MemoryMetricsDao();
   private final ReplicaLockManagerWithTtl replicaLockManagerWithTtl;
@@ -110,10 +93,13 @@ public final class MemoryStorageFacade implements IStorageDao {
     MemoryStorageRoot root = null;
     if (persistenceStoragePath != null && !persistenceStoragePath.isEmpty()) {
       // If persistence storage path is provided, create a new embedded storage manager
-      storage = EmbeddedStorage.Foundation(Paths.get(this.persistenceStoragePath))
-          .onConnectionFoundation(c -> {
-            c.setFieldEvaluatorPersistable(TRANSIENT_FIELD_EVALUATOR);
-          }).createEmbeddedStorageManager();
+      storage =
+          EmbeddedStorage.Foundation(Paths.get(this.persistenceStoragePath))
+              .onConnectionFoundation(
+                  c -> {
+                    c.setFieldEvaluatorPersistable(TRANSIENT_FIELD_EVALUATOR);
+                  })
+              .createEmbeddedStorageManager();
       storage.start();
       if (storage.root() == null) {
         LOG.info("Creating new data storage");
@@ -155,8 +141,8 @@ public final class MemoryStorageFacade implements IStorageDao {
   }
 
   @Override
-  public List<PercentRepairedMetric> getPercentRepairedMetrics(String clusterName,
-      UUID repairScheduleId, Long since) {
+  public List<PercentRepairedMetric> getPercentRepairedMetrics(
+      String clusterName, UUID repairScheduleId, Long since) {
     return memMetricsDao.getPercentRepairedMetrics(clusterName, repairScheduleId, since);
   }
 
@@ -292,15 +278,15 @@ public final class MemoryStorageFacade implements IStorageDao {
 
   public RepairUnit addRepairUnit(Optional<RepairUnit.Builder> key, RepairUnit unit) {
     RepairUnit newUnit = this.memoryStorageRoot.addRepairUnit(key.get(), unit);
-    this.persist(this.memoryStorageRoot.getRepairUnits(),
-        this.memoryStorageRoot.getRepairUnitsByKey());
+    this.persist(
+        this.memoryStorageRoot.getRepairUnits(), this.memoryStorageRoot.getRepairUnitsByKey());
     return newUnit;
   }
 
   public RepairUnit removeRepairUnit(Optional<RepairUnit.Builder> key, UUID id) {
     RepairUnit unit = this.memoryStorageRoot.removeRepairUnit(key.get(), id);
-    this.persist(this.memoryStorageRoot.getRepairUnits(),
-        this.memoryStorageRoot.getRepairUnitsByKey());
+    this.persist(
+        this.memoryStorageRoot.getRepairUnits(), this.memoryStorageRoot.getRepairUnitsByKey());
     return unit;
   }
 
@@ -331,7 +317,8 @@ public final class MemoryStorageFacade implements IStorageDao {
 
   public Collection<RepairSegment> getRepairSegmentsByRunId(UUID runId) {
     return this.memoryStorageRoot.getRepairSegments().values().stream()
-        .filter(segment -> segment.getRunId().equals(runId)).collect(Collectors.toSet());
+        .filter(segment -> segment.getRunId().equals(runId))
+        .collect(Collectors.toSet());
   }
 
   // RepairSubscription operations
@@ -351,8 +338,8 @@ public final class MemoryStorageFacade implements IStorageDao {
 
   @Override
   public boolean releaseRunningRepairsForNodes(UUID runId, UUID segmentId, Set<String> replicas) {
-    LOG.info("Releasing locks for runId: {}, segmentId: {}, replicas: {}", runId, segmentId,
-        replicas);
+    LOG.info(
+        "Releasing locks for runId: {}, segmentId: {}, replicas: {}", runId, segmentId, replicas);
     return replicaLockManagerWithTtl.releaseRunningRepairsForNodes(runId, segmentId, replicas);
   }
 

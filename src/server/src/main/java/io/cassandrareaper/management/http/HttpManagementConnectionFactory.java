@@ -53,6 +53,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
@@ -83,7 +84,8 @@ public class HttpManagementConnectionFactory implements IManagementConnectionFac
   private static final String TRUSTSTORE_COMPONENT_NAME = "truststore.jks";
 
   private static final Logger LOG = LoggerFactory.getLogger(HttpManagementConnectionFactory.class);
-  private static final ConcurrentMap<String, HttpCassandraManagementProxy> HTTP_CONNECTIONS = Maps.newConcurrentMap();
+  private static final ConcurrentMap<String, HttpCassandraManagementProxy> HTTP_CONNECTIONS =
+      Maps.newConcurrentMap();
   private final MetricRegistry metricRegistry;
   private final HostConnectionCounters hostConnectionCounters;
 
@@ -93,9 +95,10 @@ public class HttpManagementConnectionFactory implements IManagementConnectionFac
   private final Set<String> accessibleDatacenters = Sets.newHashSet();
 
   // Constructor for HttpManagementConnectionFactory
-  public HttpManagementConnectionFactory(AppContext context, ScheduledExecutorService jobStatusPollerExecutor) {
-    this.metricRegistry
-        = context.metricRegistry == null ? new MetricRegistry() : context.metricRegistry;
+  public HttpManagementConnectionFactory(
+      AppContext context, ScheduledExecutorService jobStatusPollerExecutor) {
+    this.metricRegistry =
+        context.metricRegistry == null ? new MetricRegistry() : context.metricRegistry;
     hostConnectionCounters = new HostConnectionCounters(metricRegistry);
     this.config = context.config;
     registerConnectionsGauge();
@@ -128,15 +131,20 @@ public class HttpManagementConnectionFactory implements IManagementConnectionFac
     for (int i = 0; i < 2; i++) {
       for (Node node : nodeList) {
         // First loop, we try the most accessible nodes, then second loop we try all nodes
-        if (getHostConnectionCounters().getSuccessfulConnections(node.getHostname()) >= 0 || 1 == i) {
+        if (getHostConnectionCounters().getSuccessfulConnections(node.getHostname()) >= 0
+            || 1 == i) {
           try {
-            LOG.debug("Trying to connect to node {} with {} successful connections with i = {}",
-                node.getHostname(), getHostConnectionCounters().getSuccessfulConnections(node.getHostname()), i);
+            LOG.debug(
+                "Trying to connect to node {} with {} successful connections with i = {}",
+                node.getHostname(),
+                getHostConnectionCounters().getSuccessfulConnections(node.getHostname()),
+                i);
             ICassandraManagementProxy cassandraManagementProxy = connectImpl(node);
             getHostConnectionCounters().incrementSuccessfulConnections(node.getHostname());
             if (getHostConnectionCounters().getSuccessfulConnections(node.getHostname()) > 0) {
               accessibleDatacenters.add(
-                  cassandraManagementProxy.getDatacenter(cassandraManagementProxy.getUntranslatedHost()));
+                  cassandraManagementProxy.getDatacenter(
+                      cassandraManagementProxy.getUntranslatedHost()));
             }
             return cassandraManagementProxy;
           } catch (ReaperException | RuntimeException | UnknownHostException e) {
@@ -160,9 +168,12 @@ public class HttpManagementConnectionFactory implements IManagementConnectionFac
     try {
       if (!this.metricRegistry
           .getGauges()
-          .containsKey(MetricRegistry.name(HttpManagementConnectionFactory.class, "openHttpManagementConnections"))) {
+          .containsKey(
+              MetricRegistry.name(
+                  HttpManagementConnectionFactory.class, "openHttpManagementConnections"))) {
         this.metricRegistry.register(
-            MetricRegistry.name(HttpManagementConnectionFactory.class, "openHttpManagementConnections"),
+            MetricRegistry.name(
+                HttpManagementConnectionFactory.class, "openHttpManagementConnections"),
             (Gauge<Integer>) HTTP_CONNECTIONS::size);
       }
     } catch (IllegalArgumentException e) {
@@ -180,62 +191,68 @@ public class HttpManagementConnectionFactory implements IManagementConnectionFac
     String rootPath = ""; // TODO - get this from the config.
 
     LOG.trace("Wanting to create new connection to " + node.getHostname());
-    return HTTP_CONNECTIONS.computeIfAbsent(node.getHostname(), new Function<String, HttpCassandraManagementProxy>() {
-      @Override
-      public HttpCassandraManagementProxy apply(@Nullable String hostName) {
-        ReaperApplicationConfiguration.HttpManagement httpConfig = config.getHttpManagement();
+    return HTTP_CONNECTIONS.computeIfAbsent(
+        node.getHostname(),
+        new Function<String, HttpCassandraManagementProxy>() {
+          @Override
+          public HttpCassandraManagementProxy apply(@Nullable String hostName) {
+            ReaperApplicationConfiguration.HttpManagement httpConfig = config.getHttpManagement();
 
-        boolean useMtls = (httpConfig.getKeystore() != null && !httpConfig.getKeystore().isEmpty())
-            || (httpConfig.getTruststoresDir() != null && !httpConfig.getTruststoresDir().isEmpty());
+            boolean useMtls =
+                (httpConfig.getKeystore() != null && !httpConfig.getKeystore().isEmpty())
+                    || (httpConfig.getTruststoresDir() != null
+                        && !httpConfig.getTruststoresDir().isEmpty());
 
-        OkHttpClient.Builder clientBuilder = new OkHttpClient().newBuilder();
+            OkHttpClient.Builder clientBuilder = new OkHttpClient().newBuilder();
 
-        String protocol = "http";
+            String protocol = "http";
 
-        if (useMtls) {
+            if (useMtls) {
 
-          Path truststoreName = getTruststoreComponentPath(node, TRUSTSTORE_COMPONENT_NAME);
-          Path keystoreName = getTruststoreComponentPath(node, KEYSTORE_COMPONENT_NAME);
+              Path truststoreName = getTruststoreComponentPath(node, TRUSTSTORE_COMPONENT_NAME);
+              Path keystoreName = getTruststoreComponentPath(node, KEYSTORE_COMPONENT_NAME);
 
-          LOG.debug("Using TLS connection to " + node.getHostname());
-          // We have to split TrustManagers to its own function to please OkHttpClient
-          TrustManager[] trustManagers;
-          SSLContext sslContext;
-          try {
-            trustManagers = getTrustManagers(truststoreName);
-            sslContext = createSslContext(trustManagers, keystoreName);
-          } catch (ReaperException e) {
-            LOG.error("Failed to create SSLContext: " + e.getLocalizedMessage(), e);
-            throw new RuntimeException(e);
+              LOG.debug("Using TLS connection to " + node.getHostname());
+              // We have to split TrustManagers to its own function to please OkHttpClient
+              TrustManager[] trustManagers;
+              SSLContext sslContext;
+              try {
+                trustManagers = getTrustManagers(truststoreName);
+                sslContext = createSslContext(trustManagers, keystoreName);
+              } catch (ReaperException e) {
+                LOG.error("Failed to create SSLContext: " + e.getLocalizedMessage(), e);
+                throw new RuntimeException(e);
+              }
+              clientBuilder.sslSocketFactory(
+                  sslContext.getSocketFactory(), (X509TrustManager) trustManagers[0]);
+              clientBuilder.hostnameVerifier(
+                  (hostname, session) -> true); // We don't want subjectAltNames verification
+              protocol = "https";
+            }
+
+            OkHttpClient okHttpClient = clientBuilder.build();
+
+            ApiClient apiClient =
+                new ApiClient()
+                    .setBasePath(
+                        protocol + "://" + node.getHostname() + ":" + managementPort + rootPath)
+                    .setHttpClient(okHttpClient);
+
+            DefaultApi mgmtApiClient = new DefaultApi(apiClient);
+
+            InstrumentedScheduledExecutorService statusTracker =
+                new InstrumentedScheduledExecutorService(jobStatusPollerExecutor, metricRegistry);
+
+            return new HttpCassandraManagementProxy(
+                metricRegistry,
+                rootPath,
+                new InetSocketAddress(node.getHostname(), managementPort),
+                statusTracker,
+                mgmtApiClient,
+                config.getHttpManagement().getMgmtApiMetricsPort(),
+                node);
           }
-          clientBuilder.sslSocketFactory(sslContext.getSocketFactory(), (X509TrustManager) trustManagers[0]);
-          clientBuilder.hostnameVerifier((hostname, session) -> true); // We don't want subjectAltNames verification
-          protocol = "https";
-        }
-
-        OkHttpClient okHttpClient = clientBuilder
-            .build();
-
-        ApiClient apiClient = new ApiClient().setBasePath(
-                protocol + "://" + node.getHostname() + ":" + managementPort + rootPath)
-            .setHttpClient(okHttpClient);
-
-        DefaultApi mgmtApiClient = new DefaultApi(apiClient);
-
-        InstrumentedScheduledExecutorService statusTracker = new InstrumentedScheduledExecutorService(
-            jobStatusPollerExecutor, metricRegistry);
-
-        return new HttpCassandraManagementProxy(
-            metricRegistry,
-            rootPath,
-            new InetSocketAddress(node.getHostname(), managementPort),
-            statusTracker,
-            mgmtApiClient,
-            config.getHttpManagement().getMgmtApiMetricsPort(),
-            node
-        );
-      }
-    });
+        });
   }
 
   @VisibleForTesting
@@ -246,14 +263,19 @@ public class HttpManagementConnectionFactory implements IManagementConnectionFac
       KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
       keyStore.load(ksIs, KEYSTORE_PASSWORD);
 
-      KeyManagerFactory kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
+      KeyManagerFactory kmf =
+          KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
       kmf.init(keyStore, KEYSTORE_PASSWORD);
 
       SSLContext sslCtx = SSLContext.getInstance("TLS");
       sslCtx.init(kmf.getKeyManagers(), tms, null);
       return sslCtx;
-    } catch (CertificateException | NoSuchAlgorithmException | KeyStoreException | KeyManagementException
-             | UnrecoverableKeyException | IOException e) {
+    } catch (CertificateException
+        | NoSuchAlgorithmException
+        | KeyStoreException
+        | KeyManagementException
+        | UnrecoverableKeyException
+        | IOException e) {
       throw new ReaperException(e);
     }
   }
@@ -267,7 +289,8 @@ public class HttpManagementConnectionFactory implements IManagementConnectionFac
       KeyStore trustStore = KeyStore.getInstance(KeyStore.getDefaultType());
       trustStore.load(tsIs, KEYSTORE_PASSWORD);
 
-      TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+      TrustManagerFactory tmf =
+          TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
       tmf.init(trustStore);
 
       return tmf.getTrustManagers();
@@ -285,45 +308,52 @@ public class HttpManagementConnectionFactory implements IManagementConnectionFac
     // we fall back to the global trust stores
     if (clusterName.equals("") || config.getHttpManagement().getTruststoresDir() == null) {
 
-      trustStorePath = truststoreComponentName.equals(TRUSTSTORE_COMPONENT_NAME)
-          ? Paths.get(config.getHttpManagement().getTruststore()).toAbsolutePath()
-          : Paths.get(config.getHttpManagement().getKeystore()).toAbsolutePath();
+      trustStorePath =
+          truststoreComponentName.equals(TRUSTSTORE_COMPONENT_NAME)
+              ? Paths.get(config.getHttpManagement().getTruststore()).toAbsolutePath()
+              : Paths.get(config.getHttpManagement().getKeystore()).toAbsolutePath();
     } else {
       // load a cluster-specific trust store otherwise
       Path storesRootPath = Paths.get(config.getHttpManagement().getTruststoresDir());
-      trustStorePath = storesRootPath
-          .resolve(String.format("%s-%s", clusterName, truststoreComponentName))
-          .toAbsolutePath();
+      trustStorePath =
+          storesRootPath
+              .resolve(String.format("%s-%s", clusterName, truststoreComponentName))
+              .toAbsolutePath();
     }
 
     return trustStorePath;
   }
 
   @VisibleForTesting
-  void createSslWatcher(boolean watchTruststore, boolean watchKeystore, boolean watchTruststoreDir) throws IOException {
+  void createSslWatcher(boolean watchTruststore, boolean watchKeystore, boolean watchTruststoreDir)
+      throws IOException {
 
     WatchService watchService = FileSystems.getDefault().newWatchService();
 
-    Path trustStorePath = watchTruststore ? Paths.get(config.getHttpManagement().getTruststore()) : null;
-    Path keyStorePath = watchKeystore ? Paths.get(config.getHttpManagement().getKeystore()) : null ;
-    Path truststoreDirPath = watchTruststoreDir ? Paths.get(config.getHttpManagement().getTruststoresDir()) : null ;
+    Path trustStorePath =
+        watchTruststore ? Paths.get(config.getHttpManagement().getTruststore()) : null;
+    Path keyStorePath = watchKeystore ? Paths.get(config.getHttpManagement().getKeystore()) : null;
+    Path truststoreDirPath =
+        watchTruststoreDir ? Paths.get(config.getHttpManagement().getTruststoresDir()) : null;
 
     if (watchKeystore) {
-      keyStorePath.getParent().register(
-          watchService,
-          StandardWatchEventKinds.ENTRY_CREATE,
-          StandardWatchEventKinds.ENTRY_DELETE,
-          StandardWatchEventKinds.ENTRY_MODIFY
-      );
+      keyStorePath
+          .getParent()
+          .register(
+              watchService,
+              StandardWatchEventKinds.ENTRY_CREATE,
+              StandardWatchEventKinds.ENTRY_DELETE,
+              StandardWatchEventKinds.ENTRY_MODIFY);
     }
     if (watchTruststore && watchKeystore) {
       if (!trustStorePath.getParent().equals(keyStorePath.getParent())) {
-        trustStorePath.getParent().register(
-            watchService,
-            StandardWatchEventKinds.ENTRY_CREATE,
-            StandardWatchEventKinds.ENTRY_DELETE,
-            StandardWatchEventKinds.ENTRY_MODIFY
-        );
+        trustStorePath
+            .getParent()
+            .register(
+                watchService,
+                StandardWatchEventKinds.ENTRY_CREATE,
+                StandardWatchEventKinds.ENTRY_DELETE,
+                StandardWatchEventKinds.ENTRY_MODIFY);
       }
     }
     if (watchTruststoreDir) {
@@ -331,8 +361,7 @@ public class HttpManagementConnectionFactory implements IManagementConnectionFac
           watchService,
           StandardWatchEventKinds.ENTRY_CREATE,
           StandardWatchEventKinds.ENTRY_DELETE,
-          StandardWatchEventKinds.ENTRY_MODIFY
-      );
+          StandardWatchEventKinds.ENTRY_MODIFY);
     }
 
     ExecutorService executorService = Executors.newSingleThreadExecutor();
@@ -366,7 +395,6 @@ public class HttpManagementConnectionFactory implements IManagementConnectionFac
                     reloadNeeded = true;
                   }
                 }
-
               }
               if (!key.reset()) {
                 // The watched directories have disappeared..
@@ -390,7 +418,7 @@ public class HttpManagementConnectionFactory implements IManagementConnectionFac
   }
 
   private Response getPid(Node node) {
-    //TODO - implement me.
+    // TODO - implement me.
     return Response.ok().build();
   }
 

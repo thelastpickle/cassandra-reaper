@@ -22,27 +22,29 @@ import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.storage.MemoryStorageFacade;
 
-import com.google.common.collect.ImmutableSet;
-import org.junit.Before;
-import org.junit.Test;
-
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
+import com.google.common.collect.ImmutableSet;
+import org.junit.Before;
+import org.junit.Test;
+
 public final class AutoSchedulingManagerTest {
 
-  private static final Cluster CLUSTER_1 = Cluster.builder()
-      .withName("cluster1")
-      .withSeedHosts(ImmutableSet.of("127.0.0.1"))
-      .withState(Cluster.State.ACTIVE)
-      .build();
+  private static final Cluster CLUSTER_1 =
+      Cluster.builder()
+          .withName("cluster1")
+          .withSeedHosts(ImmutableSet.of("127.0.0.1"))
+          .withState(Cluster.State.ACTIVE)
+          .build();
 
-  private static final Cluster CLUSTER_2 = Cluster.builder()
-      .withName("cluster2")
-      .withSeedHosts(ImmutableSet.of("127.0.0.1"))
-      .withState(Cluster.State.ACTIVE)
-      .build();
+  private static final Cluster CLUSTER_2 =
+      Cluster.builder()
+          .withName("cluster2")
+          .withSeedHosts(ImmutableSet.of("127.0.0.1"))
+          .withState(Cluster.State.ACTIVE)
+          .build();
 
   private AppContext context;
   private AutoSchedulingManager repairAutoSchedulingManager;
@@ -73,12 +75,13 @@ public final class AutoSchedulingManagerTest {
     context.storage.getClusterDao().addCluster(CLUSTER_1);
     context.storage.getClusterDao().addCluster(CLUSTER_2);
 
-    doThrow(new RuntimeException("throw for test purposes")).when(clusterRepairScheduler).scheduleRepairs(CLUSTER_1);
+    doThrow(new RuntimeException("throw for test purposes"))
+        .when(clusterRepairScheduler)
+        .scheduleRepairs(CLUSTER_1);
 
     repairAutoSchedulingManager.run();
 
     verify(clusterRepairScheduler).scheduleRepairs(CLUSTER_1);
     verify(clusterRepairScheduler).scheduleRepairs(CLUSTER_2);
   }
-
 }

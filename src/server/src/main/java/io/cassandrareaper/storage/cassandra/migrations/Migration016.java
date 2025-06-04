@@ -26,32 +26,35 @@ public final class Migration016 {
 
   private static final Logger LOG = LoggerFactory.getLogger(Migration016.class);
 
-  private Migration016() {
-  }
+  private Migration016() {}
 
   /**
-   * if Cassandra is running version less than 4.0
-   * alter every table to set `dclocal_read_repair_chance` to zero
+   * if Cassandra is running version less than 4.0 alter every table to set
+   * `dclocal_read_repair_chance` to zero
    */
   public static void migrate(CqlSession session, String keyspace) {
 
-    Version highestNodeVersion = session.getMetadata().getNodes().entrySet()
-        .stream()
-        .map(host -> host.getValue().getCassandraVersion())
-        .max(Version::compareTo)
-        .get();
+    Version highestNodeVersion =
+        session.getMetadata().getNodes().entrySet().stream()
+            .map(host -> host.getValue().getCassandraVersion())
+            .max(Version::compareTo)
+            .get();
 
     if (0 < Version.parse("4.0").compareTo(highestNodeVersion)) {
       LOG.warn("altering every table to set `dclocal_read_repair_chance` to zero…");
-      session.getMetadata().getKeyspace(keyspace).get().getTables().entrySet()
-          .stream()
-          .filter(table -> !table.getValue().getName().equals("repair_schedule")
-            && !table.getValue().getName().equals("repair_unit"))
-          .forEach(tbl -> session.executeAsync(
-              "ALTER TABLE " + tbl.getValue().getName() + " WITH dclocal_read_repair_chance = 0"));
+      session.getMetadata().getKeyspace(keyspace).get().getTables().entrySet().stream()
+          .filter(
+              table ->
+                  !table.getValue().getName().equals("repair_schedule")
+                      && !table.getValue().getName().equals("repair_unit"))
+          .forEach(
+              tbl ->
+                  session.executeAsync(
+                      "ALTER TABLE "
+                          + tbl.getValue().getName()
+                          + " WITH dclocal_read_repair_chance = 0"));
 
       LOG.warn("alter every table to set `dclocal_read_repair_chance` to zero completed.");
     }
-
   }
 }

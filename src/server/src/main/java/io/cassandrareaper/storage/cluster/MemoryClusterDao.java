@@ -40,11 +40,12 @@ public class MemoryClusterDao implements IClusterDao {
 
   private final MemoryEventsDao memEventsDao;
 
-  public MemoryClusterDao(MemoryStorageFacade storage,
-                          MemoryRepairUnitDao memoryRepairUnitDao,
-                          MemoryRepairRunDao memoryRepairRunDao,
-                          MemoryRepairScheduleDao memRepairScheduleDao,
-                          MemoryEventsDao memEventsDao) {
+  public MemoryClusterDao(
+      MemoryStorageFacade storage,
+      MemoryRepairUnitDao memoryRepairUnitDao,
+      MemoryRepairRunDao memoryRepairRunDao,
+      MemoryRepairScheduleDao memRepairScheduleDao,
+      MemoryEventsDao memEventsDao) {
     this.memoryRepairRunDao = memoryRepairRunDao;
     this.memRepairScheduleDao = memRepairScheduleDao;
     this.memEventsDao = memEventsDao;
@@ -71,11 +72,12 @@ public class MemoryClusterDao implements IClusterDao {
 
   public boolean addClusterAssertions(Cluster cluster) {
     Preconditions.checkState(
-          Cluster.State.UNKNOWN != cluster.getState(),
-          "Cluster should not be persisted with UNKNOWN state");
+        Cluster.State.UNKNOWN != cluster.getState(),
+        "Cluster should not be persisted with UNKNOWN state");
 
     // TODO – unit tests need to also always set the paritioner
-    //Preconditions.checkState(cluster.getPartitioner().isPresent(), "Cannot store cluster with no partitioner.");
+    // Preconditions.checkState(cluster.getPartitioner().isPresent(), "Cannot store cluster with no
+    // partitioner.");
 
     // assert we're not overwriting a cluster with the same name but different node list
     Set<String> previousNodes;
@@ -88,9 +90,11 @@ public class MemoryClusterDao implements IClusterDao {
     Set<String> addedNodes = cluster.getSeedHosts();
 
     Preconditions.checkArgument(
-          !Collections.disjoint(previousNodes, addedNodes),
-          "Trying to add/update cluster using an existing name: %s. No nodes overlap between %s and %s",
-          cluster.getName(), StringUtils.join(previousNodes, ','), StringUtils.join(addedNodes, ','));
+        !Collections.disjoint(previousNodes, addedNodes),
+        "Trying to add/update cluster using an existing name: %s. No nodes overlap between %s and %s",
+        cluster.getName(),
+        StringUtils.join(previousNodes, ','),
+        StringUtils.join(addedNodes, ','));
 
     return true;
   }
@@ -98,31 +102,31 @@ public class MemoryClusterDao implements IClusterDao {
   @Override
   public Cluster getCluster(String clusterName) {
     Preconditions.checkArgument(
-          storage.getClusters().containsKey(clusterName), "no such cluster: %s", clusterName);
+        storage.getClusters().containsKey(clusterName), "no such cluster: %s", clusterName);
     return storage.getClusters().get(clusterName);
   }
 
   @Override
   public Cluster deleteCluster(String clusterName) {
-    memRepairScheduleDao.getRepairSchedulesForCluster(clusterName).forEach(
-        schedule -> memRepairScheduleDao.deleteRepairSchedule(schedule.getId())
-    );
-    memoryRepairRunDao.getRepairRunIdsForCluster(clusterName, Optional.empty())
-          .forEach(runId -> memoryRepairRunDao.deleteRepairRun(runId));
+    memRepairScheduleDao
+        .getRepairSchedulesForCluster(clusterName)
+        .forEach(schedule -> memRepairScheduleDao.deleteRepairSchedule(schedule.getId()));
+    memoryRepairRunDao
+        .getRepairRunIdsForCluster(clusterName, Optional.empty())
+        .forEach(runId -> memoryRepairRunDao.deleteRepairRun(runId));
 
-    memEventsDao.getEventSubscriptions(clusterName)
-          .stream()
-          .filter(subscription -> subscription.getId().isPresent())
-          .forEach(subscription -> memEventsDao.deleteEventSubscription(subscription.getId().get()));
+    memEventsDao.getEventSubscriptions(clusterName).stream()
+        .filter(subscription -> subscription.getId().isPresent())
+        .forEach(subscription -> memEventsDao.deleteEventSubscription(subscription.getId().get()));
 
     storage.getRepairUnits().stream()
-          .filter((unit) -> unit.getClusterName().equals(clusterName))
-          .forEach((unit) -> {
-            assert memoryRepairRunDao.getRepairRunsForUnit(
-                  unit.getId()).isEmpty() : StringUtils.join(memoryRepairRunDao.getRepairRunsForUnit(unit.getId())
-            );
-            storage.removeRepairUnit(Optional.ofNullable(unit.with()), unit.getId());
-          });
+        .filter((unit) -> unit.getClusterName().equals(clusterName))
+        .forEach(
+            (unit) -> {
+              assert memoryRepairRunDao.getRepairRunsForUnit(unit.getId()).isEmpty()
+                  : StringUtils.join(memoryRepairRunDao.getRepairRunsForUnit(unit.getId()));
+              storage.removeRepairUnit(Optional.ofNullable(unit.with()), unit.getId());
+            });
 
     Cluster removed = storage.removeCluster(clusterName);
     return removed;

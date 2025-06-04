@@ -26,7 +26,6 @@ import org.apache.shiro.io.ResourceUtils;
 import org.apache.shiro.web.config.WebIniSecurityManagerFactory;
 import org.junit.Test;
 
-
 public final class LoginResourceTest {
 
   @Test
@@ -45,8 +44,9 @@ public final class LoginResourceTest {
       Ini ini = new Ini();
       ini.load(is);
       ini.get("main").remove("filterChainResolver.globalFilters");
-      new WebIniSecurityManagerFactory(ini).getInstance().authenticate(new UsernamePasswordToken("admin", "admin"));
+      new WebIniSecurityManagerFactory(ini)
+          .getInstance()
+          .authenticate(new UsernamePasswordToken("admin", "admin"));
     }
   }
-
 }

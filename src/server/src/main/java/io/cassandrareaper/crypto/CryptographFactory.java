@@ -24,5 +24,4 @@ import io.dropwizard.jackson.Discoverable;
 public interface CryptographFactory extends Discoverable {
 
   Cryptograph create();
-
 }

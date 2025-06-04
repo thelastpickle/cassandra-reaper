@@ -30,13 +30,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
+
 import javax.management.JMException;
-import javax.management.openmbean.CompositeData;
 import javax.validation.constraints.NotNull;
 
 import com.datastax.oss.driver.api.core.Version;
 import org.apache.cassandra.repair.RepairParallelism;
-
 
 public interface ICassandraManagementProxy {
 
@@ -48,10 +47,7 @@ public interface ICassandraManagementProxy {
   long MIB_FACTOR = 1024 * KIB_FACTOR;
   long GIB_FACTOR = 1024 * MIB_FACTOR;
 
-
-  /**
-   * Terminates all ongoing repairs on the node this proxy is connected to
-   */
+  /** Terminates all ongoing repairs on the node this proxy is connected to */
   void cancelAllRepairs();
 
   String getCassandraVersion();
@@ -102,24 +98,27 @@ public interface ICassandraManagementProxy {
    */
   boolean isRepairRunning() throws JMException;
 
-  /**
-   * Checks if table exists in the cluster by instantiating a MBean for that table.
-   */
+  /** Checks if table exists in the cluster by instantiating a MBean for that table. */
   Map<String, List<String>> listTablesByKeyspace() throws ReaperException;
-
 
   /**
    * Triggers a repair of range (beginToken, endToken] for given keyspace and column family. The
-   * repair is triggered by
-   * {@link org.apache.cassandra.service.StorageServiceMBean#forceRepairRangeAsync} For time being,
-   * we don't allow local nor snapshot repairs.
+   * repair is triggered by {@link
+   * org.apache.cassandra.service.StorageServiceMBean#forceRepairRangeAsync} For time being, we
+   * don't allow local nor snapshot repairs.
    *
    * @return Repair command number, or 0 if nothing to repair
    */
-  int triggerRepair(String keyspace, RepairParallelism repairParallelism,
-      Collection<String> columnFamilies, RepairType repairType, Collection<String> datacenters,
-      RepairStatusHandler repairStatusHandler, List<RingRange> associatedTokens,
-      int repairThreadCount) throws ReaperException;
+  int triggerRepair(
+      String keyspace,
+      RepairParallelism repairParallelism,
+      Collection<String> columnFamilies,
+      RepairType repairType,
+      Collection<String> datacenters,
+      RepairStatusHandler repairStatusHandler,
+      List<RingRange> associatedTokens,
+      int repairThreadCount)
+      throws ReaperException;
 
   void removeRepairStatusHandler(int repairNo);
 
@@ -153,9 +152,9 @@ public interface ICassandraManagementProxy {
    * @param str1 a string of ordinal numbers separated by decimal points.
    * @param str2 a string of ordinal numbers separated by decimal points.
    * @return The result is a negative integer if str1 is _numerically_ less than str2. The result is
-   *         a positive integer if str1 is _numerically_ greater than str2. The result is zero if
-   *         the strings are _numerically_ equal. It does not work if "1.10" is supposed to be equal
-   *         to "1.10.0".
+   *     a positive integer if str1 is _numerically_ greater than str2. The result is zero if the
+   *     strings are _numerically_ equal. It does not work if "1.10" is supposed to be equal to
+   *     "1.10.0".
    */
   static Integer versionCompare(String str1, String str2) {
     Version version1 = Version.parse(str1);
@@ -170,7 +169,8 @@ public interface ICassandraManagementProxy {
     int spaceNdx = readableSize.indexOf(" ");
 
     double ret =
-        readableSize.contains(".") ? Double.parseDouble(readableSize.substring(0, spaceNdx))
+        readableSize.contains(".")
+            ? Double.parseDouble(readableSize.substring(0, spaceNdx))
             : Double.parseDouble(readableSize.substring(0, spaceNdx).replace(",", "."));
 
     switch (readableSize.substring(spaceNdx + 1)) {
@@ -192,6 +192,4 @@ public interface ICassandraManagementProxy {
         return 0;
     }
   }
-
-
 }

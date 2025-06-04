@@ -20,6 +20,7 @@ package io.cassandrareaper.resources.auth;
 import io.cassandrareaper.AppContext;
 
 import java.security.Principal;
+
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.HttpMethod;
@@ -44,10 +45,10 @@ public final class ShiroJwtVerifyingFilterTest {
       ShiroJwtVerifyingFilter filter = new ShiroJwtVerifyingFilter();
 
       Assertions.assertThat(
-          filter.isAccessAllowed(
-              Mockito.mock(HttpServletRequest.class),
-              Mockito.mock(ServletResponse.class),
-              Mockito.mock(Object.class)))
+              filter.isAccessAllowed(
+                  Mockito.mock(HttpServletRequest.class),
+                  Mockito.mock(ServletResponse.class),
+                  Mockito.mock(Object.class)))
           .isTrue();
     } finally {
       ThreadContext.unbindSubject();
@@ -64,10 +65,10 @@ public final class ShiroJwtVerifyingFilterTest {
       ShiroJwtVerifyingFilter filter = new ShiroJwtVerifyingFilter();
 
       Assertions.assertThat(
-          filter.isAccessAllowed(
-              Mockito.mock(HttpServletRequest.class),
-              Mockito.mock(ServletResponse.class),
-              Mockito.mock(Object.class)))
+              filter.isAccessAllowed(
+                  Mockito.mock(HttpServletRequest.class),
+                  Mockito.mock(ServletResponse.class),
+                  Mockito.mock(Object.class)))
           .isTrue();
     } finally {
       ThreadContext.unbindSubject();
@@ -79,10 +80,10 @@ public final class ShiroJwtVerifyingFilterTest {
     ShiroJwtVerifyingFilter filter = new ShiroJwtVerifyingFilter();
 
     Assertions.assertThat(
-        filter.isAccessAllowed(
-            Mockito.mock(HttpServletRequest.class),
-            Mockito.mock(ServletResponse.class),
-            Mockito.mock(Object.class)))
+            filter.isAccessAllowed(
+                Mockito.mock(HttpServletRequest.class),
+                Mockito.mock(ServletResponse.class),
+                Mockito.mock(Object.class)))
         .isFalse();
   }
 
@@ -96,10 +97,8 @@ public final class ShiroJwtVerifyingFilterTest {
       ShiroJwtVerifyingFilter filter = new ShiroJwtVerifyingFilter();
 
       Assertions.assertThat(
-          filter.isAccessAllowed(
-              req,
-              Mockito.mock(ServletResponse.class),
-              Mockito.mock(Object.class)))
+              filter.isAccessAllowed(
+                  req, Mockito.mock(ServletResponse.class), Mockito.mock(Object.class)))
           .isFalse();
     } finally {
       ThreadContext.unbindSubject();
@@ -117,10 +116,8 @@ public final class ShiroJwtVerifyingFilterTest {
       ShiroJwtVerifyingFilter filter = new ShiroJwtVerifyingFilter();
 
       Assertions.assertThat(
-          filter.isAccessAllowed(
-              req,
-              Mockito.mock(ServletResponse.class),
-              Mockito.mock(Object.class)))
+              filter.isAccessAllowed(
+                  req, Mockito.mock(ServletResponse.class), Mockito.mock(Object.class)))
           .isFalse();
     } finally {
       ThreadContext.unbindSubject();
@@ -138,10 +135,8 @@ public final class ShiroJwtVerifyingFilterTest {
       ShiroJwtVerifyingFilter filter = new ShiroJwtVerifyingFilter();
 
       Assertions.assertThat(
-          filter.isAccessAllowed(
-              req,
-              Mockito.mock(ServletResponse.class),
-              Mockito.mock(Object.class)))
+              filter.isAccessAllowed(
+                  req, Mockito.mock(ServletResponse.class), Mockito.mock(Object.class)))
           .isFalse();
     } finally {
       ThreadContext.unbindSubject();
@@ -156,18 +151,15 @@ public final class ShiroJwtVerifyingFilterTest {
       new ShiroJwtProvider(Mockito.mock(AppContext.class));
       HttpServletRequest req = Mockito.mock(HttpServletRequest.class);
 
-      Mockito
-          .when(req.getHeader("Authorization"))
+      Mockito.when(req.getHeader("Authorization"))
           .thenReturn(
               "Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ0ZXN0LXVzZXIifQ.neIA5mbTFZsZokqG5CFwK7gIxMiBoGOU0anDZmD7kkU");
 
       ShiroJwtVerifyingFilter filter = new ShiroJwtVerifyingFilter();
 
       Assertions.assertThat(
-          filter.isAccessAllowed(
-              req,
-              Mockito.mock(ServletResponse.class),
-              Mockito.mock(Object.class)))
+              filter.isAccessAllowed(
+                  req, Mockito.mock(ServletResponse.class), Mockito.mock(Object.class)))
           .isFalse();
     } finally {
       ThreadContext.unbindSubject();
@@ -188,10 +180,8 @@ public final class ShiroJwtVerifyingFilterTest {
       ShiroJwtVerifyingFilter filter = new ShiroJwtVerifyingFilter();
 
       Assertions.assertThat(
-          filter.isAccessAllowed(
-              req,
-              Mockito.mock(ServletResponse.class),
-              Mockito.mock(Object.class)))
+              filter.isAccessAllowed(
+                  req, Mockito.mock(ServletResponse.class), Mockito.mock(Object.class)))
           .isTrue();
     } finally {
       ThreadContext.unbindSubject();
@@ -206,12 +196,11 @@ public final class ShiroJwtVerifyingFilterTest {
     Mockito.when(mockHttpServletRequest.getMethod()).thenReturn(HttpMethod.OPTIONS);
     Mockito.when(filter.isCorsEnabled()).thenReturn(true);
 
-    boolean allowed = filter.isAccessAllowed(
-        mockHttpServletRequest,
-        Mockito.mock(ServletResponse.class),
-        Mockito.mock(Object.class)
-    );
+    boolean allowed =
+        filter.isAccessAllowed(
+            mockHttpServletRequest,
+            Mockito.mock(ServletResponse.class),
+            Mockito.mock(Object.class));
     Assertions.assertThat(allowed).isTrue();
   }
-
 }

@@ -44,12 +44,16 @@ public class CassandraEventsDao implements IEventsDao {
 
   private void prepareStatements() {
     getDiagnosticEventsPrepStmt = session.prepare("SELECT * FROM diagnostic_event_subscription");
-    getDiagnosticEventPrepStmt = session.prepare("SELECT * FROM diagnostic_event_subscription WHERE id = ?");
-    deleteDiagnosticEventPrepStmt = session.prepare("DELETE FROM diagnostic_event_subscription WHERE id = ?");
+    getDiagnosticEventPrepStmt =
+        session.prepare("SELECT * FROM diagnostic_event_subscription WHERE id = ?");
+    deleteDiagnosticEventPrepStmt =
+        session.prepare("DELETE FROM diagnostic_event_subscription WHERE id = ?");
 
-    saveDiagnosticEventPrepStmt = session.prepare("INSERT INTO diagnostic_event_subscription "
-        + "(id,cluster,description,nodes,events,export_sse,export_file_logger,export_http_endpoint)"
-        + " VALUES(?,?,?,?,?,?,?,?)");
+    saveDiagnosticEventPrepStmt =
+        session.prepare(
+            "INSERT INTO diagnostic_event_subscription "
+                + "(id,cluster,description,nodes,events,export_sse,export_file_logger,export_http_endpoint)"
+                + " VALUES(?,?,?,?,?,?,?,?)");
   }
 
   static DiagEventSubscription createDiagEventSubscription(Row row) {
@@ -63,7 +67,6 @@ public class CassandraEventsDao implements IEventsDao {
         row.getString("export_file_logger"),
         row.getString("export_http_endpoint"));
   }
-
 
   @Override
   public Collection<DiagEventSubscription> getEventSubscriptions() {
@@ -95,15 +98,16 @@ public class CassandraEventsDao implements IEventsDao {
   public DiagEventSubscription addEventSubscription(DiagEventSubscription subscription) {
     Preconditions.checkArgument(subscription.getId().isPresent());
 
-    session.execute(saveDiagnosticEventPrepStmt.bind(
-        subscription.getId().get(),
-        subscription.getCluster(),
-        subscription.getDescription(),
-        subscription.getNodes(),
-        subscription.getEvents(),
-        subscription.getExportSse(),
-        subscription.getExportFileLogger(),
-        subscription.getExportHttpEndpoint()));
+    session.execute(
+        saveDiagnosticEventPrepStmt.bind(
+            subscription.getId().get(),
+            subscription.getCluster(),
+            subscription.getDescription(),
+            subscription.getNodes(),
+            subscription.getEvents(),
+            subscription.getExportSse(),
+            subscription.getExportFileLogger(),
+            subscription.getExportHttpEndpoint()));
 
     return subscription;
   }

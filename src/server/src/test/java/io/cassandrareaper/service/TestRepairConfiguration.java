@@ -25,8 +25,7 @@ import org.apache.cassandra.repair.RepairParallelism;
 
 public final class TestRepairConfiguration {
 
-  private TestRepairConfiguration() {
-  }
+  private TestRepairConfiguration() {}
 
   public static ReaperApplicationConfiguration defaultConfig() {
     return defaultConfigBuilder().build();

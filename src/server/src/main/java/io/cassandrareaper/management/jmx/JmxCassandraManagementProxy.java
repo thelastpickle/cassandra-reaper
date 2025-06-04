@@ -53,6 +53,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
+
 import javax.management.AttributeList;
 import javax.management.InstanceNotFoundException;
 import javax.management.IntrospectionException;
@@ -68,7 +69,6 @@ import javax.management.NotificationListener;
 import javax.management.ObjectName;
 import javax.management.QueryExp;
 import javax.management.ReflectionException;
-import javax.management.openmbean.CompositeData;
 import javax.management.openmbean.TabularData;
 import javax.management.remote.JMXConnector;
 import javax.management.remote.JMXConnectorFactory;
@@ -85,7 +85,6 @@ import com.datastax.oss.driver.api.core.addresstranslation.AddressTranslator;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.ImmutableBiMap;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.net.HostAndPort;
@@ -104,7 +103,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
 public final class JmxCassandraManagementProxy
     implements ICassandraManagementProxy, NotificationListener {
 
@@ -113,7 +111,6 @@ public final class JmxCassandraManagementProxy
   private static final String VALUE_ATTRIBUTE = "Value";
   private static final String FAILED_TO_CONNECT_TO_USING_JMX = "Failed to connect to {} using JMX";
   private static final String ERROR_GETTING_ATTR_JMX = "Error getting attribute from JMX";
-
 
   private static final ExecutorService EXECUTOR = Executors.newCachedThreadPool();
 
@@ -135,11 +132,18 @@ public final class JmxCassandraManagementProxy
   private final DiagnosticEventPersistenceMBean diagEventProxy;
   private final LastEventIdBroadcasterMBean lastEventIdProxy;
 
-  private JmxCassandraManagementProxy(String host, String hostBeforeTranslation,
-      JMXConnector jmxConnector, StorageServiceMBean ssProxy, MBeanServerConnection mbeanServer,
-      CompactionManagerMBean cmProxy, EndpointSnitchInfoMBean endpointSnitchMbean,
-      FailureDetectorMBean fdProxy, MetricRegistry metricRegistry,
-      Optional<StreamManagerMBean> smProxy, DiagnosticEventPersistenceMBean diagEventProxy,
+  private JmxCassandraManagementProxy(
+      String host,
+      String hostBeforeTranslation,
+      JMXConnector jmxConnector,
+      StorageServiceMBean ssProxy,
+      MBeanServerConnection mbeanServer,
+      CompactionManagerMBean cmProxy,
+      EndpointSnitchInfoMBean endpointSnitchMbean,
+      FailureDetectorMBean fdProxy,
+      MetricRegistry metricRegistry,
+      Optional<StreamManagerMBean> smProxy,
+      DiagnosticEventPersistenceMBean diagEventProxy,
       LastEventIdBroadcasterMBean lastEventIdProxy) {
 
     this.host = host;
@@ -158,9 +162,14 @@ public final class JmxCassandraManagementProxy
     registerConnectionsGauge();
   }
 
-  static JmxCassandraManagementProxy connect(String host, Optional<JmxCredentials> jmxCredentials,
-      final AddressTranslator addressTranslator, int connectionTimeout,
-      MetricRegistry metricRegistry, Cryptograph cryptograph, String clusterName)
+  static JmxCassandraManagementProxy connect(
+      String host,
+      Optional<JmxCredentials> jmxCredentials,
+      final AddressTranslator addressTranslator,
+      int connectionTimeout,
+      MetricRegistry metricRegistry,
+      Cryptograph cryptograph,
+      String clusterName)
       throws ReaperException, InterruptedException {
 
     if (host == null) {
@@ -169,8 +178,14 @@ public final class JmxCassandraManagementProxy
 
     final HostAndPort hostAndPort = HostAndPort.fromString(host);
 
-    return connect(hostAndPort.getHost(), hostAndPort.getPortOrDefault(Cluster.DEFAULT_JMX_PORT),
-        jmxCredentials, addressTranslator, connectionTimeout, metricRegistry, cryptograph,
+    return connect(
+        hostAndPort.getHost(),
+        hostAndPort.getPortOrDefault(Cluster.DEFAULT_JMX_PORT),
+        jmxCredentials,
+        addressTranslator,
+        connectionTimeout,
+        metricRegistry,
+        cryptograph,
         clusterName);
   }
 
@@ -181,19 +196,28 @@ public final class JmxCassandraManagementProxy
    * @param port port number to use for JMX connection
    * @param jmxCredentials credentials to use for JMX authentication
    * @param addressTranslator if EC2MultiRegionAddressTranslator isn't null it will be used to
-   *        translate addresses
+   *     translate addresses
    */
-  private static JmxCassandraManagementProxy connect(String originalHost, int port,
-      Optional<JmxCredentials> jmxCredentials, final AddressTranslator addressTranslator,
-      int connectionTimeout, MetricRegistry metricRegistry, Cryptograph cryptograph,
-      String clusterName) throws ReaperException, InterruptedException {
+  private static JmxCassandraManagementProxy connect(
+      String originalHost,
+      int port,
+      Optional<JmxCredentials> jmxCredentials,
+      final AddressTranslator addressTranslator,
+      int connectionTimeout,
+      MetricRegistry metricRegistry,
+      Cryptograph cryptograph,
+      String clusterName)
+      throws ReaperException, InterruptedException {
 
     JMXServiceURL jmxUrl;
     String host = originalHost;
 
     if (addressTranslator != null) {
-      host = addressTranslator.translate(new InetSocketAddress(host, port)).getAddress()
-          .getHostAddress();
+      host =
+          addressTranslator
+              .translate(new InetSocketAddress(host, port))
+              .getAddress()
+              .getHostAddress();
       LOG.debug("translated {} to {}", originalHost, host);
     }
 
@@ -201,8 +225,10 @@ public final class JmxCassandraManagementProxy
       LOG.debug("Connecting to {}...", host);
       jmxUrl = JmxAddresses.getJmxServiceUrl(host, port);
     } catch (MalformedURLException e) {
-      LOG.error(String.format("Failed to prepare the JMX connection to %s:%s in cluster %s", host,
-          port, clusterName));
+      LOG.error(
+          String.format(
+              "Failed to prepare the JMX connection to %s:%s in cluster %s",
+              host, port, clusterName));
       throw new ReaperException("Failure during preparations for JMX connection", e);
     }
     try {
@@ -216,13 +242,15 @@ public final class JmxCassandraManagementProxy
       JMXConnector jmxConn = connectWithTimeout(jmxUrl, connectionTimeout, TimeUnit.SECONDS, env);
       MBeanServerConnection mbeanServerConn = jmxConn.getMBeanServerConnection();
 
-      StorageServiceMBean ssProxy = JMX.newMBeanProxy(mbeanServerConn, ObjectNames.STORAGE_SERVICE,
-          StorageServiceMBean.class);
+      StorageServiceMBean ssProxy =
+          JMX.newMBeanProxy(
+              mbeanServerConn, ObjectNames.STORAGE_SERVICE, StorageServiceMBean.class);
 
       final String cassandraVersion = ssProxy.getReleaseVersion();
       if (cassandraVersion.startsWith("2.0") || cassandraVersion.startsWith("1.")) {
-        ssProxy = JMX.newMBeanProxy(mbeanServerConn, ObjectNames.STORAGE_SERVICE,
-            StorageServiceMBean20.class);
+        ssProxy =
+            JMX.newMBeanProxy(
+                mbeanServerConn, ObjectNames.STORAGE_SERVICE, StorageServiceMBean20.class);
       }
 
       final Optional<StreamManagerMBean> smProxy;
@@ -230,23 +258,33 @@ public final class JmxCassandraManagementProxy
       if (cassandraVersion.startsWith("1.")) {
         smProxy = Optional.empty();
       } else {
-        smProxy = Optional.of(JMX.newMBeanProxy(mbeanServerConn, ObjectNames.STREAM_MANAGER,
-            StreamManagerMBean.class));
+        smProxy =
+            Optional.of(
+                JMX.newMBeanProxy(
+                    mbeanServerConn, ObjectNames.STREAM_MANAGER, StreamManagerMBean.class));
       }
 
       JmxCassandraManagementProxy proxy =
-          new JmxCassandraManagementProxy(host, originalHost, jmxConn, ssProxy, mbeanServerConn,
-              JMX.newMBeanProxy(mbeanServerConn, ObjectNames.COMPACTION_MANAGER,
-                  CompactionManagerMBean.class),
-              JMX.newMBeanProxy(mbeanServerConn, ObjectNames.ENDPOINT_SNITCH_INFO,
-                  EndpointSnitchInfoMBean.class),
+          new JmxCassandraManagementProxy(
+              host,
+              originalHost,
+              jmxConn,
+              ssProxy,
+              mbeanServerConn,
+              JMX.newMBeanProxy(
+                  mbeanServerConn, ObjectNames.COMPACTION_MANAGER, CompactionManagerMBean.class),
+              JMX.newMBeanProxy(
+                  mbeanServerConn, ObjectNames.ENDPOINT_SNITCH_INFO, EndpointSnitchInfoMBean.class),
               JMX.newMBeanProxy(
                   mbeanServerConn, ObjectNames.FAILURE_DETECTOR, FailureDetectorMBean.class),
-              metricRegistry, smProxy,
-              JMX.newMBeanProxy(mbeanServerConn, ObjectNames.DIAGNOSTICS_EVENTS,
+              metricRegistry,
+              smProxy,
+              JMX.newMBeanProxy(
+                  mbeanServerConn,
+                  ObjectNames.DIAGNOSTICS_EVENTS,
                   DiagnosticEventPersistenceMBean.class),
-              JMX.newMBeanProxy(mbeanServerConn, ObjectNames.LAST_EVENT_ID,
-                  LastEventIdBroadcasterMBean.class));
+              JMX.newMBeanProxy(
+                  mbeanServerConn, ObjectNames.LAST_EVENT_ID, LastEventIdBroadcasterMBean.class));
 
       // registering listeners throws bunch of exceptions, so do it here rather than in the
       // constructor
@@ -254,32 +292,44 @@ public final class JmxCassandraManagementProxy
       if (smProxy.isPresent()) {
         mbeanServerConn.addNotificationListener(ObjectNames.STREAM_MANAGER, proxy, null, null);
       }
-      LOG.debug("JMX connection to {} in cluster {} properly connected: {}", host, clusterName,
+      LOG.debug(
+          "JMX connection to {} in cluster {} properly connected: {}",
+          host,
+          clusterName,
           jmxUrl.toString());
 
       return proxy;
     } catch (IOException | ExecutionException | TimeoutException | InstanceNotFoundException e) {
-      throw new ReaperException("Failure when establishing JMX connection to " + host + ":" + port
-          + " in cluster " + clusterName, e);
+      throw new ReaperException(
+          "Failure when establishing JMX connection to "
+              + host
+              + ":"
+              + port
+              + " in cluster "
+              + clusterName,
+          e);
     } catch (InterruptedException expected) {
       LOG.debug(
           "JMX connection to {}:{} in cluster {} was interrupted by Reaper. "
               + "Another JMX connection must have succeeded before this one.",
-          host, port, clusterName);
+          host,
+          port,
+          clusterName);
       throw expected;
     }
   }
 
-  private static JMXConnector connectWithTimeout(JMXServiceURL url, long timeout, TimeUnit unit,
-      Map<String, Object> env) throws InterruptedException, ExecutionException, TimeoutException {
+  private static JMXConnector connectWithTimeout(
+      JMXServiceURL url, long timeout, TimeUnit unit, Map<String, Object> env)
+      throws InterruptedException, ExecutionException, TimeoutException {
 
     Future<JMXConnector> future = EXECUTOR.submit(() -> JMXConnectorFactory.connect(url, env));
     return future.get(timeout, unit);
   }
 
-
   private static RMIClientSocketFactory getRmiClientSocketFactory() {
-    return Boolean.parseBoolean(System.getProperty("ssl.enable")) ? new SslRMIClientSocketFactory()
+    return Boolean.parseBoolean(System.getProperty("ssl.enable"))
+        ? new SslRMIClientSocketFactory()
         : RMISocketFactory.getDefaultSocketFactory();
   }
 
@@ -292,8 +342,8 @@ public final class JmxCassandraManagementProxy
   public List<BigInteger> getTokens() {
     Preconditions.checkNotNull(ssProxy, "Looks like the proxy is not connected");
 
-    return Lists.transform(Lists.newArrayList(ssProxy.getTokenToEndpointMap().keySet()),
-        s -> new BigInteger(s));
+    return Lists.transform(
+        Lists.newArrayList(ssProxy.getTokenToEndpointMap().keySet()), s -> new BigInteger(s));
   }
 
   @Override
@@ -377,8 +427,8 @@ public final class JmxCassandraManagementProxy
             Table.builder().withName(columnFamilyMBean.getColumnFamilyName());
 
         if (canUseCompactionStrategy) {
-          tableBuilder
-              .withCompactionStrategy(columnFamilyMBean.getCompactionParameters().get("class"));
+          tableBuilder.withCompactionStrategy(
+              columnFamilyMBean.getCompactionParameters().get("class"));
         }
 
         tables.add(tableBuilder.build());
@@ -499,11 +549,16 @@ public final class JmxCassandraManagementProxy
     try {
       Set<ObjectName> beanSet = mbeanServer.queryNames(ObjectNames.COLUMN_FAMILIES, null);
 
-      tablesByKeyspace = beanSet.stream()
-          .map(bean -> new JmxColumnFamily(bean.getKeyProperty("keyspace"),
-              bean.getKeyProperty("columnfamily")))
-          .collect(Collectors.groupingBy(JmxColumnFamily::getKeyspace,
-              Collectors.mapping(JmxColumnFamily::getColumnFamily, Collectors.toList())));
+      tablesByKeyspace =
+          beanSet.stream()
+              .map(
+                  bean ->
+                      new JmxColumnFamily(
+                          bean.getKeyProperty("keyspace"), bean.getKeyProperty("columnfamily")))
+              .collect(
+                  Collectors.groupingBy(
+                      JmxColumnFamily::getKeyspace,
+                      Collectors.mapping(JmxColumnFamily::getColumnFamily, Collectors.toList())));
 
     } catch (IOException e) {
       LOG.warn("Couldn't get a list of tables through JMX", e);
@@ -518,32 +573,53 @@ public final class JmxCassandraManagementProxy
   }
 
   @Override
-  public int triggerRepair(String keyspace, RepairParallelism repairParallelism,
-      Collection<String> columnFamilies, RepairType repairType, Collection<String> datacenters,
-      RepairStatusHandler repairStatusHandler, List<RingRange> associatedTokens,
-      int repairThreadCount) throws ReaperException {
+  public int triggerRepair(
+      String keyspace,
+      RepairParallelism repairParallelism,
+      Collection<String> columnFamilies,
+      RepairType repairType,
+      Collection<String> datacenters,
+      RepairStatusHandler repairStatusHandler,
+      List<RingRange> associatedTokens,
+      int repairThreadCount)
+      throws ReaperException {
 
     Preconditions.checkNotNull(ssProxy, "Looks like the proxy is not connected");
     String cassandraVersion = getCassandraVersion();
     final boolean canUseDatacenterAware =
         ICassandraManagementProxy.versionCompare(cassandraVersion, "2.0.12") >= 0;
 
-    String msg = String.format(
-        "Triggering repair for keyspace \"%s\" on "
-            + "host %s, with repair parallelism %s, in cluster with Cassandra "
-            + "version '%s' (can use DATACENTER_AWARE '%s'), " + "for column families: %s",
-        keyspace, this.host, repairParallelism, cassandraVersion, canUseDatacenterAware,
-        columnFamilies);
+    String msg =
+        String.format(
+            "Triggering repair for keyspace \"%s\" on "
+                + "host %s, with repair parallelism %s, in cluster with Cassandra "
+                + "version '%s' (can use DATACENTER_AWARE '%s'), "
+                + "for column families: %s",
+            keyspace,
+            this.host,
+            repairParallelism,
+            cassandraVersion,
+            canUseDatacenterAware,
+            columnFamilies);
     LOG.info(msg);
     if (repairParallelism.equals(RepairParallelism.DATACENTER_AWARE) && !canUseDatacenterAware) {
-      LOG.info("Cannot use DATACENTER_AWARE repair policy for Cassandra cluster with version {},"
-          + " falling back to SEQUENTIAL repair.", cassandraVersion);
+      LOG.info(
+          "Cannot use DATACENTER_AWARE repair policy for Cassandra cluster with version {},"
+              + " falling back to SEQUENTIAL repair.",
+          cassandraVersion);
       repairParallelism = RepairParallelism.SEQUENTIAL;
     }
     try {
       int repairNo;
-      repairNo = triggerRepairPost2dot2(repairType, repairParallelism, keyspace, columnFamilies,
-          datacenters, associatedTokens, repairThreadCount);
+      repairNo =
+          triggerRepairPost2dot2(
+              repairType,
+              repairParallelism,
+              keyspace,
+              columnFamilies,
+              datacenters,
+              associatedTokens,
+              repairThreadCount);
       repairStatusExecutors.putIfAbsent(repairNo, Executors.newSingleThreadExecutor());
       repairStatusHandlers.putIfAbsent(repairNo, repairStatusHandler);
       return repairNo;
@@ -553,23 +629,32 @@ public final class JmxCassandraManagementProxy
     }
   }
 
-  private int triggerRepairPost2dot2(RepairType repairType, RepairParallelism repairParallelism,
-      String keyspace, Collection<String> columnFamilies, Collection<String> datacenters,
-      List<RingRange> associatedTokens, int repairThreadCount) {
+  private int triggerRepairPost2dot2(
+      RepairType repairType,
+      RepairParallelism repairParallelism,
+      String keyspace,
+      Collection<String> columnFamilies,
+      Collection<String> datacenters,
+      List<RingRange> associatedTokens,
+      int repairThreadCount) {
 
     Map<String, String> options = new HashMap<>();
 
     options.put(RepairOption.PARALLELISM_KEY, repairParallelism.getName());
     options.put(RepairOption.INCREMENTAL_KEY, Boolean.toString(repairType.isIncremental()));
-    options.put(RepairOption.JOB_THREADS_KEY,
+    options.put(
+        RepairOption.JOB_THREADS_KEY,
         Integer.toString(repairThreadCount == 0 ? 1 : repairThreadCount));
     options.put(RepairOption.TRACE_KEY, Boolean.toString(Boolean.FALSE));
     options.put(RepairOption.COLUMNFAMILIES_KEY, StringUtils.join(columnFamilies, ","));
     // options.put(RepairOption.PULL_REPAIR_KEY, Boolean.FALSE);
     if (repairType.isSubrange()) {
-      options.put(RepairOption.RANGES_KEY,
-          StringUtils.join(associatedTokens.stream()
-              .map(token -> token.getStart() + ":" + token.getEnd()).collect(Collectors.toList()),
+      options.put(
+          RepairOption.RANGES_KEY,
+          StringUtils.join(
+              associatedTokens.stream()
+                  .map(token -> token.getStart() + ":" + token.getEnd())
+                  .collect(Collectors.toList()),
               ","));
     }
 
@@ -583,35 +668,36 @@ public final class JmxCassandraManagementProxy
   /**
    * Invoked when the MBean this class listens to publishes an event.
    *
-   * <p>
-   * We're interested in repair-related events. Their format is explained at
-   * {@link org.apache.cassandra.service.StorageServiceMBean#forceRepairAsync}. The format is:
-   * notification type: "repair" notification userData: int array of length 2 where [0] = command
-   * number [1] = ordinal of AntiEntropyService.Status
+   * <p>We're interested in repair-related events. Their format is explained at {@link
+   * org.apache.cassandra.service.StorageServiceMBean#forceRepairAsync}. The format is: notification
+   * type: "repair" notification userData: int array of length 2 where [0] = command number [1] =
+   * ordinal of AntiEntropyService.Status
    */
   @Override
   public void handleNotification(final Notification notification, Object handback) {
     // pass off the work immediately to a separate thread
     final int repairNo =
-        "repair".equals(notification.getType()) ? ((int[]) notification.getUserData())[0]
+        "repair".equals(notification.getType())
+            ? ((int[]) notification.getUserData())[0]
             : Integer.parseInt(((String) notification.getSource()).split(":")[1]);
 
-    repairStatusExecutors.get(repairNo).submit(() -> {
-      String threadName = Thread.currentThread().getName();
-      try {
-        String type = notification.getType();
-        Thread.currentThread().setName(clusterName + "–" + type + "–" + repairNo);
-        LOG.debug("Received notification: {} with type {}", notification, type);
-        processNotification(notification);
-      } finally {
-        Thread.currentThread().setName(threadName);
-      }
-    });
+    repairStatusExecutors
+        .get(repairNo)
+        .submit(
+            () -> {
+              String threadName = Thread.currentThread().getName();
+              try {
+                String type = notification.getType();
+                Thread.currentThread().setName(clusterName + "–" + type + "–" + repairNo);
+                LOG.debug("Received notification: {} with type {}", notification, type);
+                processNotification(notification);
+              } finally {
+                Thread.currentThread().setName(threadName);
+              }
+            });
   }
 
-  /**
-   * Handles notifications from the new repair API (repairAsync)
-   */
+  /** Handles notifications from the new repair API (repairAsync) */
   private void processNotification(Notification notification) {
     Map<String, Integer> data = (Map<String, Integer>) notification.getUserData();
     try {
@@ -623,7 +709,9 @@ public final class JmxCassandraManagementProxy
       String message = notification.getMessage();
       // let the handler process the even
       if (repairStatusHandlers.containsKey(repairNo) && repairNo > 0) {
-        LOG.debug("Handling notification {} with repair handler {}", notification,
+        LOG.debug(
+            "Handling notification {} with repair handler {}",
+            notification,
             repairStatusHandlers.get(repairNo));
 
         repairStatusHandlers.get(repairNo).handle(repairNo, Optional.of(progress), message, this);
@@ -656,9 +744,7 @@ public final class JmxCassandraManagementProxy
     }
   }
 
-  /**
-   * Cleanly shut down by un-registering the listener and closing the JMX connection.
-   */
+  /** Cleanly shut down by un-registering the listener and closing the JMX connection. */
   public void close() {
     try {
       mbeanServer.removeNotificationListener(ObjectNames.STORAGE_SERVICE, this);
@@ -687,15 +773,21 @@ public final class JmxCassandraManagementProxy
 
   private void registerConnectionsGauge() {
     try {
-      if (!metricRegistry.getGauges()
-          .containsKey(MetricRegistry.name(JmxCassandraManagementProxy.class,
-              clusterName.replaceAll("[^A-Za-z0-9]", ""),
-              host.replace('.', 'x').replaceAll("[^A-Za-z0-9]", ""), "repairStatusHandlers"))) {
+      if (!metricRegistry
+          .getGauges()
+          .containsKey(
+              MetricRegistry.name(
+                  JmxCassandraManagementProxy.class,
+                  clusterName.replaceAll("[^A-Za-z0-9]", ""),
+                  host.replace('.', 'x').replaceAll("[^A-Za-z0-9]", ""),
+                  "repairStatusHandlers"))) {
 
         metricRegistry.register(
-            MetricRegistry.name(JmxCassandraManagementProxy.class,
+            MetricRegistry.name(
+                JmxCassandraManagementProxy.class,
                 clusterName.replaceAll("[^A-Za-z0-9]", ""),
-                host.replace('.', 'x').replaceAll("[^A-Za-z0-9]", ""), "repairStatusHandlers"),
+                host.replace('.', 'x').replaceAll("[^A-Za-z0-9]", ""),
+                "repairStatusHandlers"),
             (Gauge<Integer>) () -> repairStatusHandlers.size());
       }
     } catch (IllegalArgumentException e) {
@@ -751,14 +843,16 @@ public final class JmxCassandraManagementProxy
   public void addNotificationListener(NotificationListener listener, NotificationFilter filter)
       throws IOException, JMException {
 
-    jmxConnector.getMBeanServerConnection().addNotificationListener(ObjectNames.LAST_EVENT_ID,
-        listener, filter, null);
+    jmxConnector
+        .getMBeanServerConnection()
+        .addNotificationListener(ObjectNames.LAST_EVENT_ID, listener, filter, null);
   }
 
   public void removeNotificationListener(NotificationListener listener)
       throws IOException, JMException {
-    jmxConnector.getMBeanServerConnection().removeNotificationListener(ObjectNames.LAST_EVENT_ID,
-        listener);
+    jmxConnector
+        .getMBeanServerConnection()
+        .removeNotificationListener(ObjectNames.LAST_EVENT_ID, listener);
   }
 
   // From storageServiceMbean
@@ -769,7 +863,6 @@ public final class JmxCassandraManagementProxy
   private Map<String, TabularData> getSnapshotDetails() {
 
     return this.getStorageServiceMBean().getSnapshotDetails();
-
   }
 
   public List<Snapshot> listSnapshots() throws UnsupportedOperationException {
@@ -815,12 +908,12 @@ public final class JmxCassandraManagementProxy
               snapshotBuilder.withTable((String) value);
               break;
             case "True size":
-              snapshotBuilder
-                  .withTrueSize(ICassandraManagementProxy.parseHumanReadableSize((String) value));
+              snapshotBuilder.withTrueSize(
+                  ICassandraManagementProxy.parseHumanReadableSize((String) value));
               break;
             case "Size on disk":
-              snapshotBuilder
-                  .withSizeOnDisk(ICassandraManagementProxy.parseHumanReadableSize((String) value));
+              snapshotBuilder.withSizeOnDisk(
+                  ICassandraManagementProxy.parseHumanReadableSize((String) value));
               break;
             default:
               break;
@@ -837,25 +930,26 @@ public final class JmxCassandraManagementProxy
     if (keyspaces.length > 0) {
       this.getStorageServiceMBean().takeSnapshot(snapshotName, keyspaces);
     } else {
-      this.getStorageServiceMBean().takeSnapshot(snapshotName,
-          getKeyspaces().toArray(new String[0]));
+      this.getStorageServiceMBean()
+          .takeSnapshot(snapshotName, getKeyspaces().toArray(new String[0]));
     }
   }
 
   public void takeColumnFamilySnapshot(String keyspace, String table, String snapshotName)
       throws IOException {
-    this.getStorageServiceMBean().takeSnapshot(snapshotName, Collections.EMPTY_MAP,
-        keyspace + "." + table);
+    this.getStorageServiceMBean()
+        .takeSnapshot(snapshotName, Collections.EMPTY_MAP, keyspace + "." + table);
   }
 
   public Map<String, String> getTokenToEndpointMap() {
     return this.getStorageServiceMBean().getTokenToEndpointMap();
   }
 
-  public void forceKeyspaceCompaction(boolean splitOutput, String keyspaceName,
-      String... columnFamilies) throws IOException, ExecutionException, InterruptedException {
-    this.getStorageServiceMBean().forceKeyspaceCompaction(splitOutput, keyspaceName,
-        columnFamilies);
+  public void forceKeyspaceCompaction(
+      boolean splitOutput, String keyspaceName, String... columnFamilies)
+      throws IOException, ExecutionException, InterruptedException {
+    this.getStorageServiceMBean()
+        .forceKeyspaceCompaction(splitOutput, keyspaceName, columnFamilies);
   }
 
   // From MBeanServerConnection
@@ -879,8 +973,8 @@ public final class JmxCassandraManagementProxy
   }
 
   // from DiagnosticEventPersistenceMBean
-  public SortedMap<Long, Map<String, Serializable>> readEvents(String eventClass, Long lastKey,
-      int limit) {
+  public SortedMap<Long, Map<String, Serializable>> readEvents(
+      String eventClass, Long lastKey, int limit) {
     return getDiagnosticEventPersistenceMBean().readEvents(eventClass, lastKey, limit);
   }
 
@@ -894,7 +988,9 @@ public final class JmxCassandraManagementProxy
 
   @Override
   public NodesStatus getNodesStatus() {
-    return new NodesStatus(getHost(), getFailureDetectorMBean().getAllEndpointStates(),
+    return new NodesStatus(
+        getHost(),
+        getFailureDetectorMBean().getAllEndpointStates(),
         getFailureDetectorMBean().getSimpleStates());
   }
 
@@ -962,11 +1058,13 @@ public final class JmxCassandraManagementProxy
             new ObjectName("org.apache.cassandra.diag:type=DiagnosticEventService");
         LAST_EVENT_ID = new ObjectName("org.apache.cassandra.diag:type=LastEventIdBroadcaster");
 
-        TP_VALIDATIONS_ACTIVE = new ObjectName(
-            "org.apache.cassandra.metrics:type=ThreadPools,path=internal,scope=ValidationExecutor,name=ActiveTasks");
+        TP_VALIDATIONS_ACTIVE =
+            new ObjectName(
+                "org.apache.cassandra.metrics:type=ThreadPools,path=internal,scope=ValidationExecutor,name=ActiveTasks");
 
-        TP_VALIDATIONS_PENDING = new ObjectName(
-            "org.apache.cassandra.metrics:type=ThreadPools,path=internal,scope=ValidationExecutor,name=PendingTasks");
+        TP_VALIDATIONS_PENDING =
+            new ObjectName(
+                "org.apache.cassandra.metrics:type=ThreadPools,path=internal,scope=ValidationExecutor,name=PendingTasks");
 
       } catch (MalformedObjectNameException e) {
         throw new IllegalStateException("Failure during preparations for JMX connection", e);
@@ -998,6 +1096,4 @@ public final class JmxCassandraManagementProxy
       }
     }
   }
-
-
 }

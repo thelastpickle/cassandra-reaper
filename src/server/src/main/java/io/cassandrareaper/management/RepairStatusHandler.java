@@ -21,7 +21,6 @@ import java.util.Optional;
 
 import org.apache.cassandra.utils.progress.ProgressEventType;
 
-
 public interface RepairStatusHandler {
 
   /**

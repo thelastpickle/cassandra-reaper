@@ -34,23 +34,24 @@ public final class FixRepairRunTimestamps {
 
   private static final Logger LOG = LoggerFactory.getLogger(FixRepairRunTimestamps.class);
 
-  private FixRepairRunTimestamps() {
-  }
+  private FixRepairRunTimestamps() {}
 
-  /**
-   * fix timestamps in the repair_run table
-   */
+  /** fix timestamps in the repair_run table */
   public static void migrate(CqlSession session) {
     LOG.warn("Correcting timestamps in the repair_run table. This may take some minutes…");
 
-    SimpleStatement getRepairRunPrepStmt
-        = SimpleStatement.builder("SELECT id,state,start_time,pause_time,end_time FROM repair_run")
-        .setConsistencyLevel(ConsistencyLevel.QUORUM).build();
+    SimpleStatement getRepairRunPrepStmt =
+        SimpleStatement.builder("SELECT id,state,start_time,pause_time,end_time FROM repair_run")
+            .setConsistencyLevel(ConsistencyLevel.QUORUM)
+            .build();
 
-    PreparedStatement updateRepairRunPrepStmt = session
-        .prepare(SimpleStatement.builder("INSERT INTO repair_run (id,start_time,pause_time,end_time) "
-            + "VALUES(?, ?, ?, ?)")
-        .setConsistencyLevel(ConsistencyLevel.EACH_QUORUM).build());
+    PreparedStatement updateRepairRunPrepStmt =
+        session.prepare(
+            SimpleStatement.builder(
+                    "INSERT INTO repair_run (id,start_time,pause_time,end_time) "
+                        + "VALUES(?, ?, ?, ?)")
+                .setConsistencyLevel(ConsistencyLevel.EACH_QUORUM)
+                .build());
 
     ResultSet resultSet = session.execute(getRepairRunPrepStmt);
     int rowsRead = 0;

@@ -38,8 +38,7 @@ public final class ReaperApplicationConfigurationBuilder {
   private JmxCredentials jmxAuth;
   private ReaperApplicationConfiguration.AutoSchedulingConfiguration autoRepairScheduling;
 
-  private ReaperApplicationConfigurationBuilder() {
-  }
+  private ReaperApplicationConfigurationBuilder() {}
 
   public static ReaperApplicationConfigurationBuilder aReaperApplicationConfiguration() {
     return new ReaperApplicationConfigurationBuilder();
@@ -50,7 +49,8 @@ public final class ReaperApplicationConfigurationBuilder {
     return this;
   }
 
-  public ReaperApplicationConfigurationBuilder withRepairParallelism(RepairParallelism repairParallelism) {
+  public ReaperApplicationConfigurationBuilder withRepairParallelism(
+      RepairParallelism repairParallelism) {
     this.repairParallelism = repairParallelism;
     return this;
   }
@@ -60,17 +60,20 @@ public final class ReaperApplicationConfigurationBuilder {
     return this;
   }
 
-  public ReaperApplicationConfigurationBuilder withScheduleDaysBetween(Integer scheduleDaysBetween) {
+  public ReaperApplicationConfigurationBuilder withScheduleDaysBetween(
+      Integer scheduleDaysBetween) {
     this.scheduleDaysBetween = scheduleDaysBetween;
     return this;
   }
 
-  public ReaperApplicationConfigurationBuilder withRepairRunThreadCount(Integer repairRunThreadCount) {
+  public ReaperApplicationConfigurationBuilder withRepairRunThreadCount(
+      Integer repairRunThreadCount) {
     this.repairRunThreadCount = repairRunThreadCount;
     return this;
   }
 
-  public ReaperApplicationConfigurationBuilder withHangingRepairTimeoutMins(Integer hangingRepairTimeoutMins) {
+  public ReaperApplicationConfigurationBuilder withHangingRepairTimeoutMins(
+      Integer hangingRepairTimeoutMins) {
     this.hangingRepairTimeoutMins = hangingRepairTimeoutMins;
     return this;
   }
@@ -103,7 +106,8 @@ public final class ReaperApplicationConfigurationBuilder {
   }
 
   public ReaperApplicationConfiguration build() {
-    ReaperApplicationConfiguration reaperApplicationConfiguration = new ReaperApplicationConfiguration();
+    ReaperApplicationConfiguration reaperApplicationConfiguration =
+        new ReaperApplicationConfiguration();
     reaperApplicationConfiguration.setSegmentCount(segmentCount);
     reaperApplicationConfiguration.setRepairParallelism(repairParallelism);
     reaperApplicationConfiguration.setRepairIntensity(repairIntensity);
@@ -127,8 +131,8 @@ public final class ReaperApplicationConfigurationBuilder {
     private Duration scheduleSpreadPeriod;
 
     public ReaperApplicationConfiguration.AutoSchedulingConfiguration build() {
-      ReaperApplicationConfiguration.AutoSchedulingConfiguration autoSchedulingConfig
-          = new ReaperApplicationConfiguration.AutoSchedulingConfiguration();
+      ReaperApplicationConfiguration.AutoSchedulingConfiguration autoSchedulingConfig =
+          new ReaperApplicationConfiguration.AutoSchedulingConfiguration();
 
       autoSchedulingConfig.setEnabled(enabled);
       autoSchedulingConfig.setInitialDelayPeriod(initialDelayPeriod);
@@ -163,10 +167,10 @@ public final class ReaperApplicationConfigurationBuilder {
       return this;
     }
 
-    public AutoSchedulingConfigurationBuilder withScheduleSpreadPeriod(Duration scheduleSpreadPeriod) {
+    public AutoSchedulingConfigurationBuilder withScheduleSpreadPeriod(
+        Duration scheduleSpreadPeriod) {
       this.scheduleSpreadPeriod = scheduleSpreadPeriod;
       return this;
     }
   }
-
 }

@@ -24,11 +24,12 @@ import java.util.concurrent.ExecutionException;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 
-
 public final class EndpointSnitchInfoProxy {
 
-  // `EndpointSnitchInfoMBean().getDatacenter(host)` is static info regardless of what node is answering
-  private static final Cache<String, String> DATACENTERS_BY_HOST = CacheBuilder.newBuilder().build();
+  // `EndpointSnitchInfoMBean().getDatacenter(host)` is static info regardless of what node is
+  // answering
+  private static final Cache<String, String> DATACENTERS_BY_HOST =
+      CacheBuilder.newBuilder().build();
 
   private final ICassandraManagementProxy proxy;
 
@@ -41,7 +42,6 @@ public final class EndpointSnitchInfoProxy {
     return new EndpointSnitchInfoProxy((ICassandraManagementProxy) proxy);
   }
 
-
   public String getDataCenter() throws ReaperException {
     return getDataCenter(proxy.getUntranslatedHost());
   }
@@ -53,5 +53,4 @@ public final class EndpointSnitchInfoProxy {
       throw new IllegalArgumentException(ex);
     }
   }
-
 }

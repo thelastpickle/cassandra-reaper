@@ -39,12 +39,13 @@ public class MemoryRepairUnitDao implements IRepairUnitDao {
    * @param repairUnitId The RepairUnit instance id to delete.
    * @return The deleted RepairUnit instance, if delete succeeded.
    */
-
   @Override
   public RepairUnit addRepairUnit(RepairUnit.Builder repairUnitBuilder) {
     Optional<RepairUnit> existing = getRepairUnit(repairUnitBuilder);
-    if (existing.isPresent() && repairUnitBuilder.incrementalRepair == existing.get().getIncrementalRepair()
-        && repairUnitBuilder.subrangeIncrementalRepair == existing.get().getSubrangeIncrementalRepair()) {
+    if (existing.isPresent()
+        && repairUnitBuilder.incrementalRepair == existing.get().getIncrementalRepair()
+        && repairUnitBuilder.subrangeIncrementalRepair
+            == existing.get().getSubrangeIncrementalRepair()) {
       return existing.get();
     } else {
       RepairUnit newRepairUnit = repairUnitBuilder.build(Uuids.timeBased());

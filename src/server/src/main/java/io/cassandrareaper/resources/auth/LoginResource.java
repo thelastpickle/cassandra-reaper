@@ -18,6 +18,7 @@
 package io.cassandrareaper.resources.auth;
 
 import java.io.IOException;
+
 import javax.ws.rs.FormParam;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
@@ -38,7 +39,8 @@ public class LoginResource {
       @FormParam("username") String username,
       @FormParam("password") String password,
       @FormParam("rememberMe") boolean rememberMe,
-      @Auth Subject subject) throws IOException {
+      @Auth Subject subject)
+      throws IOException {
 
     ensurePresent(username, "Invalid credentials: missing username.");
     ensurePresent(password, "Invalid credentials: missing password.");
@@ -46,7 +48,8 @@ public class LoginResource {
     try {
       subject.login(new UsernamePasswordToken(username, password, rememberMe));
     } catch (AuthenticationException e) {
-      throw new IncorrectCredentialsException("Invalid credentials combination for user: " + username);
+      throw new IncorrectCredentialsException(
+          "Invalid credentials combination for user: " + username);
     }
   }
 

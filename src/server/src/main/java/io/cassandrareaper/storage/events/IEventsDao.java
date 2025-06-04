@@ -32,5 +32,4 @@ public interface IEventsDao {
   DiagEventSubscription addEventSubscription(DiagEventSubscription subscription);
 
   boolean deleteEventSubscription(UUID id);
-
 }

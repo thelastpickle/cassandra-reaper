@@ -20,6 +20,9 @@ package io.cassandrareaper;
 import javax.validation.Validation;
 import javax.validation.Validator;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+
 import brave.Tracing;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.health.HealthCheckRegistry;
@@ -31,16 +34,13 @@ import org.hibernate.validator.HibernateValidator;
 import org.junit.Before;
 import org.junit.Test;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-
 public final class ReaperApplicationConfigurationTest {
 
-  private final Validator validator = Validation
-      .byProvider(HibernateValidator.class)
-      .configure()
-      .buildValidatorFactory()
-      .getValidator();
+  private final Validator validator =
+      Validation.byProvider(HibernateValidator.class)
+          .configure()
+          .buildValidatorFactory()
+          .getValidator();
 
   private final ReaperApplicationConfiguration config = new ReaperApplicationConfiguration();
 
@@ -57,7 +57,7 @@ public final class ReaperApplicationConfigurationTest {
 
   @Before
   public void setUp() {
-    //create a valid config
+    // create a valid config
     CassandraFactory cassandraFactory = new TestCassandraFactory();
     config.setCassandraFactory(cassandraFactory);
     config.setHangingRepairTimeoutMins(1);

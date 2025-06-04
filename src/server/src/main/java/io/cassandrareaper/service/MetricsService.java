@@ -34,6 +34,7 @@ import io.cassandrareaper.storage.OpType;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+
 import javax.management.JMException;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -62,8 +63,10 @@ public final class MetricsService {
     this.clusterFacade = clusterFacadeSupplier.get();
     if (Boolean.TRUE.equals(context.config.isInSidecarMode())) {
 
-      Node host = Node.builder()
-          .withHostname(context.config.getEnforcedLocalNode().orElse("127.0.0.1")).build();
+      Node host =
+          Node.builder()
+              .withHostname(context.config.getEnforcedLocalNode().orElse("127.0.0.1"))
+              .build();
 
       localClusterName = Cluster.toSymbolicName(clusterFacade.getClusterName(host));
     } else {
@@ -98,7 +101,8 @@ public final class MetricsService {
 
   void grabAndStoreGenericMetrics(Optional<Node> maybeNode)
       throws ReaperException, InterruptedException, JMException {
-    Preconditions.checkState(context.config.getDatacenterAvailability().isInCollocatedMode(),
+    Preconditions.checkState(
+        context.config.getDatacenterAvailability().isInCollocatedMode(),
         "grabAndStoreGenericMetrics() can only be called in collocated mode");
 
     Node node = getNode(maybeNode);
@@ -108,31 +112,39 @@ public final class MetricsService {
     ((IDistributedStorage) context.storage).storeMetrics(metrics);
 
     LOG.debug("Grabbing and storing metrics for {}", node.getHostname());
-
   }
 
   void grabAndStoreCompactionStats(Optional<Node> maybeNode)
       throws JsonProcessingException, JMException, ReaperException {
-    Preconditions.checkState(context.config.getDatacenterAvailability().isInCollocatedMode(),
+    Preconditions.checkState(
+        context.config.getDatacenterAvailability().isInCollocatedMode(),
         "grabAndStoreCompactionStats() can only be called in sidecar");
 
     Node node = getNode(maybeNode);
 
     CompactionStats compactionStats = ClusterFacade.create(context).listCompactionStatsDirect(node);
 
-    ((IDistributedStorage) context.storage).getOperationsDao().storeOperations(
-        node.getClusterName(), OpType.OP_COMPACTION, node.getHostname(),
-        objectMapper.writeValueAsString(compactionStats));
+    ((IDistributedStorage) context.storage)
+        .getOperationsDao()
+        .storeOperations(
+            node.getClusterName(),
+            OpType.OP_COMPACTION,
+            node.getHostname(),
+            objectMapper.writeValueAsString(compactionStats));
 
     LOG.debug("Grabbing and storing compaction stats for {}", node.getHostname());
   }
 
   private Node getNode(Optional<Node> maybeNode) {
-    return maybeNode
-        .orElseGet(
-            () -> Node.builder().withHostname(context.getLocalNodeAddress())
-                .withCluster(Cluster.builder().withName(localClusterName)
-                    .withSeedHosts(ImmutableSet.of(context.getLocalNodeAddress())).build())
+    return maybeNode.orElseGet(
+        () ->
+            Node.builder()
+                .withHostname(context.getLocalNodeAddress())
+                .withCluster(
+                    Cluster.builder()
+                        .withName(localClusterName)
+                        .withSeedHosts(ImmutableSet.of(context.getLocalNodeAddress()))
+                        .build())
                 .build());
   }
 
@@ -145,23 +157,31 @@ public final class MetricsService {
         this.repairUnitService.getTablesToRepair(node.getCluster().get(), repairUnit);
 
     // Collect percent repaired metrics for all tables in the keyspace
-    List<GenericMetric> metrics = ClusterFacade.create(context).collectPercentRepairedMetrics(node,
-        repairUnit.getKeyspaceName());
+    List<GenericMetric> metrics =
+        ClusterFacade.create(context)
+            .collectPercentRepairedMetrics(node, repairUnit.getKeyspaceName());
     LOG.debug("Grabbed the following percent repaired metrics: {}", metrics);
 
     // Metrics are filtered to retain only tables of interest, sorted and reduced to keep the
     // smallest percent repaired
     Optional<GenericMetric> percentRepairedForSchedule =
-        metrics.stream().filter(metric -> tables.contains(metric.getMetricScope()))
-            .sorted((metric1, metric2) -> Double.valueOf(metric1.getValue())
-                .compareTo(Double.valueOf(metric2.getValue())))
+        metrics.stream()
+            .filter(metric -> tables.contains(metric.getMetricScope()))
+            .sorted(
+                (metric1, metric2) ->
+                    Double.valueOf(metric1.getValue())
+                        .compareTo(Double.valueOf(metric2.getValue())))
             .reduce((metric1, metric2) -> metric1);
     if (percentRepairedForSchedule.isPresent()) {
-      context.storage.storePercentRepairedMetric(PercentRepairedMetric.builder()
-          .withCluster(repairUnit.getClusterName()).withKeyspaceName(repairUnit.getKeyspaceName())
-          .withTableName(percentRepairedForSchedule.get().getMetricScope())
-          .withNode(node.getHostname()).withRepairScheduleId(sched.getId())
-          .withPercentRepaired((int) percentRepairedForSchedule.get().getValue()).build());
+      context.storage.storePercentRepairedMetric(
+          PercentRepairedMetric.builder()
+              .withCluster(repairUnit.getClusterName())
+              .withKeyspaceName(repairUnit.getKeyspaceName())
+              .withTableName(percentRepairedForSchedule.get().getMetricScope())
+              .withNode(node.getHostname())
+              .withRepairScheduleId(sched.getId())
+              .withPercentRepaired((int) percentRepairedForSchedule.get().getValue())
+              .build());
     }
   }
 }

@@ -21,6 +21,7 @@ import io.cassandrareaper.resources.RequestUtils;
 
 import java.io.IOException;
 import java.util.Date;
+
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletResponse;
@@ -38,8 +39,8 @@ public final class RestPermissionsFilter extends HttpMethodPermissionFilter {
   }
 
   @Override
-  public boolean isAccessAllowed(ServletRequest request, ServletResponse response, Object mappedValue)
-      throws IOException {
+  public boolean isAccessAllowed(
+      ServletRequest request, ServletResponse response, Object mappedValue) throws IOException {
     if (isCorsEnabled() && RequestUtils.isOptionsRequest(request)) {
       return true;
     }
@@ -48,8 +49,12 @@ public final class RestPermissionsFilter extends HttpMethodPermissionFilter {
 
     if (!subject.getPrincipals().getRealmNames().contains("jwtRealm")
         && !RequestUtils.getSessionTimeout().isNegative()
-        && subject.getSession().getStartTimestamp().before(
-            new Date(System.currentTimeMillis() - RequestUtils.getSessionTimeout().toMillis()))) {
+        && subject
+            .getSession()
+            .getStartTimestamp()
+            .before(
+                new Date(
+                    System.currentTimeMillis() - RequestUtils.getSessionTimeout().toMillis()))) {
       // Session has lived longer than its timeout already. Force logout.
       subject.logout();
       return false;
@@ -59,7 +64,8 @@ public final class RestPermissionsFilter extends HttpMethodPermissionFilter {
 
   @Override
   protected Subject getSubject(ServletRequest request, ServletResponse response) {
-    return ShiroJwtVerifyingFilter.getJwtSubject(super.getSubject(request, response), request, response);
+    return ShiroJwtVerifyingFilter.getJwtSubject(
+        super.getSubject(request, response), request, response);
   }
 
   @Override
@@ -67,7 +73,8 @@ public final class RestPermissionsFilter extends HttpMethodPermissionFilter {
     WebUtils.toHttp(res).setStatus(HttpServletResponse.SC_UNAUTHORIZED);
     WebUtils.toHttp(res).setHeader("Content-Type", "text/plain");
     Object user = getSubject(req, res).getPrincipal();
-    String err = String.format("Unauthorized `%s` operation for user: %s.", getHttpMethodAction(req), user);
+    String err =
+        String.format("Unauthorized `%s` operation for user: %s.", getHttpMethodAction(req), user);
     WebUtils.toHttp(res).getOutputStream().print(err);
     WebUtils.toHttp(res).flushBuffer();
     return false;

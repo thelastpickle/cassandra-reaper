@@ -22,9 +22,9 @@ import io.cassandrareaper.core.RepairSchedule.LongCollectionSqlType;
 import java.util.Arrays;
 import java.util.List;
 
-import org.junit.Test;
-
 import static org.junit.Assert.assertEquals;
+
+import org.junit.Test;
 
 public final class LongCollectionSqlTypeTest {
 

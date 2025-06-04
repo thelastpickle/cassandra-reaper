@@ -26,19 +26,24 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Maps broadcast addresses (as advertised by the cassandra cluster) to effective addresses using a hard-coded mapping
+ * Maps broadcast addresses (as advertised by the cassandra cluster) to effective addresses using a
+ * hard-coded mapping
  */
 public final class MultiIpPerNodeAddressTranslator implements AddressTranslator {
-  private static final Logger LOGGER = LoggerFactory.getLogger(MultiIpPerNodeAddressTranslator.class);
+  private static final Logger LOGGER =
+      LoggerFactory.getLogger(MultiIpPerNodeAddressTranslator.class);
   private Map<String, String> addressTranslation = new HashMap<>();
 
   public MultiIpPerNodeAddressTranslator() {
     if (!MultiIpPerNodeAddressTranslatorFactory.addressTranslations.isEmpty()) {
-      addressTranslation = new HashMap<>(MultiIpPerNodeAddressTranslatorFactory.addressTranslations.size());
+      addressTranslation =
+          new HashMap<>(MultiIpPerNodeAddressTranslatorFactory.addressTranslations.size());
       MultiIpPerNodeAddressTranslatorFactory.addressTranslations.forEach(
           i -> addressTranslation.put(i.getFrom(), i.getTo()));
-      if (MultiIpPerNodeAddressTranslatorFactory.addressTranslations.size() != addressTranslation.size()) {
-        throw new IllegalArgumentException("Invalid mapping specified - some mappings are defined multiple times");
+      if (MultiIpPerNodeAddressTranslatorFactory.addressTranslations.size()
+          != addressTranslation.size()) {
+        throw new IllegalArgumentException(
+            "Invalid mapping specified - some mappings are defined multiple times");
       }
       LOGGER.info("Initialised cassandra address translator {}", addressTranslation);
     }
@@ -59,6 +64,6 @@ public final class MultiIpPerNodeAddressTranslator implements AddressTranslator 
 
   @Override
   public void close() {
-    //do nothing
+    // do nothing
   }
 }

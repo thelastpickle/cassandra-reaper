@@ -22,12 +22,11 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 public class ReplicaLockManagerWithTtlTest {
 
@@ -90,9 +89,12 @@ public class ReplicaLockManagerWithTtlTest {
   public void testCleanupExpiredLocks() throws InterruptedException {
     assertTrue(replicaLockManager.lockRunningRepairsForNodes(runId, segmentId, replicas));
     // We can lock the replica for a different run id
-    assertTrue(replicaLockManager.lockRunningRepairsForNodes(UUID.randomUUID(), UUID.randomUUID(), replicas));
+    assertTrue(
+        replicaLockManager.lockRunningRepairsForNodes(
+            UUID.randomUUID(), UUID.randomUUID(), replicas));
     // The following lock should fail because overlapping replicas are already locked
-    assertFalse(replicaLockManager.lockRunningRepairsForNodes(runId, UUID.randomUUID(), replicasOverlap));
+    assertFalse(
+        replicaLockManager.lockRunningRepairsForNodes(runId, UUID.randomUUID(), replicasOverlap));
     Thread.sleep(1000); // Wait for TTL to expire
     replicaLockManager.cleanupExpiredLocks();
     // The following lock should succeed as the lock expired

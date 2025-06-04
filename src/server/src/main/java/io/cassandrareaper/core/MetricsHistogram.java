@@ -243,5 +243,4 @@ public final class MetricsHistogram {
       return new MetricsHistogram(this);
     }
   }
-
 }

@@ -59,7 +59,8 @@ public class CassandraClusterDao implements IClusterDao {
 
   PreparedStatement deleteRepairRunByClusterPrepStmt;
   private final ObjectMapper objectMapper;
-  private final AtomicReference<Collection<Cluster>> clustersCache = new AtomicReference(Collections.EMPTY_SET);
+  private final AtomicReference<Collection<Cluster>> clustersCache =
+      new AtomicReference(Collections.EMPTY_SET);
   private final AtomicLong clustersCacheAge = new AtomicLong(0);
   private final CassandraRepairScheduleDao cassRepairScheduleDao;
   private final CassandraRepairUnitDao cassRepairUnitDao;
@@ -67,11 +68,12 @@ public class CassandraClusterDao implements IClusterDao {
 
   private final CqlSession session;
 
-  public CassandraClusterDao(CassandraRepairScheduleDao cassRepairScheduleDao,
-                             CassandraRepairUnitDao cassRepairUnitDao,
-                             CassandraEventsDao cassEventsDao,
-                             CqlSession session,
-                             ObjectMapper objectMapper) {
+  public CassandraClusterDao(
+      CassandraRepairScheduleDao cassRepairScheduleDao,
+      CassandraRepairUnitDao cassRepairUnitDao,
+      CassandraEventsDao cassEventsDao,
+      CqlSession session,
+      ObjectMapper objectMapper) {
 
     this.session = session;
     this.objectMapper = objectMapper;
@@ -82,18 +84,22 @@ public class CassandraClusterDao implements IClusterDao {
   }
 
   private void prepareStatements() {
-    insertClusterPrepStmt = session
-        .prepare(
-            SimpleStatement.builder("INSERT INTO cluster(name, partitioner, seed_hosts,"
-                + " properties, state, last_contact)"
-                + " values(?, ?, ?, ?, ?, ?)")
-              .setConsistencyLevel(ConsistencyLevel.QUORUM).build());
-    getClusterPrepStmt = session
-        .prepare(SimpleStatement.builder("SELECT * FROM cluster WHERE name = ?")
-          .setConsistencyLevel(ConsistencyLevel.QUORUM).build());
+    insertClusterPrepStmt =
+        session.prepare(
+            SimpleStatement.builder(
+                    "INSERT INTO cluster(name, partitioner, seed_hosts,"
+                        + " properties, state, last_contact)"
+                        + " values(?, ?, ?, ?, ?, ?)")
+                .setConsistencyLevel(ConsistencyLevel.QUORUM)
+                .build());
+    getClusterPrepStmt =
+        session.prepare(
+            SimpleStatement.builder("SELECT * FROM cluster WHERE name = ?")
+                .setConsistencyLevel(ConsistencyLevel.QUORUM)
+                .build());
     deleteClusterPrepStmt = session.prepare("DELETE FROM cluster WHERE name = ?");
-    deleteRepairRunByClusterPrepStmt = session.prepare(
-        "DELETE FROM repair_run_by_cluster_v2 WHERE cluster_name = ?");
+    deleteRepairRunByClusterPrepStmt =
+        session.prepare("DELETE FROM repair_run_by_cluster_v2 WHERE cluster_name = ?");
   }
 
   @Override
@@ -102,7 +108,9 @@ public class CassandraClusterDao implements IClusterDao {
     if (System.currentTimeMillis() - clustersCacheAge.get() > TimeUnit.SECONDS.toMillis(10)) {
       clustersCacheAge.set(System.currentTimeMillis());
       Collection<Cluster> clusters = Lists.<Cluster>newArrayList();
-      for (Row row : session.execute(SimpleStatement.builder(SELECT_CLUSTER).setIdempotence(Boolean.TRUE).build())) {
+      for (Row row :
+          session.execute(
+              SimpleStatement.builder(SELECT_CLUSTER).setIdempotence(Boolean.TRUE).build())) {
         try {
           clusters.add(parseCluster(row));
         } catch (IOException ex) {
@@ -118,7 +126,8 @@ public class CassandraClusterDao implements IClusterDao {
   public boolean addCluster(Cluster cluster) {
     assert addClusterAssertions(cluster);
     try {
-      Instant lastContact = cluster.getLastContact().atStartOfDay(ZoneId.systemDefault()).toInstant();
+      Instant lastContact =
+          cluster.getLastContact().atStartOfDay(ZoneId.systemDefault()).toInstant();
       if (cluster.getLastContact().equals(LocalDate.MIN)) {
         lastContact = Instant.now();
       }
@@ -148,7 +157,8 @@ public class CassandraClusterDao implements IClusterDao {
         Cluster.State.UNKNOWN != cluster.getState(),
         "Cluster should not be persisted with UNKNOWN state");
 
-    Preconditions.checkState(cluster.getPartitioner().isPresent(), "Cannot store cluster with no partitioner.");
+    Preconditions.checkState(
+        cluster.getPartitioner().isPresent(), "Cannot store cluster with no partitioner.");
     // assert we're not overwriting a cluster with the same name but different node list
     Set<String> previousNodes;
     try {
@@ -162,7 +172,9 @@ public class CassandraClusterDao implements IClusterDao {
     Preconditions.checkArgument(
         !Collections.disjoint(previousNodes, addedNodes),
         "Trying to add/update cluster using an existing name: %s. No nodes overlap between %s and %s",
-        cluster.getName(), StringUtils.join(previousNodes, ','), StringUtils.join(addedNodes, ','));
+        cluster.getName(),
+        StringUtils.join(previousNodes, ','),
+        StringUtils.join(addedNodes, ','));
 
     return true;
   }
@@ -183,22 +195,24 @@ public class CassandraClusterDao implements IClusterDao {
 
   public Cluster parseCluster(Row row) throws IOException {
 
-    ClusterProperties properties = null != row.getString("properties")
-        ? objectMapper.readValue(row.getString("properties"), ClusterProperties.class)
-        : ClusterProperties.builder().withJmxPort(Cluster.DEFAULT_JMX_PORT).build();
+    ClusterProperties properties =
+        null != row.getString("properties")
+            ? objectMapper.readValue(row.getString("properties"), ClusterProperties.class)
+            : ClusterProperties.builder().withJmxPort(Cluster.DEFAULT_JMX_PORT).build();
 
-    Instant lastContact = row.getInstant("last_contact") == null
-        ? Instant.MIN
-        : row.getInstant("last_contact");
+    Instant lastContact =
+        row.getInstant("last_contact") == null ? Instant.MIN : row.getInstant("last_contact");
 
-    Cluster.Builder builder = Cluster.builder()
-        .withName(row.getString("name"))
-        .withSeedHosts(row.getSet("seed_hosts", String.class))
-        .withJmxPort(properties.getJmxPort())
-        .withState(null != row.getString("state")
-            ? Cluster.State.valueOf(row.getString("state"))
-            : Cluster.State.UNREACHABLE)
-        .withLastContact(lastContact.atZone(ZoneId.systemDefault()).toLocalDate());
+    Cluster.Builder builder =
+        Cluster.builder()
+            .withName(row.getString("name"))
+            .withSeedHosts(row.getSet("seed_hosts", String.class))
+            .withJmxPort(properties.getJmxPort())
+            .withState(
+                null != row.getString("state")
+                    ? Cluster.State.valueOf(row.getString("state"))
+                    : Cluster.State.UNREACHABLE)
+            .withLastContact(lastContact.atZone(ZoneId.systemDefault()).toLocalDate());
 
     if (null != properties.getJmxCredentials()) {
       builder = builder.withJmxCredentials(properties.getJmxCredentials());
@@ -212,17 +226,19 @@ public class CassandraClusterDao implements IClusterDao {
 
   @Override
   public Cluster deleteCluster(String clusterName) {
-    cassRepairScheduleDao.getRepairSchedulesForCluster(clusterName)
+    cassRepairScheduleDao
+        .getRepairSchedulesForCluster(clusterName)
         .forEach(schedule -> cassRepairScheduleDao.deleteRepairSchedule(schedule.getId()));
     session.executeAsync(deleteRepairRunByClusterPrepStmt.bind(clusterName));
 
-    cassEventsDao.getEventSubscriptions(clusterName)
-        .stream()
+    cassEventsDao.getEventSubscriptions(clusterName).stream()
         .filter(subscription -> subscription.getId().isPresent())
         .forEach(subscription -> cassEventsDao.deleteEventSubscription(subscription.getId().get()));
 
-    SimpleStatement stmt
-        = SimpleStatement.builder(CassandraRepairUnitDao.SELECT_REPAIR_UNIT).setIdempotence(true).build();
+    SimpleStatement stmt =
+        SimpleStatement.builder(CassandraRepairUnitDao.SELECT_REPAIR_UNIT)
+            .setIdempotence(true)
+            .build();
     ResultSet results = session.execute(stmt);
     for (Row row : results) {
       if (row.getString("cluster_name").equals(clusterName)) {

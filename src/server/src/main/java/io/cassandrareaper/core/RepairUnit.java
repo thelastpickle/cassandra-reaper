@@ -184,12 +184,17 @@ public final class RepairUnit {
     }
 
     public RepairUnit build(UUID id) {
-      Preconditions.checkState(null != clusterName, "clusterName(..) must be called before build(..)");
-      Preconditions.checkState(null != keyspaceName, "keyspaceName(..) must be called before build(..)");
-      Preconditions.checkState(null != incrementalRepair, "incrementalRepair(..) must be called before build(..)");
-      Preconditions.checkState(null != subrangeIncrementalRepair,
+      Preconditions.checkState(
+          null != clusterName, "clusterName(..) must be called before build(..)");
+      Preconditions.checkState(
+          null != keyspaceName, "keyspaceName(..) must be called before build(..)");
+      Preconditions.checkState(
+          null != incrementalRepair, "incrementalRepair(..) must be called before build(..)");
+      Preconditions.checkState(
+          null != subrangeIncrementalRepair,
           "subrangeIncrementalRepair(..) must be called before build(..)");
-      Preconditions.checkState(null != repairThreadCount, "repairThreadCount(..) must be called before build(..)");
+      Preconditions.checkState(
+          null != repairThreadCount, "repairThreadCount(..) must be called before build(..)");
       Preconditions.checkState(null != timeout, "timeout(..) must be called before build(..)");
       return new RepairUnit(this, id);
     }
@@ -198,25 +203,25 @@ public final class RepairUnit {
     public int hashCode() {
       // primes 7 & 59 chosen as optimal by netbeans – https://stackoverflow.com/a/21914964
       int hash = 7 * 59;
-      hash +=  Objects.hashCode(this.clusterName);
+      hash += Objects.hashCode(this.clusterName);
       hash *= 59;
-      hash +=  Objects.hashCode(this.keyspaceName);
+      hash += Objects.hashCode(this.keyspaceName);
       hash *= 59;
-      hash +=  Objects.hashCode(this.columnFamilies);
+      hash += Objects.hashCode(this.columnFamilies);
       hash *= 59;
-      hash +=  (this.incrementalRepair ? 2 : 1);
+      hash += (this.incrementalRepair ? 2 : 1);
       hash *= 59;
-      hash +=  (this.subrangeIncrementalRepair ? 8 : 4);
+      hash += (this.subrangeIncrementalRepair ? 8 : 4);
       hash *= 59;
-      hash +=  Objects.hashCode(this.nodes);
+      hash += Objects.hashCode(this.nodes);
       hash *= 59;
-      hash +=  Objects.hashCode(this.datacenters);
+      hash += Objects.hashCode(this.datacenters);
       hash *= 59;
-      hash +=  Objects.hashCode(this.blacklistedTables);
+      hash += Objects.hashCode(this.blacklistedTables);
       hash *= 59;
-      hash +=  Objects.hashCode(this.repairThreadCount);
+      hash += Objects.hashCode(this.repairThreadCount);
       hash *= 59;
-      hash +=  Objects.hashCode(this.timeout);
+      hash += Objects.hashCode(this.timeout);
       return hash;
     }
 
@@ -230,7 +235,8 @@ public final class RepairUnit {
       }
 
       return Objects.equals(this.incrementalRepair, ((Builder) obj).incrementalRepair)
-          && Objects.equals(this.subrangeIncrementalRepair, ((Builder) obj).subrangeIncrementalRepair)
+          && Objects.equals(
+              this.subrangeIncrementalRepair, ((Builder) obj).subrangeIncrementalRepair)
           && Objects.equals(this.clusterName, ((Builder) obj).clusterName)
           && Objects.equals(this.keyspaceName, ((Builder) obj).keyspaceName)
           && Objects.equals(this.columnFamilies, ((Builder) obj).columnFamilies)

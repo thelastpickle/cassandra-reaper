@@ -32,14 +32,10 @@ import org.junit.runner.RunWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
 @RunWith(Cucumber.class)
 @CucumberOptions(
-    features = {
-      "classpath:io.cassandrareaper.acceptance/integration_reaper_metrics.feature"
-    },
-    plugin = {"pretty"}
-    )
+    features = {"classpath:io.cassandrareaper.acceptance/integration_reaper_metrics.feature"},
+    plugin = {"pretty"})
 public class ReaperMetricsIT {
 
   private static final Logger LOG = LoggerFactory.getLogger(ReaperMetricsIT.class);
@@ -54,7 +50,8 @@ public class ReaperMetricsIT {
         "setting up testing Reaper runner with {} seed hosts defined and memory storage",
         TestContext.TEST_CLUSTER_SEED_HOSTS.size());
 
-    // We now have persistence in the memory store, so we need to clean up the storage folder before starting the tests
+    // We now have persistence in the memory store, so we need to clean up the storage folder before
+    // starting the tests
     deleteFolderContents("/tmp/reaper/storage/");
     runner = new ReaperTestJettyRunner(MEMORY_CONFIG_FILE);
     BasicSteps.addReaperRunner(runner);
@@ -74,14 +71,14 @@ public class ReaperMetricsIT {
     }
     try (Stream<Path> walk = Files.walk(path)) {
       walk.sorted(Comparator.reverseOrder())
-          .forEach(p -> {
-            try {
-              Files.delete(p);
-            } catch (IOException e) {
-              throw new RuntimeException("Failed to delete " + p, e);
-            }
-          });
+          .forEach(
+              p -> {
+                try {
+                  Files.delete(p);
+                } catch (IOException e) {
+                  throw new RuntimeException("Failed to delete " + p, e);
+                }
+              });
     }
   }
-
 }

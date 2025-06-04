@@ -62,7 +62,6 @@ public final class DroppedMessages {
     return meanRate;
   }
 
-
   public static Builder builder() {
     return new Builder();
   }

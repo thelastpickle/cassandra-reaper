@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.AbstractMap;
 import java.util.Iterator;
 import java.util.Map;
+
 import javax.management.JMX;
 import javax.management.MBeanServerConnection;
 import javax.management.MalformedObjectNameException;
@@ -28,10 +29,9 @@ import javax.management.ObjectName;
 
 import org.apache.cassandra.db.ColumnFamilyStoreMBean;
 
-/**
- * This code is copied and adjusted from from NodeProbe.java from Cassandra source.
- */
-final class ColumnFamilyStoreMBeanIterator implements Iterator<Map.Entry<String, ColumnFamilyStoreMBean>> {
+/** This code is copied and adjusted from from NodeProbe.java from Cassandra source. */
+final class ColumnFamilyStoreMBeanIterator
+    implements Iterator<Map.Entry<String, ColumnFamilyStoreMBean>> {
 
   private final Iterator<ObjectName> resIter;
   private final MBeanServerConnection mbeanServerConn;
@@ -59,7 +59,8 @@ final class ColumnFamilyStoreMBeanIterator implements Iterator<Map.Entry<String,
   public Map.Entry<String, ColumnFamilyStoreMBean> next() {
     ObjectName objectName = resIter.next();
     String keyspaceName = objectName.getKeyProperty("keyspace");
-    ColumnFamilyStoreMBean cfsProxy = JMX.newMBeanProxy(mbeanServerConn, objectName, ColumnFamilyStoreMBean.class);
+    ColumnFamilyStoreMBean cfsProxy =
+        JMX.newMBeanProxy(mbeanServerConn, objectName, ColumnFamilyStoreMBean.class);
     return new AbstractMap.SimpleImmutableEntry<>(keyspaceName, cfsProxy);
   }
 
@@ -67,5 +68,4 @@ final class ColumnFamilyStoreMBeanIterator implements Iterator<Map.Entry<String,
   public void remove() {
     throw new UnsupportedOperationException();
   }
-
 }

@@ -22,9 +22,7 @@ import java.util.Map;
 import com.datastax.mgmtapi.client.model.Compaction;
 import com.google.common.collect.ImmutableMap;
 
-/**
- * Helper methods to manipulate {@link com.datastax.mgmtapi.client.model.Compaction} instances.
- */
+/** Helper methods to manipulate {@link com.datastax.mgmtapi.client.model.Compaction} instances. */
 final class Compactions {
 
   private Compactions() {
@@ -49,7 +47,8 @@ final class Compactions {
     return map.build();
   }
 
-  private static void putIfNotNull(ImmutableMap.Builder<String, String> map, String key, Object value) {
+  private static void putIfNotNull(
+      ImmutableMap.Builder<String, String> map, String key, Object value) {
     if (value != null) {
       map.put(key, value.toString());
     }

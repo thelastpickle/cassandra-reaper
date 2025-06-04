@@ -24,11 +24,11 @@ import io.cassandrareaper.core.Node;
 import io.cassandrareaper.management.ClusterFacade;
 
 import java.io.IOException;
+
 import javax.management.JMException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 
 public final class CompactionService {
 

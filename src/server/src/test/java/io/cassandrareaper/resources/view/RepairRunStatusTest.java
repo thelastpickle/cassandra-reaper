@@ -22,13 +22,12 @@ import io.cassandrareaper.core.RepairRun;
 import java.util.Collections;
 import java.util.UUID;
 
+import static org.junit.Assert.assertEquals;
+
 import org.apache.cassandra.repair.RepairParallelism;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
-
 
 public final class RepairRunStatusTest {
 
@@ -55,8 +54,8 @@ public final class RepairRunStatusTest {
 
   @Test
   public void testRunningRepairDuration() {
-    RepairRunStatus repairStatus
-        = new RepairRunStatus(
+    RepairRunStatus repairStatus =
+        new RepairRunStatus(
             UUID.randomUUID(), // runId
             "test", // clusterName
             "test", // keyspaceName
@@ -88,7 +87,8 @@ public final class RepairRunStatusTest {
 
   @Test
   public void testFinishedRepairDuration() {
-    RepairRunStatus repairStatus = new RepairRunStatus(
+    RepairRunStatus repairStatus =
+        new RepairRunStatus(
             UUID.randomUUID(), // runId
             "test", // clusterName
             "test", // keyspaceName
@@ -120,7 +120,8 @@ public final class RepairRunStatusTest {
 
   @Test
   public void testPausedRepairDuration() {
-    RepairRunStatus repairStatus = new RepairRunStatus(
+    RepairRunStatus repairStatus =
+        new RepairRunStatus(
             UUID.randomUUID(), // runId
             "test", // clusterName
             "test", // keyspaceName
@@ -152,7 +153,8 @@ public final class RepairRunStatusTest {
 
   @Test
   public void testAbortedRepairDuration() {
-    RepairRunStatus repairStatus = new RepairRunStatus(
+    RepairRunStatus repairStatus =
+        new RepairRunStatus(
             UUID.randomUUID(), // runId
             "test", // clusterName
             "test", // keyspaceName

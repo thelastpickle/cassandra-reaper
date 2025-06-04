@@ -30,5 +30,4 @@ public enum OpType {
   public String getName() {
     return this.name;
   }
-
 }

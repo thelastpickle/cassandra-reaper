@@ -61,8 +61,7 @@ public final class Table {
     private String name;
     private String compactionStrategy;
 
-    private Builder() {
-    }
+    private Builder() {}
 
     public Table.Builder withName(String name) {
       Preconditions.checkState(null == this.name, "`.withName(..)` can only be called once");
@@ -71,8 +70,8 @@ public final class Table {
     }
 
     public Table.Builder withCompactionStrategy(String compactionStrategy) {
-      Preconditions
-          .checkState(null == this.compactionStrategy, "`.withCompactionStrategy(..)` can only be called once");
+      Preconditions.checkState(
+          null == this.compactionStrategy, "`.withCompactionStrategy(..)` can only be called once");
 
       this.compactionStrategy = compactionStrategy;
       return this;
@@ -83,5 +82,4 @@ public final class Table {
       return new Table(this);
     }
   }
-
 }

@@ -33,8 +33,8 @@ import com.google.common.base.Preconditions;
 @JsonDeserialize(builder = RingRange.Builder.class)
 public final class RingRange {
 
-  public static final Comparator<RingRange> START_COMPARATOR
-      = (RingRange o1, RingRange o2) -> o1.start.compareTo(o2.start);
+  public static final Comparator<RingRange> START_COMPARATOR =
+      (RingRange o1, RingRange o2) -> o1.start.compareTo(o2.start);
 
   private final BigInteger start;
   private final BigInteger end;
@@ -80,10 +80,10 @@ public final class RingRange {
           && SegmentGenerator.lowerThanOrEqual(other.end, end);
     } else {
       return (!other.isWrapping()
-          && (SegmentGenerator.greaterThanOrEqual(other.start, start)
-          || SegmentGenerator.lowerThanOrEqual(other.end, end)))
+              && (SegmentGenerator.greaterThanOrEqual(other.start, start)
+                  || SegmentGenerator.lowerThanOrEqual(other.end, end)))
           || (SegmentGenerator.greaterThanOrEqual(other.start, start)
-          && SegmentGenerator.lowerThanOrEqual(other.end, end));
+              && SegmentGenerator.lowerThanOrEqual(other.end, end));
     }
   }
 
@@ -128,8 +128,7 @@ public final class RingRange {
     private BigInteger start;
     private BigInteger end;
 
-    public Builder() {
-    }
+    public Builder() {}
 
     public Builder withStart(BigInteger start) {
       this.start = start;

@@ -21,6 +21,7 @@ import java.math.BigInteger;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+
 import javax.annotation.Nullable;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -44,9 +45,9 @@ public final class RepairSegment {
   private final DateTime startTime;
   private final DateTime endTime;
   private final Map<String, String> replicas = new ConcurrentHashMap<>();
-  // hostID field is only ever populated for incremental repairs. For full repairs it is always null.
+  // hostID field is only ever populated for incremental repairs. For full repairs it is always
+  // null.
   private final UUID hostID;
-
 
   private RepairSegment(Builder builder, @Nullable UUID id) {
     this.id = id;
@@ -258,13 +259,14 @@ public final class RepairSegment {
       return this;
     }
 
-
     public RepairSegment build() {
       // a null segmentId is a special case where the storage uses a sequence for it
       Preconditions.checkNotNull(runId);
       if (STRICT) {
-        Preconditions.checkState(null != startTime || null == endTime, "if endTime is set, so must startTime be set");
-        Preconditions.checkState(null == endTime || State.DONE == state, "endTime can only be set if segment is DONE");
+        Preconditions.checkState(
+            null != startTime || null == endTime, "if endTime is set, so must startTime be set");
+        Preconditions.checkState(
+            null == endTime || State.DONE == state, "endTime can only be set if segment is DONE");
 
         Preconditions.checkState(
             null != startTime || State.NOT_STARTED == state,

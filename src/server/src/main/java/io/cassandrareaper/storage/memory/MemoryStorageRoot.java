@@ -31,10 +31,12 @@ import java.util.concurrent.ConcurrentMap;
 public final class MemoryStorageRoot {
   private final ConcurrentMap<UUID, RepairSegment> repairSegments = new ConcurrentHashMap<>();
   private final ConcurrentMap<UUID, RepairUnit> repairUnits = new ConcurrentHashMap<>();
-  private final ConcurrentMap<RepairUnit.Builder, RepairUnit> repairUnitsByKey = new ConcurrentHashMap<>();
+  private final ConcurrentMap<RepairUnit.Builder, RepairUnit> repairUnitsByKey =
+      new ConcurrentHashMap<>();
   private final ConcurrentMap<UUID, RepairRun> repairRuns = new ConcurrentHashMap<>();
   private final ConcurrentMap<UUID, RepairSchedule> repairSchedules = new ConcurrentHashMap<>();
-  private final ConcurrentMap<UUID, DiagEventSubscription> subscriptionsById = new ConcurrentHashMap<>();
+  private final ConcurrentMap<UUID, DiagEventSubscription> subscriptionsById =
+      new ConcurrentHashMap<>();
   private final ConcurrentMap<String, Cluster> clusters = new ConcurrentHashMap<>();
 
   public MemoryStorageRoot() {
@@ -145,8 +147,10 @@ public final class MemoryStorageRoot {
 
   public static String toString(RepairSegment segment) {
     StringBuilder buf = new StringBuilder();
-    buf.append("RepairSegment ID: ").append(segment.getId())
-        .append(", Token range: ").append(segment.getTokenRange());
+    buf.append("RepairSegment ID: ")
+        .append(segment.getId())
+        .append(", Token range: ")
+        .append(segment.getTokenRange());
     return buf.toString();
   }
 }

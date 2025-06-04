@@ -44,7 +44,8 @@ import org.joda.time.format.DateTimeFormatter;
 public class CassandraMetricsDao implements IMetricsDao, IDistributedMetrics {
 
   static final int METRICS_PARTITIONING_TIME_MINS = 10;
-  private static final DateTimeFormatter TIME_BUCKET_FORMATTER = DateTimeFormat.forPattern("yyyyMMddHHmm");
+  private static final DateTimeFormatter TIME_BUCKET_FORMATTER =
+      DateTimeFormat.forPattern("yyyyMMddHHmm");
   private final CqlSession session;
   private PreparedStatement getMetricsForHostPrepStmt;
   private PreparedStatement storeMetricsPrepStmt;
@@ -55,40 +56,34 @@ public class CassandraMetricsDao implements IMetricsDao, IDistributedMetrics {
 
     this.session = session;
     prepareMetricStatements();
-
   }
 
   @SuppressWarnings("checkstyle:lineLength")
   void prepareMetricStatements() {
-    storeMetricsPrepStmt
-        = session
-        .prepare(
+    storeMetricsPrepStmt =
+        session.prepare(
             "INSERT INTO node_metrics_v3 (cluster, metric_domain, metric_type, time_bucket, "
                 + "host, metric_scope, metric_name, ts, metric_attribute, value) "
                 + "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-    getMetricsForHostPrepStmt = session
-        .prepare(
+    getMetricsForHostPrepStmt =
+        session.prepare(
             "SELECT cluster, metric_domain, metric_type, time_bucket, host, "
                 + "metric_scope, metric_name, ts, metric_attribute, value "
                 + "FROM node_metrics_v3 "
                 + "WHERE metric_domain = ? and metric_type = ? and cluster = ? and time_bucket = ? and host = ?");
 
-
-    storePercentRepairedForSchedulePrepStmt = session
-        .prepare(
+    storePercentRepairedForSchedulePrepStmt =
+        session.prepare(
             "INSERT INTO percent_repaired_by_schedule"
                 + " (cluster_name, repair_schedule_id, time_bucket, node, keyspace_name,"
                 + " table_name, percent_repaired, ts)"
-                + " values(?, ?, ?, ?, ?, ?, ?, ?)"
-        );
+                + " values(?, ?, ?, ?, ?, ?, ?, ?)");
 
-    getPercentRepairedForSchedulePrepStmt = session
-        .prepare(
+    getPercentRepairedForSchedulePrepStmt =
+        session.prepare(
             "SELECT * FROM percent_repaired_by_schedule"
-                + " WHERE cluster_name = ? and repair_schedule_id = ? AND time_bucket = ?"
-        );
+                + " WHERE cluster_name = ? and repair_schedule_id = ? AND time_bucket = ?");
   }
-
 
   @Override
   public List<GenericMetric> getMetrics(
@@ -104,20 +99,19 @@ public class CassandraMetricsDao implements IMetricsDao, IDistributedMetrics {
 
     // Compute the hourly buckets since the requested lower bound timestamp
     while (startTime < now) {
-      timeBuckets.add(DateTime.now().withMillis(startTime).toString(TIME_BUCKET_FORMATTER).substring(0, 11) + "0");
+      timeBuckets.add(
+          DateTime.now().withMillis(startTime).toString(TIME_BUCKET_FORMATTER).substring(0, 11)
+              + "0");
       startTime += 600000;
     }
 
     for (String timeBucket : timeBuckets) {
       if (host.isPresent()) {
-        //metric = ? and cluster = ? and time_bucket = ? and host = ? and ts >= ? and ts <= ?
-        futures.add(session.executeAsync(
-            getMetricsForHostPrepStmt.bind(
-                metricDomain,
-                metricType,
-                clusterName,
-                timeBucket,
-                host.get())));
+        // metric = ? and cluster = ? and time_bucket = ? and host = ? and ts >= ? and ts <= ?
+        futures.add(
+            session.executeAsync(
+                getMetricsForHostPrepStmt.bind(
+                    metricDomain, metricType, clusterName, timeBucket, host.get())));
       }
     }
 
@@ -128,15 +122,15 @@ public class CassandraMetricsDao implements IMetricsDao, IDistributedMetrics {
         for (Row row : results.currentPage()) {
           metrics.add(
               GenericMetric.builder()
-                .withClusterName(row.getString("cluster"))
-                .withHost(row.getString("host"))
-                .withMetricType(row.getString("metric_type"))
-                .withMetricScope(row.getString("metric_scope"))
-                .withMetricName(row.getString("metric_name"))
-                .withMetricAttribute(row.getString("metric_attribute"))
-                .withTs(new DateTime(row.getInstant("ts").toEpochMilli()))
-                .withValue(row.getDouble("value"))
-                .build());
+                  .withClusterName(row.getString("cluster"))
+                  .withHost(row.getString("host"))
+                  .withMetricType(row.getString("metric_type"))
+                  .withMetricScope(row.getString("metric_scope"))
+                  .withMetricName(row.getString("metric_name"))
+                  .withMetricAttribute(row.getString("metric_attribute"))
+                  .withTs(new DateTime(row.getInstant("ts").toEpochMilli()))
+                  .withValue(row.getDouble("value"))
+                  .build());
         }
         if (!results.hasMorePages()) {
           break;
@@ -150,22 +144,22 @@ public class CassandraMetricsDao implements IMetricsDao, IDistributedMetrics {
     return metrics;
   }
 
-
   @Override
   public void storeMetrics(List<GenericMetric> metrics) {
-    Map<String, List<GenericMetric>> metricsPerPartition = metrics.stream()
-        .collect(Collectors.groupingBy(metric ->
-            metric.getClusterName()
-                + metric.getMetricDomain()
-                + metric.getMetricType()
-                + computeMetricsPartition(metric.getTs()).toString(TIME_BUCKET_FORMATTER)
-                + metric.getHost()
-        ));
+    Map<String, List<GenericMetric>> metricsPerPartition =
+        metrics.stream()
+            .collect(
+                Collectors.groupingBy(
+                    metric ->
+                        metric.getClusterName()
+                            + metric.getMetricDomain()
+                            + metric.getMetricType()
+                            + computeMetricsPartition(metric.getTs())
+                                .toString(TIME_BUCKET_FORMATTER)
+                            + metric.getHost()));
 
     for (Map.Entry<String, List<GenericMetric>> metricPartition : metricsPerPartition.entrySet()) {
-      BatchStatement batch =
-          BatchStatement.newInstance(
-            BatchType.UNLOGGED);
+      BatchStatement batch = BatchStatement.newInstance(BatchType.UNLOGGED);
       for (GenericMetric metric : metricPartition.getValue()) {
         batch.add(
             storeMetricsPrepStmt.bind(
@@ -199,20 +193,20 @@ public class CassandraMetricsDao implements IMetricsDao, IDistributedMetrics {
         .withMillisOfSecond(0);
   }
 
-
-  public void purgeMetrics() {
-  }
-
+  public void purgeMetrics() {}
 
   @Override
-  public List<PercentRepairedMetric> getPercentRepairedMetrics(String clusterName, UUID repairScheduleId, Long since) {
+  public List<PercentRepairedMetric> getPercentRepairedMetrics(
+      String clusterName, UUID repairScheduleId, Long since) {
     List<String> timeBuckets = Lists.newArrayList();
     long now = DateTime.now().getMillis();
     long startTime = since;
 
     // Compute the ten minutes buckets since the requested lower bound timestamp
     while (startTime <= now) {
-      timeBuckets.add(DateTime.now().withMillis(startTime).toString(TIME_BUCKET_FORMATTER).substring(0, 11) + "0");
+      timeBuckets.add(
+          DateTime.now().withMillis(startTime).toString(TIME_BUCKET_FORMATTER).substring(0, 11)
+              + "0");
       startTime += 600000;
     }
 
@@ -220,11 +214,10 @@ public class CassandraMetricsDao implements IMetricsDao, IDistributedMetrics {
 
     List<CompletionStage<AsyncResultSet>> futures = Lists.newArrayList();
     for (String timeBucket : timeBuckets) {
-      futures.add(session.executeAsync(
-          getPercentRepairedForSchedulePrepStmt.bind(
-            clusterName,
-            repairScheduleId,
-            timeBucket)));
+      futures.add(
+          session.executeAsync(
+              getPercentRepairedForSchedulePrepStmt.bind(
+                  clusterName, repairScheduleId, timeBucket)));
     }
 
     List<PercentRepairedMetric> metrics = Lists.newArrayList();
@@ -237,13 +230,13 @@ public class CassandraMetricsDao implements IMetricsDao, IDistributedMetrics {
             // we only want metrics from the latest bucket
             metrics.add(
                 PercentRepairedMetric.builder()
-                  .withCluster(clusterName)
-                  .withRepairScheduleId(row.getUuid("repair_schedule_id"))
-                  .withKeyspaceName(row.getString("keyspace_name"))
-                  .withTableName(row.getString("table_name"))
-                  .withNode(row.getString("node"))
-                  .withPercentRepaired(row.getInt("percent_repaired"))
-                  .build());
+                    .withCluster(clusterName)
+                    .withRepairScheduleId(row.getUuid("repair_schedule_id"))
+                    .withKeyspaceName(row.getString("keyspace_name"))
+                    .withTableName(row.getString("table_name"))
+                    .withNode(row.getString("node"))
+                    .withPercentRepaired(row.getInt("percent_repaired"))
+                    .build());
             maxTimeBucket = Math.max(maxTimeBucket, Long.parseLong(row.getString("time_bucket")));
           }
         }
@@ -262,16 +255,15 @@ public class CassandraMetricsDao implements IMetricsDao, IDistributedMetrics {
 
   @Override
   public void storePercentRepairedMetric(PercentRepairedMetric metric) {
-    session.execute(storePercentRepairedForSchedulePrepStmt.bind(
-        metric.getCluster(),
-        metric.getRepairScheduleId(),
-        DateTime.now().toString(TIME_BUCKET_FORMATTER).substring(0, 11) + "0",
-        metric.getNode(),
-        metric.getKeyspaceName(),
-        metric.getTableName(),
-        metric.getPercentRepaired(),
-        Instant.now())
-    );
+    session.execute(
+        storePercentRepairedForSchedulePrepStmt.bind(
+            metric.getCluster(),
+            metric.getRepairScheduleId(),
+            DateTime.now().toString(TIME_BUCKET_FORMATTER).substring(0, 11) + "0",
+            metric.getNode(),
+            metric.getKeyspaceName(),
+            metric.getTableName(),
+            metric.getPercentRepaired(),
+            Instant.now()));
   }
-
 }

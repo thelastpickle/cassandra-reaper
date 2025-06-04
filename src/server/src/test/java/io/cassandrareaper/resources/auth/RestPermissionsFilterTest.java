@@ -34,12 +34,11 @@ public class RestPermissionsFilterTest {
     Mockito.when(mockHttpServletRequest.getMethod()).thenReturn(HttpMethod.OPTIONS);
     Mockito.when(filter.isCorsEnabled()).thenReturn(true);
 
-    boolean allowed = filter.isAccessAllowed(
-        mockHttpServletRequest,
-        Mockito.mock(ServletResponse.class),
-        Mockito.mock(Object.class)
-    );
+    boolean allowed =
+        filter.isAccessAllowed(
+            mockHttpServletRequest,
+            Mockito.mock(ServletResponse.class),
+            Mockito.mock(Object.class));
     Assertions.assertThat(allowed).isTrue();
   }
-
 }

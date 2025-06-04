@@ -15,14 +15,9 @@
 
 package io.cassandrareaper.storage.cassandra.migrations;
 
-import java.util.Map;
-
+import com.datastax.oss.driver.api.core.CqlSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.datastax.oss.driver.api.core.CqlIdentifier;
-import com.datastax.oss.driver.api.core.CqlSession;
-import com.datastax.oss.driver.api.core.Version;
 
 public final class Migration034 {
 
@@ -36,22 +31,30 @@ public final class Migration034 {
     try {
       if (!hasSubrangeIncrementalField(session, keyspace)) {
         LOG.info("Altering {} to add the subrange_incremental field...", REPAIR_UNIT_V1_TABLE);
-        session
-            .execute("ALTER TABLE " + REPAIR_UNIT_V1_TABLE + " ADD subrange_incremental boolean");
-        LOG.info("{} was successfully altered to add the subrange_incremental field.",
+        session.execute(
+            "ALTER TABLE " + REPAIR_UNIT_V1_TABLE + " ADD subrange_incremental boolean");
+        LOG.info(
+            "{} was successfully altered to add the subrange_incremental field.",
             REPAIR_UNIT_V1_TABLE);
       } else {
         LOG.info("{} already has the subrange_incremental field.", REPAIR_UNIT_V1_TABLE);
       }
     } catch (RuntimeException e) {
-      LOG.error("Failed altering {} to add the subrange_incremental field", REPAIR_UNIT_V1_TABLE,
-          e);
+      LOG.error(
+          "Failed altering {} to add the subrange_incremental field", REPAIR_UNIT_V1_TABLE, e);
     }
   }
 
   private static boolean hasSubrangeIncrementalField(CqlSession session, String keyspace) {
-    return session.getMetadata().getKeyspace(keyspace).get().getTable(REPAIR_UNIT_V1_TABLE).get()
-        .getColumns().entrySet().stream()
+    return session
+        .getMetadata()
+        .getKeyspace(keyspace)
+        .get()
+        .getTable(REPAIR_UNIT_V1_TABLE)
+        .get()
+        .getColumns()
+        .entrySet()
+        .stream()
         .anyMatch(entry -> entry.getKey().asCql(false).equals("\"subrange_incremental\""));
   }
 }

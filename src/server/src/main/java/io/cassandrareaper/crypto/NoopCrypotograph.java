@@ -28,5 +28,4 @@ public class NoopCrypotograph implements Cryptograph {
   public String decrypt(String text) {
     return text;
   }
-
 }

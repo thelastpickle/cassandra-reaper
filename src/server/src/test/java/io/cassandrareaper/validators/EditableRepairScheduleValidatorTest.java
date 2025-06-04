@@ -19,16 +19,17 @@ package io.cassandrareaper.validators;
 import io.cassandrareaper.core.EditableRepairSchedule;
 
 import java.util.Set;
+
 import javax.validation.ConstraintViolation;
 import javax.validation.Validation;
 import javax.validation.Validator;
 
-import org.apache.cassandra.repair.RepairParallelism;
-import org.junit.Test;
-
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+
+import org.apache.cassandra.repair.RepairParallelism;
+import org.junit.Test;
 
 public class EditableRepairScheduleValidatorTest {
   private static Validator validator = Validation.buildDefaultValidatorFactory().getValidator();
@@ -37,7 +38,8 @@ public class EditableRepairScheduleValidatorTest {
   public void testEditableRepairScheduleWithAllNulls() {
     EditableRepairSchedule editableRepairSchedule = new EditableRepairSchedule();
 
-    Set<ConstraintViolation<EditableRepairSchedule>> violations = validator.validate(editableRepairSchedule);
+    Set<ConstraintViolation<EditableRepairSchedule>> violations =
+        validator.validate(editableRepairSchedule);
     assertNotNull(violations);
     // We should expect a violation because none of the fields are present
     assertFalse(violations.isEmpty());
@@ -48,7 +50,8 @@ public class EditableRepairScheduleValidatorTest {
     EditableRepairSchedule editableRepairSchedule = new EditableRepairSchedule();
     editableRepairSchedule.setRepairParallelism(RepairParallelism.SEQUENTIAL);
 
-    Set<ConstraintViolation<EditableRepairSchedule>> violations = validator.validate(editableRepairSchedule);
+    Set<ConstraintViolation<EditableRepairSchedule>> violations =
+        validator.validate(editableRepairSchedule);
     assertNotNull(violations);
     // We should not expect a violation because at least one of the fields was valid
     assertTrue(violations.isEmpty());
@@ -59,17 +62,22 @@ public class EditableRepairScheduleValidatorTest {
     EditableRepairSchedule editableRepairSchedule = new EditableRepairSchedule();
     editableRepairSchedule.setOwner("");
 
-    Set<ConstraintViolation<EditableRepairSchedule>> violations = validator.validate(editableRepairSchedule);
+    Set<ConstraintViolation<EditableRepairSchedule>> violations =
+        validator.validate(editableRepairSchedule);
     assertNotNull(violations);
     // We should expect a violation
     assertFalse(violations.isEmpty());
-    // We should expect a violation of the "owner" field because when it's provided, it can't be empty
+    // We should expect a violation of the "owner" field because when it's provided, it can't be
+    // empty
     // This is indirectly testing the NullOrNotBlankValidator as well as the higher-level logic
-    ConstraintViolation ownerViolation = violations.stream()
-        .filter(violation ->
-            violation.getPropertyPath() != null && violation.getPropertyPath().toString().equals("owner"))
-        .findAny()
-        .orElse(null);
+    ConstraintViolation ownerViolation =
+        violations.stream()
+            .filter(
+                violation ->
+                    violation.getPropertyPath() != null
+                        && violation.getPropertyPath().toString().equals("owner"))
+            .findAny()
+            .orElse(null);
     assertNotNull(ownerViolation);
   }
 }

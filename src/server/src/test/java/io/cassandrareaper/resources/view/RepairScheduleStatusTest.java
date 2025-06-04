@@ -20,6 +20,8 @@ package io.cassandrareaper.resources.view;
 import io.cassandrareaper.SimpleReaperClient;
 import io.cassandrareaper.core.RepairSchedule;
 
+import static org.junit.Assert.assertEquals;
+
 import com.datastax.oss.driver.api.core.uuid.Uuids;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
@@ -28,8 +30,6 @@ import org.joda.time.DateTime;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.junit.Assert.assertEquals;
 
 public final class RepairScheduleStatusTest {
 
@@ -69,5 +69,4 @@ public final class RepairScheduleStatusTest {
     assertEquals(data.getRepairParallelism(), dataAfter.getRepairParallelism());
     assertEquals(data.getState(), dataAfter.getState());
   }
-
 }

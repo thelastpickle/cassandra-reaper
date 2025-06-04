@@ -26,8 +26,7 @@ import com.google.common.collect.Maps;
 public class MemorySnapshotDao implements ISnapshotDao {
   public final ConcurrentMap<String, Snapshot> snapshots = Maps.newConcurrentMap();
 
-  public MemorySnapshotDao() {
-  }
+  public MemorySnapshotDao() {}
 
   @Override
   public boolean saveSnapshot(Snapshot snapshot) {

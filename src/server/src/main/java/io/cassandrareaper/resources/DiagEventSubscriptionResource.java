@@ -31,6 +31,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
+
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
@@ -49,7 +50,6 @@ import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
 @Path("/diag_event/subscription")
 @Produces(MediaType.APPLICATION_JSON)
 public final class DiagEventSubscriptionResource {
@@ -60,22 +60,26 @@ public final class DiagEventSubscriptionResource {
   private final AppContext context;
   private final DiagEventSubscriptionService diagEventService;
 
-  public DiagEventSubscriptionResource(AppContext context,
-                                       CloseableHttpClient httpClient,
-                                       ScheduledExecutorService executor,
-                                       IEventsDao eventsDao) {
+  public DiagEventSubscriptionResource(
+      AppContext context,
+      CloseableHttpClient httpClient,
+      ScheduledExecutorService executor,
+      IEventsDao eventsDao) {
     this.context = context;
     this.eventsDao = eventsDao;
-    this.diagEventService = DiagEventSubscriptionService.create(context, httpClient, executor, eventsDao);
+    this.diagEventService =
+        DiagEventSubscriptionService.create(context, httpClient, executor, eventsDao);
   }
 
   @GET
-  public Response getEventSubscriptionList(@QueryParam("clusterName") Optional<String> clusterName) {
+  public Response getEventSubscriptionList(
+      @QueryParam("clusterName") Optional<String> clusterName) {
     LOG.debug("get event subscriptions called %s", clusterName);
 
-    Collection<DiagEventSubscription> subscriptions = clusterName.isPresent()
-        ? eventsDao.getEventSubscriptions(clusterName.get())
-        : eventsDao.getEventSubscriptions();
+    Collection<DiagEventSubscription> subscriptions =
+        clusterName.isPresent()
+            ? eventsDao.getEventSubscriptions(clusterName.get())
+            : eventsDao.getEventSubscriptions();
 
     return Response.ok().entity(subscriptions).build();
   }
@@ -92,36 +96,46 @@ public final class DiagEventSubscriptionResource {
       @QueryParam("exportHttpEndpoint") String endpoint) {
 
     AtomicBoolean created = new AtomicBoolean(false);
-    Set<String> nodes = ImmutableSet.copyOf(nodesString == null ? new String[]{} : nodesString.split(","));
-    Set<String> events = ImmutableSet.copyOf(eventsString == null ? new String[]{} : eventsString.split(","));
+    Set<String> nodes =
+        ImmutableSet.copyOf(nodesString == null ? new String[] {} : nodesString.split(","));
+    Set<String> events =
+        ImmutableSet.copyOf(eventsString == null ? new String[] {} : eventsString.split(","));
 
-    DiagEventSubscription subscription = eventsDao.getEventSubscriptions(cluster)
-        .stream()
-        .filter(sub -> Objects.equals(sub.getNodes(), nodes) && Objects.equals(sub.getEvents(), events))
-        .findFirst()
-        .orElseGet(() -> {
-          created.set(true);
-          return diagEventService.addEventSubscription(
-              new DiagEventSubscription(
-                  Optional.empty(),
-                  cluster,
-                  desc,
-                  nodes,
-                  events,
-                  sse,
-                  logger.isEmpty() ? null : logger,
-                  endpoint.isEmpty() ? null : endpoint));
-        });
+    DiagEventSubscription subscription =
+        eventsDao.getEventSubscriptions(cluster).stream()
+            .filter(
+                sub ->
+                    Objects.equals(sub.getNodes(), nodes)
+                        && Objects.equals(sub.getEvents(), events))
+            .findFirst()
+            .orElseGet(
+                () -> {
+                  created.set(true);
+                  return diagEventService.addEventSubscription(
+                      new DiagEventSubscription(
+                          Optional.empty(),
+                          cluster,
+                          desc,
+                          nodes,
+                          events,
+                          sse,
+                          logger.isEmpty() ? null : logger,
+                          endpoint.isEmpty() ? null : endpoint));
+                });
 
     LOG.debug((created.get() ? "created" : "found") + " subscription {}", subscription);
 
-    URI location = uriInfo.getBaseUriBuilder()
-        .path("diag_event")
-        .path("subscription")
-        .path(subscription.getId().get().toString())
-        .build();
+    URI location =
+        uriInfo
+            .getBaseUriBuilder()
+            .path("diag_event")
+            .path("subscription")
+            .path(subscription.getId().get().toString())
+            .build();
 
-    return created.get() ? Response.created(location).build() : Response.noContent().location(location).build();
+    return created.get()
+        ? Response.created(location).build()
+        : Response.noContent().location(location).build();
   }
 
   @GET
@@ -141,8 +155,8 @@ public final class DiagEventSubscriptionResource {
   public Response getActiveAdhocSubscriptions() {
     try {
       Collection<DiagEventSubscription> allSubs = eventsDao.getEventSubscriptions();
-      Set<DiagEventSubscription> activeSubscriptions
-          = DiagEventSubscriptionService.getAdhocActiveSubs(allSubs, Collections.emptySet());
+      Set<DiagEventSubscription> activeSubscriptions =
+          DiagEventSubscriptionService.getAdhocActiveSubs(allSubs, Collections.emptySet());
       if (activeSubscriptions.isEmpty()) {
         return Response.status(Response.Status.NOT_FOUND).build();
       }

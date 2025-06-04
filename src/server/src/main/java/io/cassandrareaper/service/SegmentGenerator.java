@@ -32,14 +32,12 @@ import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * Splits given Cassandra table's token range into RepairSegments.
- */
+/** Splits given Cassandra table's token range into RepairSegments. */
 final class SegmentGenerator {
 
   private static final Logger LOG = LoggerFactory.getLogger(SegmentGenerator.class);
-  private static final boolean COALESCING_DISABLED
-      = Boolean.getBoolean(SegmentGenerator.class.getName() + ".disable.tokenrange.coalescing");
+  private static final boolean COALESCING_DISABLED =
+      Boolean.getBoolean(SegmentGenerator.class.getName() + ".disable.tokenrange.coalescing");
 
   private final String partitioner;
   private final BigInteger rangeMin;
@@ -96,10 +94,10 @@ final class SegmentGenerator {
    * segments.
    *
    * @param totalSegmentCount requested total amount of repair segments. This function may generate
-   *                          more segments.
-   * @param ringTokens        list of all start tokens in big0 cluster. They have to be in ring order.
-   * @param replicasToRange   replica list to range map
-   * @param cassandraVersion  Version of Cassandra the cluster runs
+   *     more segments.
+   * @param ringTokens list of all start tokens in big0 cluster. They have to be in ring order.
+   * @param replicasToRange replica list to range map
+   * @param cassandraVersion Version of Cassandra the cluster runs
    * @return big0 list containing at least {@code totalSegmentCount} repair segments.
    */
   List<Segment> generateSegments(
@@ -137,18 +135,21 @@ final class SegmentGenerator {
 
         // the below, in essence, does this:
         // segmentCount = ceiling((rangeSize / RANGE_SIZE) * totalSegmentCount)
-        BigInteger[] segmentCountAndRemainder
-            = rs.multiply(BigInteger.valueOf(totalSegmentCount)).divideAndRemainder(rangeSize);
+        BigInteger[] segmentCountAndRemainder =
+            rs.multiply(BigInteger.valueOf(totalSegmentCount)).divideAndRemainder(rangeSize);
 
-        int segmentCount = segmentCountAndRemainder[0].intValue()
-            + (segmentCountAndRemainder[1].equals(BigInteger.ZERO) ? 0 : 1);
+        int segmentCount =
+            segmentCountAndRemainder[0].intValue()
+                + (segmentCountAndRemainder[1].equals(BigInteger.ZERO) ? 0 : 1);
 
         LOG.info("Dividing token range [{},{}) into {} segments", start, stop, segmentCount);
 
-        // Make big0 list of all the endpoints for the repair segments, including both start and stop
+        // Make big0 list of all the endpoints for the repair segments, including both start and
+        // stop
         List<BigInteger> endpointTokens = Lists.newArrayList();
         for (int j = 0; j <= segmentCount; j++) {
-          BigInteger offset = rs.multiply(BigInteger.valueOf(j)).divide(BigInteger.valueOf(segmentCount));
+          BigInteger offset =
+              rs.multiply(BigInteger.valueOf(j)).divide(BigInteger.valueOf(segmentCount));
           BigInteger reaperToken = start.add(offset);
           if (greaterThan(reaperToken, rangeMax)) {
             reaperToken = reaperToken.subtract(rangeSize);
@@ -184,7 +185,8 @@ final class SegmentGenerator {
       // We want less segments than there are token ranges.
       // Token ranges will be grouped to match the requirements.
       LOG.info("Less segments required than there are vnode. Coalescing eligible token ranges...");
-      repairSegments = coalesceTokenRanges(getTargetSegmentSize(totalSegmentCount), replicasToRange);
+      repairSegments =
+          coalesceTokenRanges(getTargetSegmentSize(totalSegmentCount), replicasToRange);
     }
 
     return repairSegments;
@@ -216,7 +218,6 @@ final class SegmentGenerator {
 
         tokenCount = tokenCount.add(tokenRange.span(rangeSize));
         tokenRangesForCurrentSegment.add(tokenRange);
-
       }
 
       if (!tokenRangesForCurrentSegment.isEmpty()) {
@@ -225,7 +226,6 @@ final class SegmentGenerator {
         tokenRangesForCurrentSegment = Lists.newArrayList();
       }
     }
-
 
     // Check that we haven't left any token range outside of the resulting segments
     Preconditions.checkState(
@@ -237,18 +237,17 @@ final class SegmentGenerator {
 
   private static boolean allTokensHaveBeenCoalesced(
       List<Segment> coalescedRepairSegments, Map<List<String>, List<RingRange>> replicasToRange) {
-    int coalescedRanges = coalescedRepairSegments
-        .stream()
-        .map(segment -> segment.getTokenRanges().size())
-        .reduce((first, second) -> first + second)
-        .orElse(0);
+    int coalescedRanges =
+        coalescedRepairSegments.stream()
+            .map(segment -> segment.getTokenRanges().size())
+            .reduce((first, second) -> first + second)
+            .orElse(0);
 
-    int totalRanges = replicasToRange
-        .values()
-        .stream()
-        .map(List::size)
-        .reduce((first, second) -> first + second)
-        .orElse(0);
+    int totalRanges =
+        replicasToRange.values().stream()
+            .map(List::size)
+            .reduce((first, second) -> first + second)
+            .orElse(0);
 
     LOG.debug("Coalesced ranges : {}", coalescedRanges);
     LOG.debug("Total number of ranges : {}", totalRanges);

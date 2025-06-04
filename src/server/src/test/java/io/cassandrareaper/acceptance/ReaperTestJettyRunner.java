@@ -27,6 +27,7 @@ import java.net.ServerSocket;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+
 import javax.ws.rs.core.Response;
 
 import com.google.common.collect.Sets;
@@ -35,12 +36,12 @@ import io.dropwizard.testing.DropwizardTestSupport;
 import io.dropwizard.testing.ResourceHelpers;
 
 /**
- * Simple Reaper application runner for testing purposes.
- * Starts a Jetty server that wraps Reaper application,
- * and registers a shutdown hook for JVM exit event.
- * <p/>
- * Note, nothing in this class can import or reference any class that is in the shaded Reaper jar file.
- * All classes found in the Reaper jar file must be loaded via reflection and the ParentLastURLClassLoader.
+ * Simple Reaper application runner for testing purposes. Starts a Jetty server that wraps Reaper
+ * application, and registers a shutdown hook for JVM exit event.
+ *
+ * <p>Note, nothing in this class can import or reference any class that is in the shaded Reaper jar
+ * file. All classes found in the Reaper jar file must be loaded via reflection and the
+ * ParentLastURLClassLoader.
  */
 public final class ReaperTestJettyRunner {
 
@@ -51,10 +52,14 @@ public final class ReaperTestJettyRunner {
   private SimpleReaperClient reaperAdminClientInstance;
 
   public ReaperTestJettyRunner(String yamlConfigFile) {
-    runnerInstance = new DropwizardTestSupport<ReaperApplicationConfiguration>(
-      ReaperApplication.class, ResourceHelpers.resourceFilePath(yamlConfigFile),
-      ConfigOverride.config("server.applicationConnectors[0].port", String.valueOf(getAnyAvailablePort())),
-      ConfigOverride.config("server.adminConnectors[0].port", String.valueOf(getAnyAvailablePort())));
+    runnerInstance =
+        new DropwizardTestSupport<ReaperApplicationConfiguration>(
+            ReaperApplication.class,
+            ResourceHelpers.resourceFilePath(yamlConfigFile),
+            ConfigOverride.config(
+                "server.applicationConnectors[0].port", String.valueOf(getAnyAvailablePort())),
+            ConfigOverride.config(
+                "server.adminConnectors[0].port", String.valueOf(getAnyAvailablePort())));
     try {
       runnerInstance.before();
     } catch (Exception e) { // CHECKSTYLE IGNORE THIS LINE
@@ -64,12 +69,16 @@ public final class ReaperTestJettyRunner {
     Runtime.getRuntime().addShutdownHook(new Thread(runnerInstance::after));
   }
 
-  public Response callReaper(String httpMethod, String urlPath, Optional<Map<String, String>> params) {
-    return SimpleReaperClient.doHttpCall(httpMethod, "localhost", runnerInstance.getLocalPort(), urlPath, params);
+  public Response callReaper(
+      String httpMethod, String urlPath, Optional<Map<String, String>> params) {
+    return SimpleReaperClient.doHttpCall(
+        httpMethod, "localhost", runnerInstance.getLocalPort(), urlPath, params);
   }
 
-  public Response callReaperAdmin(String httpMethod, String urlPath, Optional<Map<String, String>> params) {
-    return SimpleReaperClient.doHttpCall(httpMethod, "localhost", runnerInstance.getAdminPort(), urlPath, params);
+  public Response callReaperAdmin(
+      String httpMethod, String urlPath, Optional<Map<String, String>> params) {
+    return SimpleReaperClient.doHttpCall(
+        httpMethod, "localhost", runnerInstance.getAdminPort(), urlPath, params);
   }
 
   public SimpleReaperClient getClient() {
@@ -81,7 +90,8 @@ public final class ReaperTestJettyRunner {
 
   public SimpleReaperClient getAdminClient() {
     if (reaperAdminClientInstance == null) {
-      reaperAdminClientInstance = new SimpleReaperClient("localhost", runnerInstance.getAdminPort());
+      reaperAdminClientInstance =
+          new SimpleReaperClient("localhost", runnerInstance.getAdminPort());
     }
     return reaperAdminClientInstance;
   }
@@ -95,7 +105,6 @@ public final class ReaperTestJettyRunner {
     AppContext context = getContext();
     return context.storage.getClass().getName();
   }
-
 
   private static int getAnyAvailablePort() {
     try (ServerSocket s = new ServerSocket(0)) {

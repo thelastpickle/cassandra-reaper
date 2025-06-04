@@ -28,9 +28,7 @@ import com.google.common.collect.ImmutableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * Provides an endpoint to retrieve reaper configuration
- */
+/** Provides an endpoint to retrieve reaper configuration */
 @Path("/reaper")
 @Produces(MediaType.APPLICATION_JSON)
 public final class ReaperResource {
@@ -51,8 +49,9 @@ public final class ReaperResource {
   @GET
   @Path("/datacenterAvailability")
   public Response getDatacenterAvailability() {
-    return Response.ok().entity(
-            ImmutableMap.of("datacenterAvailability", context.config.getDatacenterAvailability())
-    ).build();
+    return Response.ok()
+        .entity(
+            ImmutableMap.of("datacenterAvailability", context.config.getDatacenterAvailability()))
+        .build();
   }
 }

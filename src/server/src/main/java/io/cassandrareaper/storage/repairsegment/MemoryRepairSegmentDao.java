@@ -57,8 +57,10 @@ public class MemoryRepairSegmentDao implements IRepairSegmentDao {
 
   @Override
   public boolean updateRepairSegment(RepairSegment newRepairSegment) {
-    if (memoryStorageFacade.getRepairSegmentDao().getRepairSegment(newRepairSegment.getRunId(),
-        newRepairSegment.getId()) == null) {
+    if (memoryStorageFacade
+            .getRepairSegmentDao()
+            .getRepairSegment(newRepairSegment.getRunId(), newRepairSegment.getId())
+        == null) {
       return false;
     } else {
       memoryStorageFacade.addRepairSegment(newRepairSegment);
@@ -70,7 +72,6 @@ public class MemoryRepairSegmentDao implements IRepairSegmentDao {
   public boolean updateRepairSegmentUnsafe(RepairSegment newRepairSegment) {
     return updateRepairSegment(newRepairSegment);
   }
-
 
   @Override
   public Optional<RepairSegment> getRepairSegment(UUID runId, UUID segmentId) {
@@ -90,7 +91,8 @@ public class MemoryRepairSegmentDao implements IRepairSegmentDao {
   }
 
   @Override
-  public Collection<RepairSegment> getSegmentsWithState(UUID runId, RepairSegment.State segmentState) {
+  public Collection<RepairSegment> getSegmentsWithState(
+      UUID runId, RepairSegment.State segmentState) {
     List<RepairSegment> segments = Lists.newArrayList();
     for (RepairSegment segment : memoryStorageFacade.getRepairSegmentsByRunId(runId)) {
       if (segment.getState() == segmentState) {

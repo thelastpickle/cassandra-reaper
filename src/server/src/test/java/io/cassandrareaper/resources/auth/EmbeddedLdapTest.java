@@ -19,6 +19,9 @@ package io.cassandrareaper.resources.auth;
 
 import java.util.List;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+
 import com.unboundid.ldap.sdk.LDAPInterface;
 import com.unboundid.ldap.sdk.SearchResult;
 import com.unboundid.ldap.sdk.SearchResultEntry;
@@ -28,24 +31,23 @@ import org.junit.Test;
 import org.zapodot.junit.ldap.EmbeddedLdapRule;
 import org.zapodot.junit.ldap.EmbeddedLdapRuleBuilder;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-
-/**
- * Test using objectclass: org.zapodot:embedded-ldap-junit
- */
+/** Test using objectclass: org.zapodot:embedded-ldap-junit */
 public final class EmbeddedLdapTest {
 
   public static final String DOMAIN_DSN = "dc=cassandra-reaper,dc=io";
 
   @Rule
-  public EmbeddedLdapRule embeddedLdapRule
-      = EmbeddedLdapRuleBuilder.newInstance().usingDomainDsn(DOMAIN_DSN).importingLdifs("test-ldap-users.ldif").build();
+  public EmbeddedLdapRule embeddedLdapRule =
+      EmbeddedLdapRuleBuilder.newInstance()
+          .usingDomainDsn(DOMAIN_DSN)
+          .importingLdifs("test-ldap-users.ldif")
+          .build();
 
   @Test
   public void shouldFindAllPersons() throws Exception {
     LDAPInterface ldapConnection = embeddedLdapRule.ldapConnection();
-    SearchResult searchResult = ldapConnection.search(DOMAIN_DSN, SearchScope.SUB, "(objectClass=person)");
+    SearchResult searchResult =
+        ldapConnection.search(DOMAIN_DSN, SearchScope.SUB, "(objectClass=person)");
     assertThat(3, equalTo(searchResult.getEntryCount()));
     List<SearchResultEntry> searchEntries = searchResult.getSearchEntries();
     assertThat(searchEntries.get(0).getAttribute("cn").getValue(), equalTo("John Steinbeck"));
@@ -57,21 +59,31 @@ public final class EmbeddedLdapTest {
   public void shouldFindExactPerson0() throws Exception {
     LDAPInterface ldapConnection = embeddedLdapRule.ldapConnection();
 
-    SearchResult searchResult = ldapConnection
-        .search("cn=John Steinbeck,ou=Users,dc=cassandra-reaper,dc=io", SearchScope.SUB, "(objectClass=person)");
+    SearchResult searchResult =
+        ldapConnection.search(
+            "cn=John Steinbeck,ou=Users,dc=cassandra-reaper,dc=io",
+            SearchScope.SUB,
+            "(objectClass=person)");
 
     assertThat(1, equalTo(searchResult.getEntryCount()));
-    assertThat(searchResult.getSearchEntries().get(0).getAttribute("cn").getValue(), equalTo("John Steinbeck"));
+    assertThat(
+        searchResult.getSearchEntries().get(0).getAttribute("cn").getValue(),
+        equalTo("John Steinbeck"));
   }
 
   @Test
   public void shouldFindExactPerson1() throws Exception {
     LDAPInterface ldapConnection = embeddedLdapRule.ldapConnection();
 
-    SearchResult searchResult = ldapConnection
-        .search("uid=sclaus,ou=Users,dc=cassandra-reaper,dc=io", SearchScope.SUB, "(objectClass=person)");
+    SearchResult searchResult =
+        ldapConnection.search(
+            "uid=sclaus,ou=Users,dc=cassandra-reaper,dc=io",
+            SearchScope.SUB,
+            "(objectClass=person)");
 
     assertThat(1, equalTo(searchResult.getEntryCount()));
-    assertThat(searchResult.getSearchEntries().get(0).getAttribute("cn").getValue(), equalTo("Santa Claus"));
+    assertThat(
+        searchResult.getSearchEntries().get(0).getAttribute("cn").getValue(),
+        equalTo("Santa Claus"));
   }
 }

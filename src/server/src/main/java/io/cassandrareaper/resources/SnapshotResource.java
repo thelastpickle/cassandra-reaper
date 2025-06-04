@@ -26,6 +26,7 @@ import io.cassandrareaper.storage.snapshot.ISnapshotDao;
 
 import java.util.List;
 import java.util.Map;
+
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
@@ -55,10 +56,16 @@ public final class SnapshotResource {
 
   public SnapshotResource(AppContext context, Environment environment, ISnapshotDao snapshotDao) {
     this.context = context;
-    snapshotManager = SnapshotService.create(
-        context,
-        environment.lifecycle().executorService("SnapshotService").minThreads(5).maxThreads(5).build(),
-        snapshotDao);
+    snapshotManager =
+        SnapshotService.create(
+            context,
+            environment
+                .lifecycle()
+                .executorService("SnapshotService")
+                .minThreads(5)
+                .maxThreads(5)
+                .build(),
+            snapshotDao);
   }
 
   /**
@@ -77,7 +84,8 @@ public final class SnapshotResource {
       @QueryParam("snapshot_name") Optional<String> snapshotName) {
 
     try {
-      Node node = Node.builder()
+      Node node =
+          Node.builder()
               .withCluster(context.storage.getClusterDao().getCluster(clusterName))
               .withHostname(host.get())
               .build();
@@ -94,14 +102,22 @@ public final class SnapshotResource {
               node);
         }
         return Response.ok()
-            .location(uriInfo.getBaseUriBuilder().path("snapshot").path(clusterName).path(host.get()).build())
+            .location(
+                uriInfo
+                    .getBaseUriBuilder()
+                    .path("snapshot")
+                    .path(clusterName)
+                    .path(host.get())
+                    .build())
             .build();
       } else {
-        return Response.status(Status.BAD_REQUEST).entity("No host was specified for taking the snapshot.").build();
+        return Response.status(Status.BAD_REQUEST)
+            .entity("No host was specified for taking the snapshot.")
+            .build();
       }
-    } catch (IllegalArgumentException  ex) {
+    } catch (IllegalArgumentException ex) {
       return Response.status(Response.Status.NOT_FOUND).entity(ex.getMessage()).build();
-    } catch (ReaperException  e) {
+    } catch (ReaperException e) {
       LOG.error(e.getMessage(), e);
       return Response.serverError().entity(e.getMessage()).build();
     }
@@ -148,16 +164,18 @@ public final class SnapshotResource {
 
   @GET
   @Path("/cluster/{clusterName}/{host}")
-  public Response listSnapshots(@PathParam("clusterName") String clusterName, @PathParam("host") String host) {
+  public Response listSnapshots(
+      @PathParam("clusterName") String clusterName, @PathParam("host") String host) {
     try {
-      Map<String, List<Snapshot>> snapshots = snapshotManager.listSnapshotsGroupedByName(
+      Map<String, List<Snapshot>> snapshots =
+          snapshotManager.listSnapshotsGroupedByName(
               Node.builder()
                   .withCluster(context.storage.getClusterDao().getCluster(clusterName))
                   .withHostname(host)
                   .build());
 
       return Response.ok().entity(snapshots).build();
-    } catch (IllegalArgumentException  ex) {
+    } catch (IllegalArgumentException ex) {
       return Response.status(Response.Status.NOT_FOUND).entity(ex.getMessage()).build();
     } catch (ReaperException e) {
       LOG.error(e.getMessage(), e);
@@ -195,14 +213,17 @@ public final class SnapshotResource {
 
     try {
       if (host.isPresent() && snapshotName.isPresent()) {
-        Node node = Node.builder()
+        Node node =
+            Node.builder()
                 .withCluster(context.storage.getClusterDao().getCluster(clusterName))
                 .withHostname(host.get())
                 .build();
 
         // check that the snapshot still exists
-        // even though this rest endpoint is not synchronised, a 404 response is helpful where possible
-        List<Snapshot> snapshots = snapshotManager.listSnapshotsGroupedByName(node).get(snapshotName.get());
+        // even though this rest endpoint is not synchronised, a 404 response is helpful where
+        // possible
+        List<Snapshot> snapshots =
+            snapshotManager.listSnapshotsGroupedByName(node).get(snapshotName.get());
 
         if (null == snapshots || snapshots.isEmpty()) {
           return Response.status(Status.NOT_FOUND).build();
@@ -214,7 +235,7 @@ public final class SnapshotResource {
             .entity("Host and snapshot name are mandatory for clearing a snapshot.")
             .build();
       }
-    } catch (IllegalArgumentException  ex) {
+    } catch (IllegalArgumentException ex) {
       return Response.status(Response.Status.NOT_FOUND).entity(ex.getMessage()).build();
     } catch (ReaperException e) {
       LOG.error(e.getMessage(), e);
@@ -237,9 +258,10 @@ public final class SnapshotResource {
     try {
       if (clusterName.isPresent() && snapshotName.isPresent()) {
         // check that the snapshot still exists
-        // even though this rest endpoint is not synchronised, a 404 response is helpful where possible
-        Map<String, List<Snapshot>> snapshots
-             = snapshotManager.listSnapshotsClusterWide(clusterName.get()).get(snapshotName.get());
+        // even though this rest endpoint is not synchronised, a 404 response is helpful where
+        // possible
+        Map<String, List<Snapshot>> snapshots =
+            snapshotManager.listSnapshotsClusterWide(clusterName.get()).get(snapshotName.get());
 
         if (null == snapshots || snapshots.isEmpty()) {
           return Response.status(Status.NOT_FOUND).build();

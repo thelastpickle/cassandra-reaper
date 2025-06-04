@@ -26,8 +26,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 public final class ClusterStatus {
 
-  @JsonProperty
-  public final String name;
+  @JsonProperty public final String name;
 
   @JsonProperty("jmx_username")
   public final String jmxUsername;

@@ -39,7 +39,8 @@ public class MemoryRepairScheduleDao implements IRepairScheduleDao {
   private final MemoryRepairUnitDao memoryRepairUnitDao;
   private final MemoryStorageFacade storage;
 
-  public MemoryRepairScheduleDao(MemoryStorageFacade storage, MemoryRepairUnitDao memoryRepairUnitDao) {
+  public MemoryRepairScheduleDao(
+      MemoryStorageFacade storage, MemoryRepairUnitDao memoryRepairUnitDao) {
     this.memoryRepairUnitDao = memoryRepairUnitDao;
     this.storage = storage;
   }
@@ -69,11 +70,13 @@ public class MemoryRepairScheduleDao implements IRepairScheduleDao {
   }
 
   @Override
-  public Collection<RepairSchedule> getRepairSchedulesForCluster(String clusterName, boolean incremental) {
+  public Collection<RepairSchedule> getRepairSchedulesForCluster(
+      String clusterName, boolean incremental) {
     return getRepairSchedulesForCluster(clusterName).stream()
-        .filter(schedule -> memoryRepairUnitDao
-              .getRepairUnit(schedule.getRepairUnitId())
-              .getIncrementalRepair() == incremental)
+        .filter(
+            schedule ->
+                memoryRepairUnitDao.getRepairUnit(schedule.getRepairUnitId()).getIncrementalRepair()
+                    == incremental)
         .collect(Collectors.toList());
   }
 
@@ -90,11 +93,13 @@ public class MemoryRepairScheduleDao implements IRepairScheduleDao {
   }
 
   @Override
-  public Collection<RepairSchedule> getRepairSchedulesForClusterAndKeyspace(String clusterName, String keyspaceName) {
+  public Collection<RepairSchedule> getRepairSchedulesForClusterAndKeyspace(
+      String clusterName, String keyspaceName) {
     Collection<RepairSchedule> foundRepairSchedules = new ArrayList<RepairSchedule>();
     for (RepairSchedule repairSchedule : storage.getRepairSchedules()) {
       RepairUnit repairUnit = memoryRepairUnitDao.getRepairUnit(repairSchedule.getRepairUnitId());
-      if (repairUnit.getClusterName().equals(clusterName) && repairUnit.getKeyspaceName().equals(keyspaceName)) {
+      if (repairUnit.getClusterName().equals(clusterName)
+          && repairUnit.getKeyspaceName().equals(keyspaceName)) {
         foundRepairSchedules.add(repairSchedule);
       }
     }

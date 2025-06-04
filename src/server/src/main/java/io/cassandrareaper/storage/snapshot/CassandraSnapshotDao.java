@@ -25,7 +25,6 @@ import com.datastax.oss.driver.api.core.cql.ResultSet;
 import com.datastax.oss.driver.api.core.cql.Row;
 import org.joda.time.DateTime;
 
-
 public class CassandraSnapshotDao implements ISnapshotDao {
 
   PreparedStatement getSnapshotPrepStmt;
@@ -44,16 +43,20 @@ public class CassandraSnapshotDao implements ISnapshotDao {
     deleteSnapshotPrepStmt =
         session.prepare("DELETE FROM snapshot WHERE cluster = ? and snapshot_name = ?");
     saveSnapshotPrepStmt =
-        session.prepare("INSERT INTO snapshot (cluster, snapshot_name, owner, cause, creation_time)"
-            + " VALUES(?,?,?,?,?)");
-
+        session.prepare(
+            "INSERT INTO snapshot (cluster, snapshot_name, owner, cause, creation_time)"
+                + " VALUES(?,?,?,?,?)");
   }
 
   @Override
   public boolean saveSnapshot(Snapshot snapshot) {
-    session.execute(saveSnapshotPrepStmt.bind(snapshot.getClusterName(), snapshot.getName(),
-        snapshot.getOwner().orElse("reaper"), snapshot.getCause().orElse("taken with reaper"),
-        Instant.ofEpochMilli(snapshot.getCreationDate().get().getMillis())));
+    session.execute(
+        saveSnapshotPrepStmt.bind(
+            snapshot.getClusterName(),
+            snapshot.getName(),
+            snapshot.getOwner().orElse("reaper"),
+            snapshot.getCause().orElse("taken with reaper"),
+            Instant.ofEpochMilli(snapshot.getCreationDate().get().getMillis())));
 
     return true;
   }
@@ -71,7 +74,9 @@ public class CassandraSnapshotDao implements ISnapshotDao {
 
     ResultSet result = session.execute(getSnapshotPrepStmt.bind(clusterName, snapshotName));
     for (Row row : result.all()) {
-      snapshotBuilder.withCause(row.getString("cause")).withOwner(row.getString("owner"))
+      snapshotBuilder
+          .withCause(row.getString("cause"))
+          .withOwner(row.getString("owner"))
           .withCreationDate(new DateTime(row.getInstant("creation_time").toEpochMilli()));
     }
 
