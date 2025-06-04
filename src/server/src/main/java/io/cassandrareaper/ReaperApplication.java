@@ -18,6 +18,13 @@
 
 package io.cassandrareaper;
 
+import static io.cassandrareaper.metrics.PrometheusMetricsConfiguration.getCustomSampleMethodBuilder;
+
+import com.codahale.metrics.InstrumentedScheduledExecutorService;
+import com.fasterxml.jackson.datatype.joda.JodaModule;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Preconditions;
 import io.cassandrareaper.ReaperApplicationConfiguration.DatacenterAvailability;
 import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.Node;
@@ -49,21 +56,6 @@ import io.cassandrareaper.service.RepairManager;
 import io.cassandrareaper.service.SchedulingManager;
 import io.cassandrareaper.storage.IDistributedStorage;
 import io.cassandrareaper.storage.InitializeStorage;
-
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.util.EnumSet;
-import java.util.Optional;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
-import javax.servlet.DispatcherType;
-import javax.servlet.FilterRegistration;
-
-import com.codahale.metrics.InstrumentedScheduledExecutorService;
-import com.fasterxml.jackson.datatype.joda.JodaModule;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Preconditions;
 import io.dropwizard.assets.AssetsBundle;
 import io.dropwizard.client.HttpClientBuilder;
 import io.dropwizard.configuration.EnvironmentVariableSubstitutor;
@@ -74,6 +66,14 @@ import io.dropwizard.core.setup.Environment;
 import io.prometheus.client.CollectorRegistry;
 import io.prometheus.client.dropwizard.DropwizardExports;
 import io.prometheus.client.exporter.MetricsServlet;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.EnumSet;
+import java.util.Optional;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import javax.servlet.DispatcherType;
+import javax.servlet.FilterRegistration;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
@@ -84,8 +84,6 @@ import org.secnod.dropwizard.shiro.ShiroBundle;
 import org.secnod.dropwizard.shiro.ShiroConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static io.cassandrareaper.metrics.PrometheusMetricsConfiguration.getCustomSampleMethodBuilder;
 
 public final class ReaperApplication extends Application<ReaperApplicationConfiguration> {
 
@@ -103,12 +101,16 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
   }
 
   private static void setupSse(Environment environment) {
-    // Enabling gzip buffering will prevent flushing of server-side-events, so we disable compression for SSE
-    environment.lifecycle().addServerLifecycleListener(server -> {
-      for (Handler handler : server.getChildHandlersByClass(GzipHandler.class)) {
-        ((GzipHandler) handler).addExcludedMimeTypes("text/event-stream");
-      }
-    });
+    // Enabling gzip buffering will prevent flushing of server-side-events, so we disable
+    // compression for SSE
+    environment
+        .lifecycle()
+        .addServerLifecycleListener(
+            server -> {
+              for (Handler handler : server.getChildHandlersByClass(GzipHandler.class)) {
+                ((GzipHandler) handler).addExcludedMimeTypes("text/event-stream");
+              }
+            });
   }
 
   @Override
@@ -122,19 +124,25 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
   }
 
   /**
-   * Before a Dropwizard application can provide the command-line interface, parse a configuration file, or run as a
-   * server, it must first go through a bootstrapping phase. You can add Bundles, Commands, or register Jackson modules
-   * to allow you to include custom types as part of your configuration class.
+   * Before a Dropwizard application can provide the command-line interface, parse a configuration
+   * file, or run as a server, it must first go through a bootstrapping phase. You can add Bundles,
+   * Commands, or register Jackson modules to allow you to include custom types as part of your
+   * configuration class.
    */
   @Override
   public void initialize(Bootstrap<ReaperApplicationConfiguration> bootstrap) {
-    bootstrap.addCommand(new ReaperDbMigrationCommand("schema-migration", "Performs database schema migrations"));
+    bootstrap.addCommand(
+        new ReaperDbMigrationCommand("schema-migration", "Performs database schema migrations"));
     bootstrap.addBundle(new AssetsBundle("/assets/", "/webui", "index.html"));
-    bootstrap.getObjectMapper().registerModule(new JavaTimeModule()).registerModule(new JodaModule());
+    bootstrap
+        .getObjectMapper()
+        .registerModule(new JavaTimeModule())
+        .registerModule(new JodaModule());
 
     // enable using environment variables in yml files
-    final SubstitutingSourceProvider envSourceProvider = new SubstitutingSourceProvider(
-        bootstrap.getConfigurationSourceProvider(), new EnvironmentVariableSubstitutor(false));
+    final SubstitutingSourceProvider envSourceProvider =
+        new SubstitutingSourceProvider(
+            bootstrap.getConfigurationSourceProvider(), new EnvironmentVariableSubstitutor(false));
     bootstrap.setConfigurationSourceProvider(envSourceProvider);
 
     bootstrap.addBundle(
@@ -164,8 +172,9 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
     checkConfiguration(config);
     context.config = config;
     context.metricRegistry = environment.metrics();
-    CollectorRegistry.defaultRegistry.register(new DropwizardExports(environment.metrics(),
-        new PrometheusMetricsFilter(), getCustomSampleMethodBuilder()));
+    CollectorRegistry.defaultRegistry.register(
+        new DropwizardExports(
+            environment.metrics(), new PrometheusMetricsFilter(), getCustomSampleMethodBuilder()));
 
     environment
         .admin()
@@ -174,30 +183,41 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
 
     int repairThreads = config.getRepairRunThreadCount();
     int maxParallelRepairs = config.getMaxParallelRepairs();
-    LOG.info("initializing runner thread pool with {} threads and {} repair runners",
-        repairThreads, maxParallelRepairs);
+    LOG.info(
+        "initializing runner thread pool with {} threads and {} repair runners",
+        repairThreads,
+        maxParallelRepairs);
 
     tryInitializeStorage(config, environment);
 
-    Cryptograph cryptograph = context.config == null || context.config.getCryptograph() == null
-        ? new NoopCrypotograph() : context.config.getCryptograph().create();
+    Cryptograph cryptograph =
+        context.config == null || context.config.getCryptograph() == null
+            ? new NoopCrypotograph()
+            : context.config.getCryptograph().create();
 
     initializeManagement(context, environment, cryptograph);
 
-    context.repairManager = RepairManager.create(
-        context,
-        environment.lifecycle().scheduledExecutorService("RepairRunner").threads(repairThreads).build(),
-        config.getRepairManagerSchedulingIntervalSeconds(),
-        TimeUnit.SECONDS,
-        maxParallelRepairs,
-        context.storage.getRepairRunDao());
+    context.repairManager =
+        RepairManager.create(
+            context,
+            environment
+                .lifecycle()
+                .scheduledExecutorService("RepairRunner")
+                .threads(repairThreads)
+                .build(),
+            config.getRepairManagerSchedulingIntervalSeconds(),
+            TimeUnit.SECONDS,
+            maxParallelRepairs,
+            context.storage.getRepairRunDao());
 
     RequestUtils.setCorsEnabled(config.isEnableCrossOrigin());
     // Enable cross-origin requests for using external GUI applications.
     if (config.isEnableCrossOrigin() || System.getProperty("enableCrossOrigin") != null) {
-      FilterRegistration.Dynamic co = environment.servlets().addFilter("crossOriginRequests", CrossOriginFilter.class);
+      FilterRegistration.Dynamic co =
+          environment.servlets().addFilter("crossOriginRequests", CrossOriginFilter.class);
       co.setInitParameter("allowedOrigins", "*");
-      co.setInitParameter("allowedHeaders", "X-Requested-With,Content-Type,Accept,Origin,Authorization");
+      co.setInitParameter(
+          "allowedHeaders", "X-Requested-With,Content-Type,Accept,Origin,Authorization");
       co.setInitParameter("allowedMethods", "OPTIONS,GET,PUT,POST,DELETE,HEAD,PATCH");
       co.addMappingForUrlPatterns(EnumSet.allOf(DispatcherType.class), true, "/*");
     }
@@ -212,18 +232,21 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
     final PingResource pingResource = new PingResource(healthCheck);
     environment.jersey().register(pingResource);
 
-    final ClusterResource addClusterResource = ClusterResource.create(context, cryptograph,
-        context.storage.getEventsDao(),
-        context.storage.getRepairRunDao());
+    final ClusterResource addClusterResource =
+        ClusterResource.create(
+            context,
+            cryptograph,
+            context.storage.getEventsDao(),
+            context.storage.getRepairRunDao());
     environment.jersey().register(addClusterResource);
-    final RepairRunResource addRepairRunResource = new RepairRunResource(context,
-        context.storage.getRepairRunDao());
+    final RepairRunResource addRepairRunResource =
+        new RepairRunResource(context, context.storage.getRepairRunDao());
     environment.jersey().register(addRepairRunResource);
-    final RepairScheduleResource addRepairScheduleResource = new RepairScheduleResource(context,
-        context.storage.getRepairRunDao());
+    final RepairScheduleResource addRepairScheduleResource =
+        new RepairScheduleResource(context, context.storage.getRepairRunDao());
     environment.jersey().register(addRepairScheduleResource);
-    final SnapshotResource snapshotResource = new SnapshotResource(context, environment,
-        context.storage.getSnapshotDao());
+    final SnapshotResource snapshotResource =
+        new SnapshotResource(context, environment, context.storage.getSnapshotDao());
     environment.jersey().register(snapshotResource);
     final ReaperResource reaperResource = new ReaperResource(context);
     environment.jersey().register(reaperResource);
@@ -237,18 +260,21 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
     CloseableHttpClient httpClient = createHttpClient(config, environment);
 
     if (config.getHttpManagement() == null || !config.getHttpManagement().isEnabled()) {
-      ScheduledExecutorService ses = environment.lifecycle().scheduledExecutorService("Diagnostics").threads(6).build();
-      final DiagEventSubscriptionResource eventsResource = new DiagEventSubscriptionResource(context, httpClient, ses,
-          context.storage.getEventsDao());
+      ScheduledExecutorService ses =
+          environment.lifecycle().scheduledExecutorService("Diagnostics").threads(6).build();
+      final DiagEventSubscriptionResource eventsResource =
+          new DiagEventSubscriptionResource(
+              context, httpClient, ses, context.storage.getEventsDao());
       environment.jersey().register(eventsResource);
-      final DiagEventSseResource diagEvents = new DiagEventSseResource(context, httpClient, ses,
-          context.storage.getEventsDao());
+      final DiagEventSseResource diagEvents =
+          new DiagEventSseResource(context, httpClient, ses, context.storage.getEventsDao());
       environment.jersey().register(diagEvents);
     }
 
     if (config.isAccessControlEnabled()) {
       SessionHandler sessionHandler = new SessionHandler();
-      sessionHandler.setMaxInactiveInterval((int) config.getAccessControl().getSessionTimeout().getSeconds());
+      sessionHandler.setMaxInactiveInterval(
+          (int) config.getAccessControl().getSessionTimeout().getSeconds());
       RequestUtils.setSessionTimeout(config.getAccessControl().getSessionTimeout());
       environment.getApplicationContext().setSessionHandler(sessionHandler);
       environment.servlets().setSessionHandler(sessionHandler);
@@ -258,15 +284,15 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
     }
 
     Thread.sleep(1000);
-    context.schedulingManager = SchedulingManager.create(context,
-        context.storage.getRepairRunDao());
+    context.schedulingManager =
+        SchedulingManager.create(context, context.storage.getRepairRunDao());
     context.schedulingManager.start();
 
     if (config.hasAutoSchedulingEnabled()) {
-      LOG.debug("using specified configuration for auto scheduling: {}", config.getAutoScheduling());
+      LOG.debug(
+          "using specified configuration for auto scheduling: {}", config.getAutoScheduling());
       AutoSchedulingManager.start(context, context.storage.getRepairRunDao());
     }
-
 
     maybeInitializeSidecarMode(addClusterResource);
     LOG.info("resuming pending repair runs");
@@ -281,18 +307,24 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
             || DatacenterAvailability.EACH != context.config.getDatacenterAvailability(),
         "Cassandra backend storage is the only one allowing EACH datacenter availability modes.");
 
-    ScheduledExecutorService scheduler = new InstrumentedScheduledExecutorService(
-        environment.lifecycle().scheduledExecutorService("ReaperApplication-scheduler").threads(3).build(),
-        context.metricRegistry);
+    ScheduledExecutorService scheduler =
+        new InstrumentedScheduledExecutorService(
+            environment
+                .lifecycle()
+                .scheduledExecutorService("ReaperApplication-scheduler")
+                .threads(3)
+                .build(),
+            context.metricRegistry);
 
-    // SIDECAR mode must be distributed. ALL|EACH|LOCAL are lazy: we wait until we see multiple reaper instances
-    context.isDistributed
-        .compareAndSet(false, DatacenterAvailability.SIDECAR == context.config.getDatacenterAvailability());
+    // SIDECAR mode must be distributed. ALL|EACH|LOCAL are lazy: we wait until we see multiple
+    // reaper instances
+    context.isDistributed.compareAndSet(
+        false, DatacenterAvailability.SIDECAR == context.config.getDatacenterAvailability());
 
-    // Allowing multiple Reaper instances require concurrent database polls for repair and metrics statuses
+    // Allowing multiple Reaper instances require concurrent database polls for repair and metrics
+    // statuses
     scheduleRepairManager(scheduler);
     scheduleHeartbeat(scheduler);
-
 
     context.repairManager.resumeRunningRepairRuns();
     schedulePurge(scheduler);
@@ -301,18 +333,21 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
     LOG.warn("Reaper is ready to get things done!");
   }
 
-
-  private void initializeManagement(AppContext context, Environment environment, Cryptograph cryptograph) {
+  private void initializeManagement(
+      AppContext context, Environment environment, Cryptograph cryptograph) {
     if (context.managementConnectionFactory == null) {
       LOG.info("no management connection factory given in context, creating default");
-      if (context.config.getHttpManagement() == null || !context.config.getHttpManagement().isEnabled()) {
-        LOG.info("HTTP management connection config not set, or set disabled. Creating JMX connection factory instead");
-        context.managementConnectionFactory = new JmxManagementConnectionFactory(context, cryptograph);
+      if (context.config.getHttpManagement() == null
+          || !context.config.getHttpManagement().isEnabled()) {
+        LOG.info(
+            "HTTP management connection config not set, or set disabled. Creating JMX connection factory instead");
+        context.managementConnectionFactory =
+            new JmxManagementConnectionFactory(context, cryptograph);
       } else {
-        ScheduledExecutorService jobStatusPollerExecutor = environment.lifecycle()
-            .scheduledExecutorService("JobStatusPoller")
-            .threads(2).build();
-        context.managementConnectionFactory = new HttpManagementConnectionFactory(context, jobStatusPollerExecutor);
+        ScheduledExecutorService jobStatusPollerExecutor =
+            environment.lifecycle().scheduledExecutorService("JobStatusPoller").threads(2).build();
+        context.managementConnectionFactory =
+            new HttpManagementConnectionFactory(context, jobStatusPollerExecutor);
       }
     }
   }
@@ -323,17 +358,21 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
    * @param addClusterResource a cluster resource instance
    * @throws ReaperException any caught runtime exception
    */
-  private void maybeInitializeSidecarMode(ClusterResource addClusterResource) throws ReaperException {
+  private void maybeInitializeSidecarMode(ClusterResource addClusterResource)
+      throws ReaperException {
     if (context.config.isInSidecarMode()) {
       ClusterFacade clusterFacade = ClusterFacade.create(context);
-      Node host = Node.builder().withHostname(context.config.getEnforcedLocalNode().orElse("127.0.0.1")).build();
+      Node host =
+          Node.builder()
+              .withHostname(context.config.getEnforcedLocalNode().orElse("127.0.0.1"))
+              .build();
       try {
-        context.localNodeAddress = context.config
-            .getEnforcedLocalNode()
-            .orElse(clusterFacade.getLocalEndpoint(host));
+        context.localNodeAddress =
+            context.config.getEnforcedLocalNode().orElse(clusterFacade.getLocalEndpoint(host));
 
         LOG.info("Sidecar mode. Local node is : {}", context.localNodeAddress);
-        selfRegisterClusterForSidecar(addClusterResource, context.config.getEnforcedLocalNode().orElse("127.0.0.1"));
+        selfRegisterClusterForSidecar(
+            addClusterResource, context.config.getEnforcedLocalNode().orElse("127.0.0.1"));
       } catch (RuntimeException | InterruptedException | ReaperException e) {
         LOG.error("Failed connecting to the local node in sidecar mode {}", host, e);
         throw new ReaperException(e);
@@ -343,9 +382,8 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
 
   private boolean selfRegisterClusterForSidecar(ClusterResource addClusterResource, String seedHost)
       throws ReaperException {
-    final Optional<Cluster> cluster = addClusterResource.findClusterWithSeedHost(
-        seedHost, Optional.empty(),Optional.empty()
-    );
+    final Optional<Cluster> cluster =
+        addClusterResource.findClusterWithSeedHost(seedHost, Optional.empty(), Optional.empty());
     if (!cluster.isPresent()) {
       return false;
     }
@@ -361,8 +399,11 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
     return true;
   }
 
-  private CloseableHttpClient createHttpClient(ReaperApplicationConfiguration config, Environment environment) {
-    return new HttpClientBuilder(environment).using(config.getHttpClientConfiguration()).build(getName());
+  private CloseableHttpClient createHttpClient(
+      ReaperApplicationConfiguration config, Environment environment) {
+    return new HttpClientBuilder(environment)
+        .using(config.getHttpClientConfiguration())
+        .build(getName());
   }
 
   private void scheduleRepairManager(ScheduledExecutorService scheduler) {
@@ -373,9 +414,9 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
               context.repairManager.resumeRunningRepairRuns();
             } catch (ReaperException | RuntimeException e) {
               // test-pollution: grim_reaper trashes this log error
-              //if (!Boolean.getBoolean("grim.reaper.running")) {
+              // if (!Boolean.getBoolean("grim.reaper.running")) {
               LOG.error("Couldn't resume running repair runs", e);
-              //}
+              // }
             }
           }
         },
@@ -393,9 +434,9 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
             heart.beat();
           } catch (RuntimeException e) {
             // test-pollution: grim_reaper trashes this log error
-            //if (!Boolean.getBoolean("grim.reaper.running")) {
+            // if (!Boolean.getBoolean("grim.reaper.running")) {
             LOG.error("Couldn't heartbeat", e);
-            //}
+            // }
           }
         },
         0,
@@ -404,8 +445,8 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
   }
 
   private void schedulePurge(ScheduledExecutorService scheduler) {
-    final PurgeService purgeManager = PurgeService.create(context,
-        context.storage.getRepairRunDao());
+    final PurgeService purgeManager =
+        PurgeService.create(context, context.storage.getRepairRunDao());
 
     scheduler.scheduleWithFixedDelay(
         () -> {
@@ -435,10 +476,10 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
       if (config.getHttpManagement().isEnabled()) {
         if (config.getHttpManagement().getTruststoresDir() != null) {
           if (!Files.exists(Paths.get(config.getHttpManagement().getTruststoresDir()))) {
-            throw new RuntimeException(String.format(
-                "HttpManagement truststores directory is configured as %s but it does not exist",
-                config.getHttpManagement().getTruststoresDir()
-            ));
+            throw new RuntimeException(
+                String.format(
+                    "HttpManagement truststores directory is configured as %s but it does not exist",
+                    config.getHttpManagement().getTruststoresDir()));
           }
         }
       }
@@ -452,8 +493,9 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
       int storageFailures = 0;
       while (true) {
         try {
-          context.storage = InitializeStorage.initializeStorage(
-              config, environment, context.reaperInstanceId).initializeStorageBackend();
+          context.storage =
+              InitializeStorage.initializeStorage(config, environment, context.reaperInstanceId)
+                  .initializeStorageBackend();
 
           // Allows to execute cleanup queries as shutdown hooks
           environment.lifecycle().manage(context.storage);
@@ -462,7 +504,8 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
           LOG.error("Storage is not ready yet, trying again to connect shortly...", e);
           storageFailures++;
           if (storageFailures > 60) {
-            throw new ReaperException("Too many failures when trying to connect storage. Exiting :'(");
+            throw new ReaperException(
+                "Too many failures when trying to connect storage. Exiting :'(");
           }
           Thread.sleep(10000);
         }

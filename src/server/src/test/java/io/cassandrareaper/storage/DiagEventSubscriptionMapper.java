@@ -18,8 +18,8 @@
 
 package io.cassandrareaper.storage;
 
+import com.google.common.collect.ImmutableSet;
 import io.cassandrareaper.core.DiagEventSubscription;
-
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
@@ -27,11 +27,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
-import com.google.common.collect.ImmutableSet;
-
-
 public final class DiagEventSubscriptionMapper {
-
 
   private Set<String> parseStringArray(Object obj) {
     Set<String> values = Collections.emptySet();

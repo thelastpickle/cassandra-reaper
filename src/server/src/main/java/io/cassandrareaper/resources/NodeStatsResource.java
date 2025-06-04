@@ -15,13 +15,13 @@
 
 package io.cassandrareaper.resources;
 
+import com.google.common.base.Preconditions;
 import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Node;
 import io.cassandrareaper.management.ClusterFacade;
 import io.cassandrareaper.service.CompactionService;
 import io.cassandrareaper.service.MetricsService;
-
 import java.util.List;
 import java.util.Map;
 import javax.ws.rs.GET;
@@ -32,8 +32,6 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
-
-import com.google.common.base.Preconditions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -61,13 +59,17 @@ public final class NodeStatsResource {
    */
   @GET
   @Path("/tpstats/{clusterName}/{host}")
-  public Response getTpStats(@Context UriInfo uriInfo, @PathParam("clusterName") String clusterName,
+  public Response getTpStats(
+      @Context UriInfo uriInfo,
+      @PathParam("clusterName") String clusterName,
       @PathParam("host") String host) {
 
     try {
       Node node =
-          Node.builder().withCluster(context.storage.getClusterDao().getCluster(clusterName))
-              .withHostname(host).build();
+          Node.builder()
+              .withCluster(context.storage.getClusterDao().getCluster(clusterName))
+              .withHostname(host)
+              .build();
 
       return Response.ok().entity(metricsGrabber.getTpStats(node)).build();
     } catch (RuntimeException | ReaperException e) {
@@ -83,13 +85,17 @@ public final class NodeStatsResource {
    */
   @GET
   @Path("/dropped/{clusterName}/{host}")
-  public Response getDroppedMessages(@Context UriInfo uriInfo,
-      @PathParam("clusterName") String clusterName, @PathParam("host") String host) {
+  public Response getDroppedMessages(
+      @Context UriInfo uriInfo,
+      @PathParam("clusterName") String clusterName,
+      @PathParam("host") String host) {
 
     try {
       Node node =
-          Node.builder().withCluster(context.storage.getClusterDao().getCluster(clusterName))
-              .withHostname(host).build();
+          Node.builder()
+              .withCluster(context.storage.getClusterDao().getCluster(clusterName))
+              .withHostname(host)
+              .build();
 
       return Response.ok().entity(metricsGrabber.getDroppedMessages(node)).build();
     } catch (RuntimeException | ReaperException e) {
@@ -105,13 +111,17 @@ public final class NodeStatsResource {
    */
   @GET
   @Path("/clientRequestLatencies/{clusterName}/{host}")
-  public Response getClientRequestLatencies(@Context UriInfo uriInfo,
-      @PathParam("clusterName") String clusterName, @PathParam("host") String host) {
+  public Response getClientRequestLatencies(
+      @Context UriInfo uriInfo,
+      @PathParam("clusterName") String clusterName,
+      @PathParam("host") String host) {
 
     try {
       Node node =
-          Node.builder().withCluster(context.storage.getClusterDao().getCluster(clusterName))
-              .withHostname(host).build();
+          Node.builder()
+              .withCluster(context.storage.getClusterDao().getCluster(clusterName))
+              .withHostname(host)
+              .build();
 
       return Response.ok().entity(metricsGrabber.getClientRequestLatencies(node)).build();
     } catch (RuntimeException | ReaperException e) {
@@ -127,13 +137,17 @@ public final class NodeStatsResource {
    */
   @GET
   @Path("/compactions/{clusterName}/{host}")
-  public Response listCompactions(@Context UriInfo uriInfo,
-      @PathParam("clusterName") String clusterName, @PathParam("host") String host) {
+  public Response listCompactions(
+      @Context UriInfo uriInfo,
+      @PathParam("clusterName") String clusterName,
+      @PathParam("host") String host) {
 
     try {
       Node node =
-          Node.builder().withCluster(context.storage.getClusterDao().getCluster(clusterName))
-              .withHostname(host).build();
+          Node.builder()
+              .withCluster(context.storage.getClusterDao().getCluster(clusterName))
+              .withHostname(host)
+              .build();
 
       return Response.ok().entity(compactionService.listActiveCompactions(node)).build();
     } catch (RuntimeException | ReaperException e) {
@@ -149,15 +163,18 @@ public final class NodeStatsResource {
    */
   @GET
   @Path("/tokens/{clusterName}/{host}")
-  public Response listTokens(@Context UriInfo uriInfo, @PathParam("clusterName") String clusterName,
+  public Response listTokens(
+      @Context UriInfo uriInfo,
+      @PathParam("clusterName") String clusterName,
       @PathParam("host") String host) {
 
     try {
-      Preconditions.checkState(clusterName != null && !clusterName.isEmpty(),
-          "Cluster name must be set");
+      Preconditions.checkState(
+          clusterName != null && !clusterName.isEmpty(), "Cluster name must be set");
 
-      Map<String, List<String>> tokens = ClusterFacade.create(context)
-          .getTokensByNode(context.storage.getClusterDao().getCluster(clusterName));
+      Map<String, List<String>> tokens =
+          ClusterFacade.create(context)
+              .getTokensByNode(context.storage.getClusterDao().getCluster(clusterName));
 
       return Response.ok().entity(tokens.get(host)).build();
     } catch (RuntimeException | ReaperException e) {

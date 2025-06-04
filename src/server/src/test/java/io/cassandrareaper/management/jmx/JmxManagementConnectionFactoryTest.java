@@ -17,6 +17,16 @@
 
 package io.cassandrareaper.management.jmx;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+import com.codahale.metrics.MetricRegistry;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperApplicationConfiguration;
 import io.cassandrareaper.core.Cluster;
@@ -25,22 +35,10 @@ import io.cassandrareaper.core.Node;
 import io.cassandrareaper.crypto.Cryptograph;
 import io.cassandrareaper.storage.IStorageDao;
 import io.cassandrareaper.storage.cluster.IClusterDao;
-
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-
-import com.codahale.metrics.MetricRegistry;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 public class JmxManagementConnectionFactoryTest {
 
@@ -53,21 +51,26 @@ public class JmxManagementConnectionFactoryTest {
     context.metricRegistry = mock(MetricRegistry.class);
     when(context.metricRegistry.timer(any())).thenReturn(mock(com.codahale.metrics.Timer.class));
 
-    JmxCredentials globalYamlJmxAuth = JmxCredentials.builder()
-        .withUsername("global").withPassword("foo1").build();
-    JmxCredentials clusterYamlJmxAuth = JmxCredentials.builder()
-        .withUsername("cluster").withPassword("foo2").build();
-    JmxCredentials clusterStorageJmxAuth = JmxCredentials.builder()
-        .withUsername("storage").withPassword("foo3").build();
-    Cluster cluster = Cluster.builder().withName("FooCluster")
-        .withSeedHosts(ImmutableSet.of("127.0.0.1")).withJmxCredentials(clusterStorageJmxAuth).build();
+    JmxCredentials globalYamlJmxAuth =
+        JmxCredentials.builder().withUsername("global").withPassword("foo1").build();
+    JmxCredentials clusterYamlJmxAuth =
+        JmxCredentials.builder().withUsername("cluster").withPassword("foo2").build();
+    JmxCredentials clusterStorageJmxAuth =
+        JmxCredentials.builder().withUsername("storage").withPassword("foo3").build();
+    Cluster cluster =
+        Cluster.builder()
+            .withName("FooCluster")
+            .withSeedHosts(ImmutableSet.of("127.0.0.1"))
+            .withJmxCredentials(clusterStorageJmxAuth)
+            .build();
 
-    JmxManagementConnectionFactory connectionFactory = new JmxManagementConnectionFactory(context,
-        mock(Cryptograph.class));
+    JmxManagementConnectionFactory connectionFactory =
+        new JmxManagementConnectionFactory(context, mock(Cryptograph.class));
     connectionFactory.setJmxAuth(globalYamlJmxAuth);
     connectionFactory.setJmxCredentials(ImmutableMap.of(cluster.getName(), clusterYamlJmxAuth));
 
-    Optional<JmxCredentials> jmxCredentials = connectionFactory.getJmxCredentialsForCluster(Optional.of(cluster));
+    Optional<JmxCredentials> jmxCredentials =
+        connectionFactory.getJmxCredentialsForCluster(Optional.of(cluster));
 
     assertTrue(jmxCredentials.isPresent());
     assertEquals(clusterStorageJmxAuth.getUsername(), jmxCredentials.get().getUsername());
@@ -83,18 +86,22 @@ public class JmxManagementConnectionFactoryTest {
     context.metricRegistry = mock(MetricRegistry.class);
     when(context.metricRegistry.timer(any())).thenReturn(mock(com.codahale.metrics.Timer.class));
 
-    JmxCredentials globalYamlJmxAuth = JmxCredentials.builder()
-        .withUsername("global").withPassword("foo1").build();
-    JmxCredentials clusterYamlJmxAuth = JmxCredentials.builder()
-        .withUsername("cluster").withPassword("foo2").build();
-    Cluster cluster = Cluster.builder().withName("FooCluster")
-        .withSeedHosts(ImmutableSet.of("127.0.0.1")).build();
-    JmxManagementConnectionFactory connectionFactory = new JmxManagementConnectionFactory(context,
-        mock(Cryptograph.class));
+    JmxCredentials globalYamlJmxAuth =
+        JmxCredentials.builder().withUsername("global").withPassword("foo1").build();
+    JmxCredentials clusterYamlJmxAuth =
+        JmxCredentials.builder().withUsername("cluster").withPassword("foo2").build();
+    Cluster cluster =
+        Cluster.builder()
+            .withName("FooCluster")
+            .withSeedHosts(ImmutableSet.of("127.0.0.1"))
+            .build();
+    JmxManagementConnectionFactory connectionFactory =
+        new JmxManagementConnectionFactory(context, mock(Cryptograph.class));
     connectionFactory.setJmxAuth(globalYamlJmxAuth);
     connectionFactory.setJmxCredentials(ImmutableMap.of(cluster.getName(), clusterYamlJmxAuth));
 
-    Optional<JmxCredentials> jmxCredentials = connectionFactory.getJmxCredentialsForCluster(Optional.of(cluster));
+    Optional<JmxCredentials> jmxCredentials =
+        connectionFactory.getJmxCredentialsForCluster(Optional.of(cluster));
 
     assertTrue(jmxCredentials.isPresent());
     assertEquals(clusterYamlJmxAuth.getUsername(), jmxCredentials.get().getUsername());
@@ -110,16 +117,20 @@ public class JmxManagementConnectionFactoryTest {
     context.metricRegistry = mock(MetricRegistry.class);
     when(context.metricRegistry.timer(any())).thenReturn(mock(com.codahale.metrics.Timer.class));
 
-    JmxCredentials globalYamlJmxAuth = JmxCredentials.builder()
-        .withUsername("global").withPassword("foo1").build();
-    Cluster cluster = Cluster.builder().withName("FooCluster")
-        .withSeedHosts(ImmutableSet.of("127.0.0.1")).build();
+    JmxCredentials globalYamlJmxAuth =
+        JmxCredentials.builder().withUsername("global").withPassword("foo1").build();
+    Cluster cluster =
+        Cluster.builder()
+            .withName("FooCluster")
+            .withSeedHosts(ImmutableSet.of("127.0.0.1"))
+            .build();
 
-    JmxManagementConnectionFactory connectionFactory = new JmxManagementConnectionFactory(context,
-        mock(Cryptograph.class));
+    JmxManagementConnectionFactory connectionFactory =
+        new JmxManagementConnectionFactory(context, mock(Cryptograph.class));
     connectionFactory.setJmxAuth(globalYamlJmxAuth);
 
-    Optional<JmxCredentials> jmxCredentials = connectionFactory.getJmxCredentialsForCluster(Optional.of(cluster));
+    Optional<JmxCredentials> jmxCredentials =
+        connectionFactory.getJmxCredentialsForCluster(Optional.of(cluster));
 
     assertTrue(jmxCredentials.isPresent());
     assertEquals(globalYamlJmxAuth.getUsername(), jmxCredentials.get().getUsername());
@@ -135,13 +146,17 @@ public class JmxManagementConnectionFactoryTest {
     when(context.metricRegistry.timer(any())).thenReturn(mock(com.codahale.metrics.Timer.class));
     when(context.storage.getClusterDao()).thenReturn(mock(IClusterDao.class));
 
-    Cluster cluster = Cluster.builder().withName("FooCluster")
-        .withSeedHosts(ImmutableSet.of("127.0.0.1")).build();
+    Cluster cluster =
+        Cluster.builder()
+            .withName("FooCluster")
+            .withSeedHosts(ImmutableSet.of("127.0.0.1"))
+            .build();
 
-    JmxManagementConnectionFactory connectionFactory = new JmxManagementConnectionFactory(context,
-        mock(Cryptograph.class));
+    JmxManagementConnectionFactory connectionFactory =
+        new JmxManagementConnectionFactory(context, mock(Cryptograph.class));
 
-    Optional<JmxCredentials> jmxCredentials = connectionFactory.getJmxCredentialsForCluster(Optional.of(cluster));
+    Optional<JmxCredentials> jmxCredentials =
+        connectionFactory.getJmxCredentialsForCluster(Optional.of(cluster));
 
     assertFalse(jmxCredentials.isPresent());
   }
@@ -154,11 +169,11 @@ public class JmxManagementConnectionFactoryTest {
     when(context.storage.getClusterDao()).thenReturn(mock(IClusterDao.class));
     context.metricRegistry = mock(MetricRegistry.class);
     when(context.metricRegistry.timer(any())).thenReturn(mock(com.codahale.metrics.Timer.class));
-    JmxManagementConnectionFactory connectionFactory = new JmxManagementConnectionFactory(context,
-        mock(Cryptograph.class));
-    String host = connectionFactory.determineHost(Node.builder()
-        .withHostname("cc43:a32a:604:20b8:8201:ef29:3c20:c1d2")
-        .build());
+    JmxManagementConnectionFactory connectionFactory =
+        new JmxManagementConnectionFactory(context, mock(Cryptograph.class));
+    String host =
+        connectionFactory.determineHost(
+            Node.builder().withHostname("cc43:a32a:604:20b8:8201:ef29:3c20:c1d2").build());
     assertEquals("[cc43:a32a:604:20b8:8201:ef29:3c20:c1d2]:7199", host);
   }
 
@@ -174,8 +189,8 @@ public class JmxManagementConnectionFactoryTest {
     when(context.storage.getClusterDao()).thenReturn(mock(IClusterDao.class));
     context.metricRegistry = mock(MetricRegistry.class);
     when(context.metricRegistry.timer(any())).thenReturn(mock(com.codahale.metrics.Timer.class));
-    JmxManagementConnectionFactory connectionFactory = new JmxManagementConnectionFactory(context,
-        mock(Cryptograph.class));
+    JmxManagementConnectionFactory connectionFactory =
+        new JmxManagementConnectionFactory(context, mock(Cryptograph.class));
     connectionFactory.setJmxPorts(jmxPorts);
     String host = connectionFactory.determineHost(Node.builder().withHostname("127.0.0.2").build());
     assertEquals("127.0.0.2:7200", host);
@@ -189,8 +204,8 @@ public class JmxManagementConnectionFactoryTest {
     context.config = new ReaperApplicationConfiguration();
     context.metricRegistry = mock(MetricRegistry.class);
     when(context.metricRegistry.timer(any())).thenReturn(mock(com.codahale.metrics.Timer.class));
-    JmxManagementConnectionFactory connectionFactory = new JmxManagementConnectionFactory(context,
-        mock(Cryptograph.class));
+    JmxManagementConnectionFactory connectionFactory =
+        new JmxManagementConnectionFactory(context, mock(Cryptograph.class));
     String host = connectionFactory.determineHost(Node.builder().withHostname("127.0.0.1").build());
     assertEquals("127.0.0.1:7199", host);
   }

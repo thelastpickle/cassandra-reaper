@@ -17,10 +17,9 @@
 
 package io.cassandrareaper.core;
 
-import java.util.Optional;
-
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
+import java.util.Optional;
 import org.joda.time.DateTime;
 
 @JsonDeserialize(builder = Snapshot.Builder.class)

@@ -17,6 +17,10 @@
 
 package io.cassandrareaper.service;
 
+import static java.lang.String.format;
+
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
 import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
@@ -24,20 +28,14 @@ import io.cassandrareaper.core.RepairSchedule;
 import io.cassandrareaper.core.RepairUnit;
 import io.cassandrareaper.management.ClusterFacade;
 import io.cassandrareaper.storage.repairrun.IRepairRunDao;
-
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
-
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Sets;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static java.lang.String.format;
 
 public final class ClusterRepairScheduler {
 
@@ -56,32 +54,30 @@ public final class ClusterRepairScheduler {
   }
 
   public void scheduleRepairs(Cluster cluster) throws ReaperException {
-    List<String> excludedClusters = context
-        .config
-        .getAutoScheduling()
-        .getExcludedClusters()
-        .stream()
-        .map(Cluster::toSymbolicName)
-        .collect(Collectors.toList());
+    List<String> excludedClusters =
+        context.config.getAutoScheduling().getExcludedClusters().stream()
+            .map(Cluster::toSymbolicName)
+            .collect(Collectors.toList());
     if (excludedClusters.contains(cluster.getName())) {
       LOG.debug("Not creating schedules for excluded cluster {}.", cluster.getName());
       return;
     }
     AtomicInteger scheduleIndex = new AtomicInteger();
-    ScheduledRepairDiffView schedulesDiff = ScheduledRepairDiffView.compareWithExistingSchedules(context, cluster);
+    ScheduledRepairDiffView schedulesDiff =
+        ScheduledRepairDiffView.compareWithExistingSchedules(context, cluster);
     schedulesDiff.keyspacesDeleted().forEach(keyspace -> deleteRepairSchedule(cluster, keyspace));
-    schedulesDiff
-        .keyspacesWithoutSchedules()
-        .stream()
+    schedulesDiff.keyspacesWithoutSchedules().stream()
         .filter(keyspace -> keyspaceCandidateForRepair(cluster, keyspace))
         .forEach(
-            keyspace
-                -> createRepairSchedule(cluster, keyspace, nextActivationStartDate(scheduleIndex.getAndIncrement())));
+            keyspace ->
+                createRepairSchedule(
+                    cluster, keyspace, nextActivationStartDate(scheduleIndex.getAndIncrement())));
   }
 
   private DateTime nextActivationStartDate(int scheduleIndex) {
-    DateTime timeBeforeFirstSchedule
-        = DateTime.now().plus(context.config.getAutoScheduling().getTimeBeforeFirstSchedule().toMillis());
+    DateTime timeBeforeFirstSchedule =
+        DateTime.now()
+            .plus(context.config.getAutoScheduling().getTimeBeforeFirstSchedule().toMillis());
 
     if (context.config.getAutoScheduling().hasScheduleSpreadPeriod()) {
       return timeBeforeFirstSchedule.plus(
@@ -91,8 +87,11 @@ public final class ClusterRepairScheduler {
   }
 
   private void deleteRepairSchedule(Cluster cluster, String keyspace) {
-    Collection<RepairSchedule> scheduleCollection
-        = context.storage.getRepairScheduleDao().getRepairSchedulesForClusterAndKeyspace(cluster.getName(), keyspace);
+    Collection<RepairSchedule> scheduleCollection =
+        context
+            .storage
+            .getRepairScheduleDao()
+            .getRepairSchedulesForClusterAndKeyspace(cluster.getName(), keyspace);
 
     scheduleCollection.forEach(
         repairSchedule -> {
@@ -104,7 +103,10 @@ public final class ClusterRepairScheduler {
   private boolean keyspaceCandidateForRepair(Cluster cluster, String keyspace) {
     if (keyspace.toLowerCase().startsWith(ClusterRepairScheduler.SYSTEM_KEYSPACE_PREFIX)
         || context.config.getAutoScheduling().getExcludedKeyspaces().contains(keyspace)) {
-      LOG.debug("Scheduled repair skipped for system keyspace {} in cluster {}.", keyspace, cluster.getName());
+      LOG.debug(
+          "Scheduled repair skipped for system keyspace {} in cluster {}.",
+          keyspace,
+          cluster.getName());
       return false;
     }
     if (repairUnitService.getTableNamesForKeyspace(cluster, keyspace).isEmpty()) {
@@ -119,28 +121,31 @@ public final class ClusterRepairScheduler {
 
   private void createRepairSchedule(Cluster cluster, String keyspace, DateTime nextActivationTime) {
     boolean incrementalRepair = context.config.getAutoScheduling().incremental();
-    boolean subrangeIncrementalRepair = context.config.getAutoScheduling().subrangeIncrementalRepair();
+    boolean subrangeIncrementalRepair =
+        context.config.getAutoScheduling().subrangeIncrementalRepair();
 
-    RepairUnit.Builder builder = RepairUnit.builder()
-        .clusterName(cluster.getName())
-        .keyspaceName(keyspace)
-        .incrementalRepair(incrementalRepair)
-        .subrangeIncrementalRepair(subrangeIncrementalRepair)
-        .repairThreadCount(context.config.getRepairThreadCount())
-        .timeout(context.config.getHangingRepairTimeoutMins());
+    RepairUnit.Builder builder =
+        RepairUnit.builder()
+            .clusterName(cluster.getName())
+            .keyspaceName(keyspace)
+            .incrementalRepair(incrementalRepair)
+            .subrangeIncrementalRepair(subrangeIncrementalRepair)
+            .repairThreadCount(context.config.getRepairThreadCount())
+            .timeout(context.config.getHangingRepairTimeoutMins());
 
-    RepairSchedule repairSchedule = repairScheduleService.storeNewRepairSchedule(
-        cluster,
-        repairUnitService.getOrCreateRepairUnit(cluster, builder).get(),
-        context.config.getScheduleDaysBetween(),
-        nextActivationTime,
-        REPAIR_OWNER,
-        context.config.getSegmentCountPerNode(),
-        context.config.getRepairParallelism(),
-        context.config.getRepairIntensity(),
-        false,
-        context.config.getAutoScheduling().isAdaptive(),
-        context.config.getAutoScheduling().getPercentUnrepairedThreshold());
+    RepairSchedule repairSchedule =
+        repairScheduleService.storeNewRepairSchedule(
+            cluster,
+            repairUnitService.getOrCreateRepairUnit(cluster, builder).get(),
+            context.config.getScheduleDaysBetween(),
+            nextActivationTime,
+            REPAIR_OWNER,
+            context.config.getSegmentCountPerNode(),
+            context.config.getRepairParallelism(),
+            context.config.getRepairIntensity(),
+            false,
+            context.config.getAutoScheduling().isAdaptive(),
+            context.config.getAutoScheduling().getPercentUnrepairedThreshold());
 
     LOG.info("Scheduled repair created: {}", repairSchedule);
   }
@@ -154,10 +159,11 @@ public final class ClusterRepairScheduler {
       Set<String> allKeyspacesInCluster = keyspacesInCluster(context, cluster);
       Set<String> keyspacesThatHaveSchedules = keyspacesThatHaveSchedules(context, cluster);
 
-      keyspacesThatRequireSchedules
-          = Sets.difference(allKeyspacesInCluster, keyspacesThatHaveSchedules).immutableCopy();
+      keyspacesThatRequireSchedules =
+          Sets.difference(allKeyspacesInCluster, keyspacesThatHaveSchedules).immutableCopy();
 
-      keyspacesDeleted = Sets.difference(keyspacesThatHaveSchedules, allKeyspacesInCluster).immutableCopy();
+      keyspacesDeleted =
+          Sets.difference(keyspacesThatHaveSchedules, allKeyspacesInCluster).immutableCopy();
     }
 
     static ScheduledRepairDiffView compareWithExistingSchedules(AppContext context, Cluster cluster)
@@ -175,18 +181,21 @@ public final class ClusterRepairScheduler {
     }
 
     private Set<String> keyspacesThatHaveSchedules(AppContext context, Cluster cluster) {
-      Collection<RepairSchedule> currentSchedules = context.storage.getRepairScheduleDao()
-          .getRepairSchedulesForCluster(cluster.getName());
-      return currentSchedules
-          .stream()
-          .map(repairSchedule -> context.storage.getRepairUnitDao()
-              .getRepairUnit(
-                  repairSchedule.getRepairUnitId())
-              .getKeyspaceName())
+      Collection<RepairSchedule> currentSchedules =
+          context.storage.getRepairScheduleDao().getRepairSchedulesForCluster(cluster.getName());
+      return currentSchedules.stream()
+          .map(
+              repairSchedule ->
+                  context
+                      .storage
+                      .getRepairUnitDao()
+                      .getRepairUnit(repairSchedule.getRepairUnitId())
+                      .getKeyspaceName())
           .collect(Collectors.toSet());
     }
 
-    private Set<String> keyspacesInCluster(AppContext context, Cluster cluster) throws ReaperException {
+    private Set<String> keyspacesInCluster(AppContext context, Cluster cluster)
+        throws ReaperException {
       List<String> keyspaces = ClusterFacade.create(context).getKeyspaces(cluster);
       if (keyspaces.isEmpty()) {
         String message = format("No keyspace found in cluster %s", cluster.getName());

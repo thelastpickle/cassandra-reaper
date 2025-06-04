@@ -17,11 +17,10 @@
 
 package io.cassandrareaper.crypto;
 
-import javax.validation.constraints.NotNull;
-import javax.ws.rs.DefaultValue;
-
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
+import javax.validation.constraints.NotNull;
+import javax.ws.rs.DefaultValue;
 
 @JsonTypeName("symmetric")
 public class SymmetricFactory implements CryptographFactory {
@@ -56,21 +55,19 @@ public class SymmetricFactory implements CryptographFactory {
   @JsonProperty
   private Integer keyStrength;
 
-  @JsonProperty
-  @NotNull
-  private String systemPropertySecret;
+  @JsonProperty @NotNull private String systemPropertySecret;
 
   @Override
   public Cryptograph create() {
     return SymmetricCryptograph.builder()
-            .withAlgorithm(this.algorithm)
-            .withCipher(this.cipher)
-            .withCipherType(this.cipherType)
-            .withIterationCount(this.iterationCount)
-            .withKeyStrength(this.keyStrength)
-            .withSalt(this.salt)
-            .withSystemPropertySecret(this.systemPropertySecret)
-            .build();
+        .withAlgorithm(this.algorithm)
+        .withCipher(this.cipher)
+        .withCipherType(this.cipherType)
+        .withIterationCount(this.iterationCount)
+        .withKeyStrength(this.keyStrength)
+        .withSalt(this.salt)
+        .withSystemPropertySecret(this.systemPropertySecret)
+        .build();
   }
 
   public String getSalt() {
@@ -128,5 +125,4 @@ public class SymmetricFactory implements CryptographFactory {
   public void setSystemPropertySecret(String systemPropertySecret) {
     this.systemPropertySecret = systemPropertySecret;
   }
-
 }

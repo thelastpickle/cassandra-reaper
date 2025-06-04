@@ -18,9 +18,9 @@
 package io.cassandrareaper.core;
 
 public enum RepairType {
-    SUBRANGE_FULL,
-    INCREMENTAL,
-    SUBRANGE_INCREMENTAL;
+  SUBRANGE_FULL,
+  INCREMENTAL,
+  SUBRANGE_INCREMENTAL;
 
   public String getRepairType() {
     return name().toLowerCase();

@@ -18,7 +18,6 @@
 package io.cassandrareaper.core;
 
 import java.util.UUID;
-
 import org.apache.cassandra.repair.RepairParallelism;
 import org.assertj.core.api.Assertions;
 import org.joda.time.DateTime;
@@ -28,14 +27,15 @@ public final class EditableRepairScheduleTest {
 
   @Test
   public void testEditableValueInheritance() {
-    RepairSchedule repairSchedule = RepairSchedule.builder(UUID.randomUUID())
-        .daysBetween(1)
-        .intensity(1.0D)
-        .segmentCountPerNode(2)
-        .owner("test")
-        .repairParallelism(RepairParallelism.PARALLEL)
-        .nextActivation(DateTime.now())
-        .build(UUID.randomUUID());
+    RepairSchedule repairSchedule =
+        RepairSchedule.builder(UUID.randomUUID())
+            .daysBetween(1)
+            .intensity(1.0D)
+            .segmentCountPerNode(2)
+            .owner("test")
+            .repairParallelism(RepairParallelism.PARALLEL)
+            .nextActivation(DateTime.now())
+            .build(UUID.randomUUID());
 
     Assertions.assertThat(repairSchedule.getDaysBetween()).isEqualTo(1);
     Assertions.assertThat(repairSchedule.getIntensity()).isEqualTo(1.0D);

@@ -17,30 +17,25 @@
 
 package io.cassandrareaper.core;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.base.Preconditions;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.base.Preconditions;
-
 public final class DiagEventSubscription {
 
-  @JsonProperty
-  private UUID id;
+  @JsonProperty private UUID id;
 
-  @JsonProperty
-  private String cluster;
+  @JsonProperty private String cluster;
 
-  @JsonProperty
-  private String description;
+  @JsonProperty private String description;
 
   @JsonProperty("nodes")
   private Set<String> nodes;
 
-  @JsonProperty
-  private Set<String> events;
+  @JsonProperty private Set<String> events;
 
   @JsonProperty("export_sse")
   private boolean exportSse;
@@ -51,11 +46,8 @@ public final class DiagEventSubscription {
   @JsonProperty("export_http_endpoint")
   private String exportHttpEndpoint;
 
-  /**
-   * Default public constructor Required for Jackson JSON parsing.
-   */
-  public DiagEventSubscription() {
-  }
+  /** Default public constructor Required for Jackson JSON parsing. */
+  public DiagEventSubscription() {}
 
   public DiagEventSubscription(
       Optional<UUID> id,
@@ -149,15 +141,26 @@ public final class DiagEventSubscription {
   @Override
   public String toString() {
     return "DiagEventSubscription{"
-            + "id=" + id
-            + ", cluster='" + cluster + '\''
-            + ", description='" + description + '\''
-            + ", nodes=" + nodes
-            + ", events=" + events
-            + ", exportSse=" + exportSse
-            + ", exportFileLogger='" + exportFileLogger + '\''
-            + ", exportHttpEndpoint='" + exportHttpEndpoint + '\''
-            + '}';
+        + "id="
+        + id
+        + ", cluster='"
+        + cluster
+        + '\''
+        + ", description='"
+        + description
+        + '\''
+        + ", nodes="
+        + nodes
+        + ", events="
+        + events
+        + ", exportSse="
+        + exportSse
+        + ", exportFileLogger='"
+        + exportFileLogger
+        + '\''
+        + ", exportHttpEndpoint='"
+        + exportHttpEndpoint
+        + '\''
+        + '}';
   }
-
 }

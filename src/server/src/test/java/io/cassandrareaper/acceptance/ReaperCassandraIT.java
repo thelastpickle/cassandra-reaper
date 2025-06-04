@@ -17,6 +17,15 @@
 
 package io.cassandrareaper.acceptance;
 
+import static java.util.concurrent.TimeUnit.MINUTES;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.awaitility.Awaitility.await;
+
+import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.config.DefaultDriverOption;
+import com.datastax.oss.driver.api.core.config.DriverConfigLoader;
+import cucumber.api.CucumberOptions;
+import cucumber.api.junit.Cucumber;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.time.Duration;
@@ -24,29 +33,16 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.CopyOnWriteArrayList;
-
-import com.datastax.oss.driver.api.core.CqlSession;
-import com.datastax.oss.driver.api.core.config.DefaultDriverOption;
-import com.datastax.oss.driver.api.core.config.DriverConfigLoader;
-import cucumber.api.CucumberOptions;
-import cucumber.api.junit.Cucumber;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static java.util.concurrent.TimeUnit.MINUTES;
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.awaitility.Awaitility.await;
-
 @RunWith(Cucumber.class)
 @CucumberOptions(
-    features = {
-      "classpath:io.cassandrareaper.acceptance/integration_reaper_functionality.feature"
-    },
-    plugin = {"pretty"}
-    )
+    features = {"classpath:io.cassandrareaper.acceptance/integration_reaper_functionality.feature"},
+    plugin = {"pretty"})
 public class ReaperCassandraIT {
 
   private static final Logger LOG = LoggerFactory.getLogger(ReaperCassandraIT.class);
@@ -113,7 +109,8 @@ public class ReaperCassandraIT {
     BasicSteps.addReaperRunner(runner);
   }
 
-  private static void removeReaperTestJettyRunner(ReaperTestJettyRunner runner) throws InterruptedException {
+  private static void removeReaperTestJettyRunner(ReaperTestJettyRunner runner)
+      throws InterruptedException {
     BasicSteps.removeReaperRunner(runner);
     try {
       Thread.sleep(200);
@@ -127,17 +124,23 @@ public class ReaperCassandraIT {
 
   public static void initSchema() throws IOException {
     try (CqlSession tmpSession = buildSession()) {
-      await().with().pollInterval(3, SECONDS).atMost(2, MINUTES).until(() -> {
-        try {
-          tmpSession.execute("DROP KEYSPACE IF EXISTS reaper_db");
-          return true;
-        } catch (RuntimeException ex) {
-          return false;
-        }
-      });
+      await()
+          .with()
+          .pollInterval(3, SECONDS)
+          .atMost(2, MINUTES)
+          .until(
+              () -> {
+                try {
+                  tmpSession.execute("DROP KEYSPACE IF EXISTS reaper_db");
+                  return true;
+                } catch (RuntimeException ex) {
+                  return false;
+                }
+              });
       tmpSession.execute(
-          "CREATE KEYSPACE reaper_db WITH replication = {" + BasicSteps.buildNetworkTopologyStrategyString(tmpSession)
-          + "}");
+          "CREATE KEYSPACE reaper_db WITH replication = {"
+              + BasicSteps.buildNetworkTopologyStrategyString(tmpSession)
+              + "}");
     }
   }
 
@@ -151,15 +154,16 @@ public class ReaperCassandraIT {
   private static CqlSession buildSession() {
     DriverConfigLoader loader =
         DriverConfigLoader.programmaticBuilder()
-          .withDuration(DefaultDriverOption.REQUEST_TIMEOUT, Duration.ofSeconds(40))
-          .withDuration(DefaultDriverOption.CONNECTION_CONNECT_TIMEOUT, Duration.ofSeconds(20))
-          .endProfile()
-          .build();
+            .withDuration(DefaultDriverOption.REQUEST_TIMEOUT, Duration.ofSeconds(40))
+            .withDuration(DefaultDriverOption.CONNECTION_CONNECT_TIMEOUT, Duration.ofSeconds(20))
+            .endProfile()
+            .build();
 
     return CqlSession.builder()
-      .addContactPoints(Collections.singleton(InetSocketAddress.createUnresolved("127.0.0.1", 9042)))
-      .withLocalDatacenter("dc1")
-      .withConfigLoader(loader)
-      .build();
+        .addContactPoints(
+            Collections.singleton(InetSocketAddress.createUnresolved("127.0.0.1", 9042)))
+        .withLocalDatacenter("dc1")
+        .withConfigLoader(loader)
+        .build();
   }
 }

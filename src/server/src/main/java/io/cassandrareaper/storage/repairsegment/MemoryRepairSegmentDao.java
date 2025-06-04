@@ -18,17 +18,15 @@
 
 package io.cassandrareaper.storage.repairsegment;
 
+import com.datastax.oss.driver.api.core.uuid.Uuids;
+import com.google.common.collect.Lists;
 import io.cassandrareaper.core.RepairSegment;
 import io.cassandrareaper.storage.MemoryStorageFacade;
-
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
-
-import com.datastax.oss.driver.api.core.uuid.Uuids;
-import com.google.common.collect.Lists;
 
 public class MemoryRepairSegmentDao implements IRepairSegmentDao {
 
@@ -57,8 +55,10 @@ public class MemoryRepairSegmentDao implements IRepairSegmentDao {
 
   @Override
   public boolean updateRepairSegment(RepairSegment newRepairSegment) {
-    if (memoryStorageFacade.getRepairSegmentDao().getRepairSegment(newRepairSegment.getRunId(),
-        newRepairSegment.getId()) == null) {
+    if (memoryStorageFacade
+            .getRepairSegmentDao()
+            .getRepairSegment(newRepairSegment.getRunId(), newRepairSegment.getId())
+        == null) {
       return false;
     } else {
       memoryStorageFacade.addRepairSegment(newRepairSegment);
@@ -70,7 +70,6 @@ public class MemoryRepairSegmentDao implements IRepairSegmentDao {
   public boolean updateRepairSegmentUnsafe(RepairSegment newRepairSegment) {
     return updateRepairSegment(newRepairSegment);
   }
-
 
   @Override
   public Optional<RepairSegment> getRepairSegment(UUID runId, UUID segmentId) {
@@ -90,7 +89,8 @@ public class MemoryRepairSegmentDao implements IRepairSegmentDao {
   }
 
   @Override
-  public Collection<RepairSegment> getSegmentsWithState(UUID runId, RepairSegment.State segmentState) {
+  public Collection<RepairSegment> getSegmentsWithState(
+      UUID runId, RepairSegment.State segmentState) {
     List<RepairSegment> segments = Lists.newArrayList();
     for (RepairSegment segment : memoryStorageFacade.getRepairSegmentsByRunId(runId)) {
       if (segment.getState() == segmentState) {

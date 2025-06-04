@@ -15,19 +15,17 @@
 
 package io.cassandrareaper.resources.auth;
 
-import io.cassandrareaper.resources.RequestUtils;
-
-import java.util.Optional;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServletResponse;
-
 import com.google.common.annotations.VisibleForTesting;
+import io.cassandrareaper.resources.RequestUtils;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.lang.Strings;
+import java.util.Optional;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
+import javax.servlet.http.HttpServletResponse;
 import org.apache.shiro.subject.SimplePrincipalCollection;
 import org.apache.shiro.subject.Subject;
 import org.apache.shiro.web.filter.AccessControlFilter;
@@ -71,7 +69,8 @@ public final class ShiroJwtVerifyingFilter extends AccessControlFilter {
   protected boolean onAccessDenied(ServletRequest req, ServletResponse res) throws Exception {
     WebUtils.toHttp(res).setStatus(HttpServletResponse.SC_FORBIDDEN);
     WebUtils.toHttp(res).setHeader("Content-Type", "text/plain");
-    WebUtils.toHttp(res).getOutputStream()
+    WebUtils.toHttp(res)
+        .getOutputStream()
         .print("Forbidden access. Please login to access this page.");
     WebUtils.toHttp(res).flushBuffer();
     return false;
@@ -83,7 +82,9 @@ public final class ShiroJwtVerifyingFilter extends AccessControlFilter {
       try {
         jwt = jwt.substring(jwt.indexOf(' ') + 1);
         Jws<Claims> claims =
-            Jwts.parser().verifyWith((javax.crypto.SecretKey) ShiroJwtProvider.SIGNING_KEY).build()
+            Jwts.parser()
+                .verifyWith((javax.crypto.SecretKey) ShiroJwtProvider.SIGNING_KEY)
+                .build()
                 .parseSignedClaims(jwt);
         String user = claims.getPayload().getSubject();
         return Strings.hasText(user) ? Optional.of(user) : Optional.empty();

@@ -14,9 +14,15 @@
 
 package io.cassandrareaper;
 
+import com.datastax.oss.driver.api.core.addresstranslation.AddressTranslator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.annotations.VisibleForTesting;
 import io.cassandrareaper.core.JmxCredentials;
 import io.cassandrareaper.crypto.CryptographFactory;
-
+import io.dropwizard.cassandra.BasicCassandraFactory;
+import io.dropwizard.cassandra.CassandraFactory;
+import io.dropwizard.client.HttpClientConfiguration;
+import io.dropwizard.core.Configuration;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
@@ -28,14 +34,6 @@ import javax.validation.constraints.DecimalMin;
 import javax.validation.constraints.Max;
 import javax.validation.constraints.NotNull;
 import javax.ws.rs.DefaultValue;
-
-import com.datastax.oss.driver.api.core.addresstranslation.AddressTranslator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.annotations.VisibleForTesting;
-import io.dropwizard.cassandra.BasicCassandraFactory;
-import io.dropwizard.cassandra.CassandraFactory;
-import io.dropwizard.client.HttpClientConfiguration;
-import io.dropwizard.core.Configuration;
 import org.apache.cassandra.repair.RepairParallelism;
 import org.hibernate.validator.constraints.NotEmpty;
 import org.secnod.dropwizard.shiro.ShiroConfiguration;
@@ -47,19 +45,13 @@ public final class ReaperApplicationConfiguration extends Configuration {
   private static final int DEFAULT_SEGMENT_COUNT_PER_NODE = 64;
   private static final Integer DEFAULT_MAX_PENDING_COMPACTIONS = 20;
 
-  @JsonProperty
-  private Integer maxPendingCompactions;
+  @JsonProperty private Integer maxPendingCompactions;
 
-  @Deprecated
-  @JsonProperty
-  private Integer segmentCount;
+  @Deprecated @JsonProperty private Integer segmentCount;
 
-  @JsonProperty
-  private Integer segmentCountPerNode;
+  @JsonProperty private Integer segmentCountPerNode;
 
-  @JsonProperty
-  @NotNull
-  private RepairParallelism repairParallelism;
+  @JsonProperty @NotNull private RepairParallelism repairParallelism;
 
   @JsonProperty
   @NotNull
@@ -76,8 +68,7 @@ public final class ReaperApplicationConfiguration extends Configuration {
   @DefaultValue("false")
   private Boolean subrangeIncrementalRepair;
 
-  @JsonProperty
-  private Boolean blacklistTwcsTables;
+  @JsonProperty private Boolean blacklistTwcsTables;
 
   @DefaultValue("7")
   private Integer scheduleDaysBetween;
@@ -86,97 +77,73 @@ public final class ReaperApplicationConfiguration extends Configuration {
   @DefaultValue("false")
   private Boolean useAddressTranslator;
 
-  @Valid
-  private Optional<AddressTranslator> jmxAddressTranslator = Optional.empty();
+  @Valid private Optional<AddressTranslator> jmxAddressTranslator = Optional.empty();
 
-  @JsonProperty
-  @NotNull
-  private Integer repairRunThreadCount;
+  @JsonProperty @NotNull private Integer repairRunThreadCount;
 
-  @JsonProperty
-  @Nullable
-  private Integer maxParallelRepairs;
+  @JsonProperty @Nullable private Integer maxParallelRepairs;
 
-  @JsonProperty
-  @NotNull
-  private Integer hangingRepairTimeoutMins;
+  @JsonProperty @NotNull private Integer hangingRepairTimeoutMins;
 
-  @NotEmpty
-  private String storageType;
+  @NotEmpty private String storageType;
 
   private String enableCrossOrigin;
 
-  @JsonProperty
-  private Map<String, Integer> jmxPorts;
+  @JsonProperty private Map<String, Integer> jmxPorts;
 
-  @JsonProperty
-  private Map<String, JmxCredentials> jmxCredentials;
+  @JsonProperty private Map<String, JmxCredentials> jmxCredentials;
 
-  @JsonProperty
-  private JmxCredentials jmxAuth;
+  @JsonProperty private JmxCredentials jmxAuth;
 
-  @JsonProperty
-  private HttpManagement httpManagement = new HttpManagement();
-  @JsonProperty
-  private AutoSchedulingConfiguration autoScheduling;
+  @JsonProperty private HttpManagement httpManagement = new HttpManagement();
+  @JsonProperty private AutoSchedulingConfiguration autoScheduling;
+
   @JsonProperty
   @DefaultValue("true")
   private Boolean enableDynamicSeedList;
-  @JsonProperty
-  private Integer repairManagerSchedulingIntervalSeconds;
+
+  @JsonProperty private Integer repairManagerSchedulingIntervalSeconds;
+
   @JsonProperty
   @DefaultValue("false")
   private Boolean activateQueryLogger;
+
   @JsonProperty
   @DefaultValue("5")
   private Integer jmxConnectionTimeoutInSeconds;
+
   @JsonProperty
   @DefaultValue("7")
   private Integer clusterTimeoutInDays;
-  @JsonProperty
-  private DatacenterAvailability datacenterAvailability;
-  @JsonProperty
-  private AccessControlConfiguration accessControl;
-  @JsonProperty
-  private Integer repairThreadCount;
-  /**
-   * If set to more than 0, defines how many days of run history should be kept. Default: 30
-   */
-  @Nullable
-  @JsonProperty
-  private Integer purgeRecordsAfterInDays = 30;
-  /**
-   * If set to more than 0, defines how many runs to keep per repair unit.
-   */
-  @Nullable
-  @JsonProperty
-  private Integer numberOfRunsToKeepPerUnit;
+
+  @JsonProperty private DatacenterAvailability datacenterAvailability;
+  @JsonProperty private AccessControlConfiguration accessControl;
+  @JsonProperty private Integer repairThreadCount;
+
+  /** If set to more than 0, defines how many days of run history should be kept. Default: 30 */
+  @Nullable @JsonProperty private Integer purgeRecordsAfterInDays = 30;
+
+  /** If set to more than 0, defines how many runs to keep per repair unit. */
+  @Nullable @JsonProperty private Integer numberOfRunsToKeepPerUnit;
+
   private CassandraFactory cassandra = new BasicCassandraFactory();
-  @JsonProperty
-  private Optional<String> enforcedLocalNode = Optional.empty();
-  @JsonProperty
-  private Optional<String> enforcedLocalClusterName = Optional.empty();
-  @JsonProperty
-  private Optional<String> enforcedLocalDatacenter = Optional.empty();
+  @JsonProperty private Optional<String> enforcedLocalNode = Optional.empty();
+  @JsonProperty private Optional<String> enforcedLocalClusterName = Optional.empty();
+  @JsonProperty private Optional<String> enforcedLocalDatacenter = Optional.empty();
+
   @JsonProperty
   @DefaultValue("true")
   private Boolean enableConcurrentMigrations;
-  @JsonProperty
-  private Integer percentRepairedCheckIntervalMinutes;
+
+  @JsonProperty private Integer percentRepairedCheckIntervalMinutes;
   private HttpClientConfiguration httpClient = new HttpClientConfiguration();
-  @JsonProperty
-  @Nullable
-  private CryptographFactory cryptograph;
+  @JsonProperty @Nullable private CryptographFactory cryptograph;
 
-  @JsonProperty
-  @Nullable
-  private String persistenceStoragePath;
+  @JsonProperty @Nullable private String persistenceStoragePath;
 
-  @JsonProperty
-  private Boolean scheduleRetryOnError;
+  @JsonProperty private Boolean scheduleRetryOnError;
 
-  @JsonProperty
-  private Duration scheduleRetryDelay;
+  @JsonProperty private Duration scheduleRetryDelay;
 
   public HttpManagement getHttpManagement() {
     return httpManagement;
@@ -295,7 +262,8 @@ public final class ReaperApplicationConfiguration extends Configuration {
   }
 
   public int getRepairManagerSchedulingIntervalSeconds() {
-    return this.repairManagerSchedulingIntervalSeconds == null ? 30
+    return this.repairManagerSchedulingIntervalSeconds == null
+        ? 30
         : this.repairManagerSchedulingIntervalSeconds;
   }
 
@@ -403,7 +371,8 @@ public final class ReaperApplicationConfiguration extends Configuration {
   }
 
   public DatacenterAvailability getDatacenterAvailability() {
-    return this.datacenterAvailability != null ? this.datacenterAvailability
+    return this.datacenterAvailability != null
+        ? this.datacenterAvailability
         : DatacenterAvailability.ALL;
   }
 
@@ -556,7 +525,6 @@ public final class ReaperApplicationConfiguration extends Configuration {
     /* Sets Reaper in sidecar mode where each Cassandra node has a collocated Reaper instance */
     SIDECAR;
 
-
     /**
      * Check if the current datacenter availability mode is to have collocation between Reaper and a
      * DC/node.
@@ -577,39 +545,27 @@ public final class ReaperApplicationConfiguration extends Configuration {
 
   public static final class AutoSchedulingConfiguration {
 
-    @JsonProperty
-    private Boolean enabled;
+    @JsonProperty private Boolean enabled;
 
-    @JsonProperty
-    private Duration initialDelayPeriod;
+    @JsonProperty private Duration initialDelayPeriod;
 
-    @JsonProperty
-    private Duration periodBetweenPolls;
+    @JsonProperty private Duration periodBetweenPolls;
 
-    @JsonProperty
-    private Duration timeBeforeFirstSchedule;
+    @JsonProperty private Duration timeBeforeFirstSchedule;
 
-    @JsonProperty
-    private Duration scheduleSpreadPeriod;
+    @JsonProperty private Duration scheduleSpreadPeriod;
 
-    @JsonProperty
-    private List<String> excludedKeyspaces = Collections.emptyList();
+    @JsonProperty private List<String> excludedKeyspaces = Collections.emptyList();
 
-    @JsonProperty
-    private List<String> excludedClusters = Collections.emptyList();
+    @JsonProperty private List<String> excludedClusters = Collections.emptyList();
 
-    @JsonProperty
-    private Boolean adaptive;
+    @JsonProperty private Boolean adaptive;
 
-    @JsonProperty
-    private Boolean incremental;
+    @JsonProperty private Boolean incremental;
 
-    @JsonProperty
-    private Boolean subrangeIncrementalRepair;
+    @JsonProperty private Boolean subrangeIncrementalRepair;
 
-    @JsonProperty
-    private Integer percentUnrepairedThreshold;
-
+    @JsonProperty private Integer percentUnrepairedThreshold;
 
     public Boolean isEnabled() {
       return enabled;
@@ -706,19 +662,27 @@ public final class ReaperApplicationConfiguration extends Configuration {
 
     @Override
     public String toString() {
-      return "AutoSchedulingConfiguration{" + "enabled=" + enabled + ", initialDelayPeriod="
-          + initialDelayPeriod + ", periodBetweenPolls=" + periodBetweenPolls
-          + ", timeBeforeFirstSchedule=" + timeBeforeFirstSchedule + ", scheduleSpreadPeriod="
-          + scheduleSpreadPeriod + ", adaptive=" + adaptive + '}';
+      return "AutoSchedulingConfiguration{"
+          + "enabled="
+          + enabled
+          + ", initialDelayPeriod="
+          + initialDelayPeriod
+          + ", periodBetweenPolls="
+          + periodBetweenPolls
+          + ", timeBeforeFirstSchedule="
+          + timeBeforeFirstSchedule
+          + ", scheduleSpreadPeriod="
+          + scheduleSpreadPeriod
+          + ", adaptive="
+          + adaptive
+          + '}';
     }
   }
 
   public static final class AccessControlConfiguration {
 
-    @JsonProperty
-    private ShiroConfiguration shiro;
-    @JsonProperty
-    private Duration sessionTimeout;
+    @JsonProperty private ShiroConfiguration shiro;
+    @JsonProperty private Duration sessionTimeout;
 
     public ShiroConfiguration getShiroConfiguration() {
       return shiro;
@@ -730,27 +694,22 @@ public final class ReaperApplicationConfiguration extends Configuration {
   }
 
   public static final class HttpManagement {
-    @JsonProperty
-    private Boolean enabled = false;
+    @JsonProperty private Boolean enabled = false;
 
-    @JsonProperty
-    private String keystore;
+    @JsonProperty private String keystore;
 
-    @JsonProperty
-    private String truststore;
+    @JsonProperty private String truststore;
 
-    @JsonProperty
-    private String truststoresDir;
+    @JsonProperty private String truststoresDir;
 
-    @JsonProperty
-    private Integer mgmtApiMetricsPort;
+    @JsonProperty private Integer mgmtApiMetricsPort;
 
-    @JsonProperty
-    private Integer managementApiPort;
+    @JsonProperty private Integer managementApiPort;
 
     public Boolean isEnabled() {
       return enabled;
     }
+
     // TODO: Add ports and root paths here.
 
     public String getKeystore() {

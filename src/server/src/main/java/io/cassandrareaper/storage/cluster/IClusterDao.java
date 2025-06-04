@@ -18,7 +18,6 @@
 package io.cassandrareaper.storage.cluster;
 
 import io.cassandrareaper.core.Cluster;
-
 import java.util.Collection;
 
 public interface IClusterDao {
@@ -31,8 +30,8 @@ public interface IClusterDao {
   Cluster getCluster(String clusterName);
 
   /**
-   * Delete the Cluster instance identified by the given cluster name. Delete succeeds only if there are no repair runs
-   * for the targeted cluster.
+   * Delete the Cluster instance identified by the given cluster name. Delete succeeds only if there
+   * are no repair runs for the targeted cluster.
    *
    * @param clusterName The name of the Cluster instance to delete.
    * @return The deleted Cluster instance if delete succeeds, with state set to DELETED.

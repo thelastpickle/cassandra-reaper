@@ -19,13 +19,10 @@ package io.cassandrareaper.management;
 
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Snapshot;
-
 import java.io.IOException;
 import java.util.List;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 
 public final class SnapshotProxy {
   private static final Logger LOG = LoggerFactory.getLogger(SnapshotProxy.class);
@@ -78,10 +75,8 @@ public final class SnapshotProxy {
     }
   }
 
-  public void takeColumnFamilySnapshot(
-      String keyspace,
-      String table,
-      String snapshotName) throws ReaperException {
+  public void takeColumnFamilySnapshot(String keyspace, String table, String snapshotName)
+      throws ReaperException {
 
     try {
       proxy.takeColumnFamilySnapshot(keyspace, table, snapshotName);
@@ -89,5 +84,4 @@ public final class SnapshotProxy {
       throw new ReaperException(e);
     }
   }
-
 }

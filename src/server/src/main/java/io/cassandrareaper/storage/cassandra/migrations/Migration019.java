@@ -21,12 +21,9 @@ import com.datastax.oss.driver.api.core.CqlSession;
 
 public final class Migration019 {
 
-  private Migration019() {
-  }
+  private Migration019() {}
 
-  /**
-   * fix repair start, pause and end times in the repair_run table.
-   */
+  /** fix repair start, pause and end times in the repair_run table. */
   public static void migrate(CqlSession session) {
     FixRepairRunTimestamps.migrate(session);
   }

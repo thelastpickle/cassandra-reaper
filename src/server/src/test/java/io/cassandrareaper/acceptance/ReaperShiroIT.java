@@ -28,13 +28,13 @@ import org.slf4j.LoggerFactory;
 @RunWith(Cucumber.class)
 @CucumberOptions(
     features = "classpath:io.cassandrareaper.acceptance/access_control.feature",
-    plugin = {"pretty"}
-    )
+    plugin = {"pretty"})
 public final class ReaperShiroIT {
 
   private static final Logger LOG = LoggerFactory.getLogger(ReaperIT.class);
   private static ReaperTestJettyRunner runner;
-  private static final String MEMORY_CONFIG_FILE = "cassandra-reaper-access-control-enabled-at.yaml";
+  private static final String MEMORY_CONFIG_FILE =
+      "cassandra-reaper-access-control-enabled-at.yaml";
 
   private ReaperShiroIT() {}
 
@@ -53,5 +53,4 @@ public final class ReaperShiroIT {
     LOG.info("Stopping reaper service...");
     runner.runnerInstance.after();
   }
-
 }

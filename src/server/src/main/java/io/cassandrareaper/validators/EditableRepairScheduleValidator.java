@@ -17,18 +17,17 @@
 package io.cassandrareaper.validators;
 
 import io.cassandrareaper.core.EditableRepairSchedule;
-
 import javax.validation.ConstraintValidator;
 import javax.validation.ConstraintValidatorContext;
 
 public class EditableRepairScheduleValidator
     implements ConstraintValidator<ValidEditableRepairSchedule, EditableRepairSchedule> {
   @Override
-  public void initialize(ValidEditableRepairSchedule validEditableRepairSchedule) {
-  }
+  public void initialize(ValidEditableRepairSchedule validEditableRepairSchedule) {}
 
   @Override
-  public boolean isValid(EditableRepairSchedule editableRepairSchedule, ConstraintValidatorContext context) {
+  public boolean isValid(
+      EditableRepairSchedule editableRepairSchedule, ConstraintValidatorContext context) {
     return editableRepairSchedule.getOwner() != null
         || editableRepairSchedule.getRepairParallelism() != null
         || editableRepairSchedule.getIntensity() != null

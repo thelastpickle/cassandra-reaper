@@ -17,44 +17,41 @@
 
 package io.cassandrareaper.acceptance;
 
-import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.time.Duration;
-import java.util.Collections;
-import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
+import static java.util.concurrent.TimeUnit.MINUTES;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.awaitility.Awaitility.await;
 
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.config.DefaultDriverOption;
 import com.datastax.oss.driver.api.core.config.DriverConfigLoader;
 import cucumber.api.CucumberOptions;
 import cucumber.api.junit.Cucumber;
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.time.Duration;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static java.util.concurrent.TimeUnit.MINUTES;
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.awaitility.Awaitility.await;
-
 @RunWith(Cucumber.class)
 @CucumberOptions(
     features = "classpath:io.cassandrareaper.acceptance/integration_reaper_functionality.feature",
-    plugin = {"pretty"}
-    )
+    plugin = {"pretty"})
 public class ReaperCassandraSidecarIT {
 
   private static final Logger LOG = LoggerFactory.getLogger(ReaperCassandraSidecarIT.class);
   private static final List<ReaperTestJettyRunner> RUNNER_INSTANCES = new CopyOnWriteArrayList<>();
-  private static final String[] CASS_CONFIG_FILE
-      = {
-        "reaper-cassandra-sidecar1-at.yaml",
-        "reaper-cassandra-sidecar2-at.yaml",
-        "reaper-cassandra-sidecar3-at.yaml",
-        "reaper-cassandra-sidecar4-at.yaml",
-      };
+  private static final String[] CASS_CONFIG_FILE = {
+    "reaper-cassandra-sidecar1-at.yaml",
+    "reaper-cassandra-sidecar2-at.yaml",
+    "reaper-cassandra-sidecar3-at.yaml",
+    "reaper-cassandra-sidecar4-at.yaml",
+  };
 
   protected ReaperCassandraSidecarIT() {}
 
@@ -67,13 +64,14 @@ public class ReaperCassandraSidecarIT {
     int reaperInstances = Integer.getInteger("grim.reaper.min", 2);
 
     initSchema();
-    for (int i = 0;i < reaperInstances;i++) {
+    for (int i = 0; i < reaperInstances; i++) {
       createReaperTestJettyRunner();
     }
   }
 
   private static void createReaperTestJettyRunner() throws InterruptedException {
-    ReaperTestJettyRunner runner = new ReaperTestJettyRunner(CASS_CONFIG_FILE[RUNNER_INSTANCES.size()]);
+    ReaperTestJettyRunner runner =
+        new ReaperTestJettyRunner(CASS_CONFIG_FILE[RUNNER_INSTANCES.size()]);
     RUNNER_INSTANCES.add(runner);
     Thread.sleep(100);
     BasicSteps.addReaperRunner(runner);
@@ -81,17 +79,23 @@ public class ReaperCassandraSidecarIT {
 
   public static void initSchema() throws IOException {
     try (CqlSession tmpSession = buildSession()) {
-      await().with().pollInterval(3, SECONDS).atMost(2, MINUTES).until(() -> {
-        try {
-          tmpSession.execute("DROP KEYSPACE IF EXISTS reaper_db");
-          return true;
-        } catch (RuntimeException ex) {
-          return false;
-        }
-      });
+      await()
+          .with()
+          .pollInterval(3, SECONDS)
+          .atMost(2, MINUTES)
+          .until(
+              () -> {
+                try {
+                  tmpSession.execute("DROP KEYSPACE IF EXISTS reaper_db");
+                  return true;
+                } catch (RuntimeException ex) {
+                  return false;
+                }
+              });
       tmpSession.execute(
-          "CREATE KEYSPACE reaper_db WITH replication = {" + BasicSteps.buildNetworkTopologyStrategyString(tmpSession)
-          + "}");
+          "CREATE KEYSPACE reaper_db WITH replication = {"
+              + BasicSteps.buildNetworkTopologyStrategyString(tmpSession)
+              + "}");
     }
   }
 
@@ -104,13 +108,14 @@ public class ReaperCassandraSidecarIT {
   private static CqlSession buildSession() {
     DriverConfigLoader loader =
         DriverConfigLoader.programmaticBuilder()
-          .withDuration(DefaultDriverOption.REQUEST_TIMEOUT, Duration.ofSeconds(40))
-          .withDuration(DefaultDriverOption.CONNECTION_CONNECT_TIMEOUT, Duration.ofSeconds(20))
-          .endProfile()
-          .build();
+            .withDuration(DefaultDriverOption.REQUEST_TIMEOUT, Duration.ofSeconds(40))
+            .withDuration(DefaultDriverOption.CONNECTION_CONNECT_TIMEOUT, Duration.ofSeconds(20))
+            .endProfile()
+            .build();
 
     return CqlSession.builder()
-        .addContactPoints(Collections.singleton(InetSocketAddress.createUnresolved("127.0.0.1", 9042)))
+        .addContactPoints(
+            Collections.singleton(InetSocketAddress.createUnresolved("127.0.0.1", 9042)))
         .withLocalDatacenter("dc1")
         .withConfigLoader(loader)
         .build();

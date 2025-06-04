@@ -17,17 +17,14 @@
 
 package io.cassandrareaper.storage.snapshot;
 
-import io.cassandrareaper.core.Snapshot;
-
-import java.util.concurrent.ConcurrentMap;
-
 import com.google.common.collect.Maps;
+import io.cassandrareaper.core.Snapshot;
+import java.util.concurrent.ConcurrentMap;
 
 public class MemorySnapshotDao implements ISnapshotDao {
   public final ConcurrentMap<String, Snapshot> snapshots = Maps.newConcurrentMap();
 
-  public MemorySnapshotDao() {
-  }
+  public MemorySnapshotDao() {}
 
   @Override
   public boolean saveSnapshot(Snapshot snapshot) {

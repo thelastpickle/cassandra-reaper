@@ -68,7 +68,6 @@ public final class JmxStat {
     return value;
   }
 
-
   @Override
   public String toString() {
     return mbeanName + "/" + scope + "/" + name + "/" + attribute + " = " + value;

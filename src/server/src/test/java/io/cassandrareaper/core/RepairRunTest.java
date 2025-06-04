@@ -17,17 +17,15 @@
 
 package io.cassandrareaper.core;
 
-import io.cassandrareaper.core.RepairRun.RunState;
-
-import java.util.Set;
-import java.util.UUID;
+import static org.junit.Assert.assertEquals;
 
 import com.google.common.collect.ImmutableSet;
+import io.cassandrareaper.core.RepairRun.RunState;
+import java.util.Set;
+import java.util.UUID;
 import org.apache.cassandra.repair.RepairParallelism;
 import org.joda.time.DateTime;
 import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
 
 public final class RepairRunTest {
 
@@ -36,194 +34,194 @@ public final class RepairRunTest {
   @Test(expected = IllegalStateException.class)
   public void testNotStartedWithStartTime() {
     RepairRun.builder("test", UUID.randomUUID())
-                                   .repairParallelism(RepairParallelism.DATACENTER_AWARE)
-                                   .tables(TABLES)
-                                   .intensity(1.0)
-                                   .segmentCount(10)
-                                   .runState(RunState.NOT_STARTED)
-                                   .startTime(DateTime.now())
-                                   .build(UUID.randomUUID());
+        .repairParallelism(RepairParallelism.DATACENTER_AWARE)
+        .tables(TABLES)
+        .intensity(1.0)
+        .segmentCount(10)
+        .runState(RunState.NOT_STARTED)
+        .startTime(DateTime.now())
+        .build(UUID.randomUUID());
   }
 
   @Test
   public void testNotStartedWithNoStartTime() {
-    RepairRun repairRun = RepairRun.builder("test", UUID.randomUUID())
-                                   .repairParallelism(RepairParallelism.DATACENTER_AWARE)
-                                   .tables(TABLES)
-                                   .intensity(1.0)
-                                   .segmentCount(10)
-                                   .runState(RunState.NOT_STARTED)
-                                   .build(UUID.randomUUID());
+    RepairRun repairRun =
+        RepairRun.builder("test", UUID.randomUUID())
+            .repairParallelism(RepairParallelism.DATACENTER_AWARE)
+            .tables(TABLES)
+            .intensity(1.0)
+            .segmentCount(10)
+            .runState(RunState.NOT_STARTED)
+            .build(UUID.randomUUID());
 
     assertEquals(RunState.NOT_STARTED, repairRun.getRunState());
-
   }
 
   @Test(expected = IllegalStateException.class)
   public void testRunningWithNoStartTime() {
     RepairRun.builder("test", UUID.randomUUID())
-                                   .repairParallelism(RepairParallelism.DATACENTER_AWARE)
-                                   .tables(TABLES)
-                                   .intensity(1.0)
-                                   .segmentCount(10)
-                                   .runState(RunState.RUNNING)
-                                   .build(UUID.randomUUID());
+        .repairParallelism(RepairParallelism.DATACENTER_AWARE)
+        .tables(TABLES)
+        .intensity(1.0)
+        .segmentCount(10)
+        .runState(RunState.RUNNING)
+        .build(UUID.randomUUID());
   }
 
   @Test
   public void testRunningWithStartTime() {
     RepairRun.builder("test", UUID.randomUUID())
-                                   .repairParallelism(RepairParallelism.DATACENTER_AWARE)
-                                   .tables(TABLES)
-                                   .intensity(1.0)
-                                   .segmentCount(10)
-                                   .runState(RunState.RUNNING)
-                                   .startTime(DateTime.now())
-                                   .build(UUID.randomUUID());
+        .repairParallelism(RepairParallelism.DATACENTER_AWARE)
+        .tables(TABLES)
+        .intensity(1.0)
+        .segmentCount(10)
+        .runState(RunState.RUNNING)
+        .startTime(DateTime.now())
+        .build(UUID.randomUUID());
   }
 
   @Test(expected = IllegalStateException.class)
   public void testRunningWithEndTime() {
     RepairRun.builder("test", UUID.randomUUID())
-                                   .repairParallelism(RepairParallelism.DATACENTER_AWARE)
-                                   .tables(TABLES)
-                                   .intensity(1.0)
-                                   .segmentCount(10)
-                                   .runState(RunState.RUNNING)
-                                   .startTime(DateTime.now())
-                                   .endTime(DateTime.now())
-                                   .build(UUID.randomUUID());
+        .repairParallelism(RepairParallelism.DATACENTER_AWARE)
+        .tables(TABLES)
+        .intensity(1.0)
+        .segmentCount(10)
+        .runState(RunState.RUNNING)
+        .startTime(DateTime.now())
+        .endTime(DateTime.now())
+        .build(UUID.randomUUID());
   }
 
   @Test(expected = IllegalStateException.class)
   public void testRunningWithPauseTime() {
     RepairRun.builder("test", UUID.randomUUID())
-                                   .repairParallelism(RepairParallelism.DATACENTER_AWARE)
-                                   .tables(TABLES)
-                                   .intensity(1.0)
-                                   .segmentCount(10)
-                                   .runState(RunState.RUNNING)
-                                   .startTime(DateTime.now())
-                                   .pauseTime(DateTime.now())
-                                   .build(UUID.randomUUID());
+        .repairParallelism(RepairParallelism.DATACENTER_AWARE)
+        .tables(TABLES)
+        .intensity(1.0)
+        .segmentCount(10)
+        .runState(RunState.RUNNING)
+        .startTime(DateTime.now())
+        .pauseTime(DateTime.now())
+        .build(UUID.randomUUID());
   }
 
   @Test
   public void testPausedWithPauseTime() {
     RepairRun.builder("test", UUID.randomUUID())
-                                   .repairParallelism(RepairParallelism.DATACENTER_AWARE)
-                                   .tables(TABLES)
-                                   .intensity(1.0)
-                                   .segmentCount(10)
-                                   .runState(RunState.PAUSED)
-                                   .startTime(DateTime.now())
-                                   .pauseTime(DateTime.now())
-                                   .build(UUID.randomUUID());
+        .repairParallelism(RepairParallelism.DATACENTER_AWARE)
+        .tables(TABLES)
+        .intensity(1.0)
+        .segmentCount(10)
+        .runState(RunState.PAUSED)
+        .startTime(DateTime.now())
+        .pauseTime(DateTime.now())
+        .build(UUID.randomUUID());
   }
 
   @Test(expected = IllegalStateException.class)
   public void testPausedWithNoPauseTime() {
     RepairRun.builder("test", UUID.randomUUID())
-                                   .repairParallelism(RepairParallelism.DATACENTER_AWARE)
-                                   .tables(TABLES)
-                                   .intensity(1.0)
-                                   .segmentCount(10)
-                                   .runState(RunState.PAUSED)
-                                   .startTime(DateTime.now())
-                                   .build(UUID.randomUUID());
+        .repairParallelism(RepairParallelism.DATACENTER_AWARE)
+        .tables(TABLES)
+        .intensity(1.0)
+        .segmentCount(10)
+        .runState(RunState.PAUSED)
+        .startTime(DateTime.now())
+        .build(UUID.randomUUID());
   }
 
   @Test(expected = IllegalStateException.class)
   public void testPausedWithEndTime() {
     RepairRun.builder("test", UUID.randomUUID())
-                                   .repairParallelism(RepairParallelism.DATACENTER_AWARE)
-                                   .tables(TABLES)
-                                   .intensity(1.0)
-                                   .segmentCount(10)
-                                   .runState(RunState.PAUSED)
-                                   .startTime(DateTime.now())
-                                   .pauseTime(DateTime.now())
-                                   .endTime(DateTime.now())
-                                   .build(UUID.randomUUID());
+        .repairParallelism(RepairParallelism.DATACENTER_AWARE)
+        .tables(TABLES)
+        .intensity(1.0)
+        .segmentCount(10)
+        .runState(RunState.PAUSED)
+        .startTime(DateTime.now())
+        .pauseTime(DateTime.now())
+        .endTime(DateTime.now())
+        .build(UUID.randomUUID());
   }
 
   @Test(expected = IllegalStateException.class)
   public void testAbortedWithPauseTime() {
     RepairRun.builder("test", UUID.randomUUID())
-                                   .repairParallelism(RepairParallelism.DATACENTER_AWARE)
-                                   .tables(TABLES)
-                                   .intensity(1.0)
-                                   .segmentCount(10)
-                                   .runState(RunState.ABORTED)
-                                   .startTime(DateTime.now())
-                                   .pauseTime(DateTime.now())
-                                   .endTime(DateTime.now())
-                                   .build(UUID.randomUUID());
+        .repairParallelism(RepairParallelism.DATACENTER_AWARE)
+        .tables(TABLES)
+        .intensity(1.0)
+        .segmentCount(10)
+        .runState(RunState.ABORTED)
+        .startTime(DateTime.now())
+        .pauseTime(DateTime.now())
+        .endTime(DateTime.now())
+        .build(UUID.randomUUID());
   }
 
   @Test
   public void testAborted() {
     RepairRun.builder("test", UUID.randomUUID())
-                                   .repairParallelism(RepairParallelism.DATACENTER_AWARE)
-                                   .tables(TABLES)
-                                   .intensity(1.0)
-                                   .segmentCount(10)
-                                   .runState(RunState.ABORTED)
-                                   .startTime(DateTime.now())
-                                   .endTime(DateTime.now())
-                                   .build(UUID.randomUUID());
+        .repairParallelism(RepairParallelism.DATACENTER_AWARE)
+        .tables(TABLES)
+        .intensity(1.0)
+        .segmentCount(10)
+        .runState(RunState.ABORTED)
+        .startTime(DateTime.now())
+        .endTime(DateTime.now())
+        .build(UUID.randomUUID());
   }
 
   @Test(expected = IllegalStateException.class)
   public void testAbortedWithNoEndTime() {
     RepairRun.builder("test", UUID.randomUUID())
-                                   .repairParallelism(RepairParallelism.DATACENTER_AWARE)
-                                   .tables(TABLES)
-                                   .intensity(1.0)
-                                   .segmentCount(10)
-                                   .runState(RunState.ABORTED)
-                                   .startTime(DateTime.now())
-                                   .pauseTime(DateTime.now())
-                                   .build(UUID.randomUUID());
+        .repairParallelism(RepairParallelism.DATACENTER_AWARE)
+        .tables(TABLES)
+        .intensity(1.0)
+        .segmentCount(10)
+        .runState(RunState.ABORTED)
+        .startTime(DateTime.now())
+        .pauseTime(DateTime.now())
+        .build(UUID.randomUUID());
   }
 
   @Test(expected = IllegalStateException.class)
   public void testDoneWithPauseTime() {
     RepairRun.builder("test", UUID.randomUUID())
-                                   .repairParallelism(RepairParallelism.DATACENTER_AWARE)
-                                   .tables(TABLES)
-                                   .intensity(1.0)
-                                   .segmentCount(10)
-                                   .runState(RunState.DONE)
-                                   .startTime(DateTime.now())
-                                   .pauseTime(DateTime.now())
-                                   .endTime(DateTime.now())
-                                   .build(UUID.randomUUID());
+        .repairParallelism(RepairParallelism.DATACENTER_AWARE)
+        .tables(TABLES)
+        .intensity(1.0)
+        .segmentCount(10)
+        .runState(RunState.DONE)
+        .startTime(DateTime.now())
+        .pauseTime(DateTime.now())
+        .endTime(DateTime.now())
+        .build(UUID.randomUUID());
   }
 
   @Test
   public void testDone() {
     RepairRun.builder("test", UUID.randomUUID())
-                                   .repairParallelism(RepairParallelism.DATACENTER_AWARE)
-                                   .tables(TABLES)
-                                   .intensity(1.0)
-                                   .segmentCount(10)
-                                   .runState(RunState.DONE)
-                                   .startTime(DateTime.now())
-                                   .endTime(DateTime.now())
-                                   .build(UUID.randomUUID());
+        .repairParallelism(RepairParallelism.DATACENTER_AWARE)
+        .tables(TABLES)
+        .intensity(1.0)
+        .segmentCount(10)
+        .runState(RunState.DONE)
+        .startTime(DateTime.now())
+        .endTime(DateTime.now())
+        .build(UUID.randomUUID());
   }
 
   @Test(expected = IllegalStateException.class)
   public void testDoneWithNoEndTime() {
     RepairRun.builder("test", UUID.randomUUID())
-                                   .repairParallelism(RepairParallelism.DATACENTER_AWARE)
-                                   .tables(TABLES)
-                                   .intensity(1.0)
-                                   .segmentCount(10)
-                                   .runState(RunState.DONE)
-                                   .startTime(DateTime.now())
-                                   .pauseTime(DateTime.now())
-                                   .build(UUID.randomUUID());
+        .repairParallelism(RepairParallelism.DATACENTER_AWARE)
+        .tables(TABLES)
+        .intensity(1.0)
+        .segmentCount(10)
+        .runState(RunState.DONE)
+        .startTime(DateTime.now())
+        .pauseTime(DateTime.now())
+        .build(UUID.randomUUID());
   }
 }

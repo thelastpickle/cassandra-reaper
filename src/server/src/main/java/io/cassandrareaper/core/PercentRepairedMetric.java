@@ -16,16 +16,15 @@
 
 package io.cassandrareaper.core;
 
-import java.util.UUID;
-
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
+import java.util.UUID;
 
 @JsonDeserialize(builder = PercentRepairedMetric.Builder.class)
 public final class PercentRepairedMetric {
   private String cluster;
   private String node;
-  private UUID repairScheduleId ;
+  private UUID repairScheduleId;
   private String keyspaceName;
   private String tableName;
   private int percentRepaired;
@@ -33,7 +32,7 @@ public final class PercentRepairedMetric {
   private PercentRepairedMetric(Builder builder) {
     this.cluster = builder.cluster;
     this.node = builder.node;
-    this.repairScheduleId = builder.repairScheduleId ;
+    this.repairScheduleId = builder.repairScheduleId;
     this.keyspaceName = builder.keyspaceName;
     this.tableName = builder.tableName;
     this.percentRepaired = builder.percentRepaired;
@@ -71,7 +70,7 @@ public final class PercentRepairedMetric {
   public static final class Builder {
     private String cluster;
     private String node;
-    private UUID repairScheduleId ;
+    private UUID repairScheduleId;
     private String keyspaceName;
     private String tableName;
     private int percentRepaired;

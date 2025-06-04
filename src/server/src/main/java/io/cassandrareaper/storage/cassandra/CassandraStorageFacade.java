@@ -15,16 +15,7 @@
 
 package io.cassandrareaper.storage.cassandra;
 
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.atomic.AtomicBoolean;
-
-import org.joda.time.DateTime;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
+import brave.Tracing;
 import com.datastax.oss.driver.api.core.ConsistencyLevel;
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.Version;
@@ -33,7 +24,6 @@ import com.datastax.oss.driver.api.core.cql.ResultSet;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.core.uuid.Uuids;
 import com.fasterxml.jackson.databind.ObjectMapper;
-
 import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperApplicationConfiguration;
 import io.cassandrareaper.ReaperException;
@@ -60,38 +50,17 @@ import io.cassandrareaper.storage.repairunit.CassandraRepairUnitDao;
 import io.cassandrareaper.storage.repairunit.IRepairUnitDao;
 import io.cassandrareaper.storage.snapshot.CassandraSnapshotDao;
 import io.cassandrareaper.storage.snapshot.ISnapshotDao;
-
+import io.dropwizard.cassandra.CassandraFactory;
+import io.dropwizard.cassandra.request.RequestOptionsFactory;
+import io.dropwizard.core.setup.Environment;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
-
-import brave.Tracing;
-import com.datastax.oss.driver.api.core.ConsistencyLevel;
-import com.datastax.oss.driver.api.core.CqlSession;
-import com.datastax.oss.driver.api.core.Version;
-import com.datastax.oss.driver.api.core.config.DefaultDriverOption;
-import com.datastax.oss.driver.api.core.cql.PreparedStatement;
-import com.datastax.oss.driver.api.core.cql.ResultSet;
-import com.datastax.oss.driver.api.core.cql.SimpleStatement;
-import com.datastax.oss.driver.api.core.retry.RetryDecision;
-import com.datastax.oss.driver.api.core.retry.RetryPolicy;
-import com.datastax.oss.driver.api.core.servererrors.CoordinatorException;
-import com.datastax.oss.driver.api.core.servererrors.WriteType;
-import com.datastax.oss.driver.api.core.session.Request;
-import com.datastax.oss.driver.api.core.uuid.Uuids;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.base.Preconditions;
-import io.dropwizard.cassandra.CassandraFactory;
-import io.dropwizard.cassandra.request.RequestOptionsFactory;
-import io.dropwizard.core.setup.Environment;
-import org.jetbrains.annotations.NotNull;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 
 public final class CassandraStorageFacade implements IStorageDao, IDistributedStorage {
   private static final Logger LOG = LoggerFactory.getLogger(CassandraStorageFacade.class);
@@ -114,8 +83,12 @@ public final class CassandraStorageFacade implements IStorageDao, IDistributedSt
   private PreparedStatement saveHeartbeatPrepStmt;
   private PreparedStatement deleteHeartbeatPrepStmt;
 
-  public CassandraStorageFacade(UUID reaperInstanceId, ReaperApplicationConfiguration config,
-      Environment environment, CassandraMode mode) throws ReaperException {
+  public CassandraStorageFacade(
+      UUID reaperInstanceId,
+      ReaperApplicationConfiguration config,
+      Environment environment,
+      CassandraMode mode)
+      throws ReaperException {
 
     this.reaperInstanceId = reaperInstanceId;
     this.defaultTimeout = config.getHangingRepairTimeoutMins();
@@ -131,21 +104,29 @@ public final class CassandraStorageFacade implements IStorageDao, IDistributedSt
     }
 
     cassandraFactory.setSessionName("main-" + Uuids.random());
-    cassandra = cassandraFactory.build(environment.metrics(), environment.lifecycle(),
-        environment.healthChecks(), Tracing.newBuilder().build());
+    cassandra =
+        cassandraFactory.build(
+            environment.metrics(),
+            environment.lifecycle(),
+            environment.healthChecks(),
+            Tracing.newBuilder().build());
 
-    version = cassandra.getMetadata().getNodes().entrySet().stream()
-        .map(h -> h.getValue().getCassandraVersion()).min(Version::compareTo).get();
+    version =
+        cassandra.getMetadata().getNodes().entrySet().stream()
+            .map(h -> h.getValue().getCassandraVersion())
+            .min(Version::compareTo)
+            .get();
 
-    boolean skipMigration = System.getenv().containsKey("REAPER_SKIP_SCHEMA_MIGRATION")
-        ? Boolean.parseBoolean(System.getenv("REAPER_SKIP_SCHEMA_MIGRATION"))
-        : Boolean.FALSE;
+    boolean skipMigration =
+        System.getenv().containsKey("REAPER_SKIP_SCHEMA_MIGRATION")
+            ? Boolean.parseBoolean(System.getenv("REAPER_SKIP_SCHEMA_MIGRATION"))
+            : Boolean.FALSE;
 
     if (skipMigration) {
       LOG.info("Skipping schema migration as requested.");
     } else {
-      MigrationManager.initializeAndUpgradeSchema(cassandraFactory, environment, config, version,
-          mode);
+      MigrationManager.initializeAndUpgradeSchema(
+          cassandraFactory, environment, config, version, mode);
     }
 
     this.cassEventsDao = new CassandraEventsDao(cassandra);
@@ -157,10 +138,12 @@ public final class CassandraStorageFacade implements IStorageDao, IDistributedSt
     this.cassRepairSegmentDao =
         new CassandraRepairSegmentDao(concurrency, cassRepairUnitDao, cassandra);
     this.cassRepairScheduleDao = new CassandraRepairScheduleDao(cassRepairUnitDao, cassandra);
-    this.cassClusterDao = new CassandraClusterDao(cassRepairScheduleDao, cassRepairUnitDao,
-        cassEventsDao, cassandra, objectMapper);
-    this.cassRepairRunDao = new CassandraRepairRunDao(cassRepairUnitDao, cassClusterDao,
-        cassRepairSegmentDao, cassandra, objectMapper);
+    this.cassClusterDao =
+        new CassandraClusterDao(
+            cassRepairScheduleDao, cassRepairUnitDao, cassEventsDao, cassandra, objectMapper);
+    this.cassRepairRunDao =
+        new CassandraRepairRunDao(
+            cassRepairUnitDao, cassClusterDao, cassRepairSegmentDao, cassandra, objectMapper);
     prepareStatements();
   }
 
@@ -178,14 +161,19 @@ public final class CassandraStorageFacade implements IStorageDao, IDistributedSt
   }
 
   private void prepareStatements() {
-    saveHeartbeatPrepStmt = cassandra.prepare(SimpleStatement
-        .builder("INSERT INTO running_reapers(reaper_instance_id,"
-            + " reaper_instance_host, last_heartbeat)" + " VALUES(?,?,toTimestamp(now()))")
-        .setIdempotence(false).build());
-    deleteHeartbeatPrepStmt = cassandra
-        .prepare(SimpleStatement.builder("DELETE FROM running_reapers WHERE reaper_instance_id = ?")
-            .setIdempotence(true).build());
-
+    saveHeartbeatPrepStmt =
+        cassandra.prepare(
+            SimpleStatement.builder(
+                    "INSERT INTO running_reapers(reaper_instance_id,"
+                        + " reaper_instance_host, last_heartbeat)"
+                        + " VALUES(?,?,toTimestamp(now()))")
+                .setIdempotence(false)
+                .build());
+    deleteHeartbeatPrepStmt =
+        cassandra.prepare(
+            SimpleStatement.builder("DELETE FROM running_reapers WHERE reaper_instance_id = ?")
+                .setIdempotence(true)
+                .build());
   }
 
   @Override
@@ -258,8 +246,12 @@ public final class CassandraStorageFacade implements IStorageDao, IDistributedSt
   }
 
   @Override
-  public List<GenericMetric> getMetrics(String clusterName, Optional<String> host,
-      String metricDomain, String metricType, long since) {
+  public List<GenericMetric> getMetrics(
+      String clusterName,
+      Optional<String> host,
+      String metricDomain,
+      String metricType,
+      long since) {
     return cassMetricsDao.getMetrics(clusterName, host, metricDomain, metricType, since);
   }
 
@@ -304,8 +296,8 @@ public final class CassandraStorageFacade implements IStorageDao, IDistributedSt
   }
 
   @Override
-  public boolean releaseRunningRepairsForNodes(UUID repairId, UUID segmentId,
-      Set<String> replicas) {
+  public boolean releaseRunningRepairsForNodes(
+      UUID repairId, UUID segmentId, Set<String> replicas) {
     // Attempt to release all the nodes involved in the segment
 
     return concurrency.releaseRunningRepairsForNodes(repairId, segmentId, replicas);
@@ -323,8 +315,8 @@ public final class CassandraStorageFacade implements IStorageDao, IDistributedSt
   }
 
   @Override
-  public List<PercentRepairedMetric> getPercentRepairedMetrics(String clusterName,
-      UUID repairScheduleId, Long since) {
+  public List<PercentRepairedMetric> getPercentRepairedMetrics(
+      String clusterName, UUID repairScheduleId, Long since) {
 
     return cassMetricsDao.getPercentRepairedMetrics(clusterName, repairScheduleId, since);
   }

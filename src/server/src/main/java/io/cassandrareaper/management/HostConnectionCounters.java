@@ -17,20 +17,19 @@
 
 package io.cassandrareaper.management;
 
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.atomic.AtomicInteger;
-
 import com.codahale.metrics.MetricRegistry;
 import com.google.common.collect.Maps;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 
 public final class HostConnectionCounters {
 
   private static final Logger LOG = LoggerFactory.getLogger(HostConnectionCounters.class);
 
-  private final ConcurrentMap<String, AtomicInteger> successfulConnections = Maps.newConcurrentMap();
+  private final ConcurrentMap<String, AtomicInteger> successfulConnections =
+      Maps.newConcurrentMap();
 
   private final MetricRegistry metricRegistry;
 
@@ -51,14 +50,14 @@ public final class HostConnectionCounters {
                 MetricRegistry.name(
                     ICassandraManagementProxy.class,
                     "connections",
-                    host.replace(
-                            '.',
-                            'x')
-                        .replaceAll("[^A-Za-z0-9]", "")))
+                    host.replace('.', 'x').replaceAll("[^A-Za-z0-9]", "")))
             .inc();
       }
     } catch (RuntimeException e) {
-      LOG.warn("Could not increment successful remote management connections counter for host {}", host, e);
+      LOG.warn(
+          "Could not increment successful remote management connections counter for host {}",
+          host,
+          e);
     }
   }
 
@@ -75,17 +74,18 @@ public final class HostConnectionCounters {
                 MetricRegistry.name(
                     ICassandraManagementProxy.class,
                     "connections",
-                    host.replace('.', 'x')
-                        .replaceAll("[^A-Za-z0-9]", "")))
+                    host.replace('.', 'x').replaceAll("[^A-Za-z0-9]", "")))
             .dec();
       }
     } catch (RuntimeException e) {
-      LOG.warn("Could not decrement successful remote management connections counter for host {}", host, e);
+      LOG.warn(
+          "Could not decrement successful remote management connections counter for host {}",
+          host,
+          e);
     }
   }
 
   public int getSuccessfulConnections(String host) {
     return successfulConnections.getOrDefault(host, new AtomicInteger(0)).get();
   }
-
 }

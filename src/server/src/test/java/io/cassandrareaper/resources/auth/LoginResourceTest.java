@@ -19,13 +19,11 @@ package io.cassandrareaper.resources.auth;
 
 import java.io.IOException;
 import java.io.InputStream;
-
 import org.apache.shiro.authc.UsernamePasswordToken;
 import org.apache.shiro.config.Ini;
 import org.apache.shiro.io.ResourceUtils;
 import org.apache.shiro.web.config.WebIniSecurityManagerFactory;
 import org.junit.Test;
-
 
 public final class LoginResourceTest {
 
@@ -45,8 +43,9 @@ public final class LoginResourceTest {
       Ini ini = new Ini();
       ini.load(is);
       ini.get("main").remove("filterChainResolver.globalFilters");
-      new WebIniSecurityManagerFactory(ini).getInstance().authenticate(new UsernamePasswordToken("admin", "admin"));
+      new WebIniSecurityManagerFactory(ini)
+          .getInstance()
+          .authenticate(new UsernamePasswordToken("admin", "admin"));
     }
   }
-
 }

@@ -18,12 +18,13 @@
 
 package io.cassandrareaper.storage.repairschedule;
 
+import com.datastax.oss.driver.api.core.uuid.Uuids;
+import com.google.common.collect.Lists;
 import io.cassandrareaper.core.RepairSchedule;
 import io.cassandrareaper.core.RepairUnit;
 import io.cassandrareaper.resources.view.RepairScheduleStatus;
 import io.cassandrareaper.storage.MemoryStorageFacade;
 import io.cassandrareaper.storage.repairunit.MemoryRepairUnitDao;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -31,15 +32,13 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import com.datastax.oss.driver.api.core.uuid.Uuids;
-import com.google.common.collect.Lists;
-
 public class MemoryRepairScheduleDao implements IRepairScheduleDao {
 
   private final MemoryRepairUnitDao memoryRepairUnitDao;
   private final MemoryStorageFacade storage;
 
-  public MemoryRepairScheduleDao(MemoryStorageFacade storage, MemoryRepairUnitDao memoryRepairUnitDao) {
+  public MemoryRepairScheduleDao(
+      MemoryStorageFacade storage, MemoryRepairUnitDao memoryRepairUnitDao) {
     this.memoryRepairUnitDao = memoryRepairUnitDao;
     this.storage = storage;
   }
@@ -69,11 +68,13 @@ public class MemoryRepairScheduleDao implements IRepairScheduleDao {
   }
 
   @Override
-  public Collection<RepairSchedule> getRepairSchedulesForCluster(String clusterName, boolean incremental) {
+  public Collection<RepairSchedule> getRepairSchedulesForCluster(
+      String clusterName, boolean incremental) {
     return getRepairSchedulesForCluster(clusterName).stream()
-        .filter(schedule -> memoryRepairUnitDao
-              .getRepairUnit(schedule.getRepairUnitId())
-              .getIncrementalRepair() == incremental)
+        .filter(
+            schedule ->
+                memoryRepairUnitDao.getRepairUnit(schedule.getRepairUnitId()).getIncrementalRepair()
+                    == incremental)
         .collect(Collectors.toList());
   }
 
@@ -90,11 +91,13 @@ public class MemoryRepairScheduleDao implements IRepairScheduleDao {
   }
 
   @Override
-  public Collection<RepairSchedule> getRepairSchedulesForClusterAndKeyspace(String clusterName, String keyspaceName) {
+  public Collection<RepairSchedule> getRepairSchedulesForClusterAndKeyspace(
+      String clusterName, String keyspaceName) {
     Collection<RepairSchedule> foundRepairSchedules = new ArrayList<RepairSchedule>();
     for (RepairSchedule repairSchedule : storage.getRepairSchedules()) {
       RepairUnit repairUnit = memoryRepairUnitDao.getRepairUnit(repairSchedule.getRepairUnitId());
-      if (repairUnit.getClusterName().equals(clusterName) && repairUnit.getKeyspaceName().equals(keyspaceName)) {
+      if (repairUnit.getClusterName().equals(clusterName)
+          && repairUnit.getKeyspaceName().equals(keyspaceName)) {
         foundRepairSchedules.add(repairSchedule);
       }
     }

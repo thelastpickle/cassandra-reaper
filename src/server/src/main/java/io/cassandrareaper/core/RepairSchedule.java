@@ -17,14 +17,13 @@
 
 package io.cassandrareaper.core;
 
+import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
-
-import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
 import org.apache.cassandra.repair.RepairParallelism;
 import org.joda.time.DateTime;
 
@@ -91,10 +90,12 @@ public final class RepairSchedule extends EditableRepairSchedule {
   }
 
   /**
-   * Required for JDBI mapping into database. Generic collection type would be hard to map into Postgres array types.
+   * Required for JDBI mapping into database. Generic collection type would be hard to map into
+   * Postgres array types.
    */
   public LongCollectionSqlType getRunHistorySql() {
-    List<Long> list = runHistory.stream().map(UUID::getMostSignificantBits).collect(Collectors.toList());
+    List<Long> list =
+        runHistory.stream().map(UUID::getMostSignificantBits).collect(Collectors.toList());
     return new LongCollectionSqlType(list);
   }
 
@@ -225,11 +226,15 @@ public final class RepairSchedule extends EditableRepairSchedule {
     }
 
     public RepairSchedule build(UUID id) {
-      Preconditions.checkState(null != daysBetween, "daysBetween(..) must be called before build(..)");
-      Preconditions.checkState(null != nextActivation, "nextActivation(..) must be called before build(..)");
-      Preconditions.checkState(null != repairParallelism, "repairParallelism(..) must be called before build(..)");
+      Preconditions.checkState(
+          null != daysBetween, "daysBetween(..) must be called before build(..)");
+      Preconditions.checkState(
+          null != nextActivation, "nextActivation(..) must be called before build(..)");
+      Preconditions.checkState(
+          null != repairParallelism, "repairParallelism(..) must be called before build(..)");
       Preconditions.checkState(null != intensity, "intensity(..) must be called before build(..)");
-      Preconditions.checkState(null != segmentCountPerNode, "segmentCountPerNode(..) must be called before build(..)");
+      Preconditions.checkState(
+          null != segmentCountPerNode, "segmentCountPerNode(..) must be called before build(..)");
       return new RepairSchedule(this, id);
     }
   }

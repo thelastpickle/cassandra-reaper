@@ -23,7 +23,6 @@ import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.storage.IDistributedStorage;
 import io.cassandrareaper.storage.repairrun.IRepairRunDao;
-
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -32,7 +31,6 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
-
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -64,8 +62,8 @@ public final class PurgeService {
       // List repair runs
       for (Cluster cluster : clusters) {
 
-        Collection<RepairRun> repairRuns
-            = repairRunDao.getRepairRunsForCluster(cluster.getName(), Optional.empty());
+        Collection<RepairRun> repairRuns =
+            repairRunDao.getRepairRunsForCluster(cluster.getName(), Optional.empty());
 
         if (context.config.getPurgeRecordsAfterInDays() > 0) {
           // Purge all runs that are older than threshold
@@ -91,17 +89,17 @@ public final class PurgeService {
    */
   private int purgeRepairRunsByHistoryDepth(Collection<RepairRun> repairRuns) {
     int purgedRuns = 0;
-    Map<UUID, List<RepairRun>> repairRunsByRepairUnit = repairRuns
-        .stream()
-        .filter(run -> run.getRunState().isTerminated()) // only delete terminated runs
-        .collect(Collectors.groupingBy(RepairRun::getRepairUnitId));
+    Map<UUID, List<RepairRun>> repairRunsByRepairUnit =
+        repairRuns.stream()
+            .filter(run -> run.getRunState().isTerminated()) // only delete terminated runs
+            .collect(Collectors.groupingBy(RepairRun::getRepairUnitId));
     for (Entry<UUID, List<RepairRun>> repairUnit : repairRunsByRepairUnit.entrySet()) {
       List<RepairRun> repairRunsForUnit = repairUnit.getValue();
       repairRunsForUnit.sort(
           (RepairRun r1, RepairRun r2) -> r2.getEndTime().compareTo(r1.getEndTime()));
       for (int i = context.config.getNumberOfRunsToKeepPerUnit();
-           i < repairRunsForUnit.size();
-           i++) {
+          i < repairRunsForUnit.size();
+          i++) {
         repairRunDao.deleteRepairRun(repairRunsForUnit.get(i).getId());
         purgedRuns++;
       }
@@ -118,8 +116,7 @@ public final class PurgeService {
    */
   private int purgeRepairRunsByDate(Collection<RepairRun> repairRuns) {
     AtomicInteger purgedRuns = new AtomicInteger(0);
-    repairRuns
-        .stream()
+    repairRuns.stream()
         .filter(run -> run.getRunState().isTerminated()) // only delete terminated runs
         .filter(
             run ->
@@ -138,8 +135,9 @@ public final class PurgeService {
   }
 
   /**
-   * Purges all expired metrics from storage. Expiration time is a property of the storage, stored either in
-   * the schema itself for databases with TTL or in the storage instance for databases which must be purged manually
+   * Purges all expired metrics from storage. Expiration time is a property of the storage, stored
+   * either in the schema itself for databases with TTL or in the storage instance for databases
+   * which must be purged manually
    */
   private void purgeMetrics() {
     if (context.storage instanceof IDistributedStorage) {

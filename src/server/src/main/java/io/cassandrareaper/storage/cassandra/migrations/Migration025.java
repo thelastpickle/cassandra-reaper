@@ -31,26 +31,28 @@ public final class Migration025 {
   private static final String V2_TABLE = "repair_run_by_cluster_v2";
   private static PreparedStatement v2_insert;
 
-  private Migration025() {
-  }
+  private Migration025() {}
 
-  /**
-   * Switch to v2 of repair_run_by_cluster
-   */
+  /** Switch to v2 of repair_run_by_cluster */
   public static void migrate(CqlSession session, String keyspace) {
 
     try {
       if (session.getMetadata().getKeyspace(keyspace).get().getTable(V1_TABLE) != null) {
-        v2_insert = session.prepare(
-          "INSERT INTO " + V2_TABLE + "(cluster_name, id, repair_run_state) values (?, ?, ?)");
+        v2_insert =
+            session.prepare(
+                "INSERT INTO "
+                    + V2_TABLE
+                    + "(cluster_name, id, repair_run_state) values (?, ?, ?)");
         LOG.info("Converting {} table...", V1_TABLE);
         ResultSet results = session.execute("SELECT * FROM " + V1_TABLE);
         for (Row row : results) {
-          ResultSet runResults = session.execute(
-              "SELECT distinct state from repair_run where id = " + row.getUuid("id"));
+          ResultSet runResults =
+              session.execute(
+                  "SELECT distinct state from repair_run where id = " + row.getUuid("id"));
           for (Row runRow : runResults) {
             String state = runRow.getString("state");
-            session.execute(v2_insert.bind(row.getString("cluster_name"), row.getUuid("id"), state));
+            session.execute(
+                v2_insert.bind(row.getString("cluster_name"), row.getUuid("id"), state));
           }
         }
         session.execute("DROP TABLE " + V1_TABLE);

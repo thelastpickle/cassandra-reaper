@@ -17,6 +17,21 @@
 
 package io.cassandrareaper.service;
 
+import static io.cassandrareaper.metrics.MetricNameUtils.cleanId;
+import static io.cassandrareaper.metrics.MetricNameUtils.cleanName;
+
+import com.codahale.metrics.Gauge;
+import com.codahale.metrics.MetricRegistry;
+import com.datastax.oss.driver.api.core.uuid.Uuids;
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
+import com.google.common.util.concurrent.FutureCallback;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.MoreExecutors;
 import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperApplicationConfiguration.DatacenterAvailability;
 import io.cassandrareaper.ReaperException;
@@ -34,7 +49,6 @@ import io.cassandrareaper.management.ICassandraManagementProxy;
 import io.cassandrareaper.metrics.PrometheusMetricsFilter;
 import io.cassandrareaper.storage.IDistributedStorage;
 import io.cassandrareaper.storage.repairrun.IRepairRunDao;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -55,28 +69,12 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
-
-import com.codahale.metrics.Gauge;
-import com.codahale.metrics.MetricRegistry;
-import com.datastax.oss.driver.api.core.uuid.Uuids;
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
-import com.google.common.util.concurrent.FutureCallback;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.MoreExecutors;
 import org.apache.cassandra.repair.RepairParallelism;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static io.cassandrareaper.metrics.MetricNameUtils.cleanId;
-import static io.cassandrareaper.metrics.MetricNameUtils.cleanName;
 
 final class RepairRunner implements Runnable {
 
@@ -107,10 +105,8 @@ final class RepairRunner implements Runnable {
   private final IRepairRunDao repairRunDao;
 
   private RepairRunner(
-      AppContext context,
-      UUID repairRunId,
-      ClusterFacade clusterFacade,
-      IRepairRunDao repairRunDao) throws ReaperException {
+      AppContext context, UUID repairRunId, ClusterFacade clusterFacade, IRepairRunDao repairRunDao)
+      throws ReaperException {
 
     LOG.debug("Creating RepairRunner for run with ID {}", repairRunId);
     this.context = context;
@@ -121,71 +117,80 @@ final class RepairRunner implements Runnable {
     assert repairRun.isPresent() : "No RepairRun with ID " + repairRunId + " found from storage";
     this.isRunning.set(repairRun.get().getRunState() == RepairRun.RunState.RUNNING);
     this.cluster = context.storage.getClusterDao().getCluster(repairRun.get().getClusterName());
-    repairUnit = context.storage.getRepairUnitDao().getRepairUnit(repairRun.get().getRepairUnitId());
+    repairUnit =
+        context.storage.getRepairUnitDao().getRepairUnit(repairRun.get().getRepairUnitId());
     this.clusterName = cluster.getName();
 
     this.repairRunDao = repairRunDao;
 
-    localEndpointRanges = context.config.isInSidecarMode()
-        ? clusterFacade.getRangesForLocalEndpoint(cluster, repairUnit.getKeyspaceName())
-        : Collections.emptyList();
+    localEndpointRanges =
+        context.config.isInSidecarMode()
+            ? clusterFacade.getRangesForLocalEndpoint(cluster, repairUnit.getKeyspaceName())
+            : Collections.emptyList();
 
     String repairUnitClusterName = repairUnit.getClusterName();
     String repairUnitKeyspaceName = repairUnit.getKeyspaceName();
 
-    // below four metric names are duplicated, so monitoring systems can follow per cluster or per cluster and keyspace
-    String metricNameForRepairProgressPerKeyspace
-        = metricName(
-        "repairProgress",
-        repairUnitClusterName,
-        repairUnitKeyspaceName,
-        repairRun.get().getRepairUnitId());
+    // below four metric names are duplicated, so monitoring systems can follow per cluster or per
+    // cluster and keyspace
+    String metricNameForRepairProgressPerKeyspace =
+        metricName(
+            "repairProgress",
+            repairUnitClusterName,
+            repairUnitKeyspaceName,
+            repairRun.get().getRepairUnitId());
 
-    String metricNameForRepairProgress
-        = metricName("repairProgress", repairUnitClusterName, repairRun.get().getRepairUnitId());
+    String metricNameForRepairProgress =
+        metricName("repairProgress", repairUnitClusterName, repairRun.get().getRepairUnitId());
 
     registerMetric(metricNameForRepairProgressPerKeyspace, (Gauge<Float>) () -> repairProgress);
     registerMetric(metricNameForRepairProgress, (Gauge<Float>) () -> repairProgress);
     PrometheusMetricsFilter.ignoreMetric(metricNameForRepairProgress);
 
-    metricNameForMillisSinceLastRepairPerKeyspace
-        = metricName(
-        "millisSinceLastRepair",
-        repairUnitClusterName,
-        repairUnitKeyspaceName,
-        repairRun.get().getRepairUnitId());
+    metricNameForMillisSinceLastRepairPerKeyspace =
+        metricName(
+            "millisSinceLastRepair",
+            repairUnitClusterName,
+            repairUnitKeyspaceName,
+            repairRun.get().getRepairUnitId());
 
-    metricNameForMillisSinceLastRepair
-        = metricName(
-        "millisSinceLastRepair", repairUnitClusterName, repairRun.get().getRepairUnitId());
+    metricNameForMillisSinceLastRepair =
+        metricName(
+            "millisSinceLastRepair", repairUnitClusterName, repairRun.get().getRepairUnitId());
 
-    String metricNameForDoneSegmentsPerKeyspace
-        = metricName("segmentsDone", repairUnitClusterName, repairUnitKeyspaceName, repairRun.get().getRepairUnitId());
+    String metricNameForDoneSegmentsPerKeyspace =
+        metricName(
+            "segmentsDone",
+            repairUnitClusterName,
+            repairUnitKeyspaceName,
+            repairRun.get().getRepairUnitId());
 
-    String metricNameForDoneSegments
-        = metricName("segmentsDone", repairUnitClusterName, repairRun.get().getRepairUnitId());
+    String metricNameForDoneSegments =
+        metricName("segmentsDone", repairUnitClusterName, repairRun.get().getRepairUnitId());
 
     registerMetric(metricNameForDoneSegmentsPerKeyspace, (Gauge<Float>) () -> segmentsDone);
     registerMetric(metricNameForDoneSegments, (Gauge<Integer>) () -> (int) segmentsDone);
     PrometheusMetricsFilter.ignoreMetric(metricNameForDoneSegments);
 
-    String metricNameForTotalSegmentsPerKeyspace
-        = metricName("segmentsTotal", repairUnitClusterName, repairUnitKeyspaceName, repairRun.get().getRepairUnitId());
+    String metricNameForTotalSegmentsPerKeyspace =
+        metricName(
+            "segmentsTotal",
+            repairUnitClusterName,
+            repairUnitKeyspaceName,
+            repairRun.get().getRepairUnitId());
 
-    String metricNameForTotalSegments
-        = metricName("segmentsTotal", repairUnitClusterName, repairRun.get().getRepairUnitId());
+    String metricNameForTotalSegments =
+        metricName("segmentsTotal", repairUnitClusterName, repairRun.get().getRepairUnitId());
 
-
-    registerMetric(metricNameForTotalSegmentsPerKeyspace, (Gauge<Integer>) () -> (int) segmentsTotal);
+    registerMetric(
+        metricNameForTotalSegmentsPerKeyspace, (Gauge<Integer>) () -> (int) segmentsTotal);
     registerMetric(metricNameForTotalSegments, (Gauge<Float>) () -> segmentsTotal);
     PrometheusMetricsFilter.ignoreMetric(metricNameForTotalSegments);
   }
 
   public static RepairRunner create(
-      AppContext context,
-      UUID repairRunId,
-      ClusterFacade clusterFacade,
-      IRepairRunDao repairRunDao) throws ReaperException {
+      AppContext context, UUID repairRunId, ClusterFacade clusterFacade, IRepairRunDao repairRunDao)
+      throws ReaperException {
 
     return new RepairRunner(context, repairRunId, clusterFacade, repairRunDao);
   }
@@ -195,7 +200,8 @@ final class RepairRunner implements Runnable {
       boolean allLocalDcHostsChecked,
       DatacenterAvailability dcAvailability) {
 
-    return allHostsChecked || (allLocalDcHostsChecked && DatacenterAvailability.LOCAL == dcAvailability);
+    return allHostsChecked
+        || (allLocalDcHostsChecked && DatacenterAvailability.LOCAL == dcAvailability);
   }
 
   @VisibleForTesting
@@ -218,9 +224,7 @@ final class RepairRunner implements Runnable {
     return repairRunId;
   }
 
-  /**
-   * Starts/resumes a repair run that is supposed to run.
-   */
+  /** Starts/resumes a repair run that is supposed to run. */
   @Override
   public void run() {
     Thread.currentThread().setName(clusterName + ":" + repairRunId);
@@ -232,7 +236,9 @@ final class RepairRunner implements Runnable {
       Optional<RepairRun> repairRun = repairRunDao.getRepairRun(repairRunId);
       if ((!repairRun.isPresent() || repairRun.get().getRunState().isTerminated())) {
         // this might happen if a run is deleted while paused etc.
-        LOG.warn("RepairRun \"{}\" does not exist. Killing RepairRunner for this run instance.", repairRunId);
+        LOG.warn(
+            "RepairRun \"{}\" does not exist. Killing RepairRunner for this run instance.",
+            repairRunId);
         killAndCleanupRunner();
         return;
       }
@@ -254,8 +260,11 @@ final class RepairRunner implements Runnable {
             updateClusterNodeList();
           } else {
             // There are too many concurrent repairs already and this one hasn't got priority.
-            LOG.info("Maximum number of concurrent repairs reached. Repair {} will resume later.", repairRunId);
-            LOG.info("Current active repair runners: {}",
+            LOG.info(
+                "Maximum number of concurrent repairs reached. Repair {} will resume later.",
+                repairRunId);
+            LOG.info(
+                "Current active repair runners: {}",
                 repairRunIds.stream()
                     .map(runId -> Pair.of(runId, Uuids.unixTimestamp(runId)))
                     .collect(Collectors.toList()));
@@ -277,19 +286,25 @@ final class RepairRunner implements Runnable {
   }
 
   @VisibleForTesting
-  static List<UUID> getRunningRepairRunIds(Map<UUID, RepairRunner> currentRunners, String currentClusterName) {
-    return new ArrayList<UUID>(currentRunners.entrySet().stream()
-          .filter(entry -> entry.getValue().isRunning())
-          .filter(entry -> entry.getValue().getClusterName().equals(currentClusterName))
-          .map(Entry::getKey)
-          .collect(Collectors.toList()));
+  static List<UUID> getRunningRepairRunIds(
+      Map<UUID, RepairRunner> currentRunners, String currentClusterName) {
+    return new ArrayList<UUID>(
+        currentRunners.entrySet().stream()
+            .filter(entry -> entry.getValue().isRunning())
+            .filter(entry -> entry.getValue().getClusterName().equals(currentClusterName))
+            .map(Entry::getKey)
+            .collect(Collectors.toList()));
   }
 
   @VisibleForTesting
   boolean isAllowedToRun(List<UUID> runningRepairRunIds, UUID currentId) {
-    runningRepairRunIds.sort((id1, id2) -> Long.valueOf(Uuids.unixTimestamp(id1)).compareTo(Uuids.unixTimestamp(id2)));
+    runningRepairRunIds.sort(
+        (id1, id2) -> Long.valueOf(Uuids.unixTimestamp(id1)).compareTo(Uuids.unixTimestamp(id2)));
     for (int i = 0; i < context.config.getMaxParallelRepairs(); i++) {
-      LOG.debug("Repair run #{} is in the list of running repair runs in position {}", runningRepairRunIds.get(i), i);
+      LOG.debug(
+          "Repair run #{} is in the list of running repair runs in position {}",
+          runningRepairRunIds.get(i),
+          i);
       if (runningRepairRunIds.get(i).equals(currentId)) {
         LOG.debug("Repair run #{} is allowed to run", currentId);
         return true;
@@ -299,15 +314,17 @@ final class RepairRunner implements Runnable {
     return false;
   }
 
-  /**
-   * Starts the repair run.
-   */
+  /** Starts the repair run. */
   private void start() throws ReaperException, InterruptedException {
     LOG.info("Repairs for repair run #{} starting", repairRunId);
     synchronized (this) {
       RepairRun repairRun = repairRunDao.getRepairRun(repairRunId).get();
       repairRunDao.updateRepairRun(
-          repairRun.with().runState(RepairRun.RunState.RUNNING).startTime(DateTime.now()).build(repairRun.getId()));
+          repairRun
+              .with()
+              .runState(RepairRun.RunState.RUNNING)
+              .startTime(DateTime.now())
+              .build(repairRun.getId()));
     }
 
     startNextSegment();
@@ -323,25 +340,33 @@ final class RepairRunner implements Runnable {
     Cluster cluster = context.storage.getClusterDao().getCluster(clusterName);
     // Note that the seed hosts only get updated if enableDynamicSeedList is true. This is
     // consistent with the logic in ClusterResource.findClusterWithSeedHost.
-    if (context.config.getEnableDynamicSeedList() && !cluster.getSeedHosts().equals(liveNodes)
+    if (context.config.getEnableDynamicSeedList()
+        && !cluster.getSeedHosts().equals(liveNodes)
         && !liveNodes.isEmpty()) {
       // Updating storage only if the seed lists has changed
-      LOG.info("Updating the seed list for cluster {} as topology changed since the last repair.", clusterName);
-      context.storage.getClusterDao().updateCluster(cluster.with().withSeedHosts(liveNodes).build());
+      LOG.info(
+          "Updating the seed list for cluster {} as topology changed since the last repair.",
+          clusterName);
+      context
+          .storage
+          .getClusterDao()
+          .updateCluster(cluster.with().withSeedHosts(liveNodes).build());
     }
   }
 
   private void endRepairRun() {
     LOG.info("Repairs for repair run #{} done", repairRunId);
     synchronized (this) {
-      // if the segment has been removed ignore. should only happen in tests on backends that delete repair segments.
+      // if the segment has been removed ignore. should only happen in tests on backends that delete
+      // repair segments.
       Optional<RepairRun> repairRun = repairRunDao.getRepairRun(repairRunId);
       if (repairRun.isPresent()) {
         try {
           DateTime repairRunCompleted = DateTime.now();
 
           repairRunDao.updateRepairRun(
-              repairRun.get()
+              repairRun
+                  .get()
                   .with()
                   .runState(RepairRun.RunState.DONE)
                   .endTime(repairRunCompleted)
@@ -354,14 +379,20 @@ final class RepairRunner implements Runnable {
 
           context.metricRegistry.register(
               metricNameForMillisSinceLastRepairPerKeyspace,
-              (Gauge<Long>) () -> DateTime.now().getMillis() - repairRunCompleted.toInstant().getMillis());
+              (Gauge<Long>)
+                  () -> DateTime.now().getMillis() - repairRunCompleted.toInstant().getMillis());
 
           context.metricRegistry.register(
               metricNameForMillisSinceLastRepair,
-              (Gauge<Long>) () -> DateTime.now().getMillis() - repairRunCompleted.toInstant().getMillis());
+              (Gauge<Long>)
+                  () -> DateTime.now().getMillis() - repairRunCompleted.toInstant().getMillis());
           PrometheusMetricsFilter.ignoreMetric(metricNameForMillisSinceLastRepair);
-          context.metricRegistry.counter(
-              MetricRegistry.name(RepairManager.class, "repairDone", RepairRun.RunState.DONE.toString())).inc();
+          context
+              .metricRegistry
+              .counter(
+                  MetricRegistry.name(
+                      RepairManager.class, "repairDone", RepairRun.RunState.DONE.toString()))
+              .inc();
 
           maybeAdaptRepairSchedule();
           context.schedulingManager.maybeRegisterRepairRunCompleted(repairRun.get());
@@ -375,33 +406,37 @@ final class RepairRunner implements Runnable {
   private void maybeScheduleRetryOnError() {
     if (context.config.isScheduleRetryOnError()) {
       // Check if a schedule exists for this keyspace and cluster before rescheduling
-      Collection<RepairSchedule> schedulesForKeyspace
-              = context.storage.getRepairScheduleDao()
+      Collection<RepairSchedule> schedulesForKeyspace =
+          context
+              .storage
+              .getRepairScheduleDao()
               .getRepairSchedulesForClusterAndKeyspace(clusterName, repairUnit.getKeyspaceName());
-      List<RepairSchedule> repairSchedules = schedulesForKeyspace.stream()
+      List<RepairSchedule> repairSchedules =
+          schedulesForKeyspace.stream()
               .filter(schedule -> schedule.getRepairUnitId().equals(repairUnit.getId()))
               .collect(Collectors.toList());
 
       if (!repairSchedules.isEmpty()) {
         // Set precondition that only a single schedule should match
-        Preconditions.checkArgument(repairSchedules.size() == 1,
-                String.format("Update for repair run %s and unit %s "
-                                + "should impact a single schedule. %d were found",
-                        repairRunId,
-                        repairUnit.getId(),
-                        repairSchedules.size())
-        );
+        Preconditions.checkArgument(
+            repairSchedules.size() == 1,
+            String.format(
+                "Update for repair run %s and unit %s "
+                    + "should impact a single schedule. %d were found",
+                repairRunId, repairUnit.getId(), repairSchedules.size()));
         RepairSchedule scheduleToTune = repairSchedules.get(0);
 
         int minuteRetryDelay = (int) context.config.getScheduleRetryDelay().toMinutes();
         DateTime nextRepairRun = DateTime.now().plusMinutes(minuteRetryDelay);
 
         if (nextRepairRun.isBefore(scheduleToTune.getNextActivation())) {
-          LOG.debug("Scheduling next repair run at {} for repair schedule {}", nextRepairRun,
-                  scheduleToTune.getId());
+          LOG.debug(
+              "Scheduling next repair run at {} for repair schedule {}",
+              nextRepairRun,
+              scheduleToTune.getId());
 
-          RepairSchedule newSchedule
-                  = scheduleToTune.with().nextActivation(nextRepairRun).build(scheduleToTune.getId());
+          RepairSchedule newSchedule =
+              scheduleToTune.with().nextActivation(nextRepairRun).build(scheduleToTune.getId());
           context.storage.getRepairScheduleDao().updateRepairSchedule(newSchedule);
         }
       }
@@ -409,24 +444,34 @@ final class RepairRunner implements Runnable {
   }
 
   /**
-   * Tune segment timeout and number of segments for adaptive schedules.
-   * Checks that the run was triggered by an adaptive schedule and gathers info on the run to apply tunings.
+   * Tune segment timeout and number of segments for adaptive schedules. Checks that the run was
+   * triggered by an adaptive schedule and gathers info on the run to apply tunings.
    */
   @VisibleForTesting
   public void maybeAdaptRepairSchedule() {
     Optional<RepairRun> repairRun = repairRunDao.getRepairRun(repairRunId);
     if (repairRun.isPresent() && Boolean.TRUE.equals(repairRun.get().getAdaptiveSchedule())) {
-      Collection<RepairSegment> segments
-          = context.storage.getRepairSegmentDao().getSegmentsWithState(repairRunId, RepairSegment.State.DONE);
-      int maxSegmentDurationInMins = segments.stream()
-          .mapToInt(repairSegment
-              -> (int) (repairSegment.getEndTime().getMillis() - repairSegment.getStartTime().getMillis()) / 60_000)
-          .max()
-          .orElseThrow(NoSuchElementException::new);
-      int extendedSegments = (int) segments.stream().filter(segment -> segment.getFailCount() > 0).count();
-      double percentExtendedSegments
-          = ((float) extendedSegments / (float) repairRun.get().getSegmentCount()) * 100.0;
-      LOG.info("extendedSegments = {}, total segments = {}, percent extended = {}",
+      Collection<RepairSegment> segments =
+          context
+              .storage
+              .getRepairSegmentDao()
+              .getSegmentsWithState(repairRunId, RepairSegment.State.DONE);
+      int maxSegmentDurationInMins =
+          segments.stream()
+              .mapToInt(
+                  repairSegment ->
+                      (int)
+                              (repairSegment.getEndTime().getMillis()
+                                  - repairSegment.getStartTime().getMillis())
+                          / 60_000)
+              .max()
+              .orElseThrow(NoSuchElementException::new);
+      int extendedSegments =
+          (int) segments.stream().filter(segment -> segment.getFailCount() > 0).count();
+      double percentExtendedSegments =
+          ((float) extendedSegments / (float) repairRun.get().getSegmentCount()) * 100.0;
+      LOG.info(
+          "extendedSegments = {}, total segments = {}, percent extended = {}",
           extendedSegments,
           repairRun.get().getSegmentCount(),
           percentExtendedSegments);
@@ -440,10 +485,12 @@ final class RepairRunner implements Runnable {
     if (percentExtendedSegments > PERCENT_EXTENDED_THRESHOLD) {
       // Too many segments were extended, meaning that the number of segments is too low
       addSegmentsPerNodeToScheduleForUnit();
-    } else if ((int) percentExtendedSegments <= PERCENT_EXTENDED_THRESHOLD && percentExtendedSegments >= 1) {
+    } else if ((int) percentExtendedSegments <= PERCENT_EXTENDED_THRESHOLD
+        && percentExtendedSegments >= 1) {
       // The number of extended segments is moderate and timeout should be extended
       raiseTimeoutOfUnit();
-    } else if (percentExtendedSegments == 0 && maxSegmentDuration < SEGMENT_DURATION_FOR_REDUCTION_THRESHOLD) {
+    } else if (percentExtendedSegments == 0
+        && maxSegmentDuration < SEGMENT_DURATION_FOR_REDUCTION_THRESHOLD) {
       // Segments are being executed very fast so segment count could be lowered
       reduceSegmentsPerNodeToScheduleForUnit();
     }
@@ -451,24 +498,30 @@ final class RepairRunner implements Runnable {
 
   @VisibleForTesting
   void reduceSegmentsPerNodeToScheduleForUnit() {
-    LOG.debug("Reducing segments per node for adaptive schedule on repair unit {}", repairUnit.getId());
+    LOG.debug(
+        "Reducing segments per node for adaptive schedule on repair unit {}", repairUnit.getId());
     RepairSchedule scheduleToTune = getScheduleForRun();
 
     // Reduce segments by decrements of 10%
-    int newSegmentCountPerNode
-        = (int) Math.max(MIN_SEGMENTS_PER_NODE_REDUCTION, scheduleToTune.getSegmentCountPerNode() / 1.1);
+    int newSegmentCountPerNode =
+        (int)
+            Math.max(
+                MIN_SEGMENTS_PER_NODE_REDUCTION, scheduleToTune.getSegmentCountPerNode() / 1.1);
 
     // update schedule with new segment per node value
-    RepairSchedule newSchedule
-        = scheduleToTune.with().segmentCountPerNode(newSegmentCountPerNode).build(scheduleToTune.getId());
+    RepairSchedule newSchedule =
+        scheduleToTune
+            .with()
+            .segmentCountPerNode(newSegmentCountPerNode)
+            .build(scheduleToTune.getId());
     context.storage.getRepairScheduleDao().updateRepairSchedule(newSchedule);
-
   }
 
   @VisibleForTesting
   void raiseTimeoutOfUnit() {
     // Build updated repair unit
-    RepairUnit updatedUnit = repairUnit.with().timeout(repairUnit.getTimeout() * 2).build(repairUnit.getId());
+    RepairUnit updatedUnit =
+        repairUnit.with().timeout(repairUnit.getTimeout() * 2).build(repairUnit.getId());
 
     // update unit with new timeout
     context.storage.getRepairUnitDao().updateRepairUnit(updatedUnit);
@@ -476,38 +529,49 @@ final class RepairRunner implements Runnable {
 
   @VisibleForTesting
   void addSegmentsPerNodeToScheduleForUnit() {
-    LOG.debug("Adding segments per node for adaptive schedule on repair unit {}", repairUnit.getId());
+    LOG.debug(
+        "Adding segments per node for adaptive schedule on repair unit {}", repairUnit.getId());
     RepairSchedule scheduleToTune = getScheduleForRun();
 
     // Reduce segments by increments of 20%
-    int newSegmentCountPerNode
-        = (int) Math.max(MIN_SEGMENTS_PER_NODE_REDUCTION, scheduleToTune.getSegmentCountPerNode() * 1.2);
+    int newSegmentCountPerNode =
+        (int)
+            Math.max(
+                MIN_SEGMENTS_PER_NODE_REDUCTION, scheduleToTune.getSegmentCountPerNode() * 1.2);
 
     // update schedule with new segment per node value
-    RepairSchedule newSchedule
-        = scheduleToTune.with().segmentCountPerNode(newSegmentCountPerNode).build(scheduleToTune.getId());
+    RepairSchedule newSchedule =
+        scheduleToTune
+            .with()
+            .segmentCountPerNode(newSegmentCountPerNode)
+            .build(scheduleToTune.getId());
     context.storage.getRepairScheduleDao().updateRepairSchedule(newSchedule);
   }
 
   private RepairSchedule getScheduleForRun() {
     // find schedule
-    Collection<RepairSchedule> schedulesForKeyspace
-        = context.storage.getRepairScheduleDao()
-        .getRepairSchedulesForClusterAndKeyspace(clusterName, repairUnit.getKeyspaceName());
-    List<RepairSchedule> schedulesToTune = schedulesForKeyspace.stream()
-        .filter(schedule -> schedule.getRepairUnitId().equals(repairUnit.getId()))
-        .collect(Collectors.toList());
+    Collection<RepairSchedule> schedulesForKeyspace =
+        context
+            .storage
+            .getRepairScheduleDao()
+            .getRepairSchedulesForClusterAndKeyspace(clusterName, repairUnit.getKeyspaceName());
+    List<RepairSchedule> schedulesToTune =
+        schedulesForKeyspace.stream()
+            .filter(schedule -> schedule.getRepairUnitId().equals(repairUnit.getId()))
+            .collect(Collectors.toList());
 
     // Set precondition that only a single schedule should match
-    Preconditions.checkArgument(schedulesToTune.size() == 1, String.format("Update for repair run %s and unit %s "
-        + "should impact a single schedule. %d were found", repairRunId, repairUnit.getId(), schedulesToTune.size()));
+    Preconditions.checkArgument(
+        schedulesToTune.size() == 1,
+        String.format(
+            "Update for repair run %s and unit %s "
+                + "should impact a single schedule. %d were found",
+            repairRunId, repairUnit.getId(), schedulesToTune.size()));
 
     return schedulesToTune.get(0);
   }
 
-  /**
-   * Get the next segment and repair it. If there is none, we're done.
-   */
+  /** Get the next segment and repair it. If there is none, we're done. */
   private void startNextSegment() throws ReaperException, InterruptedException {
     boolean scheduleRetry = true;
 
@@ -518,26 +582,24 @@ final class RepairRunner implements Runnable {
     // We have an empty slot, so let's start new segment runner if possible.
     // When in sidecar mode, filter on ranges that the local node is a replica for only.
     LOG.info("Attempting to run new segment...");
-    List<RepairSegment> nextRepairSegments
-        = context.config.isInSidecarMode()
-        ? ((IDistributedStorage) context.storage)
-        .getNextFreeSegmentsForRanges(
-            repairRunId, localEndpointRanges)
-        : context.storage.getRepairSegmentDao().getNextFreeSegments(
-        repairRunId);
+    List<RepairSegment> nextRepairSegments =
+        context.config.isInSidecarMode()
+            ? ((IDistributedStorage) context.storage)
+                .getNextFreeSegmentsForRanges(repairRunId, localEndpointRanges)
+            : context.storage.getRepairSegmentDao().getNextFreeSegments(repairRunId);
 
     LOG.debug("Next repair segments: {}", nextRepairSegments.size());
     Optional<RepairSegment> nextRepairSegment = Optional.empty();
     final Collection<String> potentialReplicas = new HashSet<>();
     for (RepairSegment segment : nextRepairSegments) {
-      Map<String, String> potentialReplicaMap = this.repairRunService.getDCsByNodeForRepairSegment(
-          cluster, segment.getTokenRange(), repairUnit.getKeyspaceName(), repairUnit);
+      Map<String, String> potentialReplicaMap =
+          this.repairRunService.getDCsByNodeForRepairSegment(
+              cluster, segment.getTokenRange(), repairUnit.getKeyspaceName(), repairUnit);
       if (repairUnit.getIncrementalRepair() && !repairUnit.getSubrangeIncrementalRepair()) {
         Map<String, String> endpointHostIdMap = clusterFacade.getEndpointToHostId(cluster);
         if (segment.getHostID() == null) {
           throw new ReaperException(
-              String.format("No host ID for repair segment %s", segment.getId().toString())
-          );
+              String.format("No host ID for repair segment %s", segment.getId().toString()));
         }
         endpointHostIdMap.entrySet().stream()
             .filter(entry -> entry.getValue().equals(segment.getHostID().toString()))
@@ -562,25 +624,32 @@ final class RepairRunner implements Runnable {
       }
     }
     if (!nextRepairSegment.isPresent()) {
-      String msg = "All nodes are busy or have too many pending compactions for the remaining candidate segments.";
+      String msg =
+          "All nodes are busy or have too many pending compactions for the remaining candidate segments.";
       LOG.info(msg);
       updateLastEvent(msg);
     } else {
       LOG.info("Next segment to run : {}", nextRepairSegment.get().getId());
-      scheduleRetry = repairSegment(
-          nextRepairSegment.get().getId(),
-          nextRepairSegment.get().getTokenRange(),
-          potentialReplicas);
+      scheduleRetry =
+          repairSegment(
+              nextRepairSegment.get().getId(),
+              nextRepairSegment.get().getTokenRange(),
+              potentialReplicas);
       if (scheduleRetry) {
-        segmentsTotal = context.storage.getRepairSegmentDao().getSegmentAmountForRepairRun(repairRunId);
+        segmentsTotal =
+            context.storage.getRepairSegmentDao().getSegmentAmountForRepairRun(repairRunId);
         repairStarted = true;
       }
     }
 
     if (!repairStarted) {
-      segmentsDone = context.storage.getRepairSegmentDao().getSegmentAmountForRepairRunWithState(repairRunId,
-          RepairSegment.State.DONE);
-      segmentsTotal = context.storage.getRepairSegmentDao().getSegmentAmountForRepairRun(repairRunId);
+      segmentsDone =
+          context
+              .storage
+              .getRepairSegmentDao()
+              .getSegmentAmountForRepairRunWithState(repairRunId, RepairSegment.State.DONE);
+      segmentsTotal =
+          context.storage.getRepairSegmentDao().getSegmentAmountForRepairRun(repairRunId);
 
       LOG.info("Repair amount done {}", segmentsDone);
       repairProgress = segmentsDone / segmentsTotal;
@@ -590,8 +659,11 @@ final class RepairRunner implements Runnable {
         scheduleRetry = false;
       }
     } else {
-      segmentsDone = context.storage.getRepairSegmentDao().getSegmentAmountForRepairRunWithState(repairRunId,
-          RepairSegment.State.DONE);
+      segmentsDone =
+          context
+              .storage
+              .getRepairSegmentDao()
+              .getSegmentAmountForRepairRunWithState(repairRunId, RepairSegment.State.DONE);
     }
 
     if (scheduleRetry) {
@@ -599,38 +671,47 @@ final class RepairRunner implements Runnable {
     }
   }
 
-  Pair<String, Callable<Optional<CompactionStats>>> getNodeMetrics(String node, String localDc, String nodeDc) {
+  Pair<String, Callable<Optional<CompactionStats>>> getNodeMetrics(
+      String node, String localDc, String nodeDc) {
 
-    return Pair.of(node, () -> {
-      LOG.debug("getMetricsForHost {} / {} / {}", node, localDc, nodeDc);
-      CompactionStats activeCompactions = clusterFacade.listActiveCompactions(
-          Node.builder()
-              .withCluster(cluster)
-              .withHostname(node)
-              .build());
+    return Pair.of(
+        node,
+        () -> {
+          LOG.debug("getMetricsForHost {} / {} / {}", node, localDc, nodeDc);
+          CompactionStats activeCompactions =
+              clusterFacade.listActiveCompactions(
+                  Node.builder().withCluster(cluster).withHostname(node).build());
 
-      return Optional.ofNullable(activeCompactions);
-    });
+          return Optional.ofNullable(activeCompactions);
+        });
   }
 
   private boolean nodesReadyForNewRepair(
       ICassandraManagementProxy coordinator,
       RepairSegment segment,
       Map<String, String> dcByNode,
-      UUID segmentId) throws ReaperException {
+      UUID segmentId)
+      throws ReaperException {
 
     Collection<String> nodes = getNodesInvolvedInSegment(dcByNode);
     LOG.debug("Nodes involved in segment {}: {}", segmentId, nodes);
     String dc = EndpointSnitchInfoProxy.create(coordinator).getDataCenter();
-    boolean requireAllHostMetrics = DatacenterAvailability.LOCAL != context.config.getDatacenterAvailability();
+    boolean requireAllHostMetrics =
+        DatacenterAvailability.LOCAL != context.config.getDatacenterAvailability();
     boolean allLocalDcHostsChecked = true;
     boolean allHostsChecked = true;
     Set<String> unreachableNodes = Sets.newHashSet();
 
-    List<Pair<String, Future<Optional<CompactionStats>>>> nodeMetricsTasks = nodes.stream()
-        .map(node -> getNodeMetrics(node, dc != null ? dc : "", dcByNode.get(node) != null ? dcByNode.get(node) : ""))
-        .map(pair -> Pair.of(pair.getLeft(), METRICS_GRABBER_EXECUTOR.submit(pair.getRight())))
-        .collect(Collectors.toList());
+    List<Pair<String, Future<Optional<CompactionStats>>>> nodeMetricsTasks =
+        nodes.stream()
+            .map(
+                node ->
+                    getNodeMetrics(
+                        node,
+                        dc != null ? dc : "",
+                        dcByNode.get(node) != null ? dcByNode.get(node) : ""))
+            .map(pair -> Pair.of(pair.getLeft(), METRICS_GRABBER_EXECUTOR.submit(pair.getRight())))
+            .collect(Collectors.toList());
 
     for (Pair<String, Future<Optional<CompactionStats>>> pair : nodeMetricsTasks) {
       try {
@@ -638,10 +719,15 @@ final class RepairRunner implements Runnable {
         if (result.isPresent()) {
           CompactionStats metrics = result.get();
           Optional<Integer> pendingCompactions = metrics.getPendingCompactions();
-          if (pendingCompactions.isPresent() && pendingCompactions.get() > context.config.getMaxPendingCompactions()) {
-            String msg = String.format(
-                "postponed repair segment %s because of too many pending compactions (%s > %s) on host %s",
-                segmentId, pendingCompactions, context.config.getMaxPendingCompactions(), pair.getLeft());
+          if (pendingCompactions.isPresent()
+              && pendingCompactions.get() > context.config.getMaxPendingCompactions()) {
+            String msg =
+                String.format(
+                    "postponed repair segment %s because of too many pending compactions (%s > %s) on host %s",
+                    segmentId,
+                    pendingCompactions,
+                    context.config.getMaxPendingCompactions(),
+                    pair.getLeft());
 
             updateLastEvent(msg);
             return false;
@@ -661,17 +747,22 @@ final class RepairRunner implements Runnable {
       }
     }
 
-    if (okToRepairSegment(allHostsChecked, allLocalDcHostsChecked, context.config.getDatacenterAvailability())) {
-      LOG.debug("Ok to repair segment '{}' on repair run with id '{}'", segment.getId(), segment.getRunId());
+    if (okToRepairSegment(
+        allHostsChecked, allLocalDcHostsChecked, context.config.getDatacenterAvailability())) {
+      LOG.debug(
+          "Ok to repair segment '{}' on repair run with id '{}'",
+          segment.getId(),
+          segment.getRunId());
       return true;
     } else {
       LOG.debug("Couldn't get metrics for hosts {}, will retry later", unreachableNodes);
-      String msg = String.format(
-          "Postponed repair segment %s on repair run with id %s because we couldn't get %shosts metrics on %s",
-          segment.getId(),
-          segment.getRunId(),
-          (requireAllHostMetrics ? "" : "datacenter "),
-          StringUtils.join(unreachableNodes, ' '));
+      String msg =
+          String.format(
+              "Postponed repair segment %s on repair run with id %s because we couldn't get %shosts metrics on %s",
+              segment.getId(),
+              segment.getRunId(),
+              (requireAllHostMetrics ? "" : "datacenter "),
+              StringUtils.join(unreachableNodes, ' '));
 
       updateLastEvent(msg);
       return false;
@@ -690,11 +781,12 @@ final class RepairRunner implements Runnable {
    * Start the repair of a segment.
    *
    * @param segmentId id of the segment to repair.
-   * @param segment   token range of the segment to repair.
+   * @param segment token range of the segment to repair.
    * @return Boolean indicating whether rescheduling next run is needed.
    * @throws ReaperException any runtime exception we caught in the execution
    */
-  private boolean repairSegment(final UUID segmentId, Segment segment, Collection<String> segmentReplicas)
+  private boolean repairSegment(
+      final UUID segmentId, Segment segment, Collection<String> segmentReplicas)
       throws InterruptedException, ReaperException {
 
     RepairRun repairRun;
@@ -707,8 +799,11 @@ final class RepairRunner implements Runnable {
       intensity = repairRun.getIntensity();
       validationParallelism = repairRun.getRepairParallelism();
 
-      int amountDone = context.storage.getRepairSegmentDao().getSegmentAmountForRepairRunWithState(repairRunId,
-          RepairSegment.State.DONE);
+      int amountDone =
+          context
+              .storage
+              .getRepairSegmentDao()
+              .getSegmentAmountForRepairRunWithState(repairRunId, RepairSegment.State.DONE);
       repairProgress = (float) amountDone / repairRun.getSegmentCount();
     }
 
@@ -721,9 +816,10 @@ final class RepairRunner implements Runnable {
     if (!repairUnit.getIncrementalRepair() || repairUnit.getSubrangeIncrementalRepair()) {
       // full repair or subrange incremental
       try {
-        potentialCoordinators = filterPotentialCoordinatorsByDatacenters(
-            repairUnit.getDatacenters(),
-            clusterFacade.tokenRangeToEndpoint(cluster, keyspace, segment));
+        potentialCoordinators =
+            filterPotentialCoordinatorsByDatacenters(
+                repairUnit.getDatacenters(),
+                clusterFacade.tokenRangeToEndpoint(cluster, keyspace, segment));
 
       } catch (RuntimeException e) {
         LOG.warn("Couldn't get token ranges from coordinator", e);
@@ -734,30 +830,34 @@ final class RepairRunner implements Runnable {
         return false;
       }
     } else {
-      // Add random sleep time to avoid one Reaper instance locking all others during multi DC incremental repairs
+      // Add random sleep time to avoid one Reaper instance locking all others during multi DC
+      // incremental repairs
       Thread.sleep(ThreadLocalRandom.current().nextInt(10, 100) * 100);
-      Optional<RepairSegment> rs = context.storage.getRepairSegmentDao().getRepairSegment(repairRunId, segmentId);
+      Optional<RepairSegment> rs =
+          context.storage.getRepairSegmentDao().getRepairSegment(repairRunId, segmentId);
       if (rs.isPresent()) {
         potentialCoordinators.addAll(segmentReplicas);
       } else {
-        // the segment has been removed. should only happen in tests on backends that delete repair segments.
+        // the segment has been removed. should only happen in tests on backends that delete repair
+        // segments.
         return false;
       }
     }
 
     try {
-      SegmentRunner segmentRunner = SegmentRunner.create(
-          context,
-          clusterFacade,
-          segmentId,
-          potentialCoordinators,
-          TimeUnit.MINUTES.toMillis(repairUnit.getTimeout()),
-          intensity,
-          validationParallelism,
-          clusterName,
-          repairUnit,
-          repairRun.getTables(),
-          this);
+      SegmentRunner segmentRunner =
+          SegmentRunner.create(
+              context,
+              clusterFacade,
+              segmentId,
+              potentialCoordinators,
+              TimeUnit.MINUTES.toMillis(repairUnit.getTimeout()),
+              intensity,
+              validationParallelism,
+              clusterName,
+              repairUnit,
+              repairRun.getTables(),
+              this);
 
       ListenableFuture<?> segmentResult = context.repairManager.submitSegment(segmentRunner);
       Futures.addCallback(
@@ -784,24 +884,31 @@ final class RepairRunner implements Runnable {
   private synchronized void failRepairDueToOutdatedSegment(UUID segmentId, Segment segment) {
     // This segment has a faulty token range possibly due to an additive change in cluster topology
     // during repair. Abort the entire repair run.
-    LOG.warn("Segment #{} is faulty, no potential coordinators for range: {}", segmentId,
-            segment.toString());
+    LOG.warn(
+        "Segment #{} is faulty, no potential coordinators for range: {}",
+        segmentId,
+        segment.toString());
     // If the segment has been removed, ignore. Should only happen in tests on backends
     // that delete repair segments.
     Optional<RepairRun> repairRun = repairRunDao.getRepairRun(repairRunId);
     if (repairRun.isPresent()) {
       try {
         repairRunDao.updateRepairRun(
-                repairRunDao.getRepairRun(repairRunId).get()
-                        .with()
-                        .runState(RepairRun.RunState.ERROR)
-                        .lastEvent(String.format("No coordinators for range %s", segment))
-                        .endTime(DateTime.now())
-                        .build(repairRunId));
+            repairRunDao
+                .getRepairRun(repairRunId)
+                .get()
+                .with()
+                .runState(RepairRun.RunState.ERROR)
+                .lastEvent(String.format("No coordinators for range %s", segment))
+                .endTime(DateTime.now())
+                .build(repairRunId));
 
-        context.metricRegistry.counter(
-                MetricRegistry.name(RepairManager.class, "repairDone",
-                        RepairRun.RunState.ERROR.toString())).inc();
+        context
+            .metricRegistry
+            .counter(
+                MetricRegistry.name(
+                    RepairManager.class, "repairDone", RepairRun.RunState.ERROR.toString()))
+            .inc();
 
         maybeScheduleRetryOnError();
       } finally {
@@ -811,19 +918,18 @@ final class RepairRunner implements Runnable {
   }
 
   private List<String> filterPotentialCoordinatorsByDatacenters(
-      Collection<String> datacenters,
-      List<String> potentialCoordinators) throws ReaperException {
+      Collection<String> datacenters, List<String> potentialCoordinators) throws ReaperException {
 
     List<Pair<String, String>> coordinatorsWithDc = Lists.newArrayList();
     for (String coordinator : potentialCoordinators) {
       coordinatorsWithDc.add(getNodeDatacenterPair(coordinator));
     }
 
-    List<String> coordinators = coordinatorsWithDc
-        .stream()
-        .filter(node -> datacenters.contains(node.getRight()) || datacenters.isEmpty())
-        .map(nodeTuple -> nodeTuple.getLeft())
-        .collect(Collectors.toList());
+    List<String> coordinators =
+        coordinatorsWithDc.stream()
+            .filter(node -> datacenters.contains(node.getRight()) || datacenters.isEmpty())
+            .map(nodeTuple -> nodeTuple.getLeft())
+            .collect(Collectors.toList());
 
     LOG.debug(
         "[filterPotentialCoordinatorsByDatacenters] coordinators filtered by dc {}. Before : {} / After : {}",
@@ -841,12 +947,17 @@ final class RepairRunner implements Runnable {
   }
 
   private void handleResult(UUID segmentId) {
-    Optional<RepairSegment> segment = context.storage.getRepairSegmentDao().getRepairSegment(repairRunId, segmentId);
+    Optional<RepairSegment> segment =
+        context.storage.getRepairSegmentDao().getRepairSegment(repairRunId, segmentId);
 
     // Don't do rescheduling here, not to spawn uncontrolled amount of threads
     if (segment.isPresent()) {
       RepairSegment.State state = segment.get().getState();
-      LOG.debug("In repair run #{}, triggerRepair on segment {} ended with state {}", repairRunId, segmentId, state);
+      LOG.debug(
+          "In repair run #{}, triggerRepair on segment {} ended with state {}",
+          repairRunId,
+          segmentId,
+          state);
       switch (state) {
         case NOT_STARTED:
           // Unsuccessful repair
@@ -858,16 +969,21 @@ final class RepairRunner implements Runnable {
 
         default:
           // Another thread has started a new repair on this segment already
-          // Or maybe the same repair segment id should never be re-run in which case this is an error
-          String msg = "handleResult called with a segment state ("
-              + state
-              + ") that it "
-              + "should not have after segmentRunner has tried a repair";
+          // Or maybe the same repair segment id should never be re-run in which case this is an
+          // error
+          String msg =
+              "handleResult called with a segment state ("
+                  + state
+                  + ") that it "
+                  + "should not have after segmentRunner has tried a repair";
           LOG.error(msg);
           throw new AssertionError(msg);
       }
     } else {
-      LOG.warn("In repair run #{}, triggerRepair on segment {} ended, but run is missing", repairRunId, segmentId);
+      LOG.warn(
+          "In repair run #{}, triggerRepair on segment {} ended, but run is missing",
+          repairRunId,
+          segmentId);
     }
   }
 
@@ -877,12 +993,12 @@ final class RepairRunner implements Runnable {
       // absent if deleted. should only happen in tests on backends that delete repair segments.
       if (!repairRun.isPresent() || repairRun.get().getRunState().isTerminated()) {
         LOG.warn(
-            "Will not update lastEvent of run that has already terminated. The message was: " + "\"{}\"",
+            "Will not update lastEvent of run that has already terminated. The message was: "
+                + "\"{}\"",
             newEvent);
       } else {
         repairRunDao.updateRepairRun(
-            repairRun.get().with().lastEvent(newEvent).build(repairRunId),
-            Optional.of(false));
+            repairRun.get().with().lastEvent(newEvent).build(repairRunId), Optional.of(false));
         LOG.info(newEvent);
       }
     }
@@ -893,21 +1009,29 @@ final class RepairRunner implements Runnable {
     Thread.currentThread().interrupt();
   }
 
-  private String metricName(String metric, String clusterName, String keyspaceName, UUID repairRunId) {
-    return MetricRegistry.name(RepairRunner.class, metric, cleanName(clusterName), cleanName(keyspaceName),
+  private String metricName(
+      String metric, String clusterName, String keyspaceName, UUID repairRunId) {
+    return MetricRegistry.name(
+        RepairRunner.class,
+        metric,
+        cleanName(clusterName),
+        cleanName(keyspaceName),
         cleanId(repairRunId));
   }
 
   private String metricName(String metric, String clusterName, UUID repairRunId) {
-    return MetricRegistry.name(RepairRunner.class, metric, cleanName(clusterName), cleanId(repairRunId));
+    return MetricRegistry.name(
+        RepairRunner.class, metric, cleanName(clusterName), cleanId(repairRunId));
   }
 
-  private RepairRun fixMissingRepairRunTables(RepairRun repairRun, RepairUnit repairUnit) throws ReaperException {
+  private RepairRun fixMissingRepairRunTables(RepairRun repairRun, RepairUnit repairUnit)
+      throws ReaperException {
     if (repairRun.getTables().isEmpty()) {
-      RepairRun newRepairRun = repairRun
-          .with()
-          .tables(RepairUnitService.create(context).getTablesToRepair(cluster, repairUnit))
-          .build(repairRun.getId());
+      RepairRun newRepairRun =
+          repairRun
+              .with()
+              .tables(RepairUnitService.create(context).getTablesToRepair(cluster, repairUnit))
+              .build(repairRun.getId());
 
       repairRunDao.updateRepairRun(newRepairRun, Optional.of(false));
       return newRepairRun;

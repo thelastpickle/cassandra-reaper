@@ -16,6 +16,11 @@
 
 package io.cassandrareaper.resources;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import io.cassandrareaper.AppContext;
 import io.cassandrareaper.core.EditableRepairSchedule;
 import io.cassandrareaper.core.RepairSchedule;
@@ -25,23 +30,16 @@ import io.cassandrareaper.service.TestRepairConfiguration;
 import io.cassandrareaper.storage.IStorageDao;
 import io.cassandrareaper.storage.MemoryStorageFacade;
 import io.cassandrareaper.storage.repairschedule.IRepairScheduleDao;
-
+import io.dropwizard.jersey.validation.ValidationErrorMessage;
 import java.net.URI;
 import java.util.Optional;
 import java.util.UUID;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.UriInfo;
-
-import io.dropwizard.jersey.validation.ValidationErrorMessage;
 import org.apache.cassandra.repair.RepairParallelism;
 import org.joda.time.DateTime;
 import org.junit.Test;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 public class RepairScheduleResourceTest {
   private static final URI REPAIR_SCHEDULE_URI = URI.create("http://reaper_host/repair_schedule/");
@@ -52,19 +50,21 @@ public class RepairScheduleResourceTest {
     final AppContext context = new AppContext();
 
     IStorageDao mockedStorage = mock(IStorageDao.class);
-    RepairSchedule repairSchedule = RepairSchedule.builder(UUID.randomUUID())
-        .nextActivation(DateTime.now())
-        .owner("test")
-        .repairParallelism(RepairParallelism.PARALLEL)
-        .intensity(1.0D)
-        .daysBetween(1)
-        .segmentCountPerNode(2)
-        .build(repairScheduleId);
+    RepairSchedule repairSchedule =
+        RepairSchedule.builder(UUID.randomUUID())
+            .nextActivation(DateTime.now())
+            .owner("test")
+            .repairParallelism(RepairParallelism.PARALLEL)
+            .intensity(1.0D)
+            .daysBetween(1)
+            .segmentCountPerNode(2)
+            .build(repairScheduleId);
     mockObjects.setRepairSchedule(repairSchedule);
 
     IRepairScheduleDao mockedRepairScheduleDao = mock(IRepairScheduleDao.class);
     when(mockedStorage.getRepairScheduleDao()).thenReturn(mockedRepairScheduleDao);
-    when(mockedRepairScheduleDao.getRepairSchedule(repairScheduleId)).thenReturn(Optional.of(repairSchedule));
+    when(mockedRepairScheduleDao.getRepairSchedule(repairScheduleId))
+        .thenReturn(Optional.of(repairSchedule));
     when(mockedStorage.getRepairScheduleDao().updateRepairSchedule(any())).thenReturn(false);
     context.storage = mockedStorage;
 
@@ -90,26 +90,29 @@ public class RepairScheduleResourceTest {
     when(uriInfo.getBaseUriBuilder()).thenReturn(UriBuilder.fromUri(uri));
     mockObjects.setUriInfo(uriInfo);
 
-    RepairUnit.Builder mockRepairUnitBuilder = RepairUnit.builder()
-        .incrementalRepair(false)
-        .subrangeIncrementalRepair(false)
-        .repairThreadCount(1)
-        .clusterName("cluster-test")
-        .keyspaceName("keyspace-test")
-        .timeout(30);
+    RepairUnit.Builder mockRepairUnitBuilder =
+        RepairUnit.builder()
+            .incrementalRepair(false)
+            .subrangeIncrementalRepair(false)
+            .repairThreadCount(1)
+            .clusterName("cluster-test")
+            .keyspaceName("keyspace-test")
+            .timeout(30);
     RepairUnit repairUnit = context.storage.getRepairUnitDao().addRepairUnit(mockRepairUnitBuilder);
     mockObjects.setRepairUnit(repairUnit);
 
-    RepairSchedule.Builder mockRepairScheduleBuilder = RepairSchedule.builder(repairUnit.getId())
-        .daysBetween(1)
-        .nextActivation(DateTime.now())
-        .segmentCountPerNode(2)
-        .owner("owner-test")
-        .repairParallelism(RepairParallelism.PARALLEL)
-        .creationTime(DateTime.now())
-        .intensity(0.5D)
-        .state(RepairSchedule.State.ACTIVE);
-    RepairSchedule repairSchedule = context.storage.getRepairScheduleDao().addRepairSchedule(mockRepairScheduleBuilder);
+    RepairSchedule.Builder mockRepairScheduleBuilder =
+        RepairSchedule.builder(repairUnit.getId())
+            .daysBetween(1)
+            .nextActivation(DateTime.now())
+            .segmentCountPerNode(2)
+            .owner("owner-test")
+            .repairParallelism(RepairParallelism.PARALLEL)
+            .creationTime(DateTime.now())
+            .intensity(0.5D)
+            .state(RepairSchedule.State.ACTIVE);
+    RepairSchedule repairSchedule =
+        context.storage.getRepairScheduleDao().addRepairSchedule(mockRepairScheduleBuilder);
     mockObjects.setRepairSchedule(repairSchedule);
 
     return mockObjects;
@@ -119,14 +122,15 @@ public class RepairScheduleResourceTest {
     DateTime nextActivation = DateTime.now();
     UUID id = UUID.randomUUID();
     UUID unitId = UUID.randomUUID();
-    RepairSchedule repairSchedule = RepairSchedule.builder(unitId)
-        .nextActivation(nextActivation)
-        .owner("test")
-        .repairParallelism(RepairParallelism.PARALLEL)
-        .intensity(1.0D)
-        .daysBetween(1)
-        .segmentCountPerNode(2)
-        .build(id);
+    RepairSchedule repairSchedule =
+        RepairSchedule.builder(unitId)
+            .nextActivation(nextActivation)
+            .owner("test")
+            .repairParallelism(RepairParallelism.PARALLEL)
+            .intensity(1.0D)
+            .daysBetween(1)
+            .segmentCountPerNode(2)
+            .build(id);
     return repairSchedule;
   }
 
@@ -144,14 +148,10 @@ public class RepairScheduleResourceTest {
   public void testPatchRepairScheduleBadPathParam() {
     final MockObjects mocks = initInMemoryMocks(REPAIR_SCHEDULE_URI);
 
-    RepairScheduleResource repairScheduleResource = new RepairScheduleResource(mocks.context,
-        mocks.context.storage.getRepairRunDao());
+    RepairScheduleResource repairScheduleResource =
+        new RepairScheduleResource(mocks.context, mocks.context.storage.getRepairRunDao());
 
-    Response response = repairScheduleResource.patchRepairSchedule(
-        mocks.uriInfo,
-        null,
-        null
-    );
+    Response response = repairScheduleResource.patchRepairSchedule(mocks.uriInfo, null, null);
 
     // Validate that we got back 400 - an invalid schedule-id should return a 400
     assertThat(response).isNotNull();
@@ -166,16 +166,15 @@ public class RepairScheduleResourceTest {
   public void testPatchRepairScheduleEmptyBody() {
     final MockObjects mocks = initInMemoryMocks(REPAIR_SCHEDULE_URI);
 
-    RepairScheduleResource repairScheduleResource = new RepairScheduleResource(mocks.context,
-        mocks.context.storage.getRepairRunDao());
+    RepairScheduleResource repairScheduleResource =
+        new RepairScheduleResource(mocks.context, mocks.context.storage.getRepairRunDao());
 
-    Response response = repairScheduleResource.patchRepairSchedule(
-        mocks.uriInfo,
-        mocks.getRepairSchedule().getId(),
-        null
-    );
+    Response response =
+        repairScheduleResource.patchRepairSchedule(
+            mocks.uriInfo, mocks.getRepairSchedule().getId(), null);
 
-    // Validate that we got back 400 - an invalid editable-repair-schedule (body) should return a 400
+    // Validate that we got back 400 - an invalid editable-repair-schedule (body) should return a
+    // 400
     assertThat(response).isNotNull();
     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
     assertThat(response.getEntity()).isNotNull();
@@ -190,20 +189,19 @@ public class RepairScheduleResourceTest {
     final RepairSchedule mockRepairSchedule = mocks.getRepairSchedule();
 
     // Create a set of changes to patch
-    RepairScheduleResource repairScheduleResource = new RepairScheduleResource(mocks.context,
-        mocks.context.storage.getRepairRunDao());
+    RepairScheduleResource repairScheduleResource =
+        new RepairScheduleResource(mocks.context, mocks.context.storage.getRepairRunDao());
     EditableRepairSchedule editableRepairSchedule = buildBasicTestEditableRepairSchedule();
 
     // Apply the changes
-    Response response = repairScheduleResource.patchRepairSchedule(
-        mocks.uriInfo,
-        mockRepairSchedule.getId(),
-        editableRepairSchedule
-    );
+    Response response =
+        repairScheduleResource.patchRepairSchedule(
+            mocks.uriInfo, mockRepairSchedule.getId(), editableRepairSchedule);
 
     // Validate that we got back a 500 when the update was valid but fails
     assertThat(response).isNotNull();
-    assertThat(response.getStatus()).isEqualTo(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
+    assertThat(response.getStatus())
+        .isEqualTo(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
   }
 
   @Test
@@ -211,16 +209,14 @@ public class RepairScheduleResourceTest {
     final MockObjects mocks = initFailedUpdateStorageMocks(REPAIR_SCHEDULE_URI, UUID.randomUUID());
 
     // Create a set of changes to patch
-    RepairScheduleResource repairScheduleResource = new RepairScheduleResource(mocks.context,
-        mocks.context.storage.getRepairRunDao());
+    RepairScheduleResource repairScheduleResource =
+        new RepairScheduleResource(mocks.context, mocks.context.storage.getRepairRunDao());
     EditableRepairSchedule editableRepairSchedule = buildBasicTestEditableRepairSchedule();
 
     // Apply the changes - with a random UUID that won't be found
-    Response response = repairScheduleResource.patchRepairSchedule(
-        mocks.uriInfo,
-        UUID.randomUUID(),
-        editableRepairSchedule
-    );
+    Response response =
+        repairScheduleResource.patchRepairSchedule(
+            mocks.uriInfo, UUID.randomUUID(), editableRepairSchedule);
 
     // Validate that we got back a 500 when the update was valid but fails
     assertThat(response).isNotNull();
@@ -233,16 +229,14 @@ public class RepairScheduleResourceTest {
     final RepairSchedule mockRepairSchedule = mocks.getRepairSchedule();
 
     // Create a set of changes to patch
-    RepairScheduleResource repairScheduleResource = new RepairScheduleResource(mocks.context,
-        mocks.context.storage.getRepairRunDao());
+    RepairScheduleResource repairScheduleResource =
+        new RepairScheduleResource(mocks.context, mocks.context.storage.getRepairRunDao());
     EditableRepairSchedule editableRepairSchedule = buildBasicTestEditableRepairSchedule();
 
     // Apply the changes
-    Response response = repairScheduleResource.patchRepairSchedule(
-        mocks.uriInfo,
-        mockRepairSchedule.getId(),
-        editableRepairSchedule
-    );
+    Response response =
+        repairScheduleResource.patchRepairSchedule(
+            mocks.uriInfo, mockRepairSchedule.getId(), editableRepairSchedule);
 
     // Validate that we got back an expected response
     assertThat(response).isNotNull();
@@ -259,17 +253,20 @@ public class RepairScheduleResourceTest {
     assertThat(patchedRepairSchedule.getOwner()).isEqualTo(editableRepairSchedule.getOwner());
     // intensity
     assertThat(patchedRepairSchedule.getIntensity()).isNotNull();
-    assertThat(patchedRepairSchedule.getIntensity()).isEqualTo(editableRepairSchedule.getIntensity().doubleValue());
+    assertThat(patchedRepairSchedule.getIntensity())
+        .isEqualTo(editableRepairSchedule.getIntensity().doubleValue());
     // segmentCountPerNode
     assertThat(patchedRepairSchedule.getSegmentCountPerNode()).isNotNull();
     assertThat(patchedRepairSchedule.getSegmentCountPerNode())
         .isEqualTo(editableRepairSchedule.getSegmentCountPerNode().intValue());
     // daysBetween
     assertThat(patchedRepairSchedule.getDaysBetween()).isNotNull();
-    assertThat(patchedRepairSchedule.getDaysBetween()).isEqualTo(editableRepairSchedule.getDaysBetween().intValue());
+    assertThat(patchedRepairSchedule.getDaysBetween())
+        .isEqualTo(editableRepairSchedule.getDaysBetween().intValue());
     // repairParallelism
     assertThat(patchedRepairSchedule.getRepairParallelism()).isNotNull();
-    assertThat(patchedRepairSchedule.getRepairParallelism()).isEqualTo(editableRepairSchedule.getRepairParallelism());
+    assertThat(patchedRepairSchedule.getRepairParallelism())
+        .isEqualTo(editableRepairSchedule.getRepairParallelism());
 
     // Check that other fields were left untouched
     // Compare the mocked version to the patched version
@@ -279,10 +276,12 @@ public class RepairScheduleResourceTest {
     assertThat(patchedRepairSchedule.getId()).isEqualTo(mockRepairSchedule.getId());
     // repairUnitId
     assertThat(patchedRepairSchedule.getRepairUnitId()).isNotNull();
-    assertThat(patchedRepairSchedule.getRepairUnitId()).isEqualTo(mockRepairSchedule.getRepairUnitId());
+    assertThat(patchedRepairSchedule.getRepairUnitId())
+        .isEqualTo(mockRepairSchedule.getRepairUnitId());
     // creationTime
     assertThat(patchedRepairSchedule.getCreationTime()).isNotNull();
-    assertThat(patchedRepairSchedule.getCreationTime()).isEqualTo(mockRepairSchedule.getCreationTime());
+    assertThat(patchedRepairSchedule.getCreationTime())
+        .isEqualTo(mockRepairSchedule.getCreationTime());
     // state
     assertThat(patchedRepairSchedule.getState()).isNotNull();
     assertThat(patchedRepairSchedule.getState()).isEqualTo(mockRepairSchedule.getState());
@@ -290,16 +289,9 @@ public class RepairScheduleResourceTest {
 
   @Test
   public void testApplyRepairPatchBadParams() {
-    RepairSchedule patchedRepairSchedule = RepairScheduleResource.applyRepairPatchParams(
-        null,
-        "test2",
-        RepairParallelism.SEQUENTIAL,
-        0.0D,
-        2,
-        3,
-        false,
-        null
-    );
+    RepairSchedule patchedRepairSchedule =
+        RepairScheduleResource.applyRepairPatchParams(
+            null, "test2", RepairParallelism.SEQUENTIAL, 0.0D, 2, 3, false, null);
 
     assertThat(patchedRepairSchedule).isNull();
   }
@@ -308,26 +300,27 @@ public class RepairScheduleResourceTest {
   public void testApplyRepairPatchParamsEmpty() {
     RepairSchedule repairSchedule = buildBasicTestRepairSchedule();
 
-    RepairSchedule patchedRepairSchedule = RepairScheduleResource.applyRepairPatchParams(
-        repairSchedule,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null
-    );
+    RepairSchedule patchedRepairSchedule =
+        RepairScheduleResource.applyRepairPatchParams(
+            repairSchedule, null, null, null, null, null, null, null);
 
-    assertThat(patchedRepairSchedule.getNextActivation()).isNotNull().isEqualTo(repairSchedule.getNextActivation());
-    assertThat(patchedRepairSchedule.getRepairUnitId()).isNotNull().isEqualTo(repairSchedule.getRepairUnitId());
+    assertThat(patchedRepairSchedule.getNextActivation())
+        .isNotNull()
+        .isEqualTo(repairSchedule.getNextActivation());
+    assertThat(patchedRepairSchedule.getRepairUnitId())
+        .isNotNull()
+        .isEqualTo(repairSchedule.getRepairUnitId());
     assertThat(patchedRepairSchedule.getId()).isNotNull().isEqualTo(repairSchedule.getId());
     assertThat(patchedRepairSchedule.getOwner()).isNotNull().isEqualTo(repairSchedule.getOwner());
     assertThat(patchedRepairSchedule.getRepairParallelism())
         .isNotNull()
         .isEqualTo(repairSchedule.getRepairParallelism());
-    assertThat(patchedRepairSchedule.getIntensity()).isNotNull().isEqualTo(repairSchedule.getIntensity());
-    assertThat(patchedRepairSchedule.getDaysBetween()).isNotNull().isEqualTo(repairSchedule.getDaysBetween());
+    assertThat(patchedRepairSchedule.getIntensity())
+        .isNotNull()
+        .isEqualTo(repairSchedule.getIntensity());
+    assertThat(patchedRepairSchedule.getDaysBetween())
+        .isNotNull()
+        .isEqualTo(repairSchedule.getDaysBetween());
     assertThat(patchedRepairSchedule.getSegmentCountPerNode())
         .isNotNull()
         .isEqualTo(repairSchedule.getSegmentCountPerNode());
@@ -337,22 +330,21 @@ public class RepairScheduleResourceTest {
   public void testApplyRepairPatchParams() {
     RepairSchedule repairSchedule = buildBasicTestRepairSchedule();
 
-    RepairSchedule patchedRepairSchedule = RepairScheduleResource.applyRepairPatchParams(
-        repairSchedule,
-        "test2",
-        RepairParallelism.SEQUENTIAL,
-        0.0D,
-        2,
-        3,
-        false,
-        null
-    );
+    RepairSchedule patchedRepairSchedule =
+        RepairScheduleResource.applyRepairPatchParams(
+            repairSchedule, "test2", RepairParallelism.SEQUENTIAL, 0.0D, 2, 3, false, null);
 
-    assertThat(patchedRepairSchedule.getNextActivation()).isNotNull().isEqualTo(repairSchedule.getNextActivation());
-    assertThat(patchedRepairSchedule.getRepairUnitId()).isNotNull().isEqualTo(repairSchedule.getRepairUnitId());
+    assertThat(patchedRepairSchedule.getNextActivation())
+        .isNotNull()
+        .isEqualTo(repairSchedule.getNextActivation());
+    assertThat(patchedRepairSchedule.getRepairUnitId())
+        .isNotNull()
+        .isEqualTo(repairSchedule.getRepairUnitId());
     assertThat(patchedRepairSchedule.getId()).isNotNull().isEqualTo(repairSchedule.getId());
     assertThat(patchedRepairSchedule.getOwner()).isNotNull().isEqualTo("test2");
-    assertThat(patchedRepairSchedule.getRepairParallelism()).isNotNull().isEqualTo(RepairParallelism.SEQUENTIAL);
+    assertThat(patchedRepairSchedule.getRepairParallelism())
+        .isNotNull()
+        .isEqualTo(RepairParallelism.SEQUENTIAL);
     assertThat(patchedRepairSchedule.getIntensity()).isNotNull().isEqualTo(0.0D);
     assertThat(patchedRepairSchedule.getDaysBetween()).isNotNull().isEqualTo(2);
     assertThat(patchedRepairSchedule.getSegmentCountPerNode()).isNotNull().isEqualTo(3);

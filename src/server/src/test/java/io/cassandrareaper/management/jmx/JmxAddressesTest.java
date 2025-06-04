@@ -17,13 +17,13 @@
 
 package io.cassandrareaper.management.jmx;
 
-import org.junit.Test;
-
 import static io.cassandrareaper.management.jmx.JmxAddresses.getJmxServiceUrl;
 import static io.cassandrareaper.management.jmx.JmxAddresses.isNumericIPv6Address;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+
+import org.junit.Test;
 
 public class JmxAddressesTest {
   @Test
@@ -48,18 +48,15 @@ public class JmxAddressesTest {
   @Test
   public void getJmxServiceUrlIPv6NumericTest() throws Exception {
     int port = 8888;
-    assertEquals(jmxUrlPath("[::1]", port),
-        getJmxServiceUrl("::1", port).getURLPath());
-    assertEquals(jmxUrlPath("[::1]", port),
-        getJmxServiceUrl("[::1]", port).getURLPath());
-    assertEquals(jmxUrlPath("127.0.0.1", port),
-        getJmxServiceUrl("127.0.0.1", port).getURLPath());
-    assertEquals(jmxUrlPath("[2a06:6b8:b010:d007::1:c8]", port),
+    assertEquals(jmxUrlPath("[::1]", port), getJmxServiceUrl("::1", port).getURLPath());
+    assertEquals(jmxUrlPath("[::1]", port), getJmxServiceUrl("[::1]", port).getURLPath());
+    assertEquals(jmxUrlPath("127.0.0.1", port), getJmxServiceUrl("127.0.0.1", port).getURLPath());
+    assertEquals(
+        jmxUrlPath("[2a06:6b8:b010:d007::1:c8]", port),
         getJmxServiceUrl("2a06:6b8:b010:d007::1:c8", port).getURLPath());
-    assertEquals(jmxUrlPath("localhost", port),
-        getJmxServiceUrl("localhost", port).getURLPath());
-    assertEquals(jmxUrlPath("example.com", port),
-        getJmxServiceUrl("example.com", port).getURLPath());
+    assertEquals(jmxUrlPath("localhost", port), getJmxServiceUrl("localhost", port).getURLPath());
+    assertEquals(
+        jmxUrlPath("example.com", port), getJmxServiceUrl("example.com", port).getURLPath());
   }
 
   private String jmxUrlPath(String host, int port) {

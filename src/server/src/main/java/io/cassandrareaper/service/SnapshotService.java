@@ -17,6 +17,13 @@
 
 package io.cassandrareaper.service;
 
+import com.codahale.metrics.InstrumentedExecutorService;
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Supplier;
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
@@ -25,7 +32,6 @@ import io.cassandrareaper.core.Snapshot;
 import io.cassandrareaper.core.Snapshot.Builder;
 import io.cassandrareaper.management.ClusterFacade;
 import io.cassandrareaper.storage.snapshot.ISnapshotDao;
-
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -36,14 +42,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.stream.Collectors;
-
-import com.codahale.metrics.InstrumentedExecutorService;
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Supplier;
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import org.apache.commons.lang3.tuple.Pair;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
@@ -52,19 +50,23 @@ import org.slf4j.LoggerFactory;
 public final class SnapshotService {
   public static final String SNAPSHOT_PREFIX = "reaper";
 
-  private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd-HH-mm-ss");
+  private static final DateTimeFormatter FORMATTER =
+      DateTimeFormatter.ofPattern("yyyy-MM-dd-HH-mm-ss");
   private static final Logger LOG = LoggerFactory.getLogger(SnapshotService.class);
 
   private final AppContext context;
   private final ClusterFacade clusterFacade;
   private final ExecutorService executor;
-  private final Cache<String, Snapshot> cache = CacheBuilder.newBuilder().weakValues().maximumSize(1000).build();
+  private final Cache<String, Snapshot> cache =
+      CacheBuilder.newBuilder().weakValues().maximumSize(1000).build();
 
   private final ISnapshotDao snapshotDao;
 
-  private SnapshotService(AppContext context, ExecutorService executor,
-                          Supplier<ClusterFacade> clusterFacadeSupplier,
-                          ISnapshotDao snapshotDao) {
+  private SnapshotService(
+      AppContext context,
+      ExecutorService executor,
+      Supplier<ClusterFacade> clusterFacadeSupplier,
+      ISnapshotDao snapshotDao) {
     this.context = context;
     this.clusterFacade = clusterFacadeSupplier.get();
     this.executor = new InstrumentedExecutorService(executor, context.metricRegistry);
@@ -73,53 +75,56 @@ public final class SnapshotService {
 
   @VisibleForTesting
   static SnapshotService create(
-      AppContext context, ExecutorService executor,
-      Supplier<ClusterFacade> clusterFacadeSupplier, ISnapshotDao snapshotDao) {
+      AppContext context,
+      ExecutorService executor,
+      Supplier<ClusterFacade> clusterFacadeSupplier,
+      ISnapshotDao snapshotDao) {
     return new SnapshotService(context, executor, clusterFacadeSupplier, snapshotDao);
   }
 
-  public static SnapshotService create(AppContext context, ExecutorService executor, ISnapshotDao snapshotDao) {
+  public static SnapshotService create(
+      AppContext context, ExecutorService executor, ISnapshotDao snapshotDao) {
     return new SnapshotService(context, executor, () -> ClusterFacade.create(context), snapshotDao);
   }
 
-  public Pair<Node, String> takeSnapshot(String snapshotName, Node host, String... keyspaces) throws ReaperException {
+  public Pair<Node, String> takeSnapshot(String snapshotName, Node host, String... keyspaces)
+      throws ReaperException {
     return clusterFacade.takeSnapshot(snapshotName, host, keyspaces);
   }
 
-  Callable<Pair<Node, String>> takeSnapshotTask(String snapshotName, Node host, String... keyspace) {
+  Callable<Pair<Node, String>> takeSnapshotTask(
+      String snapshotName, Node host, String... keyspace) {
     return () -> {
       return takeSnapshot(snapshotName, host, keyspace);
     };
   }
 
   public List<Pair<Node, String>> takeSnapshotClusterWide(
-      String snapshotName,
-      String clusterName,
-      String owner,
-      String cause,
-      String... keyspace) throws ReaperException {
+      String snapshotName, String clusterName, String owner, String cause, String... keyspace)
+      throws ReaperException {
 
     try {
       List<Pair<Node, String>> snapshotResults = Lists.newArrayList();
       Cluster cluster = context.storage.getClusterDao().getCluster(clusterName);
 
-      Snapshot snapshot = Snapshot.builder()
-          .withClusterName(clusterName)
-          .withName(snapshotName)
-          .withOwner(owner)
-          .withCause(cause)
-          .withCreationDate(DateTime.now())
-          .build();
+      Snapshot snapshot =
+          Snapshot.builder()
+              .withClusterName(clusterName)
+              .withName(snapshotName)
+              .withOwner(owner)
+              .withCause(cause)
+              .withCreationDate(DateTime.now())
+              .build();
 
       snapshotDao.saveSnapshot(snapshot);
       LOG.info("Cluster : {} ; Cluster obj : {}", clusterName, cluster);
       List<String> liveNodes = clusterFacade.getLiveNodes(cluster);
 
-      List<Callable<Pair<Node, String>>> snapshotTasks = liveNodes
-          .stream()
-          .map(host -> Node.builder().withCluster(cluster).withHostname(host).build())
-          .map(node -> takeSnapshotTask(snapshotName, node, keyspace))
-          .collect(Collectors.toList());
+      List<Callable<Pair<Node, String>>> snapshotTasks =
+          liveNodes.stream()
+              .map(host -> Node.builder().withCluster(cluster).withHostname(host).build())
+              .map(node -> takeSnapshotTask(snapshotName, node, keyspace))
+              .collect(Collectors.toList());
 
       List<Future<Pair<Node, String>>> futures = executor.invokeAll(snapshotTasks);
       for (Future<Pair<Node, String>> future : futures) {
@@ -137,8 +142,7 @@ public final class SnapshotService {
     try {
       List<Snapshot> snapshots = listSnapshots(host);
 
-      return snapshots
-          .stream()
+      return snapshots.stream()
           .collect(Collectors.groupingBy(Snapshot::getName, Collectors.toList()));
 
     } catch (RuntimeException e) {
@@ -148,24 +152,23 @@ public final class SnapshotService {
   }
 
   public List<Snapshot> listSnapshots(Node host) throws ReaperException {
-    return clusterFacade
-        .listSnapshots(host)
-        .stream()
+    return clusterFacade.listSnapshots(host).stream()
         .map(snapshot -> enrichSnapshotWithMetadata(snapshot))
         .collect(Collectors.toList());
   }
 
-  public Map<String, Map<String, List<Snapshot>>> listSnapshotsClusterWide(String clusterName) throws ReaperException {
+  public Map<String, Map<String, List<Snapshot>>> listSnapshotsClusterWide(String clusterName)
+      throws ReaperException {
     try {
       // Map with the snapshot name as key and a map of <host,
       Cluster cluster = context.storage.getClusterDao().getCluster(clusterName);
       List<String> liveNodes = clusterFacade.getLiveNodes(cluster);
 
-      List<Callable<List<Snapshot>>> listSnapshotTasks = liveNodes
-          .stream()
-          .map(host -> Node.builder().withCluster(cluster).withHostname(host).build())
-          .map(node -> listSnapshotTask(node))
-          .collect(Collectors.toList());
+      List<Callable<List<Snapshot>>> listSnapshotTasks =
+          liveNodes.stream()
+              .map(host -> Node.builder().withCluster(cluster).withHostname(host).build())
+              .map(node -> listSnapshotTask(node))
+              .collect(Collectors.toList());
 
       List<Future<List<Snapshot>>> futures = executor.invokeAll(listSnapshotTasks);
 
@@ -174,16 +177,15 @@ public final class SnapshotService {
         snapshots.addAll(future.get());
       }
 
-      Map<String, List<Snapshot>> snapshotsByName
-          = snapshots.stream().collect(Collectors.groupingBy(Snapshot::getName, Collectors.toList()));
+      Map<String, List<Snapshot>> snapshotsByName =
+          snapshots.stream().collect(Collectors.groupingBy(Snapshot::getName, Collectors.toList()));
 
       Map<String, Map<String, List<Snapshot>>> snapshotsByNameAndHost = Maps.newHashMap();
 
       for (String snapshotName : snapshotsByName.keySet()) {
-        Map<String, List<Snapshot>> snapshotsByHost = snapshotsByName
-            .get(snapshotName)
-            .stream()
-            .collect(Collectors.groupingBy(Snapshot::getHost, Collectors.toList()));
+        Map<String, List<Snapshot>> snapshotsByHost =
+            snapshotsByName.get(snapshotName).stream()
+                .collect(Collectors.groupingBy(Snapshot::getHost, Collectors.toList()));
         snapshotsByNameAndHost.put(snapshotName, snapshotsByHost);
       }
 
@@ -216,23 +218,25 @@ public final class SnapshotService {
     };
   }
 
-  public void clearSnapshotClusterWide(String snapshotName, String clusterName) throws ReaperException {
+  public void clearSnapshotClusterWide(String snapshotName, String clusterName)
+      throws ReaperException {
     try {
       Cluster cluster = context.storage.getClusterDao().getCluster(clusterName);
       List<String> liveNodes = clusterFacade.getLiveNodes(cluster);
 
-      List<Callable<Node>> clearSnapshotTasks = liveNodes
-          .stream()
-          .map(host -> Node.builder().withCluster(cluster).withHostname(host).build())
-          .map(node -> clearSnapshotTask(snapshotName, node))
-          .collect(Collectors.toList());
+      List<Callable<Node>> clearSnapshotTasks =
+          liveNodes.stream()
+              .map(host -> Node.builder().withCluster(cluster).withHostname(host).build())
+              .map(node -> clearSnapshotTask(snapshotName, node))
+              .collect(Collectors.toList());
 
       List<Future<Node>> futures = executor.invokeAll(clearSnapshotTasks);
       for (Future<Node> future : futures) {
         future.get();
       }
 
-      snapshotDao.deleteSnapshot(Snapshot.builder().withClusterName(clusterName).withName(snapshotName).build());
+      snapshotDao.deleteSnapshot(
+          Snapshot.builder().withClusterName(clusterName).withName(snapshotName).build());
     } catch (ExecutionException e) {
       LOG.error("Failed clearing {} snapshot for cluster {}", snapshotName, clusterName, e);
     } catch (InterruptedException e) {
@@ -246,34 +250,38 @@ public final class SnapshotService {
   }
 
   private Snapshot enrichSnapshotWithMetadata(Snapshot snapshot) {
-    Optional<Snapshot> snapshotMetadata = Optional.ofNullable(
-        cache.getIfPresent(snapshot.getClusterName() + "-" + snapshot.getName()));
+    Optional<Snapshot> snapshotMetadata =
+        Optional.ofNullable(
+            cache.getIfPresent(snapshot.getClusterName() + "-" + snapshot.getName()));
 
     if (!snapshotMetadata.isPresent()) {
-      snapshotMetadata = Optional.ofNullable(
-          snapshotDao.getSnapshot(snapshot.getClusterName(), snapshot.getName()));
+      snapshotMetadata =
+          Optional.ofNullable(
+              snapshotDao.getSnapshot(snapshot.getClusterName(), snapshot.getName()));
 
       if (snapshotMetadata.isPresent()) {
         cache.put(snapshot.getClusterName() + "-" + snapshot.getName(), snapshotMetadata.get());
       }
     }
 
-    Builder snapshotBuilder = Snapshot.builder()
-        .withClusterName(snapshot.getClusterName())
-        .withName(snapshot.getName())
-        .withHost(snapshot.getHost())
-        .withKeyspace(snapshot.getKeyspace())
-        .withSizeOnDisk(snapshot.getSizeOnDisk())
-        .withTrueSize(snapshot.getTrueSize())
-        .withTable(snapshot.getTable());
+    Builder snapshotBuilder =
+        Snapshot.builder()
+            .withClusterName(snapshot.getClusterName())
+            .withName(snapshot.getName())
+            .withHost(snapshot.getHost())
+            .withKeyspace(snapshot.getKeyspace())
+            .withSizeOnDisk(snapshot.getSizeOnDisk())
+            .withTrueSize(snapshot.getTrueSize())
+            .withTable(snapshot.getTable());
 
     if (snapshotMetadata.isPresent()) {
-      snapshotBuilder = snapshotBuilder
-          .withCause(snapshotMetadata.get().getCause().orElse(""))
-          .withOwner(snapshotMetadata.get().getOwner().orElse(""));
+      snapshotBuilder =
+          snapshotBuilder
+              .withCause(snapshotMetadata.get().getCause().orElse(""))
+              .withOwner(snapshotMetadata.get().getOwner().orElse(""));
       if (snapshotMetadata.get().getCreationDate().isPresent()) {
-        snapshotBuilder = snapshotBuilder
-            .withCreationDate(snapshotMetadata.get().getCreationDate().get());
+        snapshotBuilder =
+            snapshotBuilder.withCreationDate(snapshotMetadata.get().getCreationDate().get());
       }
     }
 

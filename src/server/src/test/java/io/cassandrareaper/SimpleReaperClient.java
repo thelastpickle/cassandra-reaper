@@ -17,6 +17,12 @@
 
 package io.cassandrareaper;
 
+import static org.junit.Assert.assertEquals;
+
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.joda.JodaModule;
+import com.google.common.collect.Maps;
 import io.cassandrareaper.core.DiagEventSubscription;
 import io.cassandrareaper.core.DroppedMessages;
 import io.cassandrareaper.core.MetricsHistogram;
@@ -25,7 +31,6 @@ import io.cassandrareaper.core.Snapshot;
 import io.cassandrareaper.core.ThreadPoolStat;
 import io.cassandrareaper.resources.view.RepairRunStatus;
 import io.cassandrareaper.resources.view.RepairScheduleStatus;
-
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URI;
@@ -42,19 +47,12 @@ import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.Form;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.joda.JodaModule;
-import com.google.common.collect.Maps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.junit.Assert.assertEquals;
-
 /**
- * This is a simple client for testing usage, that calls the Reaper REST API
- * and turns the resulting JSON into Reaper core entity instances.
+ * This is a simple client for testing usage, that calls the Reaper REST API and turns the resulting
+ * JSON into Reaper core entity instances.
  */
 public final class SimpleReaperClient {
 
@@ -134,33 +132,27 @@ public final class SimpleReaperClient {
   }
 
   public static List<RepairScheduleStatus> parseRepairScheduleStatusListJSON(String json) {
-    return parseJSON(json, new TypeReference<List<RepairScheduleStatus>>() {
-    });
+    return parseJSON(json, new TypeReference<List<RepairScheduleStatus>>() {});
   }
 
   public static RepairScheduleStatus parseRepairScheduleStatusJSON(String json) {
-    return parseJSON(json, new TypeReference<RepairScheduleStatus>() {
-    });
+    return parseJSON(json, new TypeReference<RepairScheduleStatus>() {});
   }
 
   public static List<RepairRunStatus> parseRepairRunStatusListJSON(String json) {
-    return parseJSON(json, new TypeReference<List<RepairRunStatus>>() {
-    });
+    return parseJSON(json, new TypeReference<List<RepairRunStatus>>() {});
   }
 
   public static RepairRunStatus parseRepairRunStatusJSON(String json) {
-    return parseJSON(json, new TypeReference<RepairRunStatus>() {
-    });
+    return parseJSON(json, new TypeReference<RepairRunStatus>() {});
   }
 
   public static Map<String, Object> parseClusterStatusJSON(String json) {
-    return parseJSON(json, new TypeReference<Map<String, Object>>() {
-    });
+    return parseJSON(json, new TypeReference<Map<String, Object>>() {});
   }
 
   public static List<String> parseClusterNameListJSON(String json) {
-    return parseJSON(json, new TypeReference<List<String>>() {
-    });
+    return parseJSON(json, new TypeReference<List<String>>() {});
   }
 
   public static Map<String, List<String>> parseTableListJSON(String json) {
@@ -172,14 +164,16 @@ public final class SimpleReaperClient {
   }
 
   public List<RepairScheduleStatus> getRepairSchedulesForCluster(String clusterName) {
-    Response response = doHttpCall("GET", reaperHost, reaperPort,
-        "/repair_schedule/cluster/" + clusterName, EMPTY_PARAMS);
+    Response response =
+        doHttpCall(
+            "GET", reaperHost, reaperPort, "/repair_schedule/cluster/" + clusterName, EMPTY_PARAMS);
     assertEquals(200, response.getStatus());
     String responseData = response.readEntity(String.class);
     return parseRepairScheduleStatusListJSON(responseData);
   }
 
-  public List<RepairScheduleStatus> getRepairSchedulesForClusterAndKs(String clusterName, String keyspaceName) {
+  public List<RepairScheduleStatus> getRepairSchedulesForClusterAndKs(
+      String clusterName, String keyspaceName) {
     Map<String, String> params = Maps.newHashMap();
     if (!clusterName.isEmpty()) {
       params.put("clusterName", clusterName);
@@ -187,7 +181,8 @@ public final class SimpleReaperClient {
     if (!keyspaceName.isEmpty()) {
       params.put("keyspace", keyspaceName);
     }
-    Response response = doHttpCall("GET", reaperHost, reaperPort, "/repair_schedule", Optional.of(params));
+    Response response =
+        doHttpCall("GET", reaperHost, reaperPort, "/repair_schedule", Optional.of(params));
     assertEquals(200, response.getStatus());
     String responseData = response.readEntity(String.class);
     return parseRepairScheduleStatusListJSON(responseData);

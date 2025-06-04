@@ -17,13 +17,12 @@
 
 package io.cassandrareaper.core;
 
-import java.time.LocalDate;
+import static org.junit.Assert.assertEquals;
 
 import com.google.common.collect.ImmutableSet;
+import java.time.LocalDate;
 import org.assertj.core.api.Assertions;
 import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
 
 public final class ClusterTest {
 
@@ -35,10 +34,8 @@ public final class ClusterTest {
 
   @Test
   public void testCreate_0() {
-    Cluster cluster = Cluster.builder()
-        .withName("test")
-        .withSeedHosts(ImmutableSet.of("127.0.0.1"))
-        .build();
+    Cluster cluster =
+        Cluster.builder().withName("test").withSeedHosts(ImmutableSet.of("127.0.0.1")).build();
 
     Assertions.assertThat(cluster.getName()).isEqualTo("test");
     Assertions.assertThat(cluster.getSeedHosts()).hasSize(1);
@@ -51,10 +48,11 @@ public final class ClusterTest {
 
   @Test
   public void testCreate_1() {
-    Cluster cluster = Cluster.builder()
-        .withName("test")
-        .withSeedHosts(ImmutableSet.of("127.0.0.1", "127.0.0.2"))
-        .build();
+    Cluster cluster =
+        Cluster.builder()
+            .withName("test")
+            .withSeedHosts(ImmutableSet.of("127.0.0.1", "127.0.0.2"))
+            .build();
 
     Assertions.assertThat(cluster.getName()).isEqualTo("test");
     Assertions.assertThat(cluster.getSeedHosts()).hasSize(2);
@@ -67,11 +65,12 @@ public final class ClusterTest {
 
   @Test
   public void testCreate_2() {
-    Cluster cluster = Cluster.builder()
-        .withName("test")
-        .withSeedHosts(ImmutableSet.of("127.0.0.1", "127.0.0.2"))
-        .withPartitioner("murmur3")
-        .build();
+    Cluster cluster =
+        Cluster.builder()
+            .withName("test")
+            .withSeedHosts(ImmutableSet.of("127.0.0.1", "127.0.0.2"))
+            .withPartitioner("murmur3")
+            .build();
 
     Assertions.assertThat(cluster.getName()).isEqualTo("test");
     Assertions.assertThat(cluster.getSeedHosts()).hasSize(2);
@@ -85,12 +84,13 @@ public final class ClusterTest {
 
   @Test
   public void testCreate_3() {
-    Cluster cluster = Cluster.builder()
-        .withName("test")
-        .withSeedHosts(ImmutableSet.of("127.0.0.1", "127.0.0.2"))
-        .withPartitioner("murmur3")
-        .withJmxPort(9999)
-        .build();
+    Cluster cluster =
+        Cluster.builder()
+            .withName("test")
+            .withSeedHosts(ImmutableSet.of("127.0.0.1", "127.0.0.2"))
+            .withPartitioner("murmur3")
+            .withJmxPort(9999)
+            .build();
 
     Assertions.assertThat(cluster.getName()).isEqualTo("test");
     Assertions.assertThat(cluster.getSeedHosts()).hasSize(2);
@@ -104,13 +104,14 @@ public final class ClusterTest {
 
   @Test
   public void testCreate_4() {
-    Cluster cluster = Cluster.builder()
-        .withName("test")
-        .withSeedHosts(ImmutableSet.of("127.0.0.1", "127.0.0.2"))
-        .withPartitioner("murmur3")
-        .withJmxPort(9999)
-        .withState(Cluster.State.ACTIVE)
-        .build();
+    Cluster cluster =
+        Cluster.builder()
+            .withName("test")
+            .withSeedHosts(ImmutableSet.of("127.0.0.1", "127.0.0.2"))
+            .withPartitioner("murmur3")
+            .withJmxPort(9999)
+            .withState(Cluster.State.ACTIVE)
+            .build();
 
     Assertions.assertThat(cluster.getName()).isEqualTo("test");
     Assertions.assertThat(cluster.getSeedHosts()).hasSize(2);
@@ -124,14 +125,15 @@ public final class ClusterTest {
 
   @Test
   public void testCreate_5() {
-    Cluster cluster = Cluster.builder()
-        .withName("test")
-        .withSeedHosts(ImmutableSet.of("127.0.0.1", "127.0.0.2"))
-        .withPartitioner("murmur3")
-        .withJmxPort(9999)
-        .withState(Cluster.State.ACTIVE)
-        .withLastContact(LocalDate.now())
-        .build();
+    Cluster cluster =
+        Cluster.builder()
+            .withName("test")
+            .withSeedHosts(ImmutableSet.of("127.0.0.1", "127.0.0.2"))
+            .withPartitioner("murmur3")
+            .withJmxPort(9999)
+            .withState(Cluster.State.ACTIVE)
+            .withLastContact(LocalDate.now())
+            .build();
 
     Assertions.assertThat(cluster.getName()).isEqualTo("test");
     Assertions.assertThat(cluster.getSeedHosts()).hasSize(2);
@@ -145,14 +147,15 @@ public final class ClusterTest {
 
   @Test
   public void testCreate_6() {
-    Cluster cluster = Cluster.builder()
-        .withName("test")
-        .withSeedHosts(ImmutableSet.of("127.0.0.1", "127.0.0.2"))
-        .withPartitioner("murmur3")
-        .withJmxPort(9999)
-        .withState(Cluster.State.UNREACHABLE)
-        .withLastContact(LocalDate.now().minusDays(1))
-        .build();
+    Cluster cluster =
+        Cluster.builder()
+            .withName("test")
+            .withSeedHosts(ImmutableSet.of("127.0.0.1", "127.0.0.2"))
+            .withPartitioner("murmur3")
+            .withJmxPort(9999)
+            .withState(Cluster.State.UNREACHABLE)
+            .withLastContact(LocalDate.now().minusDays(1))
+            .build();
 
     Assertions.assertThat(cluster.getName()).isEqualTo("test");
     Assertions.assertThat(cluster.getSeedHosts()).hasSize(2);

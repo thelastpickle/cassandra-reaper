@@ -17,15 +17,14 @@
 
 package io.cassandrareaper.service;
 
-import java.math.BigInteger;
-import java.util.List;
-
-import com.google.common.collect.Lists;
-import org.junit.Test;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+
+import com.google.common.collect.Lists;
+import java.math.BigInteger;
+import java.util.List;
+import org.junit.Test;
 
 public final class RingRangeTest {
 

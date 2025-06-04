@@ -20,7 +20,6 @@ package io.cassandrareaper.resources.auth;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.HttpMethod;
-
 import org.assertj.core.api.Assertions;
 import org.junit.Test;
 import org.mockito.Mockito;
@@ -34,12 +33,11 @@ public class RestPermissionsFilterTest {
     Mockito.when(mockHttpServletRequest.getMethod()).thenReturn(HttpMethod.OPTIONS);
     Mockito.when(filter.isCorsEnabled()).thenReturn(true);
 
-    boolean allowed = filter.isAccessAllowed(
-        mockHttpServletRequest,
-        Mockito.mock(ServletResponse.class),
-        Mockito.mock(Object.class)
-    );
+    boolean allowed =
+        filter.isAccessAllowed(
+            mockHttpServletRequest,
+            Mockito.mock(ServletResponse.class),
+            Mockito.mock(Object.class));
     Assertions.assertThat(allowed).isTrue();
   }
-
 }

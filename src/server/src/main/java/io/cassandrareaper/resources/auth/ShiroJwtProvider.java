@@ -18,7 +18,7 @@ package io.cassandrareaper.resources.auth;
 import io.cassandrareaper.AppContext;
 import io.cassandrareaper.resources.RequestUtils;
 import io.cassandrareaper.storage.cassandra.CassandraStorageFacade;
-
+import io.jsonwebtoken.Jwts;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
@@ -31,8 +31,6 @@ import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
-
-import io.jsonwebtoken.Jwts;
 
 @Path("/jwt")
 public final class ShiroJwtProvider {
@@ -51,14 +49,19 @@ public final class ShiroJwtProvider {
   String getJwt(HttpServletRequest request) throws IOException {
     if (RequestUtils.getSessionTimeout().isNegative()) {
       // No session timeout set, so return a JWT with no expiration time
-      return Jwts.builder().subject(request.getUserPrincipal().getName())
-          .signWith((javax.crypto.SecretKey) SIGNING_KEY, Jwts.SIG.HS256).compact();
+      return Jwts.builder()
+          .subject(request.getUserPrincipal().getName())
+          .signWith((javax.crypto.SecretKey) SIGNING_KEY, Jwts.SIG.HS256)
+          .compact();
     } else {
       // Return a JWT with an expiration time based on the session timeout
-      return Jwts.builder().subject(request.getUserPrincipal().getName())
-          .expiration(new java.util.Date(
-              System.currentTimeMillis() + RequestUtils.getSessionTimeout().toMillis()))
-          .signWith((javax.crypto.SecretKey) SIGNING_KEY, Jwts.SIG.HS256).compact();
+      return Jwts.builder()
+          .subject(request.getUserPrincipal().getName())
+          .expiration(
+              new java.util.Date(
+                  System.currentTimeMillis() + RequestUtils.getSessionTimeout().toMillis()))
+          .signWith((javax.crypto.SecretKey) SIGNING_KEY, Jwts.SIG.HS256)
+          .compact();
     }
   }
 

@@ -17,6 +17,7 @@
 
 package io.cassandrareaper.crypto;
 
+import com.google.common.base.Preconditions;
 import java.nio.charset.StandardCharsets;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
@@ -32,8 +33,6 @@ import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.SecretKeySpec;
-
-import com.google.common.base.Preconditions;
 import org.apache.commons.lang3.StringUtils;
 
 public final class SymmetricCryptograph implements Cryptograph {
@@ -63,10 +62,13 @@ public final class SymmetricCryptograph implements Cryptograph {
     this.cipher = builder.cipher == null ? DEFAULT_CIPHER : builder.cipher;
     this.cipherType = builder.cipherType == null ? DEFAULT_CIPHER_TYPE : builder.cipherType;
     this.algorithm = builder.algorithm == null ? DEFAULT_ALGORITHM : builder.algorithm;
-    this.iterationCount = builder.iterationCount == null ? DEFAULT_ITERATION_COUNT : builder.iterationCount;
+    this.iterationCount =
+        builder.iterationCount == null ? DEFAULT_ITERATION_COUNT : builder.iterationCount;
     this.keyStrength = builder.keyStrength == null ? DEFAULT_KEY_STRENGTH : builder.keyStrength;
-    this.systemPropertySecret = builder.systemPropertySecret == null
-            ? DEFAULT_PROPERTY_KEY_SECRET : builder.systemPropertySecret;
+    this.systemPropertySecret =
+        builder.systemPropertySecret == null
+            ? DEFAULT_PROPERTY_KEY_SECRET
+            : builder.systemPropertySecret;
   }
 
   @Override
@@ -77,9 +79,13 @@ public final class SymmetricCryptograph implements Cryptograph {
     try {
       String passphrase = fetchPassphrase();
       return PREFIX + encryptText(passphrase, trimmedText);
-    } catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeySpecException
-            | InvalidAlgorithmParameterException | InvalidKeyException | BadPaddingException
-            | IllegalBlockSizeException e) {
+    } catch (NoSuchAlgorithmException
+        | NoSuchPaddingException
+        | InvalidKeySpecException
+        | InvalidAlgorithmParameterException
+        | InvalidKeyException
+        | BadPaddingException
+        | IllegalBlockSizeException e) {
       throw new IllegalStateException("Unable to encrypt text", e);
     }
   }
@@ -96,9 +102,13 @@ public final class SymmetricCryptograph implements Cryptograph {
     try {
       String passphrase = fetchPassphrase();
       return decryptText(passphrase, trimmedText.replaceFirst(REGEX_PREFIX, ""));
-    } catch (InvalidKeySpecException | NoSuchAlgorithmException | NoSuchPaddingException
-            | InvalidKeyException | BadPaddingException | IllegalBlockSizeException
-            | InvalidAlgorithmParameterException e) {
+    } catch (InvalidKeySpecException
+        | NoSuchAlgorithmException
+        | NoSuchPaddingException
+        | InvalidKeyException
+        | BadPaddingException
+        | IllegalBlockSizeException
+        | InvalidAlgorithmParameterException e) {
       throw new IllegalStateException("Unable to decrypt text", e);
     }
   }
@@ -114,15 +124,21 @@ public final class SymmetricCryptograph implements Cryptograph {
     }
 
     if (passphrase == null) {
-      throw new IllegalStateException("No passphrase detected in environment for: " + systemPropertySecret);
+      throw new IllegalStateException(
+          "No passphrase detected in environment for: " + systemPropertySecret);
     }
 
     return passphrase;
   }
 
-  private String encryptText(String key, String plainText) throws NoSuchAlgorithmException, NoSuchPaddingException,
-          InvalidKeySpecException, InvalidAlgorithmParameterException, InvalidKeyException,
-          BadPaddingException, IllegalBlockSizeException {
+  private String encryptText(String key, String plainText)
+      throws NoSuchAlgorithmException,
+          NoSuchPaddingException,
+          InvalidKeySpecException,
+          InvalidAlgorithmParameterException,
+          InvalidKeyException,
+          BadPaddingException,
+          IllegalBlockSizeException {
     Cipher encipher = Cipher.getInstance(cipher);
 
     byte[] initVector = createRandomInitialVector(encipher);
@@ -135,8 +151,13 @@ public final class SymmetricCryptograph implements Cryptograph {
     return printHexBinary(initVector) + printHexBinary(encryptedBytes);
   }
 
-  private String decryptText(String key, String encryptedText) throws InvalidKeySpecException, NoSuchAlgorithmException,
-          NoSuchPaddingException, InvalidKeyException, BadPaddingException, IllegalBlockSizeException,
+  private String decryptText(String key, String encryptedText)
+      throws InvalidKeySpecException,
+          NoSuchAlgorithmException,
+          NoSuchPaddingException,
+          InvalidKeyException,
+          BadPaddingException,
+          IllegalBlockSizeException,
           InvalidAlgorithmParameterException {
     byte[] encryptedData = decode(encryptedText);
     if (encryptedData.length <= 16) {
@@ -163,8 +184,10 @@ public final class SymmetricCryptograph implements Cryptograph {
     return initVector;
   }
 
-  private SecretKey createSecretKey(String key) throws NoSuchAlgorithmException, InvalidKeySpecException {
-    PBEKeySpec keySpec = new PBEKeySpec(key.toCharArray(), salt.getBytes(), iterationCount, keyStrength);
+  private SecretKey createSecretKey(String key)
+      throws NoSuchAlgorithmException, InvalidKeySpecException {
+    PBEKeySpec keySpec =
+        new PBEKeySpec(key.toCharArray(), salt.getBytes(), iterationCount, keyStrength);
     SecretKeyFactory factory = SecretKeyFactory.getInstance(algorithm);
     SecretKey secretKey = factory.generateSecret(keySpec);
     return new SecretKeySpec(secretKey.getEncoded(), cipherType);
@@ -173,7 +196,8 @@ public final class SymmetricCryptograph implements Cryptograph {
   private byte[] decode(CharSequence chars) {
     int numChars = chars.length();
     if (numChars % 2 != 0) {
-      throw new IllegalArgumentException("Hex-encoded string must have an even number of characters");
+      throw new IllegalArgumentException(
+          "Hex-encoded string must have an even number of characters");
     } else {
       byte[] result = new byte[numChars / 2];
 
@@ -181,8 +205,8 @@ public final class SymmetricCryptograph implements Cryptograph {
         int msb = Character.digit(chars.charAt(i), 16);
         int lsb = Character.digit(chars.charAt(i + 1), 16);
         if (msb < 0 || lsb < 0) {
-          throw new IllegalArgumentException("Detected a Non-hex character at " + (i + 1) + " or "
-                  + (i + 2) + " position");
+          throw new IllegalArgumentException(
+              "Detected a Non-hex character at " + (i + 1) + " or " + (i + 2) + " position");
         }
 
         result[i / 2] = (byte) (msb << 4 | lsb);
@@ -224,8 +248,7 @@ public final class SymmetricCryptograph implements Cryptograph {
     private String salt;
     private String systemPropertySecret;
 
-    private Builder() {
-    }
+    private Builder() {}
 
     public SymmetricCryptograph.Builder withAlgorithm(String algorithm) {
       this.algorithm = StringUtils.trimToNull(algorithm);
@@ -267,7 +290,5 @@ public final class SymmetricCryptograph implements Cryptograph {
     public SymmetricCryptograph build() {
       return new SymmetricCryptograph(this);
     }
-
   }
-
 }

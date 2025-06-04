@@ -22,8 +22,7 @@ import java.util.UUID;
 
 public final class UuidUtil {
 
-  private UuidUtil() {
-  }
+  private UuidUtil() {}
 
   public static UUID fromSequenceId(long insertedId) {
     return new UUID(insertedId, 0L);
@@ -32,5 +31,4 @@ public final class UuidUtil {
   public static long toSequenceId(UUID id) {
     return id.getMostSignificantBits();
   }
-
 }

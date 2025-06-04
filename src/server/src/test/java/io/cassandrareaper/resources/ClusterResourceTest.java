@@ -17,6 +17,18 @@
 
 package io.cassandrareaper.resources;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
@@ -29,7 +41,6 @@ import io.cassandrareaper.management.jmx.JmxCassandraManagementProxy;
 import io.cassandrareaper.management.jmx.JmxManagementConnectionFactory;
 import io.cassandrareaper.service.TestRepairConfiguration;
 import io.cassandrareaper.storage.MemoryStorageFacade;
-
 import java.net.URI;
 import java.time.Duration;
 import java.util.Arrays;
@@ -39,24 +50,11 @@ import java.util.Set;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.UriInfo;
-
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.assertj.core.api.Assertions;
 import org.eclipse.jetty.http.HttpStatus;
 import org.junit.Test;
 import org.mockito.Mockito;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 public final class ClusterResourceTest {
 
@@ -75,12 +73,17 @@ public final class ClusterResourceTest {
   public void testAddCluster() throws Exception {
     final MockObjects mocks = initMocks();
 
-    ClusterResource clusterResource
-        = ClusterResource.create(mocks.context, mocks.cryptograph, mocks.context.storage.getEventsDao(),
-        mocks.context.storage.getRepairRunDao());
+    ClusterResource clusterResource =
+        ClusterResource.create(
+            mocks.context,
+            mocks.cryptograph,
+            mocks.context.storage.getEventsDao(),
+            mocks.context.storage.getRepairRunDao());
 
-    Response response = clusterResource
-        .addOrUpdateCluster(mocks.uriInfo, Optional.of(SEED_HOST),
+    Response response =
+        clusterResource.addOrUpdateCluster(
+            mocks.uriInfo,
+            Optional.of(SEED_HOST),
             Optional.of(Cluster.DEFAULT_JMX_PORT),
             Optional.of(JMX_USERNAME),
             Optional.of(JMX_PASSWORD));
@@ -90,8 +93,14 @@ public final class ClusterResourceTest {
 
     Cluster cluster = mocks.context.storage.getClusterDao().getCluster(CLUSTER_NAME);
     assertNotNull("Did not find expected cluster", cluster);
-    assertEquals(0,
-        mocks.context.storage.getRepairRunDao().getRepairRunsForCluster(cluster.getName(), Optional.of(1)).size());
+    assertEquals(
+        0,
+        mocks
+            .context
+            .storage
+            .getRepairRunDao()
+            .getRepairRunsForCluster(cluster.getName(), Optional.of(1))
+            .size());
     assertEquals(CLUSTER_NAME, cluster.getName());
     assertEquals(1, cluster.getSeedHosts().size());
     assertEquals(SEED_HOST, cluster.getSeedHosts().iterator().next());
@@ -105,21 +114,27 @@ public final class ClusterResourceTest {
     final MockObjects mocks = initMocks();
     when(mocks.cassandraManagementProxy.getLiveNodes()).thenReturn(Arrays.asList(SEED_HOST));
 
-    Cluster cluster = Cluster.builder()
-        .withName(CLUSTER_NAME)
-        .withPartitioner(PARTITIONER)
-        .withSeedHosts(ImmutableSet.of(SEED_HOST))
-        .withState(Cluster.State.ACTIVE)
-        .build();
+    Cluster cluster =
+        Cluster.builder()
+            .withName(CLUSTER_NAME)
+            .withPartitioner(PARTITIONER)
+            .withSeedHosts(ImmutableSet.of(SEED_HOST))
+            .withState(Cluster.State.ACTIVE)
+            .build();
 
     mocks.context.storage.getClusterDao().addCluster(cluster);
 
-    ClusterResource clusterResource = ClusterResource.create(mocks.context, mocks.cryptograph,
-        mocks.context.storage.getEventsDao(),
-        mocks.context.storage.getRepairRunDao());
+    ClusterResource clusterResource =
+        ClusterResource.create(
+            mocks.context,
+            mocks.cryptograph,
+            mocks.context.storage.getEventsDao(),
+            mocks.context.storage.getRepairRunDao());
 
-    Response response = clusterResource
-        .addOrUpdateCluster(mocks.uriInfo, Optional.of(SEED_HOST),
+    Response response =
+        clusterResource.addOrUpdateCluster(
+            mocks.uriInfo,
+            Optional.of(SEED_HOST),
             Optional.of(Cluster.DEFAULT_JMX_PORT),
             Optional.of(JMX_USERNAME),
             Optional.of(JMX_PASSWORD));
@@ -130,8 +145,14 @@ public final class ClusterResourceTest {
 
     cluster = mocks.context.storage.getClusterDao().getCluster(CLUSTER_NAME);
     assertNotNull("Did not find expected cluster", cluster);
-    assertEquals(0,
-        mocks.context.storage.getRepairRunDao().getRepairRunsForCluster(cluster.getName(), Optional.of(1)).size());
+    assertEquals(
+        0,
+        mocks
+            .context
+            .storage
+            .getRepairRunDao()
+            .getRepairRunsForCluster(cluster.getName(), Optional.of(1))
+            .size());
     assertEquals(CLUSTER_NAME, cluster.getName());
     assertEquals(1, cluster.getSeedHosts().size());
     assertEquals(SEED_HOST, cluster.getSeedHosts().iterator().next());
@@ -142,26 +163,31 @@ public final class ClusterResourceTest {
     final MockObjects mocks = initMocks();
     when(mocks.cassandraManagementProxy.getLiveNodes()).thenReturn(Arrays.asList(SEED_HOST));
 
-    Cluster cluster = Cluster.builder()
-        .withName(CLUSTER_NAME)
-        .withPartitioner(PARTITIONER)
-        .withSeedHosts(ImmutableSet.of(SEED_HOST))
-        .withState(Cluster.State.ACTIVE)
-        .build();
+    Cluster cluster =
+        Cluster.builder()
+            .withName(CLUSTER_NAME)
+            .withPartitioner(PARTITIONER)
+            .withSeedHosts(ImmutableSet.of(SEED_HOST))
+            .withState(Cluster.State.ACTIVE)
+            .build();
 
     mocks.context.storage.getClusterDao().addCluster(cluster);
 
-    ClusterResource clusterResource = ClusterResource.create(mocks.context, mocks.cryptograph,
-        mocks.context.storage.getEventsDao(),
-        mocks.context.storage.getRepairRunDao());
+    ClusterResource clusterResource =
+        ClusterResource.create(
+            mocks.context,
+            mocks.cryptograph,
+            mocks.context.storage.getEventsDao(),
+            mocks.context.storage.getRepairRunDao());
 
-    Response response = clusterResource.addOrUpdateCluster(
-        mocks.uriInfo,
-        CLUSTER_NAME,
-        Optional.of(SEED_HOST),
-        Optional.of(Cluster.DEFAULT_JMX_PORT),
-        Optional.of(JMX_USERNAME),
-        Optional.of(JMX_PASSWORD));
+    Response response =
+        clusterResource.addOrUpdateCluster(
+            mocks.uriInfo,
+            CLUSTER_NAME,
+            Optional.of(SEED_HOST),
+            Optional.of(Cluster.DEFAULT_JMX_PORT),
+            Optional.of(JMX_USERNAME),
+            Optional.of(JMX_PASSWORD));
 
     Assertions.assertThat(response.getStatus()).isEqualTo(HttpStatus.NO_CONTENT_204);
     assertTrue(response.getLocation().toString().endsWith("/cluster/" + cluster.getName()));
@@ -169,8 +195,14 @@ public final class ClusterResourceTest {
 
     cluster = mocks.context.storage.getClusterDao().getCluster(CLUSTER_NAME);
     assertNotNull("Did not find expected cluster", cluster);
-    assertEquals(0,
-        mocks.context.storage.getRepairRunDao().getRepairRunsForCluster(cluster.getName(), Optional.of(1)).size());
+    assertEquals(
+        0,
+        mocks
+            .context
+            .storage
+            .getRepairRunDao()
+            .getRepairRunsForCluster(cluster.getName(), Optional.of(1))
+            .size());
     assertEquals(CLUSTER_NAME, cluster.getName());
     assertEquals(1, cluster.getSeedHosts().size());
     assertEquals(SEED_HOST, cluster.getSeedHosts().iterator().next());
@@ -181,16 +213,21 @@ public final class ClusterResourceTest {
     final MockObjects mocks = initMocks();
     ClusterFacade clusterFacade = mock(ClusterFacade.class);
 
-    ClusterResource clusterResource
-        = ClusterResource.create(mocks.context, new NoopCrypotograph(), () -> clusterFacade,
-        mocks.context.storage.getEventsDao(),
-        mocks.context.storage.getRepairRunDao());
+    ClusterResource clusterResource =
+        ClusterResource.create(
+            mocks.context,
+            new NoopCrypotograph(),
+            () -> clusterFacade,
+            mocks.context.storage.getEventsDao(),
+            mocks.context.storage.getRepairRunDao());
 
-    Response response = clusterResource.addOrUpdateCluster(mocks.uriInfo,
-        Optional.of(SEED_HOST),
-        Optional.of(Cluster.DEFAULT_JMX_PORT),
-        Optional.of(JMX_USERNAME),
-        Optional.of(JMX_PASSWORD));
+    Response response =
+        clusterResource.addOrUpdateCluster(
+            mocks.uriInfo,
+            Optional.of(SEED_HOST),
+            Optional.of(Cluster.DEFAULT_JMX_PORT),
+            Optional.of(JMX_USERNAME),
+            Optional.of(JMX_PASSWORD));
 
     assertEquals(Response.Status.BAD_REQUEST.getStatusCode(), response.getStatus());
   }
@@ -200,10 +237,13 @@ public final class ClusterResourceTest {
     final MockObjects mocks = initMocks();
     when(mocks.cassandraManagementProxy.getLiveNodes()).thenReturn(Arrays.asList(SEED_HOST));
 
-    ClusterResource clusterResource
-        = ClusterResource.create(mocks.context, new NoopCrypotograph(), () -> mocks.clusterFacade,
-        mocks.context.storage.getEventsDao(),
-        mocks.context.storage.getRepairRunDao());
+    ClusterResource clusterResource =
+        ClusterResource.create(
+            mocks.context,
+            new NoopCrypotograph(),
+            () -> mocks.clusterFacade,
+            mocks.context.storage.getEventsDao(),
+            mocks.context.storage.getRepairRunDao());
     Response response = clusterResource.getCluster(I_DONT_EXIST, Optional.<Integer>empty());
     Assertions.assertThat(response.getStatus()).isEqualTo(HttpStatus.NOT_FOUND_404);
   }
@@ -213,19 +253,23 @@ public final class ClusterResourceTest {
     final MockObjects mocks = initMocks();
     when(mocks.cassandraManagementProxy.getLiveNodes()).thenReturn(Arrays.asList(SEED_HOST));
 
-    Cluster cluster = Cluster.builder()
-        .withName(I_DO_EXIST)
-        .withPartitioner(PARTITIONER)
-        .withSeedHosts(ImmutableSet.of(SEED_HOST))
-        .withState(Cluster.State.ACTIVE)
-        .build();
+    Cluster cluster =
+        Cluster.builder()
+            .withName(I_DO_EXIST)
+            .withPartitioner(PARTITIONER)
+            .withSeedHosts(ImmutableSet.of(SEED_HOST))
+            .withState(Cluster.State.ACTIVE)
+            .build();
 
     mocks.context.storage.getClusterDao().addCluster(cluster);
 
-    ClusterResource clusterResource
-        = ClusterResource.create(mocks.context, new NoopCrypotograph(), () -> mocks.clusterFacade,
-        mocks.context.storage.getEventsDao(),
-        mocks.context.storage.getRepairRunDao());
+    ClusterResource clusterResource =
+        ClusterResource.create(
+            mocks.context,
+            new NoopCrypotograph(),
+            () -> mocks.clusterFacade,
+            mocks.context.storage.getEventsDao(),
+            mocks.context.storage.getRepairRunDao());
     Response response = clusterResource.getCluster(I_DO_EXIST, Optional.<Integer>empty());
     Assertions.assertThat(response.getStatus()).isEqualTo(HttpStatus.OK_200);
   }
@@ -234,18 +278,22 @@ public final class ClusterResourceTest {
   public void testGetClusters_all() throws ReaperException {
     final MockObjects mocks = initMocks();
 
-    Cluster cluster = Cluster.builder()
-        .withName(CLUSTER_NAME)
-        .withSeedHosts(ImmutableSet.of(SEED_HOST))
-        .withState(Cluster.State.ACTIVE)
-        .build();
+    Cluster cluster =
+        Cluster.builder()
+            .withName(CLUSTER_NAME)
+            .withSeedHosts(ImmutableSet.of(SEED_HOST))
+            .withState(Cluster.State.ACTIVE)
+            .build();
 
     mocks.context.storage.getClusterDao().addCluster(cluster);
 
-    ClusterResource clusterResource
-        = ClusterResource.create(mocks.context, new NoopCrypotograph(), () -> mocks.clusterFacade,
-        mocks.context.storage.getEventsDao(),
-        mocks.context.storage.getRepairRunDao());
+    ClusterResource clusterResource =
+        ClusterResource.create(
+            mocks.context,
+            new NoopCrypotograph(),
+            () -> mocks.clusterFacade,
+            mocks.context.storage.getEventsDao(),
+            mocks.context.storage.getRepairRunDao());
     Response response = clusterResource.getClusterList(Optional.empty());
     Assertions.assertThat(response.getStatus()).isEqualTo(HttpStatus.OK_200);
     List<String> clusterNames = (List<String>) response.getEntity();
@@ -257,18 +305,22 @@ public final class ClusterResourceTest {
   public void testGetClusters_specified() throws ReaperException {
     final MockObjects mocks = initMocks();
 
-    Cluster cluster = Cluster.builder()
-        .withName(CLUSTER_NAME)
-        .withSeedHosts(ImmutableSet.of(SEED_HOST))
-        .withState(Cluster.State.ACTIVE)
-        .build();
+    Cluster cluster =
+        Cluster.builder()
+            .withName(CLUSTER_NAME)
+            .withSeedHosts(ImmutableSet.of(SEED_HOST))
+            .withState(Cluster.State.ACTIVE)
+            .build();
 
     mocks.context.storage.getClusterDao().addCluster(cluster);
 
-    ClusterResource clusterResource
-        = ClusterResource.create(mocks.context, new NoopCrypotograph(), () -> mocks.clusterFacade,
-        mocks.context.storage.getEventsDao(),
-        mocks.context.storage.getRepairRunDao());
+    ClusterResource clusterResource =
+        ClusterResource.create(
+            mocks.context,
+            new NoopCrypotograph(),
+            () -> mocks.clusterFacade,
+            mocks.context.storage.getEventsDao(),
+            mocks.context.storage.getRepairRunDao());
     Response response = clusterResource.getClusterList(Optional.of(SEED_HOST));
     Assertions.assertThat(response.getStatus()).isEqualTo(HttpStatus.OK_200);
     List<String> clusterNames = (List<String>) response.getEntity();
@@ -280,26 +332,31 @@ public final class ClusterResourceTest {
   public void testGetClusters_only_specified_first() throws ReaperException {
     final MockObjects mocks = initMocks();
 
-    Cluster cluster = Cluster.builder()
-        .withName(CLUSTER_NAME)
-        .withSeedHosts(ImmutableSet.of(SEED_HOST))
-        .withState(Cluster.State.ACTIVE)
-        .build();
+    Cluster cluster =
+        Cluster.builder()
+            .withName(CLUSTER_NAME)
+            .withSeedHosts(ImmutableSet.of(SEED_HOST))
+            .withState(Cluster.State.ACTIVE)
+            .build();
 
     mocks.context.storage.getClusterDao().addCluster(cluster);
 
-    cluster = Cluster.builder()
-        .withName("cluster2")
-        .withSeedHosts(ImmutableSet.of("host2"))
-        .withState(Cluster.State.ACTIVE)
-        .build();
+    cluster =
+        Cluster.builder()
+            .withName("cluster2")
+            .withSeedHosts(ImmutableSet.of("host2"))
+            .withState(Cluster.State.ACTIVE)
+            .build();
 
     mocks.context.storage.getClusterDao().addCluster(cluster);
 
-    ClusterResource clusterResource
-        = ClusterResource.create(mocks.context, new NoopCrypotograph(), () -> mocks.clusterFacade,
-        mocks.context.storage.getEventsDao(),
-        mocks.context.storage.getRepairRunDao());
+    ClusterResource clusterResource =
+        ClusterResource.create(
+            mocks.context,
+            new NoopCrypotograph(),
+            () -> mocks.clusterFacade,
+            mocks.context.storage.getEventsDao(),
+            mocks.context.storage.getRepairRunDao());
     Response response = clusterResource.getClusterList(Optional.of(SEED_HOST));
     Assertions.assertThat(response.getStatus()).isEqualTo(HttpStatus.OK_200);
     List<String> clusterNames = (List<String>) response.getEntity();
@@ -311,26 +368,31 @@ public final class ClusterResourceTest {
   public void testGetClusters_only_specified_second() throws ReaperException {
     final MockObjects mocks = initMocks();
 
-    Cluster cluster = Cluster.builder()
-        .withName(CLUSTER_NAME)
-        .withSeedHosts(ImmutableSet.of(SEED_HOST))
-        .withState(Cluster.State.ACTIVE)
-        .build();
+    Cluster cluster =
+        Cluster.builder()
+            .withName(CLUSTER_NAME)
+            .withSeedHosts(ImmutableSet.of(SEED_HOST))
+            .withState(Cluster.State.ACTIVE)
+            .build();
 
     mocks.context.storage.getClusterDao().addCluster(cluster);
 
-    cluster = Cluster.builder()
-        .withName("cluster2")
-        .withSeedHosts(ImmutableSet.of("host2"))
-        .withState(Cluster.State.ACTIVE)
-        .build();
+    cluster =
+        Cluster.builder()
+            .withName("cluster2")
+            .withSeedHosts(ImmutableSet.of("host2"))
+            .withState(Cluster.State.ACTIVE)
+            .build();
 
     mocks.context.storage.getClusterDao().addCluster(cluster);
 
-    ClusterResource clusterResource
-        = ClusterResource.create(mocks.context, new NoopCrypotograph(), () -> mocks.clusterFacade,
-        mocks.context.storage.getEventsDao(),
-        mocks.context.storage.getRepairRunDao());
+    ClusterResource clusterResource =
+        ClusterResource.create(
+            mocks.context,
+            new NoopCrypotograph(),
+            () -> mocks.clusterFacade,
+            mocks.context.storage.getEventsDao(),
+            mocks.context.storage.getRepairRunDao());
     Response response = clusterResource.getClusterList(Optional.of("host2"));
     Assertions.assertThat(response.getStatus()).isEqualTo(HttpStatus.OK_200);
     List<String> clusterNames = (List<String>) response.getEntity();
@@ -342,26 +404,31 @@ public final class ClusterResourceTest {
   public void testGetClusters_multiple() throws ReaperException {
     final MockObjects mocks = initMocks();
 
-    Cluster cluster = Cluster.builder()
-        .withName(CLUSTER_NAME)
-        .withSeedHosts(ImmutableSet.of(SEED_HOST))
-        .withState(Cluster.State.ACTIVE)
-        .build();
+    Cluster cluster =
+        Cluster.builder()
+            .withName(CLUSTER_NAME)
+            .withSeedHosts(ImmutableSet.of(SEED_HOST))
+            .withState(Cluster.State.ACTIVE)
+            .build();
 
     mocks.context.storage.getClusterDao().addCluster(cluster);
 
-    cluster = Cluster.builder()
-        .withName("cluster2")
-        .withSeedHosts(ImmutableSet.of("host2"))
-        .withState(Cluster.State.ACTIVE)
-        .build();
+    cluster =
+        Cluster.builder()
+            .withName("cluster2")
+            .withSeedHosts(ImmutableSet.of("host2"))
+            .withState(Cluster.State.ACTIVE)
+            .build();
 
     mocks.context.storage.getClusterDao().addCluster(cluster);
 
-    ClusterResource clusterResource
-        = ClusterResource.create(mocks.context, new NoopCrypotograph(), () -> mocks.clusterFacade,
-        mocks.context.storage.getEventsDao(),
-        mocks.context.storage.getRepairRunDao());
+    ClusterResource clusterResource =
+        ClusterResource.create(
+            mocks.context,
+            new NoopCrypotograph(),
+            () -> mocks.clusterFacade,
+            mocks.context.storage.getEventsDao(),
+            mocks.context.storage.getRepairRunDao());
     Response response = clusterResource.getClusterList(Optional.empty());
     Assertions.assertThat(response.getStatus()).isEqualTo(HttpStatus.OK_200);
     List<String> clusterNames = (List<String>) response.getEntity();
@@ -373,26 +440,31 @@ public final class ClusterResourceTest {
   public void testGetClusters_multiple_ordered_by_name() throws ReaperException {
     final MockObjects mocks = initMocks();
 
-    Cluster cluster = Cluster.builder()
-        .withName(CLUSTER_NAME)
-        .withSeedHosts(ImmutableSet.of(SEED_HOST))
-        .withState(Cluster.State.ACTIVE)
-        .build();
+    Cluster cluster =
+        Cluster.builder()
+            .withName(CLUSTER_NAME)
+            .withSeedHosts(ImmutableSet.of(SEED_HOST))
+            .withState(Cluster.State.ACTIVE)
+            .build();
 
     mocks.context.storage.getClusterDao().addCluster(cluster);
 
-    cluster = Cluster.builder()
-        .withName("abc")
-        .withSeedHosts(ImmutableSet.of("host2"))
-        .withState(Cluster.State.ACTIVE)
-        .build();
+    cluster =
+        Cluster.builder()
+            .withName("abc")
+            .withSeedHosts(ImmutableSet.of("host2"))
+            .withState(Cluster.State.ACTIVE)
+            .build();
 
     mocks.context.storage.getClusterDao().addCluster(cluster);
 
-    ClusterResource clusterResource
-        = ClusterResource.create(mocks.context, new NoopCrypotograph(), () -> mocks.clusterFacade,
-        mocks.context.storage.getEventsDao(),
-        mocks.context.storage.getRepairRunDao());
+    ClusterResource clusterResource =
+        ClusterResource.create(
+            mocks.context,
+            new NoopCrypotograph(),
+            () -> mocks.clusterFacade,
+            mocks.context.storage.getEventsDao(),
+            mocks.context.storage.getRepairRunDao());
     Response response = clusterResource.getClusterList(Optional.empty());
     Assertions.assertThat(response.getStatus()).isEqualTo(HttpStatus.OK_200);
     List<String> clusterNames = (List<String>) response.getEntity();
@@ -404,26 +476,31 @@ public final class ClusterResourceTest {
   public void testGetClusters_multiple_ordered_by_state() throws ReaperException {
     final MockObjects mocks = initMocks();
 
-    Cluster cluster = Cluster.builder()
-        .withName(CLUSTER_NAME)
-        .withSeedHosts(ImmutableSet.of(SEED_HOST))
-        .withState(Cluster.State.UNREACHABLE)
-        .build();
+    Cluster cluster =
+        Cluster.builder()
+            .withName(CLUSTER_NAME)
+            .withSeedHosts(ImmutableSet.of(SEED_HOST))
+            .withState(Cluster.State.UNREACHABLE)
+            .build();
 
     mocks.context.storage.getClusterDao().addCluster(cluster);
 
-    cluster = Cluster.builder()
-        .withName("cluster2")
-        .withSeedHosts(ImmutableSet.of("host2"))
-        .withState(Cluster.State.ACTIVE)
-        .build();
+    cluster =
+        Cluster.builder()
+            .withName("cluster2")
+            .withSeedHosts(ImmutableSet.of("host2"))
+            .withState(Cluster.State.ACTIVE)
+            .build();
 
     mocks.context.storage.getClusterDao().addCluster(cluster);
 
-    ClusterResource clusterResource
-        = ClusterResource.create(mocks.context, new NoopCrypotograph(), () -> mocks.clusterFacade,
-        mocks.context.storage.getEventsDao(),
-        mocks.context.storage.getRepairRunDao());
+    ClusterResource clusterResource =
+        ClusterResource.create(
+            mocks.context,
+            new NoopCrypotograph(),
+            () -> mocks.clusterFacade,
+            mocks.context.storage.getEventsDao(),
+            mocks.context.storage.getRepairRunDao());
     Response response = clusterResource.getClusterList(Optional.empty());
     Assertions.assertThat(response.getStatus()).isEqualTo(HttpStatus.OK_200);
     List<String> clusterNames = (List<String>) response.getEntity();
@@ -435,10 +512,8 @@ public final class ClusterResourceTest {
   public void testGetClusters_fail_persisting_unknown() throws ReaperException {
     final MockObjects mocks = initMocks();
 
-    Cluster cluster = Cluster.builder()
-        .withName(CLUSTER_NAME)
-        .withSeedHosts(ImmutableSet.of(SEED_HOST))
-        .build();
+    Cluster cluster =
+        Cluster.builder().withName(CLUSTER_NAME).withSeedHosts(ImmutableSet.of(SEED_HOST)).build();
 
     mocks.context.storage.getClusterDao().addCluster(cluster);
   }
@@ -447,19 +522,21 @@ public final class ClusterResourceTest {
   public void testGetClusters_fail_persisting_two_clusters_same_name() throws ReaperException {
     final MockObjects mocks = initMocks();
 
-    Cluster cluster = Cluster.builder()
-        .withName(CLUSTER_NAME)
-        .withSeedHosts(ImmutableSet.of(SEED_HOST))
-        .withState(Cluster.State.ACTIVE)
-        .build();
+    Cluster cluster =
+        Cluster.builder()
+            .withName(CLUSTER_NAME)
+            .withSeedHosts(ImmutableSet.of(SEED_HOST))
+            .withState(Cluster.State.ACTIVE)
+            .build();
 
     mocks.context.storage.getClusterDao().addCluster(cluster);
 
-    cluster = Cluster.builder()
-        .withName(CLUSTER_NAME)
-        .withSeedHosts(ImmutableSet.of("test_host_2"))
-        .withState(Cluster.State.ACTIVE)
-        .build();
+    cluster =
+        Cluster.builder()
+            .withName(CLUSTER_NAME)
+            .withSeedHosts(ImmutableSet.of("test_host_2"))
+            .withState(Cluster.State.ACTIVE)
+            .build();
 
     mocks.context.storage.getClusterDao().addCluster(cluster);
   }
@@ -468,22 +545,28 @@ public final class ClusterResourceTest {
   public void testModifyClusterSeeds() throws ReaperException {
     final MockObjects mocks = initMocks();
 
-    ClusterResource clusterResource
-        = ClusterResource.create(mocks.context, mocks.cryptograph, mocks.context.storage.getEventsDao(),
-        mocks.context.storage.getRepairRunDao());
+    ClusterResource clusterResource =
+        ClusterResource.create(
+            mocks.context,
+            mocks.cryptograph,
+            mocks.context.storage.getEventsDao(),
+            mocks.context.storage.getRepairRunDao());
 
     clusterResource.addOrUpdateCluster(
         mocks.uriInfo,
         Optional.of(SEED_HOST),
         Optional.of(Cluster.DEFAULT_JMX_PORT),
         Optional.of(JMX_USERNAME),
-        Optional.of(JMX_PASSWORD)
-    );
+        Optional.of(JMX_PASSWORD));
 
-    doReturn(Arrays.asList(SEED_HOST + 1, SEED_HOST)).when(mocks.cassandraManagementProxy).getLiveNodes();
+    doReturn(Arrays.asList(SEED_HOST + 1, SEED_HOST))
+        .when(mocks.cassandraManagementProxy)
+        .getLiveNodes();
 
-    Response response = clusterResource
-        .addOrUpdateCluster(mocks.uriInfo, Optional.of(SEED_HOST + 1),
+    Response response =
+        clusterResource.addOrUpdateCluster(
+            mocks.uriInfo,
+            Optional.of(SEED_HOST + 1),
             Optional.of(Cluster.DEFAULT_JMX_PORT),
             Optional.of(JMX_USERNAME),
             Optional.of(JMX_PASSWORD));
@@ -496,14 +579,14 @@ public final class ClusterResourceTest {
     Assertions.assertThat(cluster.getSeedHosts()).hasSize(2);
     Assertions.assertThat(cluster.getSeedHosts()).contains(SEED_HOST + 1);
 
-    response = clusterResource.addOrUpdateCluster(
-        mocks.uriInfo,
-        CLUSTER_NAME,
-        Optional.of(SEED_HOST + 1),
-        Optional.of(Cluster.DEFAULT_JMX_PORT),
-        Optional.of(JMX_USERNAME),
-        Optional.of(JMX_PASSWORD)
-    );
+    response =
+        clusterResource.addOrUpdateCluster(
+            mocks.uriInfo,
+            CLUSTER_NAME,
+            Optional.of(SEED_HOST + 1),
+            Optional.of(Cluster.DEFAULT_JMX_PORT),
+            Optional.of(JMX_USERNAME),
+            Optional.of(JMX_PASSWORD));
 
     assertEquals(HttpStatus.NO_CONTENT_204, response.getStatus());
     assertTrue(response.getLocation().toString().endsWith("/cluster/" + cluster.getName()));
@@ -513,28 +596,32 @@ public final class ClusterResourceTest {
   public void testModifyClusterSeedsWithClusterName() throws ReaperException {
     final MockObjects mocks = initMocks();
 
-    ClusterResource clusterResource
-        = ClusterResource.create(mocks.context, mocks.cryptograph,
-        mocks.context.storage.getEventsDao(),
-        mocks.context.storage.getRepairRunDao());
+    ClusterResource clusterResource =
+        ClusterResource.create(
+            mocks.context,
+            mocks.cryptograph,
+            mocks.context.storage.getEventsDao(),
+            mocks.context.storage.getRepairRunDao());
     ;
     clusterResource.addOrUpdateCluster(
         mocks.uriInfo,
         Optional.of(SEED_HOST),
         Optional.of(Cluster.DEFAULT_JMX_PORT),
         Optional.of(JMX_USERNAME),
-        Optional.of(JMX_PASSWORD)
-    );
-
-    doReturn(Arrays.asList(SEED_HOST + 1, SEED_HOST)).when(mocks.cassandraManagementProxy).getLiveNodes();
-
-    Response response = clusterResource.addOrUpdateCluster(
-        mocks.uriInfo,
-        CLUSTER_NAME,
-        Optional.of(SEED_HOST + 1),
-        Optional.of(Cluster.DEFAULT_JMX_PORT),
-        Optional.of(JMX_USERNAME),
         Optional.of(JMX_PASSWORD));
+
+    doReturn(Arrays.asList(SEED_HOST + 1, SEED_HOST))
+        .when(mocks.cassandraManagementProxy)
+        .getLiveNodes();
+
+    Response response =
+        clusterResource.addOrUpdateCluster(
+            mocks.uriInfo,
+            CLUSTER_NAME,
+            Optional.of(SEED_HOST + 1),
+            Optional.of(Cluster.DEFAULT_JMX_PORT),
+            Optional.of(JMX_USERNAME),
+            Optional.of(JMX_PASSWORD));
 
     assertEquals(HttpStatus.OK_200, response.getStatus());
     assertTrue(response.getLocation().toString().endsWith("/cluster/" + CLUSTER_NAME));
@@ -544,13 +631,14 @@ public final class ClusterResourceTest {
     Assertions.assertThat(cluster.getSeedHosts()).hasSize(2);
     Assertions.assertThat(cluster.getSeedHosts()).contains(SEED_HOST + 1);
 
-    response = clusterResource.addOrUpdateCluster(
-        mocks.uriInfo,
-        CLUSTER_NAME,
-        Optional.of(SEED_HOST + 1),
-        Optional.of(Cluster.DEFAULT_JMX_PORT),
-        Optional.of(JMX_USERNAME),
-        Optional.of(JMX_PASSWORD));
+    response =
+        clusterResource.addOrUpdateCluster(
+            mocks.uriInfo,
+            CLUSTER_NAME,
+            Optional.of(SEED_HOST + 1),
+            Optional.of(Cluster.DEFAULT_JMX_PORT),
+            Optional.of(JMX_USERNAME),
+            Optional.of(JMX_PASSWORD));
     assertEquals(HttpStatus.NO_CONTENT_204, response.getStatus());
 
     assertTrue(response.getLocation().toString().endsWith("/cluster/" + cluster.getName()));
@@ -563,34 +651,44 @@ public final class ClusterResourceTest {
     when(mocks.cassandraManagementProxy.getKeyspaces()).thenReturn(Lists.newArrayList("keyspace1"));
 
     when(mocks.cassandraManagementProxy.getTablesForKeyspace("keyspace1"))
-        .thenReturn(Sets.newHashSet(Table.builder().withName("table1").withCompactionStrategy(STCS).build()));
+        .thenReturn(
+            Sets.newHashSet(
+                Table.builder().withName("table1").withCompactionStrategy(STCS).build()));
 
-    mocks.context.config = TestRepairConfiguration.defaultConfigBuilder()
-        .withAutoScheduling(
-            TestRepairConfiguration.defaultAutoSchedulingConfigBuilder()
-                .thatIsEnabled()
-                .withTimeBeforeFirstSchedule(Duration.ofMinutes(1))
-                .build())
-        .build();
+    mocks.context.config =
+        TestRepairConfiguration.defaultConfigBuilder()
+            .withAutoScheduling(
+                TestRepairConfiguration.defaultAutoSchedulingConfigBuilder()
+                    .thatIsEnabled()
+                    .withTimeBeforeFirstSchedule(Duration.ofMinutes(1))
+                    .build())
+            .build();
 
-    ClusterResource clusterResource
-        = ClusterResource.create(mocks.context, mocks.cryptograph,
-        mocks.context.storage.getEventsDao(),
-        mocks.context.storage.getRepairRunDao());
+    ClusterResource clusterResource =
+        ClusterResource.create(
+            mocks.context,
+            mocks.cryptograph,
+            mocks.context.storage.getEventsDao(),
+            mocks.context.storage.getRepairRunDao());
     ;
 
-    Response response = clusterResource.addOrUpdateCluster(
-        mocks.uriInfo,
-        Optional.of(SEED_HOST),
-        Optional.of(Cluster.DEFAULT_JMX_PORT),
-        Optional.of(JMX_USERNAME),
-        Optional.of(JMX_PASSWORD)
-    );
+    Response response =
+        clusterResource.addOrUpdateCluster(
+            mocks.uriInfo,
+            Optional.of(SEED_HOST),
+            Optional.of(Cluster.DEFAULT_JMX_PORT),
+            Optional.of(JMX_USERNAME),
+            Optional.of(JMX_PASSWORD));
 
     assertEquals(HttpStatus.CREATED_201, response.getStatus());
     assertEquals(1, mocks.context.storage.getRepairScheduleDao().getAllRepairSchedules().size());
-    assertEquals(1,
-        mocks.context.storage.getRepairScheduleDao().getRepairSchedulesForClusterAndKeyspace(CLUSTER_NAME, "keyspace1")
+    assertEquals(
+        1,
+        mocks
+            .context
+            .storage
+            .getRepairScheduleDao()
+            .getRepairSchedulesForClusterAndKeyspace(CLUSTER_NAME, "keyspace1")
             .size());
   }
 
@@ -601,37 +699,49 @@ public final class ClusterResourceTest {
     when(mocks.cassandraManagementProxy.getKeyspaces()).thenReturn(Lists.newArrayList("keyspace1"));
 
     when(mocks.cassandraManagementProxy.getTablesForKeyspace("keyspace1"))
-        .thenReturn(Sets.newHashSet(Table.builder().withName("table1").withCompactionStrategy(STCS).build()));
+        .thenReturn(
+            Sets.newHashSet(
+                Table.builder().withName("table1").withCompactionStrategy(STCS).build()));
 
-    mocks.context.config = TestRepairConfiguration.defaultConfigBuilder()
-        .withAutoScheduling(
-            TestRepairConfiguration.defaultAutoSchedulingConfigBuilder()
-                .thatIsEnabled()
-                .withTimeBeforeFirstSchedule(Duration.ofMinutes(1))
-                .build())
-        .build();
+    mocks.context.config =
+        TestRepairConfiguration.defaultConfigBuilder()
+            .withAutoScheduling(
+                TestRepairConfiguration.defaultAutoSchedulingConfigBuilder()
+                    .thatIsEnabled()
+                    .withTimeBeforeFirstSchedule(Duration.ofMinutes(1))
+                    .build())
+            .build();
 
-    ClusterResource clusterResource
-        = ClusterResource.create(mocks.context, mocks.cryptograph,
-        mocks.context.storage.getEventsDao(),
-        mocks.context.storage.getRepairRunDao());
+    ClusterResource clusterResource =
+        ClusterResource.create(
+            mocks.context,
+            mocks.cryptograph,
+            mocks.context.storage.getEventsDao(),
+            mocks.context.storage.getRepairRunDao());
     ;
 
-    Response response = clusterResource.addOrUpdateCluster(
-        mocks.uriInfo,
-        Optional.of(SEED_HOST),
-        Optional.of(Cluster.DEFAULT_JMX_PORT),
-        Optional.of(JMX_USERNAME),
-        Optional.of(JMX_PASSWORD)
-    );
+    Response response =
+        clusterResource.addOrUpdateCluster(
+            mocks.uriInfo,
+            Optional.of(SEED_HOST),
+            Optional.of(Cluster.DEFAULT_JMX_PORT),
+            Optional.of(JMX_USERNAME),
+            Optional.of(JMX_PASSWORD));
 
     assertEquals(HttpStatus.CREATED_201, response.getStatus());
     assertEquals(1, mocks.context.storage.getRepairScheduleDao().getAllRepairSchedules().size());
-    assertEquals(1,
-        mocks.context.storage.getRepairScheduleDao().getRepairSchedulesForClusterAndKeyspace(CLUSTER_NAME, "keyspace1")
+    assertEquals(
+        1,
+        mocks
+            .context
+            .storage
+            .getRepairScheduleDao()
+            .getRepairSchedulesForClusterAndKeyspace(CLUSTER_NAME, "keyspace1")
             .size());
 
-    assertEquals(HttpStatus.CONFLICT_409, clusterResource.deleteCluster(CLUSTER_NAME, Optional.empty()).getStatus());
+    assertEquals(
+        HttpStatus.CONFLICT_409,
+        clusterResource.deleteCluster(CLUSTER_NAME, Optional.empty()).getStatus());
 
     assertEquals(
         HttpStatus.CONFLICT_409,
@@ -662,12 +772,12 @@ public final class ClusterResourceTest {
 
   @Test
   public void testParseClusterNameInSeedHost() {
-    String seedHostStringList = "127.0.0.1@cluster one , 127.0.0.2@cluster one,  127.0.0.3@cluster one";
+    String seedHostStringList =
+        "127.0.0.1@cluster one , 127.0.0.2@cluster one,  127.0.0.3@cluster one";
     Optional<String> clusterName = ClusterResource.parseClusterNameFromSeedHost(seedHostStringList);
 
     assertEquals("cluster one", clusterName.get());
   }
-
 
   private MockObjects initMocks() throws ReaperException {
     AppContext context = new AppContext();
@@ -683,8 +793,9 @@ public final class ClusterResourceTest {
 
     context.managementConnectionFactory = mock(JmxManagementConnectionFactory.class);
 
-    when(((JmxManagementConnectionFactory) context.managementConnectionFactory).connectAny(Mockito.anyCollection()))
-            .thenReturn(cassandraManagementProxy);
+    when(((JmxManagementConnectionFactory) context.managementConnectionFactory)
+            .connectAny(Mockito.anyCollection()))
+        .thenReturn(cassandraManagementProxy);
 
     Cryptograph cryptograph = mock(Cryptograph.class);
     when(cryptograph.encrypt(any(String.class))).thenReturn(RandomStringUtils.randomNumeric(10));
@@ -715,7 +826,5 @@ public final class ClusterResourceTest {
       this.cassandraManagementProxy = cassandraManagementProxy;
       this.clusterFacade = clusterFacade;
     }
-
   }
-
 }

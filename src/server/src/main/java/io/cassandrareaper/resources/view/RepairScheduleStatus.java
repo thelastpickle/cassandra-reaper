@@ -17,25 +17,21 @@
 
 package io.cassandrareaper.resources.view;
 
-import io.cassandrareaper.core.RepairSchedule;
-import io.cassandrareaper.core.RepairUnit;
-
-import java.util.Collection;
-import java.util.UUID;
-
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import io.cassandrareaper.core.RepairSchedule;
+import io.cassandrareaper.core.RepairUnit;
+import java.util.Collection;
+import java.util.UUID;
 import org.apache.cassandra.repair.RepairParallelism;
 import org.joda.time.DateTime;
 import org.joda.time.format.ISODateTimeFormat;
 
 public final class RepairScheduleStatus {
 
-  @JsonProperty
-  private UUID id;
+  @JsonProperty private UUID id;
 
-  @JsonProperty
-  private String owner;
+  @JsonProperty private String owner;
 
   @JsonProperty("cluster_name")
   private String clusterName;
@@ -46,20 +42,15 @@ public final class RepairScheduleStatus {
   @JsonProperty("column_families")
   private Collection<String> columnFamilies;
 
-  @JsonProperty
-  private RepairSchedule.State state;
+  @JsonProperty private RepairSchedule.State state;
 
-  @JsonIgnore
-  private DateTime creationTime;
+  @JsonIgnore private DateTime creationTime;
 
-  @JsonIgnore
-  private DateTime nextActivation;
+  @JsonIgnore private DateTime nextActivation;
 
-  @JsonIgnore
-  private DateTime pauseTime;
+  @JsonIgnore private DateTime pauseTime;
 
-  @JsonProperty
-  private double intensity;
+  @JsonProperty private double intensity;
 
   @JsonProperty("incremental_repair")
   private boolean incrementalRepair;
@@ -100,11 +91,8 @@ public final class RepairScheduleStatus {
   @JsonProperty("percent_unrepaired_threshold")
   private int percentUnrepairedThreshold;
 
-  /**
-   * Default public constructor Required for Jackson JSON parsing.
-   */
-  public RepairScheduleStatus() {
-  }
+  /** Default public constructor Required for Jackson JSON parsing. */
+  public RepairScheduleStatus() {}
 
   public RepairScheduleStatus(
       UUID id,
@@ -180,7 +168,9 @@ public final class RepairScheduleStatus {
         repairUnit.getId(),
         repairUnit.getTimeout(),
         repairSchedule.getAdaptive(),
-        repairSchedule.getPercentUnrepairedThreshold() == null ? -1 : repairSchedule.getPercentUnrepairedThreshold());
+        repairSchedule.getPercentUnrepairedThreshold() == null
+            ? -1
+            : repairSchedule.getPercentUnrepairedThreshold());
   }
 
   public UUID getId() {

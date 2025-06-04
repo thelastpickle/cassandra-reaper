@@ -17,18 +17,15 @@
 
 package io.cassandrareaper.resources;
 
+import com.google.common.collect.BiMap;
 import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperApplicationConfiguration.DatacenterAvailability;
 import io.cassandrareaper.service.TestRepairConfiguration;
 import io.cassandrareaper.storage.MemoryStorageFacade;
-
 import javax.ws.rs.core.Response;
-
-import com.google.common.collect.BiMap;
 import junit.framework.TestCase;
 import org.eclipse.jetty.http.HttpStatus;
 import org.junit.Test;
-
 
 public class ReaperResourceTest extends TestCase {
 
@@ -38,7 +35,8 @@ public class ReaperResourceTest extends TestCase {
 
     ReaperResource resource = new ReaperResource(mocks.context);
     Response response = resource.getDatacenterAvailability();
-    BiMap<String, DatacenterAvailability> config = (BiMap<String, DatacenterAvailability>) response.getEntity();
+    BiMap<String, DatacenterAvailability> config =
+        (BiMap<String, DatacenterAvailability>) response.getEntity();
 
     assertEquals(config.get("datacenterAvailability"), DatacenterAvailability.EACH);
     assertEquals(HttpStatus.OK_200, response.getStatus());
@@ -57,11 +55,9 @@ public class ReaperResourceTest extends TestCase {
 
     final AppContext context;
 
-    MockObjects(
-        AppContext context) {
+    MockObjects(AppContext context) {
       super();
       this.context = context;
     }
-
   }
 }

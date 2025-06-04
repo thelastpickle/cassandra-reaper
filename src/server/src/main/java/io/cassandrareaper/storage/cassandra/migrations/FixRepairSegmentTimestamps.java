@@ -17,16 +17,14 @@
 
 package io.cassandrareaper.storage.cassandra.migrations;
 
-import io.cassandrareaper.core.RepairSegment;
-
-import java.time.Instant;
-
 import com.datastax.oss.driver.api.core.ConsistencyLevel;
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.cql.PreparedStatement;
 import com.datastax.oss.driver.api.core.cql.ResultSet;
 import com.datastax.oss.driver.api.core.cql.Row;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
+import io.cassandrareaper.core.RepairSegment;
+import java.time.Instant;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,24 +32,26 @@ public final class FixRepairSegmentTimestamps {
 
   private static final Logger LOG = LoggerFactory.getLogger(FixRepairSegmentTimestamps.class);
 
-  private FixRepairSegmentTimestamps() {
-  }
+  private FixRepairSegmentTimestamps() {}
 
-  /**
-   * fix nulls in the repair_run table
-   */
+  /** fix nulls in the repair_run table */
   public static void migrate(CqlSession session) {
     LOG.warn("Removing NULLs in the repair_run table. This may take some minutes…");
 
-    SimpleStatement getRepairSegmentsPrepStmt
-        = SimpleStatement.builder("SELECT id,segment_id,segment_state,segment_start_time,segment_end_time FROM "
-        + "repair_run")
-        .setConsistencyLevel(ConsistencyLevel.QUORUM).build();
+    SimpleStatement getRepairSegmentsPrepStmt =
+        SimpleStatement.builder(
+                "SELECT id,segment_id,segment_state,segment_start_time,segment_end_time FROM "
+                    + "repair_run")
+            .setConsistencyLevel(ConsistencyLevel.QUORUM)
+            .build();
 
-    PreparedStatement updateRepairSegmentPrepStmt = session
-        .prepare(SimpleStatement.builder("INSERT INTO repair_run "
-            + "(id,segment_id,segment_start_time,segment_end_time)  VALUES(?, ?, ?, ?)")
-        .setConsistencyLevel(ConsistencyLevel.EACH_QUORUM).build());
+    PreparedStatement updateRepairSegmentPrepStmt =
+        session.prepare(
+            SimpleStatement.builder(
+                    "INSERT INTO repair_run "
+                        + "(id,segment_id,segment_start_time,segment_end_time)  VALUES(?, ?, ?, ?)")
+                .setConsistencyLevel(ConsistencyLevel.EACH_QUORUM)
+                .build());
 
     ResultSet resultSet = session.execute(getRepairSegmentsPrepStmt);
     int rowsRead = 0;
@@ -81,7 +81,8 @@ public final class FixRepairSegmentTimestamps {
 
       if (update) {
         session.executeAsync(
-            updateRepairSegmentPrepStmt.bind(row.getUuid("id"), row.getUuid("segment_id"), startTime, endTime));
+            updateRepairSegmentPrepStmt.bind(
+                row.getUuid("id"), row.getUuid("segment_id"), startTime, endTime));
       }
       ++rowsRead;
       if (0 == rowsRead % 1000) {

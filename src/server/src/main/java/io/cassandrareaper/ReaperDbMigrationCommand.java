@@ -17,12 +17,10 @@
 package io.cassandrareaper;
 
 import io.cassandrareaper.storage.InitializeStorage;
-
-import javax.validation.Validation;
-
 import io.dropwizard.core.cli.ConfiguredCommand;
 import io.dropwizard.core.setup.Bootstrap;
 import io.dropwizard.core.setup.Environment;
+import javax.validation.Validation;
 import net.sourceforge.argparse4j.inf.Namespace;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,10 +28,7 @@ import org.slf4j.LoggerFactory;
 final class ReaperDbMigrationCommand extends ConfiguredCommand<ReaperApplicationConfiguration> {
   private static final Logger LOG = LoggerFactory.getLogger(ReaperDbMigrationCommand.class);
 
-  protected ReaperDbMigrationCommand(
-      String name,
-      String description
-  ) {
+  protected ReaperDbMigrationCommand(String name, String description) {
     super(name, description);
   }
 
@@ -41,15 +36,17 @@ final class ReaperDbMigrationCommand extends ConfiguredCommand<ReaperApplication
   protected void run(
       Bootstrap<ReaperApplicationConfiguration> bootstrap,
       Namespace namespace,
-      ReaperApplicationConfiguration configuration
-  ) throws Exception {
-    final Environment environment = new Environment(bootstrap.getApplication().getName(),
-                                                        bootstrap.getObjectMapper(),
-                                                        Validation.buildDefaultValidatorFactory(),
-                                                        bootstrap.getMetricRegistry(),
-                                                        bootstrap.getClassLoader(),
-                                                        bootstrap.getHealthCheckRegistry(),
-                                                        configuration);
+      ReaperApplicationConfiguration configuration)
+      throws Exception {
+    final Environment environment =
+        new Environment(
+            bootstrap.getApplication().getName(),
+            bootstrap.getObjectMapper(),
+            Validation.buildDefaultValidatorFactory(),
+            bootstrap.getMetricRegistry(),
+            bootstrap.getClassLoader(),
+            bootstrap.getHealthCheckRegistry(),
+            configuration);
     InitializeStorage.initializeStorage(configuration, environment).initializeStorageBackend();
     System.exit(0);
   }

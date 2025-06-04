@@ -17,17 +17,15 @@
 
 package io.cassandrareaper.storage;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import io.cassandrareaper.storage.cassandra.network.MultiIpPerNodeAddressTranslator;
 import io.cassandrareaper.storage.cassandra.network.MultiIpPerNodeAddressTranslatorFactory;
 import io.cassandrareaper.storage.cassandra.network.MultiIpPerNodeAddressTranslatorFactory.AddressTranslation;
-
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
-
 import org.junit.Test;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 public class MultiIpPerNodeAddressTranslatorFactoryTest {
 

@@ -17,8 +17,9 @@
 
 package io.cassandrareaper.core;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 import io.cassandrareaper.service.RingRange;
-
 import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -26,14 +27,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
-
 @JsonDeserialize(builder = Segment.Builder.class)
 public final class Segment {
 
-  public static final Comparator<Segment> START_COMPARATOR
-      = (Segment o1, Segment o2) ->
+  public static final Comparator<Segment> START_COMPARATOR =
+      (Segment o1, Segment o2) ->
           o1.getBaseRange().getStart().compareTo(o2.getBaseRange().getStart());
 
   RingRange baseRange;
@@ -61,7 +59,7 @@ public final class Segment {
 
   public BigInteger countTokens(BigInteger rangeSize) {
     BigInteger tokens = BigInteger.ZERO;
-    for (RingRange tokenRange:tokenRanges) {
+    for (RingRange tokenRange : tokenRanges) {
       tokens = tokens.add(tokenRange.span(rangeSize));
     }
 

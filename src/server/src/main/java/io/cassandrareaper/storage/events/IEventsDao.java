@@ -18,7 +18,6 @@
 package io.cassandrareaper.storage.events;
 
 import io.cassandrareaper.core.DiagEventSubscription;
-
 import java.util.Collection;
 import java.util.UUID;
 
@@ -32,5 +31,4 @@ public interface IEventsDao {
   DiagEventSubscription addEventSubscription(DiagEventSubscription subscription);
 
   boolean deleteEventSubscription(UUID id);
-
 }

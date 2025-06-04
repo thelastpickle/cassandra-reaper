@@ -18,7 +18,6 @@
 package io.cassandrareaper.resources;
 
 import io.cassandrareaper.crypto.Cryptograph;
-
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
@@ -41,5 +40,4 @@ public final class CryptoResource {
   public Response encrypt(@PathParam("text") String text) {
     return Response.ok().entity(cryptograph.encrypt(text)).build();
   }
-
 }

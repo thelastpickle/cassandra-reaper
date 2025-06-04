@@ -39,10 +39,8 @@ import io.cassandrareaper.core.RepairSegment;
 import io.cassandrareaper.service.RingRange;
 import io.cassandrareaper.storage.metrics.IDistributedMetrics;
 import io.cassandrareaper.storage.operations.IOperationsDao;
-
 import java.util.List;
 import java.util.UUID;
-
 
 /**
  * Definition for a storage that can run in distributed (peer-to-peer) mode. For example Cassandra.
@@ -68,18 +66,16 @@ public interface IDistributedStorage extends IDistributedMetrics {
   void saveHeartbeat();
 
   /**
-   * Gets the next free segment from the backend that is both within the parallel range and the local node ranges.
+   * Gets the next free segment from the backend that is both within the parallel range and the
+   * local node ranges.
    *
-   * @param runId  id of the repair run
+   * @param runId id of the repair run
    * @param ranges list of ranges we're looking a segment for
    * @return an optional repair segment to process
    */
-  List<RepairSegment> getNextFreeSegmentsForRanges(
-      UUID runId, List<RingRange> ranges);
+  List<RepairSegment> getNextFreeSegmentsForRanges(UUID runId, List<RingRange> ranges);
 
-  /**
-   * Purges old metrics from the database (no-op for databases w/ TTL)
-   */
+  /** Purges old metrics from the database (no-op for databases w/ TTL) */
   void purgeMetrics();
 
   IOperationsDao getOperationsDao();

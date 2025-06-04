@@ -15,6 +15,19 @@
 
 package io.cassandrareaper.management;
 
+import static io.cassandrareaper.service.RepairRunnerTest.scyllaThreeNodeClusterWithIps;
+import static io.cassandrareaper.service.RepairRunnerTest.threeNodeClusterWithIps;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
+import com.google.common.collect.ImmutableList;
 import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperApplicationConfiguration;
 import io.cassandrareaper.ReaperApplicationConfiguration.DatacenterAvailability;
@@ -25,7 +38,6 @@ import io.cassandrareaper.core.CompactionStats;
 import io.cassandrareaper.core.JmxCredentials;
 import io.cassandrareaper.management.jmx.JmxCassandraManagementProxy;
 import io.cassandrareaper.management.jmx.JmxManagementConnectionFactory;
-
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
@@ -34,22 +46,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
-import com.google.common.collect.ImmutableList;
 import org.junit.Test;
 import org.mockito.Mockito;
-
-import static io.cassandrareaper.service.RepairRunnerTest.scyllaThreeNodeClusterWithIps;
-import static io.cassandrareaper.service.RepairRunnerTest.threeNodeClusterWithIps;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 public class ClusterFacadeTest {
 
@@ -120,8 +118,16 @@ public class ClusterFacadeTest {
   @Test
   public void parseListCompactionTest() throws IOException {
     final ObjectMapper objectMapper = new ObjectMapper();
-    Compaction compaction = Compaction.builder().withId("foo").withKeyspace("ks").withTable("t")
-        .withProgress(64L).withTotal(128L).withType("Validation").withUnit("unit").build();
+    Compaction compaction =
+        Compaction.builder()
+            .withId("foo")
+            .withKeyspace("ks")
+            .withTable("t")
+            .withProgress(64L)
+            .withTotal(128L)
+            .withType("Validation")
+            .withUnit("unit")
+            .build();
     String compactionsJson = objectMapper.writeValueAsString(ImmutableList.of(compaction));
     CompactionStats compactionStats = ClusterFacade.parseCompactionStats(compactionsJson);
     assertFalse(compactionStats.getPendingCompactions().isPresent());
@@ -131,11 +137,21 @@ public class ClusterFacadeTest {
   public void parseCompactionStatsTest() throws IOException {
     final ObjectMapper objectMapper = new ObjectMapper();
     objectMapper.registerModule(new Jdk8Module());
-    Compaction compaction = Compaction.builder().withId("foo").withKeyspace("ks").withTable("t")
-        .withProgress(64L).withTotal(128L).withType("Validation").withUnit("unit").build();
+    Compaction compaction =
+        Compaction.builder()
+            .withId("foo")
+            .withKeyspace("ks")
+            .withTable("t")
+            .withProgress(64L)
+            .withTotal(128L)
+            .withType("Validation")
+            .withUnit("unit")
+            .build();
     CompactionStats originalCompactionStats =
-        CompactionStats.builder().withActiveCompactions(ImmutableList.of(compaction))
-            .withPendingCompactions(Optional.of(42)).build();
+        CompactionStats.builder()
+            .withActiveCompactions(ImmutableList.of(compaction))
+            .withPendingCompactions(Optional.of(42))
+            .build();
     String compactionJson = objectMapper.writeValueAsString(originalCompactionStats);
     CompactionStats compactionStats = ClusterFacade.parseCompactionStats(compactionJson);
     assertEquals(42L, compactionStats.getPendingCompactions().get().longValue());
@@ -198,5 +214,4 @@ public class ClusterFacadeTest {
     when(mockProxy.getRangeToEndpointMap(eq("fake-ks"))).thenThrow(new AssertionError(""));
     cf.getRangeToEndpointMap(mockCluster, "fake-ks");
   }
-
 }

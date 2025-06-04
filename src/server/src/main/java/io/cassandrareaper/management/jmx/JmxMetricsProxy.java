@@ -17,11 +17,12 @@
 
 package io.cassandrareaper.management.jmx;
 
+import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import io.cassandrareaper.core.GenericMetric;
 import io.cassandrareaper.core.JmxStat;
 import io.cassandrareaper.core.Node;
 import io.cassandrareaper.management.MetricsProxy;
-
 import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -32,26 +33,22 @@ import javax.management.JMException;
 import javax.management.MBeanAttributeInfo;
 import javax.management.MBeanInfo;
 import javax.management.ObjectName;
-
-import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 
 public final class JmxMetricsProxy implements MetricsProxy {
 
   private static final Logger LOG = LoggerFactory.getLogger(JmxMetricsProxy.class);
 
   private static final String[] GENERIC_METRICS = {
-      "org.apache.cassandra.metrics:type=ThreadPools,path=request,*",
-      "org.apache.cassandra.metrics:type=ThreadPools,path=internal,*",
-      "org.apache.cassandra.metrics:type=ClientRequest,*",
-      "org.apache.cassandra.metrics:type=DroppedMessage,*"
+    "org.apache.cassandra.metrics:type=ThreadPools,path=request,*",
+    "org.apache.cassandra.metrics:type=ThreadPools,path=internal,*",
+    "org.apache.cassandra.metrics:type=ClientRequest,*",
+    "org.apache.cassandra.metrics:type=DroppedMessage,*"
   };
 
-  private static final String PERCENT_REPAIRED_METRICS
-          = "org.apache.cassandra.metrics:type=ColumnFamily,keyspace=%s,scope=*,name=PercentRepaired";
+  private static final String PERCENT_REPAIRED_METRICS =
+      "org.apache.cassandra.metrics:type=ColumnFamily,keyspace=%s,scope=*,name=PercentRepaired";
 
   private final JmxCassandraManagementProxy proxy;
   private final Node node;
@@ -67,21 +64,23 @@ public final class JmxMetricsProxy implements MetricsProxy {
 
   @Override
   public List<GenericMetric> collectTpStats() throws JMException, IOException {
-    return MetricsProxy.convertToGenericMetrics(collectMetrics(
-        "org.apache.cassandra.metrics:type=ThreadPools,path=request,*",
-        "org.apache.cassandra.metrics:type=ThreadPools,path=internal,*"), node);
+    return MetricsProxy.convertToGenericMetrics(
+        collectMetrics(
+            "org.apache.cassandra.metrics:type=ThreadPools,path=request,*",
+            "org.apache.cassandra.metrics:type=ThreadPools,path=internal,*"),
+        node);
   }
 
   @Override
   public List<GenericMetric> collectDroppedMessages() throws JMException, IOException {
     return MetricsProxy.convertToGenericMetrics(
-      collectMetrics("org.apache.cassandra.metrics:type=DroppedMessage,*"), node);
+        collectMetrics("org.apache.cassandra.metrics:type=DroppedMessage,*"), node);
   }
 
   @Override
   public List<GenericMetric> collectLatencyMetrics() throws JMException, IOException {
     return MetricsProxy.convertToGenericMetrics(
-      collectMetrics("org.apache.cassandra.metrics:type=ClientRequest,*"), node);
+        collectMetrics("org.apache.cassandra.metrics:type=ClientRequest,*"), node);
   }
 
   /**
@@ -90,7 +89,8 @@ public final class JmxMetricsProxy implements MetricsProxy {
    * @param beans the list of beans to collect through JMX
    * @return a map with a key for each bean and a list of jmx stat in generic format.
    */
-  public Map<String, List<JmxStat>> collectMetrics(String... beans) throws JMException, IOException {
+  public Map<String, List<JmxStat>> collectMetrics(String... beans)
+      throws JMException, IOException {
     List<List<JmxStat>> allStats = Lists.newArrayList();
     Set<ObjectName> beanSet = Sets.newLinkedHashSet();
     for (String bean : beans) {
@@ -101,12 +101,12 @@ public final class JmxMetricsProxy implements MetricsProxy {
         .map((objName) -> scrapeBean(objName))
         .forEachOrdered(attributes -> allStats.add(attributes));
 
-    List<JmxStat> flatStatList = allStats.stream()
-        .flatMap(attr -> attr.stream()).collect(Collectors.toList());
+    List<JmxStat> flatStatList =
+        allStats.stream().flatMap(attr -> attr.stream()).collect(Collectors.toList());
 
     // Group the stats by scope to ease displaying/manipulating the data
-    Map<String, List<JmxStat>> groupedStatList = flatStatList.stream()
-        .collect(Collectors.groupingBy(JmxStat::getMbeanName));
+    Map<String, List<JmxStat>> groupedStatList =
+        flatStatList.stream().collect(Collectors.groupingBy(JmxStat::getMbeanName));
 
     return groupedStatList;
   }
@@ -118,9 +118,9 @@ public final class JmxMetricsProxy implements MetricsProxy {
 
   @Override
   public List<GenericMetric> collectPercentRepairedMetrics(String keyspaceName)
-          throws JMException, IOException {
+      throws JMException, IOException {
     return MetricsProxy.convertToGenericMetrics(
-      collectMetrics(String.format(PERCENT_REPAIRED_METRICS, keyspaceName)), node);
+        collectMetrics(String.format(PERCENT_REPAIRED_METRICS, keyspaceName)), node);
   }
 
   private List<JmxStat> scrapeBean(ObjectName mbeanName) {
@@ -136,23 +136,27 @@ public final class JmxMetricsProxy implements MetricsProxy {
           name2AttrInfo.put(attr.getName(), attr);
         }
       }
-      proxy.getAttributes(mbeanName, name2AttrInfo.keySet().toArray(new String[0]))
+      proxy
+          .getAttributes(mbeanName, name2AttrInfo.keySet().toArray(new String[0]))
           .asList()
-          .forEach((attribute) -> {
-            Object value = attribute.getValue();
-            JmxStat.Builder jmxStatBuilder = JmxStat.builder()
-                .withAttribute(attribute.getName())
-                .withName(mbeanName.getKeyProperty("name"))
-                .withScope(mbeanName.getKeyProperty("scope"))
-                .withDomain(mbeanName.getDomain())
-                .withType(mbeanName.getKeyProperty("type"))
-                .withMbeanName(mbeanName.toString());
-            if (null == value) {
-              attributeList.add(jmxStatBuilder.withValue(0.0).build());
-            } else if (value instanceof Number) {
-              attributeList.add(jmxStatBuilder.withValue(((Number) value).doubleValue()).build());
-            }
-          });
+          .forEach(
+              (attribute) -> {
+                Object value = attribute.getValue();
+                JmxStat.Builder jmxStatBuilder =
+                    JmxStat.builder()
+                        .withAttribute(attribute.getName())
+                        .withName(mbeanName.getKeyProperty("name"))
+                        .withScope(mbeanName.getKeyProperty("scope"))
+                        .withDomain(mbeanName.getDomain())
+                        .withType(mbeanName.getKeyProperty("type"))
+                        .withMbeanName(mbeanName.toString());
+                if (null == value) {
+                  attributeList.add(jmxStatBuilder.withValue(0.0).build());
+                } else if (value instanceof Number) {
+                  attributeList.add(
+                      jmxStatBuilder.withValue(((Number) value).doubleValue()).build());
+                }
+              });
     } catch (JMException | IOException e) {
       LOG.error("Fail getting mbeanInfo or grabbing attributes for mbean {} ", mbeanName, e);
     }

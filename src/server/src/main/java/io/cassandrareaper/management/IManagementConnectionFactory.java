@@ -19,7 +19,6 @@ package io.cassandrareaper.management;
 
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Node;
-
 import java.util.Collection;
 import java.util.Set;
 

@@ -21,11 +21,9 @@ import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.storage.repairrun.IRepairRunDao;
-
 import java.util.Collection;
 import java.util.Timer;
 import java.util.TimerTask;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

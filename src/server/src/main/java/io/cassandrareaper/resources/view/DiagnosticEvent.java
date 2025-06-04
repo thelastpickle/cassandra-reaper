@@ -17,30 +17,23 @@
 
 package io.cassandrareaper.resources.view;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.io.Serializable;
 import java.util.Map;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-
 public final class DiagnosticEvent {
 
-  @JsonProperty
-  private final String cluster;
+  @JsonProperty private final String cluster;
 
-  @JsonProperty
-  private final String node;
+  @JsonProperty private final String node;
 
-  @JsonProperty
-  private final String eventClass;
+  @JsonProperty private final String eventClass;
 
-  @JsonProperty
-  private final String eventType;
+  @JsonProperty private final String eventType;
 
-  @JsonProperty
-  private final Long timestamp;
+  @JsonProperty private final Long timestamp;
 
-  @JsonProperty
-  private final Map<String, Serializable> event;
+  @JsonProperty private final Map<String, Serializable> event;
 
   public DiagnosticEvent(
       String cluster,

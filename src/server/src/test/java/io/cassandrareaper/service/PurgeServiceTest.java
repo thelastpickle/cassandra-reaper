@@ -17,6 +17,15 @@
 
 package io.cassandrareaper.service;
 
+import static org.junit.Assert.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+import com.datastax.oss.driver.api.core.uuid.Uuids;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Lists;
 import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperApplicationConfiguration;
 import io.cassandrareaper.ReaperException;
@@ -26,26 +35,15 @@ import io.cassandrareaper.core.RepairRun.RunState;
 import io.cassandrareaper.storage.IStorageDao;
 import io.cassandrareaper.storage.cluster.IClusterDao;
 import io.cassandrareaper.storage.repairrun.IRepairRunDao;
-
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
-
-import com.datastax.oss.driver.api.core.uuid.Uuids;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Lists;
 import org.apache.cassandra.repair.RepairParallelism;
 import org.joda.time.DateTime;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.junit.Assert.assertEquals;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 public final class PurgeServiceTest {
 
@@ -63,7 +61,8 @@ public final class PurgeServiceTest {
     // Create storage mock
     context.storage = mock(IStorageDao.class);
 
-    List<Cluster> clusters = Arrays.asList(Cluster.builder().withName(CLUSTER_NAME).withSeedHosts(SEEDS).build());
+    List<Cluster> clusters =
+        Arrays.asList(Cluster.builder().withName(CLUSTER_NAME).withSeedHosts(SEEDS).build());
     IClusterDao mockedClusterDao = mock(IClusterDao.class);
     when(context.storage.getClusterDao()).thenReturn(mockedClusterDao);
     when(context.storage.getClusterDao().getClusters()).thenReturn(clusters);
@@ -106,7 +105,8 @@ public final class PurgeServiceTest {
     // Create storage mock
     context.storage = mock(IStorageDao.class);
 
-    List<Cluster> clusters = Arrays.asList(Cluster.builder().withName(CLUSTER_NAME).withSeedHosts(SEEDS).build());
+    List<Cluster> clusters =
+        Arrays.asList(Cluster.builder().withName(CLUSTER_NAME).withSeedHosts(SEEDS).build());
     IClusterDao mockedClusterDao = mock(IClusterDao.class);
     when(context.storage.getClusterDao()).thenReturn(mockedClusterDao);
     when(context.storage.getClusterDao().getClusters()).thenReturn(clusters);
@@ -150,7 +150,8 @@ public final class PurgeServiceTest {
     // Create storage mock
     context.storage = mock(IStorageDao.class);
 
-    List<Cluster> clusters = Arrays.asList(Cluster.builder().withName(CLUSTER_NAME).withSeedHosts(SEEDS).build());
+    List<Cluster> clusters =
+        Arrays.asList(Cluster.builder().withName(CLUSTER_NAME).withSeedHosts(SEEDS).build());
 
     IClusterDao mockedClusterDao = mock(IClusterDao.class);
     when(context.storage.getClusterDao()).thenReturn(mockedClusterDao);
@@ -185,5 +186,4 @@ public final class PurgeServiceTest {
     // Check that runs were removed
     assertEquals(0, purged);
   }
-
 }

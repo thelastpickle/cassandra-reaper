@@ -19,7 +19,6 @@ package io.cassandrareaper.management;
 
 import io.cassandrareaper.management.jmx.JmxCassandraManagementProxy;
 import io.cassandrareaper.service.DiagEventSubscriptionService;
-
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.Map;
@@ -27,10 +26,8 @@ import java.util.SortedMap;
 import javax.management.InstanceNotFoundException;
 import javax.management.JMException;
 import javax.management.NotificationListener;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 
 public final class DiagnosticProxy {
 
@@ -58,7 +55,8 @@ public final class DiagnosticProxy {
     return proxy.getLastEventIdsIfModified(lastUpdated);
   }
 
-  public SortedMap<Long, Map<String, Serializable>> readEvents(String eventClazz, Long lastKey, int limit) {
+  public SortedMap<Long, Map<String, Serializable>> readEvents(
+      String eventClazz, Long lastKey, int limit) {
     return proxy.readEvents(eventClazz, lastKey, limit);
   }
 
@@ -75,18 +73,23 @@ public final class DiagnosticProxy {
           ex);
 
     } catch (IOException | JMException | RuntimeException e) {
-      LOG.error(String.format("Failed to subscribe on %s (%s)", proxy.getHost(), proxy.getClusterName()), e);
+      LOG.error(
+          String.format("Failed to subscribe on %s (%s)", proxy.getHost(), proxy.getClusterName()),
+          e);
     }
   }
 
   public void unsubscribeNotifications(NotificationListener listener) {
     try {
-      LOG.debug("Unsubscribing from notifications on {} ({})", proxy.getHost(), proxy.getClusterName());
+      LOG.debug(
+          "Unsubscribing from notifications on {} ({})", proxy.getHost(), proxy.getClusterName());
       proxy.removeConnectionNotificationListener(listener);
       proxy.removeNotificationListener(listener);
     } catch (IOException | JMException | RuntimeException e) {
-      LOG.error(String.format("Failed to unsubscribe on %s (%s)", proxy.getHost(), proxy.getClusterName()), e);
+      LOG.error(
+          String.format(
+              "Failed to unsubscribe on %s (%s)", proxy.getHost(), proxy.getClusterName()),
+          e);
     }
   }
-
 }

@@ -17,73 +17,85 @@
 
 package io.cassandrareaper.metrics;
 
+import io.prometheus.client.dropwizard.samplebuilder.CustomMappingSampleBuilder;
+import io.prometheus.client.dropwizard.samplebuilder.MapperConfig;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import io.prometheus.client.dropwizard.samplebuilder.CustomMappingSampleBuilder;
-import io.prometheus.client.dropwizard.samplebuilder.MapperConfig;
-
 public final class PrometheusMetricsConfiguration {
 
-  private PrometheusMetricsConfiguration() {
-  }
+  private PrometheusMetricsConfiguration() {}
 
   public static CustomMappingSampleBuilder getCustomSampleMethodBuilder() {
     final List<MapperConfig> mapperConfigs = new ArrayList<>();
-    final Map<String,String> segmentMetricLabels = new HashMap<>();
+    final Map<String, String> segmentMetricLabels = new HashMap<>();
     segmentMetricLabels.put("cluster", "${0}");
     segmentMetricLabels.put("keyspace", "${1}");
     segmentMetricLabels.put("repairid", "${2}");
-    mapperConfigs.add(new MapperConfig("io.cassandrareaper.service.RepairRunner.segmentsDone.*.*.*",
-        "io.cassandrareaper.service.RepairRunner.segmentsDone", segmentMetricLabels));
-    mapperConfigs.add(new MapperConfig("io.cassandrareaper.service.RepairRunner.segmentsTotal.*.*.*",
-        "io.cassandrareaper.service.RepairRunner.segmentsTotal", segmentMetricLabels));
+    mapperConfigs.add(
+        new MapperConfig(
+            "io.cassandrareaper.service.RepairRunner.segmentsDone.*.*.*",
+            "io.cassandrareaper.service.RepairRunner.segmentsDone",
+            segmentMetricLabels));
+    mapperConfigs.add(
+        new MapperConfig(
+            "io.cassandrareaper.service.RepairRunner.segmentsTotal.*.*.*",
+            "io.cassandrareaper.service.RepairRunner.segmentsTotal",
+            segmentMetricLabels));
 
-    final Map<String,String> millisSinceLastRepairMetricLabels = new HashMap<>();
+    final Map<String, String> millisSinceLastRepairMetricLabels = new HashMap<>();
     millisSinceLastRepairMetricLabels.put("cluster", "${0}");
     millisSinceLastRepairMetricLabels.put("keyspace", "${1}");
     millisSinceLastRepairMetricLabels.put("repairid", "${2}");
     // Legacy label replaced with repairid
     millisSinceLastRepairMetricLabels.put("runid", "${2}");
-    mapperConfigs.add(new MapperConfig("io.cassandrareaper.service.RepairRunner.millisSinceLastRepair.*.*.*",
-        "io.cassandrareaper.service.RepairRunner.millisSinceLastRepair", millisSinceLastRepairMetricLabels));
+    mapperConfigs.add(
+        new MapperConfig(
+            "io.cassandrareaper.service.RepairRunner.millisSinceLastRepair.*.*.*",
+            "io.cassandrareaper.service.RepairRunner.millisSinceLastRepair",
+            millisSinceLastRepairMetricLabels));
 
-    final Map<String,String> millisSinceLastScheduleRepairMetricLabels = new HashMap<>();
+    final Map<String, String> millisSinceLastScheduleRepairMetricLabels = new HashMap<>();
     millisSinceLastScheduleRepairMetricLabels.put("cluster", "${0}");
     millisSinceLastScheduleRepairMetricLabels.put("keyspace", "${1}");
     millisSinceLastScheduleRepairMetricLabels.put("scheduleid", "${2}");
-    mapperConfigs.add(new MapperConfig(
-        "io.cassandrareaper.service.RepairScheduleService.millisSinceLastRepairForSchedule.*.*.*",
-        "io.cassandrareaper.service.RepairScheduleService.millisSinceLastRepairForSchedule",
-        millisSinceLastScheduleRepairMetricLabels));
+    mapperConfigs.add(
+        new MapperConfig(
+            "io.cassandrareaper.service.RepairScheduleService.millisSinceLastRepairForSchedule.*.*.*",
+            "io.cassandrareaper.service.RepairScheduleService.millisSinceLastRepairForSchedule",
+            millisSinceLastScheduleRepairMetricLabels));
 
-    final Map<String,String> repairProgressMetricLabels = new HashMap<>();
+    final Map<String, String> repairProgressMetricLabels = new HashMap<>();
     repairProgressMetricLabels.put("cluster", "${0}");
     repairProgressMetricLabels.put("keyspace", "${1}");
     repairProgressMetricLabels.put("repairid", "${2}");
-    mapperConfigs.add(new MapperConfig(
-        "io.cassandrareaper.service.RepairRunner.repairProgress.*.*.*",
-        "io.cassandrareaper.service.RepairRunner.repairProgress",
-        repairProgressMetricLabels));
+    mapperConfigs.add(
+        new MapperConfig(
+            "io.cassandrareaper.service.RepairRunner.repairProgress.*.*.*",
+            "io.cassandrareaper.service.RepairRunner.repairProgress",
+            repairProgressMetricLabels));
 
-    final Map<String,String> segmentRunnerMetricLabels = new HashMap<>();
+    final Map<String, String> segmentRunnerMetricLabels = new HashMap<>();
     segmentRunnerMetricLabels.put("host", "${0}");
     segmentRunnerMetricLabels.put("cluster", "${1}");
     segmentRunnerMetricLabels.put("keyspace", "${2}");
-    mapperConfigs.add(new MapperConfig(
-        "io.cassandrareaper.service.SegmentRunner.repairing.*.*.*",
-        "io.cassandrareaper.service.SegmentRunner.repairing",
-        segmentRunnerMetricLabels));
-    mapperConfigs.add(new MapperConfig(
-        "io.cassandrareaper.service.SegmentRunner.postpone.*.*.*",
-        "io.cassandrareaper.service.SegmentRunner.postpone",
-        segmentRunnerMetricLabels));
-    mapperConfigs.add(new MapperConfig(
-        "io.cassandrareaper.service.SegmentRunner.runRepair.*.*.*",
-        "io.cassandrareaper.service.SegmentRunner.runRepair",
-        segmentRunnerMetricLabels));
+    mapperConfigs.add(
+        new MapperConfig(
+            "io.cassandrareaper.service.SegmentRunner.repairing.*.*.*",
+            "io.cassandrareaper.service.SegmentRunner.repairing",
+            segmentRunnerMetricLabels));
+    mapperConfigs.add(
+        new MapperConfig(
+            "io.cassandrareaper.service.SegmentRunner.postpone.*.*.*",
+            "io.cassandrareaper.service.SegmentRunner.postpone",
+            segmentRunnerMetricLabels));
+    mapperConfigs.add(
+        new MapperConfig(
+            "io.cassandrareaper.service.SegmentRunner.runRepair.*.*.*",
+            "io.cassandrareaper.service.SegmentRunner.runRepair",
+            segmentRunnerMetricLabels));
 
     return new CustomMappingSampleBuilder(mapperConfigs);
   }

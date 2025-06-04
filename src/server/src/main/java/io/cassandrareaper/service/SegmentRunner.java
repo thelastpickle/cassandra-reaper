@@ -17,6 +17,14 @@
 
 package io.cassandrareaper.service;
 
+import static io.cassandrareaper.metrics.MetricNameUtils.cleanHostName;
+import static io.cassandrareaper.metrics.MetricNameUtils.cleanName;
+
+import com.codahale.metrics.MetricRegistry;
+import com.codahale.metrics.Timer;
+import com.google.common.base.Preconditions;
+import com.google.common.collect.Maps;
+import com.sun.management.UnixOperatingSystemMXBean;
 import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperApplicationConfiguration.DatacenterAvailability;
 import io.cassandrareaper.ReaperException;
@@ -29,7 +37,6 @@ import io.cassandrareaper.management.ICassandraManagementProxy;
 import io.cassandrareaper.management.RepairStatusHandler;
 import io.cassandrareaper.management.SnapshotProxy;
 import io.cassandrareaper.storage.IDistributedStorage;
-
 import java.lang.management.ManagementFactory;
 import java.lang.management.OperatingSystemMXBean;
 import java.util.Arrays;
@@ -43,21 +50,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Condition;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import com.codahale.metrics.MetricRegistry;
-import com.codahale.metrics.Timer;
-import com.google.common.base.Preconditions;
-import com.google.common.collect.Maps;
-import com.sun.management.UnixOperatingSystemMXBean;
 import org.apache.cassandra.repair.RepairParallelism;
 import org.apache.cassandra.utils.progress.ProgressEventType;
 import org.joda.time.DateTime;
 import org.joda.time.Seconds;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static io.cassandrareaper.metrics.MetricNameUtils.cleanHostName;
-import static io.cassandrareaper.metrics.MetricNameUtils.cleanName;
 
 final class SegmentRunner implements RepairStatusHandler, Runnable {
 
@@ -67,11 +65,11 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
   private static final Logger LOG = LoggerFactory.getLogger(SegmentRunner.class);
 
   private static final int MAX_TIMEOUT_EXTENSIONS = 10;
-  private static final Pattern REPAIR_UUID_PATTERN
-      = Pattern.compile("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}");
+  private static final Pattern REPAIR_UUID_PATTERN =
+      Pattern.compile("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}");
 
-  private static final long SLEEP_TIME_AFTER_POSTPONE_IN_MS
-      = Integer.getInteger(SegmentRunner.class.getName() + ".sleep_time_after_postpone_in_ms", 10000);
+  private static final long SLEEP_TIME_AFTER_POSTPONE_IN_MS =
+      Integer.getInteger(SegmentRunner.class.getName() + ".sleep_time_after_postpone_in_ms", 10000);
 
   private final AppContext context;
   private final UUID segmentId;
@@ -90,7 +88,6 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
   private final AtomicBoolean completeNotified = new AtomicBoolean(false);
   private final ClusterFacade clusterFacade;
   private final Set<String> tablesToRepair;
-
 
   private SegmentRunner(
       AppContext context,
@@ -121,9 +118,10 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
     this.repairUnit = repairUnit;
     this.repairRunner = repairRunner;
     this.segmentFailed = new AtomicBoolean(false);
-    this.leaderElectionId = repairUnit.getIncrementalRepair() && !repairUnit.getSubrangeIncrementalRepair()
-        ? repairRunner.getRepairRunId()
-        : segmentId;
+    this.leaderElectionId =
+        repairUnit.getIncrementalRepair() && !repairUnit.getSubrangeIncrementalRepair()
+            ? repairRunner.getRepairRunId()
+            : segmentId;
     this.tablesToRepair = tablesToRepair;
   }
 
@@ -138,7 +136,8 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
       String clusterName,
       RepairUnit repairUnit,
       Set<String> tablesToRepair,
-      RepairRunner repairRunner) throws ReaperException {
+      RepairRunner repairRunner)
+      throws ReaperException {
 
     return new SegmentRunner(
         context,
@@ -157,16 +156,17 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
   static void postponeSegment(AppContext context, RepairSegment segment) {
     LOG.info("Reset segment {}", segment.getId());
     RepairUnit unit = context.storage.getRepairUnitDao().getRepairUnit(segment.getRepairUnitId());
-    RepairSegment postponed
-        = segment
-        .reset()
-        // set coordinator host to null only for full repairs
-        .withCoordinatorHost(unit.getIncrementalRepair() && !unit.getSubrangeIncrementalRepair()
-            ? segment.getCoordinatorHost()
-            : null)
-        .withFailCount(segment.getFailCount() + 1)
-        .withId(segment.getId())
-        .build();
+    RepairSegment postponed =
+        segment
+            .reset()
+            // set coordinator host to null only for full repairs
+            .withCoordinatorHost(
+                unit.getIncrementalRepair() && !unit.getSubrangeIncrementalRepair()
+                    ? segment.getCoordinatorHost()
+                    : null)
+            .withFailCount(segment.getFailCount() + 1)
+            .withId(segment.getId())
+            .build();
 
     context.storage.getRepairSegmentDao().updateRepairSegmentUnsafe(postponed);
   }
@@ -174,30 +174,43 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
   private static void postpone(AppContext context, RepairSegment segment, RepairUnit repairUnit) {
     LOG.info("Postponing segment {}", segment.getId());
     try {
-      context.storage.getRepairSegmentDao().updateRepairSegment(
-          segment
-              .reset()
-              // set coordinator host to null only for full repairs
-              .withCoordinatorHost(repairUnit.getIncrementalRepair() && !repairUnit.getSubrangeIncrementalRepair()
-                  ? segment.getCoordinatorHost()
-                  : null)
-              .withFailCount(segment.getFailCount() + 1)
-              .withId(segment.getId())
-              .build());
+      context
+          .storage
+          .getRepairSegmentDao()
+          .updateRepairSegment(
+              segment
+                  .reset()
+                  // set coordinator host to null only for full repairs
+                  .withCoordinatorHost(
+                      repairUnit.getIncrementalRepair()
+                              && !repairUnit.getSubrangeIncrementalRepair()
+                          ? segment.getCoordinatorHost()
+                          : null)
+                  .withFailCount(segment.getFailCount() + 1)
+                  .withId(segment.getId())
+                  .build());
     } finally {
       SEGMENT_RUNNERS.remove(segment.getId());
       context.metricRegistry.counter(metricNameForPostpone(repairUnit, segment)).inc();
     }
   }
 
-  static void abort(AppContext context, RepairSegment segment, ICassandraManagementProxy jmxConnection) {
-    postpone(context, segment, context.storage.getRepairUnitDao().getRepairUnit(segment.getRepairUnitId()));
-    LOG.info("Aborting repair on segment with id {} on coordinator {}", segment.getId(), segment.getCoordinatorHost());
+  static void abort(
+      AppContext context, RepairSegment segment, ICassandraManagementProxy jmxConnection) {
+    postpone(
+        context,
+        segment,
+        context.storage.getRepairUnitDao().getRepairUnit(segment.getRepairUnitId()));
+    LOG.info(
+        "Aborting repair on segment with id {} on coordinator {}",
+        segment.getId(),
+        segment.getCoordinatorHost());
 
-    String metric = MetricRegistry.name(
-        SegmentRunner.class,
-        "abort",
-        Optional.ofNullable(segment.getCoordinatorHost()).orElse("null").replace('.', '-'));
+    String metric =
+        MetricRegistry.name(
+            SegmentRunner.class,
+            "abort",
+            Optional.ofNullable(segment.getCoordinatorHost()).orElse("null").replace('.', '-'));
 
     context.metricRegistry.counter(metric).inc();
     jmxConnection.cancelAllRepairs();
@@ -207,9 +220,9 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
     abort(context, segment, jmxConnection);
   }
 
-
   /**
-   * This method is intended to be temporary, until we find the root issue of too many open files issue.
+   * This method is intended to be temporary, until we find the root issue of too many open files
+   * issue.
    */
   private static long getOpenFilesAmount() {
     OperatingSystemMXBean os = ManagementFactory.getOperatingSystemMXBean();
@@ -238,12 +251,15 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
     }
   }
 
-
   @Override
   public void run() {
     boolean ran = false;
-    RepairSegment segment = context.storage.getRepairSegmentDao().getRepairSegment(repairRunner.getRepairRunId(),
-        segmentId).get();
+    RepairSegment segment =
+        context
+            .storage
+            .getRepairSegmentDao()
+            .getRepairSegment(repairRunner.getRepairRunId(), segmentId)
+            .get();
     if (takeLead(segment)) {
       try {
         ran = runRepair();
@@ -261,14 +277,19 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
     }
   }
 
-  /**
-   * Remember to call method postponeCurrentSegment() outside of synchronized(condition) block.
-   */
+  /** Remember to call method postponeCurrentSegment() outside of synchronized(condition) block. */
   void postponeCurrentSegment() {
     synchronized (condition) {
-      RepairSegment segment = context.storage.getRepairSegmentDao().getRepairSegment(repairRunner.getRepairRunId(),
-          segmentId).get();
-      postpone(context, segment, context.storage.getRepairUnitDao().getRepairUnit(segment.getRepairUnitId()));
+      RepairSegment segment =
+          context
+              .storage
+              .getRepairSegmentDao()
+              .getRepairSegment(repairRunner.getRepairRunId(), segmentId)
+              .get();
+      postpone(
+          context,
+          segment,
+          context.storage.getRepairUnitDao().getRepairUnit(segment.getRepairUnitId()));
     }
 
     try {
@@ -280,8 +301,12 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
 
   private boolean runRepair() {
     LOG.debug("Run repair for segment #{}", segmentId);
-    RepairSegment segment = context.storage.getRepairSegmentDao().getRepairSegment(repairRunner.getRepairRunId(),
-        segmentId).get();
+    RepairSegment segment =
+        context
+            .storage
+            .getRepairSegmentDao()
+            .getRepairSegment(repairRunner.getRepairRunId(), segmentId)
+            .get();
     Thread.currentThread().setName(clusterName + ":" + segment.getRunId() + ":" + segmentId);
 
     try (Timer.Context cxt = context.metricRegistry.timer(metricNameForRunRepair(segment)).time()) {
@@ -292,7 +317,9 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
 
       if (RepairSegment.State.NOT_STARTED != segment.getState()) {
         LOG.info(
-            "Cannot run segment {} for repair {} at the moment. Will try again later", segmentId, segment.getRunId());
+            "Cannot run segment {} for repair {} at the moment. Will try again later",
+            segmentId,
+            segment.getRunId());
 
         try {
           Thread.sleep(SLEEP_TIME_AFTER_POSTPONE_IN_MS);
@@ -304,48 +331,59 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
       Cluster cluster = context.storage.getClusterDao().getCluster(clusterName);
       ICassandraManagementProxy coordinator = clusterFacade.connect(cluster, potentialCoordinators);
       String keyspace = repairUnit.getKeyspaceName();
-      RepairType repairType = repairUnit.getSubrangeIncrementalRepair() ? RepairType.SUBRANGE_INCREMENTAL
-          : repairUnit.getIncrementalRepair() ? RepairType.INCREMENTAL : RepairType.SUBRANGE_FULL;
+      RepairType repairType =
+          repairUnit.getSubrangeIncrementalRepair()
+              ? RepairType.SUBRANGE_INCREMENTAL
+              : repairUnit.getIncrementalRepair()
+                  ? RepairType.INCREMENTAL
+                  : RepairType.SUBRANGE_FULL;
 
-      try (Timer.Context cxt1 = context.metricRegistry.timer(metricNameForRepairing(segment)).time()) {
+      try (Timer.Context cxt1 =
+          context.metricRegistry.timer(metricNameForRepairing(segment)).time()) {
         try {
           LOG.debug("Enter synchronized section with segment ID {}", segmentId);
           synchronized (condition) {
-            String coordinatorHost = context.config.getDatacenterAvailability() == DatacenterAvailability.SIDECAR
-                ? context.getLocalNodeAddress()
-                : coordinator.getHost();
-            segment = segment
-                .with()
-                .withState(RepairSegment.State.STARTED)
-                .withCoordinatorHost(coordinatorHost)
-                .withStartTime(DateTime.now())
-                .withId(segmentId)
-                .build();
+            String coordinatorHost =
+                context.config.getDatacenterAvailability() == DatacenterAvailability.SIDECAR
+                    ? context.getLocalNodeAddress()
+                    : coordinator.getHost();
+            segment =
+                segment
+                    .with()
+                    .withState(RepairSegment.State.STARTED)
+                    .withCoordinatorHost(coordinatorHost)
+                    .withStartTime(DateTime.now())
+                    .withId(segmentId)
+                    .build();
 
             context.storage.getRepairSegmentDao().updateRepairSegment(segment);
 
-            repairNo = coordinator.triggerRepair(
-                keyspace,
-                validationParallelism,
-                tablesToRepair,
-                repairType,
-                repairUnit.getDatacenters(),
-                this,
-                segment.getTokenRange().getTokenRanges(),
-                repairUnit.getRepairThreadCount());
+            repairNo =
+                coordinator.triggerRepair(
+                    keyspace,
+                    validationParallelism,
+                    tablesToRepair,
+                    repairType,
+                    repairUnit.getDatacenters(),
+                    this,
+                    segment.getTokenRange().getTokenRanges(),
+                    repairUnit.getRepairThreadCount());
 
             if (0 != repairNo) {
               processTriggeredSegment(segment, coordinator, repairNo);
             } else {
               LOG.info("Nothing to repair for segment {} in keyspace {}", segmentId, keyspace);
 
-              context.storage.getRepairSegmentDao().updateRepairSegment(
-                  segment
-                      .with()
-                      .withState(RepairSegment.State.DONE)
-                      .withEndTime(DateTime.now())
-                      .withId(segmentId)
-                      .build());
+              context
+                  .storage
+                  .getRepairSegmentDao()
+                  .updateRepairSegment(
+                      segment
+                          .with()
+                          .withState(RepairSegment.State.DONE)
+                          .withEndTime(DateTime.now())
+                          .withId(segmentId)
+                          .build());
 
               SEGMENT_RUNNERS.remove(segment.getId());
             }
@@ -363,25 +401,32 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
       return false;
     } finally {
       SEGMENT_RUNNERS.remove(segment.getId());
-      context.metricRegistry
+      context
+          .metricRegistry
           .histogram(MetricRegistry.name(SegmentRunner.class, "openFiles"))
           .update(getOpenFilesAmount());
     }
     return true;
   }
 
-  private void processTriggeredSegment(final RepairSegment segment, final ICassandraManagementProxy coordinator,
-                                       int repairNo) {
+  private void processTriggeredSegment(
+      final RepairSegment segment, final ICassandraManagementProxy coordinator, int repairNo) {
 
     repairRunner.updateLastEvent(
-        String.format("Triggered repair of segment %s via host %s", segment.getId(), coordinator.getHost()));
+        String.format(
+            "Triggered repair of segment %s via host %s", segment.getId(), coordinator.getHost()));
 
-    // Timeout is extended for each attempt to prevent repairs from blocking if settings aren't accurate
+    // Timeout is extended for each attempt to prevent repairs from blocking if settings aren't
+    // accurate
     int attempt = segment.getFailCount() + 1;
-    long segmentTimeout = repairUnit.getIncrementalRepair() && !repairUnit.getSubrangeIncrementalRepair()
-        ? timeoutMillis * MAX_TIMEOUT_EXTENSIONS * attempt
-        : timeoutMillis * attempt;
-    LOG.info("Repair for segment {} started, status wait will timeout in {} millis", segmentId, segmentTimeout);
+    long segmentTimeout =
+        repairUnit.getIncrementalRepair() && !repairUnit.getSubrangeIncrementalRepair()
+            ? timeoutMillis * MAX_TIMEOUT_EXTENSIONS * attempt
+            : timeoutMillis * attempt;
+    LOG.info(
+        "Repair for segment {} started, status wait will timeout in {} millis",
+        segmentId,
+        segmentTimeout);
 
     try {
       final long startTime = System.currentTimeMillis();
@@ -392,8 +437,14 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
       while (System.currentTimeMillis() < maxTime) {
         boolean isDoneOrFailed = condition.await(waitTime, TimeUnit.MILLISECONDS);
 
-        isDoneOrFailed |= RepairSegment.State.DONE == context.storage
-            .getRepairSegmentDao().getRepairSegment(segment.getRunId(), segmentId).get().getState();
+        isDoneOrFailed |=
+            RepairSegment.State.DONE
+                == context
+                    .storage
+                    .getRepairSegmentDao()
+                    .getRepairSegment(segment.getRunId(), segmentId)
+                    .get()
+                    .getState();
 
         if (isDoneOrFailed) {
           break;
@@ -404,8 +455,12 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
       LOG.warn("Repair command {} on segment {} interrupted", this.repairNo, segmentId, e);
     } finally {
       coordinator.removeRepairStatusHandler(repairNo);
-      RepairSegment resultingSegment
-          = context.storage.getRepairSegmentDao().getRepairSegment(repairRunner.getRepairRunId(), segmentId).get();
+      RepairSegment resultingSegment =
+          context
+              .storage
+              .getRepairSegmentDao()
+              .getRepairSegment(repairRunner.getRepairRunId(), segmentId)
+              .get();
 
       LOG.info(
           "Repair command {} on segment {} returned with state {}",
@@ -416,7 +471,10 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
       switch (resultingSegment.getState()) {
         case STARTED:
         case RUNNING:
-          LOG.info("Repair command {} on segment {} has been cancelled while running", this.repairNo, segmentId);
+          LOG.info(
+              "Repair command {} on segment {} has been cancelled while running",
+              this.repairNo,
+              segmentId);
           segmentFailed.set(true);
           abort(resultingSegment, coordinator);
           break;
@@ -425,7 +483,8 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
           LOG.debug(
               "Repair segment with id '{}' was repaired in {} seconds",
               resultingSegment.getId(),
-              Seconds.secondsBetween(resultingSegment.getStartTime(), resultingSegment.getEndTime()).getSeconds());
+              Seconds.secondsBetween(resultingSegment.getStartTime(), resultingSegment.getEndTime())
+                  .getSeconds());
 
           SEGMENT_RUNNERS.remove(resultingSegment.getId());
           break;
@@ -441,7 +500,8 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
           segmentFailed.set(true);
           abort(resultingSegment, coordinator);
       }
-      // Repair is still running, we'll renew lead on the segment when using Cassandra as storage backend
+      // Repair is still running, we'll renew lead on the segment when using Cassandra as storage
+      // backend
       renewLead(segment);
     }
   }
@@ -468,8 +528,8 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
    * Called when there is an event coming either from JMX or this runner regarding on-going repairs.
    *
    * @param repairNo repair sequence number, obtained when triggering a repair
-   * @param status   new status of the repair
-   * @param message  additional information about the repair
+   * @param status new status of the repair
+   * @param message additional information about the repair
    */
   @Override
   public void handle(
@@ -478,8 +538,12 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
       String message,
       ICassandraManagementProxy cassandraManagementProxy) {
 
-    final RepairSegment segment = context.storage.getRepairSegmentDao().getRepairSegment(repairRunner.getRepairRunId(),
-        segmentId).get();
+    final RepairSegment segment =
+        context
+            .storage
+            .getRepairSegmentDao()
+            .getRepairSegment(repairRunner.getRepairRunId(), segmentId)
+            .get();
     Thread.currentThread().setName(clusterName + ":" + segment.getRunId() + ":" + segmentId);
     LOG.debug(
         "handle called for repairCommandId {}, outcome {} / {} and message: {}",
@@ -497,8 +561,12 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
     boolean failOutsideSynchronizedBlock = false;
     // DO NOT ADD EXTERNAL CALLS INSIDE THIS SYNCHRONIZED BLOCK (JMX PROXY ETC)
     synchronized (condition) {
-      RepairSegment currentSegment = context.storage.getRepairSegmentDao().getRepairSegment(
-          repairRunner.getRepairRunId(), segmentId).get();
+      RepairSegment currentSegment =
+          context
+              .storage
+              .getRepairSegmentDao()
+              .getRepairSegment(repairRunner.getRepairRunId(), segmentId)
+              .get();
 
       Preconditions.checkState(
           RepairSegment.State.NOT_STARTED != currentSegment.getState()
@@ -507,12 +575,13 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
 
       // New repair API – Cassandra-2.2 onwards
       if (progress.isPresent()) {
-        failOutsideSynchronizedBlock = handleJmxNotificationForCassandra22(
-            progress,
-            currentSegment,
-            repairNo,
-            failOutsideSynchronizedBlock,
-            cassandraManagementProxy);
+        failOutsideSynchronizedBlock =
+            handleJmxNotificationForCassandra22(
+                progress,
+                currentSegment,
+                repairNo,
+                failOutsideSynchronizedBlock,
+                cassandraManagementProxy);
       }
     }
 
@@ -523,7 +592,8 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
           tryClearSnapshots(message);
         } finally {
           // if someone else does hold the lease, ie renewLead(..) was true,
-          // then their writes to repair_run table and any call to releaseLead(..) will throw an exception
+          // then their writes to repair_run table and any call to releaseLead(..) will throw an
+          // exception
           try {
             releaseLead(segment);
           } catch (AssertionError ignore) {
@@ -548,12 +618,15 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
               && RepairSegment.State.STARTED == currentSegment.getState()
               && renewLead(currentSegment)) {
 
-            context.storage.getRepairSegmentDao().updateRepairSegment(
-                currentSegment
-                    .with()
-                    .withState(RepairSegment.State.RUNNING)
-                    .withId(segmentId)
-                    .build());
+            context
+                .storage
+                .getRepairSegmentDao()
+                .updateRepairSegment(
+                    currentSegment
+                        .with()
+                        .withState(RepairSegment.State.RUNNING)
+                        .withId(segmentId)
+                        .build());
 
             LOG.debug("updated segment {} with state {}", segmentId, RepairSegment.State.RUNNING);
             break;
@@ -567,7 +640,9 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
       case SUCCESS:
         Preconditions.checkState(
             !successOrFailedNotified.get(),
-            "illegal multiple 'SUCCESS' and 'FAILURE', %s:%s", repairRunner.getRepairRunId(), segmentId);
+            "illegal multiple 'SUCCESS' and 'FAILURE', %s:%s",
+            repairRunner.getRepairRunId(),
+            segmentId);
         successOrFailedNotified.set(true);
 
         try {
@@ -582,18 +657,23 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
                 segmentId,
                 repairNumber);
 
-            context.storage.getRepairSegmentDao().updateRepairSegment(
-                currentSegment
-                    .with()
-                    .withState(RepairSegment.State.DONE)
-                    .withEndTime(DateTime.now())
-                    .withId(segmentId)
-                    .build());
+            context
+                .storage
+                .getRepairSegmentDao()
+                .updateRepairSegment(
+                    currentSegment
+                        .with()
+                        .withState(RepairSegment.State.DONE)
+                        .withEndTime(DateTime.now())
+                        .withId(segmentId)
+                        .build());
 
             // Since we can get out of order notifications,
             // we need to exit if we already got the COMPLETE notification.
             if (completeNotified.get()) {
-              LOG.debug("Complete was already notified for segment {}. Signaling the condition object...", segmentId);
+              LOG.debug(
+                  "Complete was already notified for segment {}. Signaling the condition object...",
+                  segmentId);
               condition.signalAll();
               cassandraManagementProxy.removeRepairStatusHandler(repairNumber);
             }
@@ -607,10 +687,11 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
 
       case ERROR:
       case ABORT:
-
         Preconditions.checkState(
             !successOrFailedNotified.get(),
-            "illegal multiple 'SUCCESS' and 'FAILURE', %s:%s", repairRunner.getRepairRunId(), segmentId);
+            "illegal multiple 'SUCCESS' and 'FAILURE', %s:%s",
+            repairRunner.getRepairRunId(),
+            segmentId);
 
         LOG.warn(
             "repair session failed for segment with id '{}' and repair number '{}'",
@@ -634,7 +715,9 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
 
         Preconditions.checkState(
             !completeNotified.get(),
-            "illegal multiple 'COMPLETE', %s:%s", repairRunner.getRepairRunId(), segmentId);
+            "illegal multiple 'COMPLETE', %s:%s",
+            repairRunner.getRepairRunId(),
+            segmentId);
 
         completeNotified.set(true);
         LOG.debug(
@@ -643,7 +726,9 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
             repairNumber);
 
         if (successOrFailedNotified.get()) {
-          LOG.debug("Success was already notified for segment {}. Signaling the condition object...", segmentId);
+          LOG.debug(
+              "Success was already notified for segment {}. Signaling the condition object...",
+              segmentId);
           condition.signalAll();
           cassandraManagementProxy.removeRepairStatusHandler(repairNumber);
         }
@@ -665,9 +750,10 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
     if (repairId != null) {
       for (String involvedNode : potentialCoordinators) {
         try {
-          ICassandraManagementProxy jmx = clusterFacade.connect(
-              context.storage.getClusterDao().getCluster(clusterName),
-              Arrays.asList(involvedNode));
+          ICassandraManagementProxy jmx =
+              clusterFacade.connect(
+                  context.storage.getClusterDao().getCluster(clusterName),
+                  Arrays.asList(involvedNode));
           // there is no way of telling if the snapshot was cleared or not :(
           SnapshotProxy.create(jmx).clearSnapshot(repairId, keyspace);
         } catch (ReaperException | NumberFormatException e) {
@@ -688,8 +774,12 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
    * @return the delay in milliseconds.
    */
   long intensityBasedDelayMillis(double intensity) {
-    RepairSegment repairSegment = context.storage.getRepairSegmentDao().getRepairSegment(repairRunner.getRepairRunId(),
-        segmentId).get();
+    RepairSegment repairSegment =
+        context
+            .storage
+            .getRepairSegmentDao()
+            .getRepairSegment(repairRunner.getRepairRunId(), segmentId)
+            .get();
     if (repairSegment.getEndTime() == null && repairSegment.getStartTime() == null) {
       return 0;
     } else if (repairSegment.getEndTime() != null && repairSegment.getStartTime() != null) {
@@ -713,43 +803,63 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
   }
 
   private boolean takeLead(RepairSegment segment) {
-    try (Timer.Context cx
-             = context.metricRegistry.timer(MetricRegistry.name(SegmentRunner.class, "takeLead")).time()) {
+    try (Timer.Context cx =
+        context.metricRegistry.timer(MetricRegistry.name(SegmentRunner.class, "takeLead")).time()) {
 
       boolean result = false;
       if (repairUnit.getIncrementalRepair() && !repairUnit.getSubrangeIncrementalRepair()) {
-        result = context.storage instanceof IDistributedStorage
-            ? ((IDistributedStorage) context.storage).takeLead(leaderElectionId)
-            : true;
+        result =
+            context.storage instanceof IDistributedStorage
+                ? ((IDistributedStorage) context.storage).takeLead(leaderElectionId)
+                : true;
       } else {
-        result = context.storage.lockRunningRepairsForNodes(this.repairRunner.getRepairRunId(),
-            segment.getId(), segment.getReplicas().keySet());
+        result =
+            context.storage.lockRunningRepairsForNodes(
+                this.repairRunner.getRepairRunId(),
+                segment.getId(),
+                segment.getReplicas().keySet());
       }
       if (!result) {
-        context.metricRegistry.counter(MetricRegistry.name(SegmentRunner.class, "takeLead", "failed")).inc();
+        context
+            .metricRegistry
+            .counter(MetricRegistry.name(SegmentRunner.class, "takeLead", "failed"))
+            .inc();
       }
       return result;
     }
   }
 
   private boolean renewLead(RepairSegment segment) {
-    try (Timer.Context cx
-             = context.metricRegistry.timer(MetricRegistry.name(SegmentRunner.class, "renewLead")).time()) {
+    try (Timer.Context cx =
+        context
+            .metricRegistry
+            .timer(MetricRegistry.name(SegmentRunner.class, "renewLead"))
+            .time()) {
 
       if (repairUnit.getIncrementalRepair() && !repairUnit.getSubrangeIncrementalRepair()) {
-        boolean result = context.storage instanceof IDistributedStorage
-            ? ((IDistributedStorage) context.storage).renewLead(leaderElectionId)
-            : true;
+        boolean result =
+            context.storage instanceof IDistributedStorage
+                ? ((IDistributedStorage) context.storage).renewLead(leaderElectionId)
+                : true;
 
         if (!result) {
-          context.metricRegistry.counter(MetricRegistry.name(SegmentRunner.class, "renewLead", "failed")).inc();
+          context
+              .metricRegistry
+              .counter(MetricRegistry.name(SegmentRunner.class, "renewLead", "failed"))
+              .inc();
         }
         return result;
       } else {
-        boolean resultLock2 = context.storage.renewRunningRepairsForNodes(this.repairRunner.getRepairRunId(),
-            segment.getId(), segment.getReplicas().keySet());
+        boolean resultLock2 =
+            context.storage.renewRunningRepairsForNodes(
+                this.repairRunner.getRepairRunId(),
+                segment.getId(),
+                segment.getReplicas().keySet());
         if (!resultLock2) {
-          context.metricRegistry.counter(MetricRegistry.name(SegmentRunner.class, "renewLead", "failed")).inc();
+          context
+              .metricRegistry
+              .counter(MetricRegistry.name(SegmentRunner.class, "renewLead", "failed"))
+              .inc();
           releaseLead(segment);
         }
 
@@ -759,21 +869,26 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
   }
 
   private void releaseLead(RepairSegment segment) {
-    try (Timer.Context cx
-             = context.metricRegistry.timer(MetricRegistry.name(SegmentRunner.class, "releaseLead")).time()) {
+    try (Timer.Context cx =
+        context
+            .metricRegistry
+            .timer(MetricRegistry.name(SegmentRunner.class, "releaseLead"))
+            .time()) {
 
       if (repairUnit.getIncrementalRepair() && !repairUnit.getSubrangeIncrementalRepair()) {
         if (context.storage instanceof IDistributedStorage) {
           ((IDistributedStorage) context.storage).releaseLead(leaderElectionId);
         }
       } else {
-        context.storage.releaseRunningRepairsForNodes(this.repairRunner.getRepairRunId(),
-            segment.getId(), segment.getReplicas().keySet());
+        context.storage.releaseRunningRepairsForNodes(
+            this.repairRunner.getRepairRunId(), segment.getId(), segment.getReplicas().keySet());
       }
     }
   }
 
   private int countRunningReapers() {
-    return context.isDistributed.get() ? ((IDistributedStorage) context.storage).countRunningReapers() : 1;
+    return context.isDistributed.get()
+        ? ((IDistributedStorage) context.storage).countRunningReapers()
+        : 1;
   }
 }

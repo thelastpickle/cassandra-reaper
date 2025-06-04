@@ -17,24 +17,23 @@
 
 package io.cassandrareaper.service;
 
-import java.math.BigInteger;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
-
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 import com.google.common.base.Preconditions;
+import java.math.BigInteger;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
 
 // TODO: Check if this duplicates org.apache.cassandra.dht.Range.
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonDeserialize(builder = RingRange.Builder.class)
 public final class RingRange {
 
-  public static final Comparator<RingRange> START_COMPARATOR
-      = (RingRange o1, RingRange o2) -> o1.start.compareTo(o2.start);
+  public static final Comparator<RingRange> START_COMPARATOR =
+      (RingRange o1, RingRange o2) -> o1.start.compareTo(o2.start);
 
   private final BigInteger start;
   private final BigInteger end;
@@ -80,10 +79,10 @@ public final class RingRange {
           && SegmentGenerator.lowerThanOrEqual(other.end, end);
     } else {
       return (!other.isWrapping()
-          && (SegmentGenerator.greaterThanOrEqual(other.start, start)
-          || SegmentGenerator.lowerThanOrEqual(other.end, end)))
+              && (SegmentGenerator.greaterThanOrEqual(other.start, start)
+                  || SegmentGenerator.lowerThanOrEqual(other.end, end)))
           || (SegmentGenerator.greaterThanOrEqual(other.start, start)
-          && SegmentGenerator.lowerThanOrEqual(other.end, end));
+              && SegmentGenerator.lowerThanOrEqual(other.end, end));
     }
   }
 
@@ -128,8 +127,7 @@ public final class RingRange {
     private BigInteger start;
     private BigInteger end;
 
-    public Builder() {
-    }
+    public Builder() {}
 
     public Builder withStart(BigInteger start) {
       this.start = start;

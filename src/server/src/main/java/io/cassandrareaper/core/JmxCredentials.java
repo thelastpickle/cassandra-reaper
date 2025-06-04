@@ -54,8 +54,7 @@ public final class JmxCredentials {
     private String username;
     private String password;
 
-    private Builder() {
-    }
+    private Builder() {}
 
     public Builder withUsername(String username) {
       Preconditions.checkNotNull(username);
@@ -72,7 +71,5 @@ public final class JmxCredentials {
     public JmxCredentials build() {
       return new JmxCredentials(this);
     }
-
   }
-
 }

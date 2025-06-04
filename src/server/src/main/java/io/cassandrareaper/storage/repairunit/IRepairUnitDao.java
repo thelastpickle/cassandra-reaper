@@ -18,7 +18,6 @@
 package io.cassandrareaper.storage.repairunit;
 
 import io.cassandrareaper.core.RepairUnit;
-
 import java.util.Optional;
 import java.util.UUID;
 

@@ -17,8 +17,8 @@
 
 package io.cassandrareaper.acceptance;
 
+import com.google.common.collect.Lists;
 import io.cassandrareaper.core.DiagEventSubscription;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -30,11 +30,9 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import javax.ws.rs.sse.InboundSseEvent;
 import javax.ws.rs.sse.SseEventSource;
 
-import com.google.common.collect.Lists;
-
 /**
- * Helper class for holding acceptance test scenario state.
- * Contains also methods for getting related resources for testing, like mocks etc.
+ * Helper class for holding acceptance test scenario state. Contains also methods for getting
+ * related resources for testing, like mocks etc.
  */
 public final class TestContext {
 
@@ -56,15 +54,17 @@ public final class TestContext {
   /* Used for targeting an object accessed in last test step. */
   private final List<UUID> currentSchedules = Lists.newCopyOnWriteArrayList();
   private final List<UUID> currentRepairs = Lists.newCopyOnWriteArrayList();
-  private final List<DiagEventSubscription> currentEventSubscriptions = Lists.newCopyOnWriteArrayList();
-  private final List<DiagEventSubscription> retrievedEventSubscriptions = Lists.newCopyOnWriteArrayList();
+  private final List<DiagEventSubscription> currentEventSubscriptions =
+      Lists.newCopyOnWriteArrayList();
+  private final List<DiagEventSubscription> retrievedEventSubscriptions =
+      Lists.newCopyOnWriteArrayList();
   private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
   TestContext() {}
 
   /**
-   * Adds testing cluster information for testing purposes.
-   * Used to create mocks and prepare testing access for added testing clusters.
+   * Adds testing cluster information for testing purposes. Used to create mocks and prepare testing
+   * access for added testing clusters.
    */
   public static void addClusterInfo(String clusterName, String keyspace, Set<String> tables) {
     if (!TEST_CLUSTER_INFO.containsKey(clusterName)) {
@@ -102,7 +102,8 @@ public final class TestContext {
   void addCurrentEventSubscription(DiagEventSubscription eventSubscription) {
     lock.writeLock().lock();
     try {
-      if (currentEventSubscriptions.isEmpty() || !getCurrentEventSubscription().equals(eventSubscription)) {
+      if (currentEventSubscriptions.isEmpty()
+          || !getCurrentEventSubscription().equals(eventSubscription)) {
         currentEventSubscriptions.add(eventSubscription);
       }
     } finally {

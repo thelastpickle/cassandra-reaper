@@ -18,16 +18,13 @@
 package io.cassandrareaper.storage.metrics;
 
 import io.cassandrareaper.core.PercentRepairedMetric;
-
 import java.util.List;
 import java.util.UUID;
 
 public interface IMetricsDao {
 
   List<PercentRepairedMetric> getPercentRepairedMetrics(
-        String clusterName,
-        UUID repairScheduleId,
-        Long since);
+      String clusterName, UUID repairScheduleId, Long since);
 
   void storePercentRepairedMetric(PercentRepairedMetric metric);
 }

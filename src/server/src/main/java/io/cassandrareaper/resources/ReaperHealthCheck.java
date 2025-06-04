@@ -19,16 +19,13 @@ package io.cassandrareaper.resources;
 
 import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperException;
-
 import java.util.concurrent.TimeUnit;
 
-/**
- * Provides an endpoint to check the health of the running Reaper instance.
- */
+/** Provides an endpoint to check the health of the running Reaper instance. */
 public final class ReaperHealthCheck extends com.codahale.metrics.health.HealthCheck {
 
-  private static final long HEALTH_CHECK_INTERVAL
-      = TimeUnit.SECONDS.toMillis(Long.getLong("ReaperHealthCheck.interval.seconds", 5));
+  private static final long HEALTH_CHECK_INTERVAL =
+      TimeUnit.SECONDS.toMillis(Long.getLong("ReaperHealthCheck.interval.seconds", 5));
 
   private final AppContext context;
   private volatile long nextCheck = 0;

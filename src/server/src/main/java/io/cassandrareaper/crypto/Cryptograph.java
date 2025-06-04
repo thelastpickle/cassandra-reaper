@@ -22,5 +22,4 @@ public interface Cryptograph {
   String encrypt(String plainText);
 
   String decrypt(String encryptedText);
-
 }

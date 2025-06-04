@@ -18,11 +18,6 @@
 
 package io.cassandrareaper.storage.repairunit;
 
-import io.cassandrareaper.core.RepairUnit;
-
-import java.util.Optional;
-import java.util.UUID;
-
 import com.datastax.oss.driver.api.core.ConsistencyLevel;
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.cql.PreparedStatement;
@@ -33,6 +28,9 @@ import com.datastax.oss.driver.api.core.uuid.Uuids;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
+import io.cassandrareaper.core.RepairUnit;
+import java.util.Optional;
+import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,13 +41,14 @@ public class CassandraRepairUnitDao implements IRepairUnitDao {
   PreparedStatement insertRepairUnitPrepStmt;
   PreparedStatement getRepairUnitPrepStmt;
 
-  final LoadingCache<UUID, RepairUnit> repairUnits = CacheBuilder
-        .newBuilder()
-        .build(new CacheLoader<UUID, RepairUnit>() {
-          public RepairUnit load(UUID repairUnitId) throws Exception {
-            return getRepairUnitImpl(repairUnitId);
-          }
-        });
+  final LoadingCache<UUID, RepairUnit> repairUnits =
+      CacheBuilder.newBuilder()
+          .build(
+              new CacheLoader<UUID, RepairUnit>() {
+                public RepairUnit load(UUID repairUnitId) throws Exception {
+                  return getRepairUnitImpl(repairUnitId);
+                }
+              });
   private final int defaultTimeout;
   private final CqlSession session;
 
@@ -60,16 +59,18 @@ public class CassandraRepairUnitDao implements IRepairUnitDao {
   }
 
   private void prepareStatements() {
-    insertRepairUnitPrepStmt = session
-        .prepare(
-            SimpleStatement.newInstance("INSERT INTO repair_unit_v1(id, cluster_name, keyspace_name, column_families, "
-                + "incremental_repair, subrange_incremental, nodes, \"datacenters\", blacklisted_tables,"
-                + "repair_thread_count, timeout) "
-                + "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
-              .setConsistencyLevel(ConsistencyLevel.QUORUM));
-    getRepairUnitPrepStmt = session
-        .prepare(SimpleStatement.newInstance("SELECT * FROM repair_unit_v1 WHERE id = ?")
-          .setConsistencyLevel(ConsistencyLevel.QUORUM));
+    insertRepairUnitPrepStmt =
+        session.prepare(
+            SimpleStatement.newInstance(
+                    "INSERT INTO repair_unit_v1(id, cluster_name, keyspace_name, column_families, "
+                        + "incremental_repair, subrange_incremental, nodes, \"datacenters\", blacklisted_tables,"
+                        + "repair_thread_count, timeout) "
+                        + "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+                .setConsistencyLevel(ConsistencyLevel.QUORUM));
+    getRepairUnitPrepStmt =
+        session.prepare(
+            SimpleStatement.newInstance("SELECT * FROM repair_unit_v1 WHERE id = ?")
+                .setConsistencyLevel(ConsistencyLevel.QUORUM));
     deleteRepairUnitPrepStmt = session.prepare("DELETE FROM repair_unit_v1 WHERE id = ?");
   }
 
@@ -112,7 +113,8 @@ public class CassandraRepairUnitDao implements IRepairUnitDao {
           .datacenters(repairUnitRow.getSet("datacenters", String.class))
           .blacklistedTables(repairUnitRow.getSet("blacklisted_tables", String.class))
           .repairThreadCount(repairUnitRow.getInt("repair_thread_count"))
-          .timeout(repairUnitRow.isNull("timeout") ? defaultTimeout : repairUnitRow.getInt("timeout"))
+          .timeout(
+              repairUnitRow.isNull("timeout") ? defaultTimeout : repairUnitRow.getInt("timeout"))
           .build(id);
     }
     throw new IllegalArgumentException("No repair unit exists for " + id);
@@ -127,21 +129,26 @@ public class CassandraRepairUnitDao implements IRepairUnitDao {
   public Optional<RepairUnit> getRepairUnit(RepairUnit.Builder params) {
     // brute force again
     RepairUnit repairUnit = null;
-    SimpleStatement stmt = SimpleStatement.newInstance(SELECT_REPAIR_UNIT).setIdempotent(Boolean.TRUE);
+    SimpleStatement stmt =
+        SimpleStatement.newInstance(SELECT_REPAIR_UNIT).setIdempotent(Boolean.TRUE);
     ResultSet results = session.execute(stmt);
     for (Row repairUnitRow : results) {
-      RepairUnit existingRepairUnit = RepairUnit.builder()
-          .clusterName(repairUnitRow.getString("cluster_name"))
-          .keyspaceName(repairUnitRow.getString("keyspace_name"))
-          .columnFamilies(repairUnitRow.getSet("column_families", String.class))
-          .incrementalRepair(repairUnitRow.getBool("incremental_repair"))
-          .subrangeIncrementalRepair(repairUnitRow.getBool("subrange_incremental"))
-          .nodes(repairUnitRow.getSet("nodes", String.class))
-          .datacenters(repairUnitRow.getSet("datacenters", String.class))
-          .blacklistedTables(repairUnitRow.getSet("blacklisted_tables", String.class))
-          .repairThreadCount(repairUnitRow.getInt("repair_thread_count"))
-          .timeout(repairUnitRow.isNull("timeout") ? defaultTimeout : repairUnitRow.getInt("timeout"))
-          .build(repairUnitRow.getUuid("id"));
+      RepairUnit existingRepairUnit =
+          RepairUnit.builder()
+              .clusterName(repairUnitRow.getString("cluster_name"))
+              .keyspaceName(repairUnitRow.getString("keyspace_name"))
+              .columnFamilies(repairUnitRow.getSet("column_families", String.class))
+              .incrementalRepair(repairUnitRow.getBool("incremental_repair"))
+              .subrangeIncrementalRepair(repairUnitRow.getBool("subrange_incremental"))
+              .nodes(repairUnitRow.getSet("nodes", String.class))
+              .datacenters(repairUnitRow.getSet("datacenters", String.class))
+              .blacklistedTables(repairUnitRow.getSet("blacklisted_tables", String.class))
+              .repairThreadCount(repairUnitRow.getInt("repair_thread_count"))
+              .timeout(
+                  repairUnitRow.isNull("timeout")
+                      ? defaultTimeout
+                      : repairUnitRow.getInt("timeout"))
+              .build(repairUnitRow.getUuid("id"));
       if (existingRepairUnit.with().equals(params)) {
         repairUnit = existingRepairUnit;
         LOG.info("Found matching repair unit: {}", repairUnitRow.getUuid("id"));

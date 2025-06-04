@@ -16,17 +16,16 @@
 
 package io.cassandrareaper.validators;
 
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+
 import java.util.Set;
 import javax.validation.ConstraintViolation;
 import javax.validation.Validation;
 import javax.validation.Validator;
 import javax.validation.ValidatorFactory;
-
 import org.junit.Test;
-
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
 
 public class NullOrNotBlankValidatorTest {
   @Test
@@ -36,11 +35,11 @@ public class NullOrNotBlankValidatorTest {
 
     NullOrNotBlankTest nullOrNotBlankTest = new NullOrNotBlankTest(null);
 
-    Set<ConstraintViolation<NullOrNotBlankTest>> violations = validator.validate(nullOrNotBlankTest);
+    Set<ConstraintViolation<NullOrNotBlankTest>> violations =
+        validator.validate(nullOrNotBlankTest);
     assertNotNull(violations);
     assertTrue(violations.isEmpty());
   }
-
 
   @Test
   public void testEmptyFieldValidation() {
@@ -49,14 +48,14 @@ public class NullOrNotBlankValidatorTest {
 
     NullOrNotBlankTest nullOrNotBlankTest = new NullOrNotBlankTest("");
 
-    Set<ConstraintViolation<NullOrNotBlankTest>> violations = validator.validate(nullOrNotBlankTest);
+    Set<ConstraintViolation<NullOrNotBlankTest>> violations =
+        validator.validate(nullOrNotBlankTest);
     assertNotNull(violations);
     assertFalse(violations.isEmpty());
   }
 
   private static class NullOrNotBlankTest {
-    @NullOrNotBlank
-    private String test;
+    @NullOrNotBlank private String test;
 
     NullOrNotBlankTest(String test) {
       this.test = test;

@@ -17,20 +17,19 @@
 
 package io.cassandrareaper.resources.view;
 
-import io.cassandrareaper.management.http.HttpCassandraManagementProxy;
-
-import java.util.Collections;
-import java.util.Map;
-import java.util.function.Consumer;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import com.datastax.mgmtapi.client.model.EndpointStates;
 import com.google.common.collect.ImmutableMap;
+import io.cassandrareaper.management.http.HttpCassandraManagementProxy;
+import java.util.Collections;
+import java.util.Map;
+import java.util.function.Consumer;
 import org.junit.Test;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 /**
- * Covers {@link NodesStatus#NodesStatus(String, EndpointStates)}, which takes input data retrieved via the HTTP API.
+ * Covers {@link NodesStatus#NodesStatus(String, EndpointStates)}, which takes input data retrieved
+ * via the HTTP API.
  *
  * @see HttpCassandraManagementProxy#getNodesStatus()
  */
@@ -63,8 +62,7 @@ public class NodesStatusHttpTest {
           assertThat(endpointState.hostId).isEqualTo("061cef57-4cfc-40d5-9671-5ff412f7b292");
           assertThat(endpointState.tokens).isEqualTo("-1181245519517832414,-2148609762596367912");
           assertThat(endpointState.type).isEqualTo(NodesStatus.NodeType.CASSANDRA);
-        }
-    );
+        });
   }
 
   @Test
@@ -83,8 +81,7 @@ public class NodesStatusHttpTest {
           assertThat(endpointState.hostId).isEqualTo("Not available");
           assertThat(endpointState.tokens).isEqualTo("Not available");
           assertThat(endpointState.type).isEqualTo(NodesStatus.NodeType.CASSANDRA);
-        }
-    );
+        });
   }
 
   @Test
@@ -98,8 +95,7 @@ public class NodesStatusHttpTest {
             .build(),
         "dc1",
         "rack1",
-        endpointState -> assertThat(endpointState.status).isEqualTo("NORMAL - UNKNOWN")
-    );
+        endpointState -> assertThat(endpointState.status).isEqualTo("NORMAL - UNKNOWN"));
   }
 
   @Test
@@ -114,8 +110,7 @@ public class NodesStatusHttpTest {
             .build(),
         "dc1",
         "rack1",
-        endpointState -> assertThat(endpointState.status).isEqualTo("NORMAL - UP")
-    );
+        endpointState -> assertThat(endpointState.status).isEqualTo("NORMAL - UP"));
   }
 
   @Test
@@ -132,8 +127,7 @@ public class NodesStatusHttpTest {
         endpointState -> {
           assertThat(endpointState.severity).isEqualTo(0.0);
           assertThat(endpointState.load).isEqualTo(0.0);
-        }
-    );
+        });
   }
 
   @Test
@@ -146,8 +140,7 @@ public class NodesStatusHttpTest {
             .build(),
         "dc1",
         "rack1",
-        endpointState -> assertThat(endpointState.type).isEqualTo(NodesStatus.NodeType.STARGATE)
-    );
+        endpointState -> assertThat(endpointState.type).isEqualTo(NodesStatus.NodeType.STARGATE));
   }
 
   @Test
@@ -160,12 +153,14 @@ public class NodesStatusHttpTest {
             .build(),
         "dc1",
         "rack1",
-        endpointState -> assertThat(endpointState.type).isEqualTo(NodesStatus.NodeType.CASSANDRA)
-    );
+        endpointState -> assertThat(endpointState.type).isEqualTo(NodesStatus.NodeType.CASSANDRA));
   }
 
-  private void testSingleNode(Map<String, String> input, String expectedDc, String expectedRack,
-                              Consumer<NodesStatus.EndpointState> requirements) {
+  private void testSingleNode(
+      Map<String, String> input,
+      String expectedDc,
+      String expectedRack,
+      Consumer<NodesStatus.EndpointState> requirements) {
     EndpointStates endpointStates = new EndpointStates();
     endpointStates.addEntityItem(input);
 
@@ -177,7 +172,8 @@ public class NodesStatusHttpTest {
     assertThat(gossipInfo.endpoints).containsOnlyKeys(expectedDc);
     assertThat(gossipInfo.endpoints.get(expectedDc)).containsOnlyKeys(expectedRack);
 
-    assertThat(gossipInfo.endpoints.get(expectedDc).get(expectedRack).get(0)).satisfies(requirements);
+    assertThat(gossipInfo.endpoints.get(expectedDc).get(expectedRack).get(0))
+        .satisfies(requirements);
   }
 
   @Test
@@ -196,26 +192,30 @@ public class NodesStatusHttpTest {
   @Test
   public void testMultiNodes() {
     EndpointStates endpointStates = new EndpointStates();
-    endpointStates.addEntityItem(ImmutableMap.of(
-        "DC", "dc1",
-        "RACK", "rack1",
-        "ENDPOINT_IP", "10.0.0.1",
-        "LOAD", "1.0"));
-    endpointStates.addEntityItem(ImmutableMap.of(
-        "DC", "dc1",
-        "RACK", "rack1",
-        "ENDPOINT_IP", "10.0.0.2",
-        "LOAD", "2.0"));
-    endpointStates.addEntityItem(ImmutableMap.of(
-        "DC", "dc1",
-        "RACK", "rack2",
-        "ENDPOINT_IP", "10.0.0.3",
-        "LOAD", "3.0"));
-    endpointStates.addEntityItem(ImmutableMap.of(
-        "DC", "dc2",
-        "RACK", "rack1",
-        "ENDPOINT_IP", "10.0.0.4",
-        "LOAD", "4.0"));
+    endpointStates.addEntityItem(
+        ImmutableMap.of(
+            "DC", "dc1",
+            "RACK", "rack1",
+            "ENDPOINT_IP", "10.0.0.1",
+            "LOAD", "1.0"));
+    endpointStates.addEntityItem(
+        ImmutableMap.of(
+            "DC", "dc1",
+            "RACK", "rack1",
+            "ENDPOINT_IP", "10.0.0.2",
+            "LOAD", "2.0"));
+    endpointStates.addEntityItem(
+        ImmutableMap.of(
+            "DC", "dc1",
+            "RACK", "rack2",
+            "ENDPOINT_IP", "10.0.0.3",
+            "LOAD", "3.0"));
+    endpointStates.addEntityItem(
+        ImmutableMap.of(
+            "DC", "dc2",
+            "RACK", "rack1",
+            "ENDPOINT_IP", "10.0.0.4",
+            "LOAD", "4.0"));
 
     NodesStatus nodesStatus = new NodesStatus("mockSourceNode", endpointStates);
 
@@ -224,7 +224,8 @@ public class NodesStatusHttpTest {
 
     assertThat(gossipInfo.sourceNode).isEqualTo("mockSourceNode");
     assertThat(gossipInfo.totalLoad).isEqualTo(10.0);
-    assertThat(gossipInfo.endpointNames).containsOnly("10.0.0.1", "10.0.0.2", "10.0.0.3", "10.0.0.4");
+    assertThat(gossipInfo.endpointNames)
+        .containsOnly("10.0.0.1", "10.0.0.2", "10.0.0.3", "10.0.0.4");
 
     assertThat(gossipInfo.endpoints).containsOnlyKeys("dc1", "dc2");
     assertThat(gossipInfo.endpoints.get("dc1")).containsOnlyKeys("rack1", "rack2");

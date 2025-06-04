@@ -21,7 +21,6 @@ import io.cassandrareaper.core.Node;
 import io.cassandrareaper.management.DiagnosticProxy;
 import io.cassandrareaper.management.jmx.JmxCassandraManagementProxy;
 import io.cassandrareaper.resources.view.DiagnosticEvent;
-
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -35,7 +34,6 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,7 +41,8 @@ final class DiagEventPoller {
 
   private static final Logger LOG = LoggerFactory.getLogger(DiagEventPoller.class);
 
-  // update summaries should be broadcasted as JMX notifications and we just poll periodically as fallback just in case
+  // update summaries should be broadcasted as JMX notifications and we just poll periodically as
+  // fallback just in case
   private static final int SUMMARY_POLL_INTERVAL_SECONDS = 60;
   private static final int EVENTS_LIMIT = 10;
 
@@ -51,7 +50,8 @@ final class DiagEventPoller {
   private final DiagnosticProxy diagnostics;
   private Collection<String> enabledEvents = Collections.emptySet();
 
-  private final Pattern clazzNameValidator = Pattern.compile("org\\.apache\\.cassandra\\.[a-zA-Z0-9_$.]+");
+  private final Pattern clazzNameValidator =
+      Pattern.compile("org\\.apache\\.cassandra\\.[a-zA-Z0-9_$.]+");
   private long lastUpdatedAt = 0;
   private final Map<String, Long> lastKeysByEvent = new ConcurrentHashMap<>();
   private ScheduledFuture<?> schedule;
@@ -72,7 +72,8 @@ final class DiagEventPoller {
 
   void start() {
     if (this.schedule == null || this.schedule.isDone()) {
-      scheduledExecutor.scheduleAtFixedRate(this::pollSummary, 0, SUMMARY_POLL_INTERVAL_SECONDS, TimeUnit.SECONDS);
+      scheduledExecutor.scheduleAtFixedRate(
+          this::pollSummary, 0, SUMMARY_POLL_INTERVAL_SECONDS, TimeUnit.SECONDS);
     }
   }
 
@@ -101,8 +102,10 @@ final class DiagEventPoller {
       int iterations = 0;
       while (lastKeyLocally < lastKeyServer && iterations++ < 10) {
         LOG.debug("New events for {} ({} > {})", summaryEntryKey, lastKeyServer, lastKeyLocally);
-        // We need to avoid getting stuck in case of any event specific error and make sure that we always move
-        // ahead to newer ids. That's why we will deploy some extra sanity checks and reset the last key if something
+        // We need to avoid getting stuck in case of any event specific error and make sure that we
+        // always move
+        // ahead to newer ids. That's why we will deploy some extra sanity checks and reset the last
+        // key if something
         // unexpected happens.
         // TODO: report missing events
         try {
@@ -114,7 +117,10 @@ final class DiagEventPoller {
         }
         Long newKeyLocally = lastKeysByEvent.get(summaryEntryKey);
         if (newKeyLocally == null || newKeyLocally == 0 || newKeyLocally.equals(lastKeyLocally)) {
-          LOG.error("Unexpected new event key: {}. Resetting last key to {}", newKeyLocally, lastKeyServer);
+          LOG.error(
+              "Unexpected new event key: {}. Resetting last key to {}",
+              newKeyLocally,
+              lastKeyServer);
           lastKeysByEvent.put(summaryEntryKey, lastKeyServer);
           break;
         }
@@ -125,7 +131,8 @@ final class DiagEventPoller {
 
   private void retrieveEvents(String eventClazz, Long startingKey) {
     LOG.debug("Retrieving last {} events since key {}", EVENTS_LIMIT, startingKey);
-    SortedMap<Long, Map<String, Serializable>> events = diagnostics.readEvents(eventClazz, startingKey, EVENTS_LIMIT);
+    SortedMap<Long, Map<String, Serializable>> events =
+        diagnostics.readEvents(eventClazz, startingKey, EVENTS_LIMIT);
     if (events == null || events.isEmpty()) {
       LOG.debug("No {} events for {}", eventClazz, startingKey);
       return;
@@ -141,7 +148,8 @@ final class DiagEventPoller {
       Long evTs = (Long) eventPayload.get("ts");
 
       diagEvents.add(
-          new DiagnosticEvent(node.getClusterName(), node.getHostname(), evClazz, evType, evTs, eventPayload));
+          new DiagnosticEvent(
+              node.getClusterName(), node.getHostname(), evClazz, evType, evTs, eventPayload));
     }
 
     diagEvents.forEach(eventConsumer);

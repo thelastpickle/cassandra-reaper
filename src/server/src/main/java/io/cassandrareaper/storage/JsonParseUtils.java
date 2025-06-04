@@ -17,20 +17,18 @@
 
 package io.cassandrareaper.storage;
 
-import io.cassandrareaper.service.RingRange;
-
-import java.io.IOException;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.google.common.collect.Lists;
+import io.cassandrareaper.service.RingRange;
+import java.io.IOException;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,10 +36,10 @@ public final class JsonParseUtils {
 
   private static final Logger LOG = LoggerFactory.getLogger(JsonParseUtils.class);
 
-  private static final ObjectReader LIST_READER
-      = new ObjectMapper().readerFor(new TypeReference<List<RingRange>>() {});
-  private static final ObjectReader MAP_READER
-      = new ObjectMapper().readerFor(new TypeReference<Map<String, String>>() {});
+  private static final ObjectReader LIST_READER =
+      new ObjectMapper().readerFor(new TypeReference<List<RingRange>>() {});
+  private static final ObjectReader MAP_READER =
+      new ObjectMapper().readerFor(new TypeReference<Map<String, String>>() {});
 
   private static final ObjectWriter WRITER = new ObjectMapper().writer();
 

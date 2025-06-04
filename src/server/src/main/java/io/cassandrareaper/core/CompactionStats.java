@@ -16,11 +16,10 @@
 
 package io.cassandrareaper.core;
 
-import java.util.List;
-import java.util.Optional;
-
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
+import java.util.List;
+import java.util.Optional;
 
 @JsonDeserialize(builder = CompactionStats.Builder.class)
 public final class CompactionStats {

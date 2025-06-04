@@ -16,11 +16,9 @@
  * limitations under the License.
  */
 
-
 package io.cassandrareaper.storage.repairsegment;
 
 import io.cassandrareaper.core.RepairSegment;
-
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -52,6 +50,4 @@ public interface IRepairSegmentDao {
   int getSegmentAmountForRepairRun(UUID runId);
 
   int getSegmentAmountForRepairRunWithState(UUID runId, RepairSegment.State state);
-
-
 }

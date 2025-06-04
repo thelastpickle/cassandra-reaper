@@ -15,6 +15,5 @@
  * limitations under the License.
  */
 
-
 @javax.annotation.ParametersAreNonnullByDefault
 package io.cassandrareaper.core;
