@@ -14,7 +14,7 @@
 --  limitations under the License.
 --
 
-CREATE TABLE IF NOT EXISTS reaper_db.cluster (
+CREATE TABLE IF NOT EXISTS cluster (
     name text PRIMARY KEY,
     last_contact timestamp,
     namespace text,
@@ -38,7 +38,7 @@ CREATE TABLE IF NOT EXISTS reaper_db.cluster (
     AND read_repair = 'BLOCKING'
     AND speculative_retry = '99p';
 
-CREATE TABLE IF NOT EXISTS reaper_db.diagnostic_event_subscription (
+CREATE TABLE IF NOT EXISTS diagnostic_event_subscription (
     id uuid PRIMARY KEY,
     cluster text,
     description text,
@@ -63,7 +63,7 @@ CREATE TABLE IF NOT EXISTS reaper_db.diagnostic_event_subscription (
     AND read_repair = 'BLOCKING'
     AND speculative_retry = '99p';
 
-CREATE TABLE IF NOT EXISTS reaper_db.leader (
+CREATE TABLE IF NOT EXISTS leader (
     leader_id timeuuid PRIMARY KEY,
     last_heartbeat timestamp,
     reaper_instance_host text,
@@ -84,7 +84,7 @@ CREATE TABLE IF NOT EXISTS reaper_db.leader (
     AND read_repair = 'BLOCKING'
     AND speculative_retry = '99p';
 
-CREATE TABLE IF NOT EXISTS reaper_db.node_metrics_v1 (
+CREATE TABLE IF NOT EXISTS node_metrics_v1 (
     run_id uuid,
     time_partition bigint,
     node text,
@@ -112,7 +112,7 @@ CREATE TABLE IF NOT EXISTS reaper_db.node_metrics_v1 (
     AND read_repair = 'BLOCKING'
     AND speculative_retry = '99p';
 
-CREATE TABLE IF NOT EXISTS reaper_db.node_metrics_v3 (
+CREATE TABLE IF NOT EXISTS node_metrics_v3 (
     cluster text,
     metric_domain text,
     metric_type text,
@@ -141,7 +141,7 @@ CREATE TABLE IF NOT EXISTS reaper_db.node_metrics_v3 (
     AND read_repair = 'BLOCKING'
     AND speculative_retry = '99p';
 
-CREATE TABLE IF NOT EXISTS reaper_db.node_operations (
+CREATE TABLE IF NOT EXISTS node_operations (
     cluster text,
     type text,
     time_bucket text,
@@ -166,7 +166,7 @@ CREATE TABLE IF NOT EXISTS reaper_db.node_operations (
     AND read_repair = 'BLOCKING'
     AND speculative_retry = '99p';
 
-CREATE TABLE IF NOT EXISTS reaper_db.percent_repaired_by_schedule (
+CREATE TABLE IF NOT EXISTS percent_repaired_by_schedule (
     cluster_name text,
     repair_schedule_id uuid,
     time_bucket text,
@@ -193,7 +193,7 @@ CREATE TABLE IF NOT EXISTS reaper_db.percent_repaired_by_schedule (
     AND read_repair = 'BLOCKING'
     AND speculative_retry = '99p';
 
-CREATE TABLE IF NOT EXISTS reaper_db.repair_run (
+CREATE TABLE IF NOT EXISTS repair_run (
     id timeuuid,
     segment_id timeuuid,
     adaptive_schedule boolean static,
@@ -239,7 +239,7 @@ CREATE TABLE IF NOT EXISTS reaper_db.repair_run (
     AND read_repair = 'BLOCKING'
     AND speculative_retry = '99p';
 
-CREATE TABLE IF NOT EXISTS reaper_db.repair_run_by_cluster (
+CREATE TABLE IF NOT EXISTS repair_run_by_cluster (
     cluster_name text,
     id timeuuid,
     PRIMARY KEY (cluster_name, id)
@@ -260,7 +260,7 @@ CREATE TABLE IF NOT EXISTS reaper_db.repair_run_by_cluster (
     AND read_repair = 'BLOCKING'
     AND speculative_retry = '99p';
 
-CREATE TABLE IF NOT EXISTS reaper_db.repair_run_by_cluster_v2 (
+CREATE TABLE IF NOT EXISTS repair_run_by_cluster_v2 (
     cluster_name text,
     id timeuuid,
     repair_run_state text,
@@ -282,9 +282,9 @@ CREATE TABLE IF NOT EXISTS reaper_db.repair_run_by_cluster_v2 (
     AND read_repair = 'BLOCKING'
     AND speculative_retry = '99p';
 
-CREATE INDEX IF NOT EXISTS state2i ON reaper_db.repair_run_by_cluster_v2 (repair_run_state);
+CREATE INDEX IF NOT EXISTS state2i ON repair_run_by_cluster_v2 (repair_run_state);
 
-CREATE TABLE IF NOT EXISTS reaper_db.repair_run_by_unit (
+CREATE TABLE IF NOT EXISTS repair_run_by_unit (
     repair_unit_id timeuuid,
     id timeuuid,
     PRIMARY KEY (repair_unit_id, id)
@@ -305,7 +305,7 @@ CREATE TABLE IF NOT EXISTS reaper_db.repair_run_by_unit (
     AND read_repair = 'BLOCKING'
     AND speculative_retry = '99p';
 
-CREATE TABLE IF NOT EXISTS reaper_db.repair_schedule_by_cluster_and_keyspace (
+CREATE TABLE IF NOT EXISTS repair_schedule_by_cluster_and_keyspace (
     cluster_name text,
     keyspace_name text,
     repair_schedule_id timeuuid,
@@ -327,7 +327,7 @@ CREATE TABLE IF NOT EXISTS reaper_db.repair_schedule_by_cluster_and_keyspace (
     AND read_repair = 'BLOCKING'
     AND speculative_retry = '99p';
 
-CREATE TABLE IF NOT EXISTS reaper_db.repair_schedule_v1 (
+CREATE TABLE IF NOT EXISTS repair_schedule_v1 (
     id timeuuid PRIMARY KEY,
     adaptive boolean,
     creation_time timestamp,
@@ -360,7 +360,7 @@ CREATE TABLE IF NOT EXISTS reaper_db.repair_schedule_v1 (
     AND read_repair = 'BLOCKING'
     AND speculative_retry = '99p';
 
-CREATE TABLE IF NOT EXISTS reaper_db.repair_unit_v1 (
+CREATE TABLE IF NOT EXISTS repair_unit_v1 (
     id timeuuid PRIMARY KEY,
     cluster_name text,
     incremental_repair boolean,
@@ -388,7 +388,7 @@ CREATE TABLE IF NOT EXISTS reaper_db.repair_unit_v1 (
     AND read_repair = 'BLOCKING'
     AND speculative_retry = '99p';
 
-CREATE TABLE IF NOT EXISTS reaper_db.running_reapers (
+CREATE TABLE IF NOT EXISTS running_reapers (
     reaper_instance_id uuid PRIMARY KEY,
     last_heartbeat timestamp,
     reaper_instance_host text
@@ -408,7 +408,7 @@ CREATE TABLE IF NOT EXISTS reaper_db.running_reapers (
     AND read_repair = 'BLOCKING'
     AND speculative_retry = '99p';
 
-CREATE TABLE IF NOT EXISTS reaper_db.running_repairs (
+CREATE TABLE IF NOT EXISTS running_repairs (
     repair_id uuid,
     node text,
     reaper_instance_host text,
@@ -432,7 +432,7 @@ CREATE TABLE IF NOT EXISTS reaper_db.running_repairs (
     AND read_repair = 'BLOCKING'
     AND speculative_retry = '99p';
 
-CREATE TABLE IF NOT EXISTS reaper_db.schema_migration (
+CREATE TABLE IF NOT EXISTS schema_migration (
     applied_successful boolean,
     version int,
     executed_at timestamp,
@@ -456,7 +456,7 @@ CREATE TABLE IF NOT EXISTS reaper_db.schema_migration (
     AND read_repair = 'BLOCKING'
     AND speculative_retry = '99p';
 
-CREATE TABLE IF NOT EXISTS reaper_db.schema_migration_leader (
+CREATE TABLE IF NOT EXISTS schema_migration_leader (
     keyspace_name text PRIMARY KEY,
     leader uuid,
     leader_hostname text,
@@ -477,7 +477,7 @@ CREATE TABLE IF NOT EXISTS reaper_db.schema_migration_leader (
     AND read_repair = 'BLOCKING'
     AND speculative_retry = '99p';
 
-CREATE TABLE IF NOT EXISTS reaper_db.snapshot (
+CREATE TABLE IF NOT EXISTS snapshot (
     cluster text,
     snapshot_name text,
     cause text,

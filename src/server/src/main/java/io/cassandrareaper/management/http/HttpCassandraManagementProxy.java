@@ -2,17 +2,15 @@
  * Copyright 2023-2023 DataStax, Inc.
  *
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License. You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software distributed under the License
+ * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+ * or implied. See the License for the specific language governing permissions and limitations under
+ * the License.
  */
 
 package io.cassandrareaper.management.http;
@@ -94,14 +92,9 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
 
   private ScheduledExecutorService statusTracker;
 
-  public HttpCassandraManagementProxy(MetricRegistry metricRegistry,
-                                      String rootPath,
-                                      InetSocketAddress endpoint,
-                                      ScheduledExecutorService executor,
-                                      DefaultApi apiClient,
-                                      int metricsPort,
-                                      Node node
-  ) {
+  public HttpCassandraManagementProxy(MetricRegistry metricRegistry, String rootPath,
+      InetSocketAddress endpoint, ScheduledExecutorService executor, DefaultApi apiClient,
+      int metricsPort, Node node) {
     this.host = endpoint.getHostString();
     this.metricRegistry = metricRegistry;
     this.rootPath = rootPath;
@@ -116,15 +109,9 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
     this.scheduleJobPoller(DEFAULT_POLL_INTERVAL_IN_MILLISECONDS);
   }
 
-  public HttpCassandraManagementProxy(MetricRegistry metricRegistry,
-                                      String rootPath,
-                                      InetSocketAddress endpoint,
-                                      ScheduledExecutorService executor,
-                                      DefaultApi apiClient,
-                                      int metricsPort,
-                                      Node node,
-                                      HttpMetricsProxy metricsProxy
-  ) {
+  public HttpCassandraManagementProxy(MetricRegistry metricRegistry, String rootPath,
+      InetSocketAddress endpoint, ScheduledExecutorService executor, DefaultApi apiClient,
+      int metricsPort, Node node, HttpMetricsProxy metricsProxy) {
     this.host = endpoint.getHostString();
     this.metricRegistry = metricRegistry;
     this.rootPath = rootPath;
@@ -171,7 +158,8 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
   }
 
   @Override
-  public Map<List<String>, List<String>> getRangeToEndpointMap(String keyspace) throws ReaperException {
+  public Map<List<String>, List<String>> getRangeToEndpointMap(String keyspace)
+      throws ReaperException {
     try {
       TokenRangeToEndpointResponse resp = apiClient.getRangeToEndpointMapV2(keyspace);
       List<TokenRangeToEndpoints> list = resp.getTokenRangeToEndpoints();
@@ -219,12 +207,7 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
   public Map<String, String> getEndpointToHostId() {
     try {
       return apiClient.getEndpointStates().getEntity().stream()
-          .collect(
-              Collectors.toMap(
-                  i -> i.get("ENDPOINT_IP"),
-                  i -> i.get("HOST_ID")
-              )
-          );
+          .collect(Collectors.toMap(i -> i.get("ENDPOINT_IP"), i -> i.get("HOST_ID")));
     } catch (ApiException ae) {
       LOG.error("Failed to retrieve endpoint states - does the HTTP proxy have connectivity?", ae);
       return Collections.emptyMap();
@@ -284,11 +267,8 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
   public Set<Table> getTablesForKeyspace(String keyspace) throws ReaperException {
     try {
       return apiClient.listTablesV1(keyspace).stream()
-          .map(t ->
-              Table.builder()
-                  .withName(t.getName())
-                  .withCompactionStrategy(t.getCompaction().get("class"))
-                  .build())
+          .map(t -> Table.builder().withName(t.getName())
+              .withCompactionStrategy(t.getCompaction().get("class")).build())
           .collect(Collectors.toSet());
     } catch (ApiException e) {
       throw new ReaperException("Error querying table data", e);
@@ -309,7 +289,8 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
 
   @Override
   public boolean isRepairRunning() throws JMException {
-    return true; // TODO: implement me. This is low priority because it is used only in tests now. It should be
+    return true; // TODO: implement me. This is low priority because it is used only in tests now.
+                 // It should be
     // removed longer term.
   }
 
@@ -350,34 +331,23 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
   }
 
   @Override
-  public int triggerRepair(
-      String keyspace,
-      RepairParallelism repairParallelism,
-      Collection<String> columnFamilies,
-      RepairType repairType,
-      Collection<String> datacenters,
-      RepairStatusHandler repairStatusHandler,
-      List<RingRange> associatedTokens,
-      int repairThreadCount)
-      throws ReaperException {
+  public int triggerRepair(String keyspace, RepairParallelism repairParallelism,
+      Collection<String> columnFamilies, RepairType repairType, Collection<String> datacenters,
+      RepairStatusHandler repairStatusHandler, List<RingRange> associatedTokens,
+      int repairThreadCount) throws ReaperException {
 
     String jobId;
     try {
-      RepairRequestResponse resp = apiClient.putRepairV2(
-          (new RepairRequest())
-              .fullRepair(repairType.isFull())
-              .keyspace(keyspace)
-              .tables(new ArrayList<>(columnFamilies))
-              .repairParallelism(RepairRequest.RepairParallelismEnum.fromValue(repairParallelism.getName()))
+      RepairRequestResponse resp =
+          apiClient.putRepairV2((new RepairRequest()).fullRepair(repairType.isFull())
+              .keyspace(keyspace).tables(new ArrayList<>(columnFamilies))
+              .repairParallelism(
+                  RepairRequest.RepairParallelismEnum.fromValue(repairParallelism.getName()))
               .repairThreadCount(repairThreadCount)
-              .associatedTokens(
-                  associatedTokens.stream().map(i ->
-                      (new com.datastax.mgmtapi.client.model.RingRange())
-                          .start(i.getStart().longValue())
-                          .end(i.getEnd().longValue())
-                  ).collect(Collectors.toList())
-              )
-      );
+              .associatedTokens(associatedTokens.stream()
+                  .map(i -> (new com.datastax.mgmtapi.client.model.RingRange())
+                      .start(i.getStart().longValue()).end(i.getEnd().longValue()))
+                  .collect(Collectors.toList())));
       jobId = resp.getRepairId();
     } catch (ApiException e) {
       throw new ReaperException(e);
@@ -408,8 +378,7 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
       List<String> liveNodes = new ArrayList<>();
       EndpointStates endpoints = apiClient.getEndpointStates();
       for (Map<String, String> states : endpoints.getEntity()) {
-        if (!isCoordinatorNode(states)
-            && states.containsKey("IS_ALIVE")
+        if (!isCoordinatorNode(states) && states.containsKey("IS_ALIVE")
             && Boolean.parseBoolean(states.get("IS_ALIVE"))) {
           liveNodes.add(states.get("ENDPOINT_IP"));
         }
@@ -493,7 +462,8 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
 
   @Override
   public void takeColumnFamilySnapshot(String var1, String var2, String var3) throws IOException {
-    // TODO: implement me. This is low priority since it is not called anywhere. It should be removed longer term.
+    // TODO: implement me. This is low priority since it is not called anywhere. It should be
+    // removed longer term.
 
   }
 
@@ -519,8 +489,8 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
   }
 
   @Override
-  public void forceKeyspaceCompaction(boolean splitOutput, String keyspaceName, String... columnFamilies) throws
-      IOException {
+  public void forceKeyspaceCompaction(boolean splitOutput, String keyspaceName,
+      String... columnFamilies) throws IOException {
     CompactRequest request = new CompactRequest();
     request.setSplitOutput(splitOutput);
     request.setKeyspaceName(keyspaceName);
@@ -539,7 +509,8 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
   @Override
   public List<Map<String, String>> getCompactions() {
     try {
-      return apiClient.getCompactions().stream().map(Compactions::asMap).collect(Collectors.toList());
+      return apiClient.getCompactions().stream().map(Compactions::asMap)
+          .collect(Collectors.toList());
     } catch (ApiException ae) {
       LOG.error("Failed to get compactions", ae);
       return Collections.emptyList();
@@ -581,18 +552,11 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
     return null;
   }
 
-  // From StreamManagerMBean
-  @Override
-  public Set<CompositeData> getCurrentStreams() {
-    // TODO: implement me. This is low priority since it is used only for display of stuff in the UI for
-    //  informational purposes. It should be implemented eventually.
-    return new HashSet<CompositeData>();
-  }
-
   @Override
   public String getUntranslatedHost() throws ReaperException {
-    // TODO getLocalEndpoint returns the "internal" IP, figure out if we have to do any conversion here. If not, this
-    //  method can be inlined.
+    // TODO getLocalEndpoint returns the "internal" IP, figure out if we have to do any conversion
+    // here. If not, this
+    // method can be inlined.
     return getLocalEndpoint();
   }
 
@@ -607,10 +571,7 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
 
   @VisibleForTesting
   private void scheduleJobPoller(int pollInterval) {
-    statusTracker.scheduleWithFixedDelay(
-        notificationsTracker(),
-        pollInterval * 2,
-        pollInterval,
+    statusTracker.scheduleWithFixedDelay(notificationsTracker(), pollInterval * 2, pollInterval,
         TimeUnit.MILLISECONDS);
   }
 
@@ -630,18 +591,10 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
               // remove "repair-" prefix
               int repairNo = Integer.parseInt(job.getId().substring(7));
               ProgressEventType progressType = ProgressEventType.valueOf(statusChange.getStatus());
-              repairStatusExecutors
-                  .get(repairNo)
-                  .submit(
-                      () -> {
-                        repairStatusHandlers
-                            .get(repairNo)
-                            .handle(
-                                repairNo,
-                                Optional.of(progressType),
-                                statusChange.getMessage(),
-                                this);
-                      });
+              repairStatusExecutors.get(repairNo).submit(() -> {
+                repairStatusHandlers.get(repairNo).handle(repairNo, Optional.of(progressType),
+                    statusChange.getMessage(), this);
+              });
 
               // Update the count as we process them
               entry.getValue().latestNotificationCount.incrementAndGet();
