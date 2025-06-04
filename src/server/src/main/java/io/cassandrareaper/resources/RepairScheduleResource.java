@@ -17,9 +17,6 @@
 
 package io.cassandrareaper.resources;
 
-import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
 import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
@@ -33,8 +30,7 @@ import io.cassandrareaper.service.RepairRunService;
 import io.cassandrareaper.service.RepairScheduleService;
 import io.cassandrareaper.service.RepairUnitService;
 import io.cassandrareaper.storage.repairrun.IRepairRunDao;
-import io.dropwizard.jersey.PATCH;
-import io.dropwizard.jersey.validation.ValidationErrorMessage;
+
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -42,6 +38,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
 import javax.ws.rs.Consumes;
@@ -57,6 +54,12 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
+
+import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
+import io.dropwizard.jersey.PATCH;
+import io.dropwizard.jersey.validation.ValidationErrorMessage;
 import org.apache.cassandra.repair.RepairParallelism;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;

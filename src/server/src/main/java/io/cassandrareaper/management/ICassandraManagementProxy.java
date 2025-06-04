@@ -14,13 +14,13 @@
 
 package io.cassandrareaper.management;
 
-import com.datastax.oss.driver.api.core.Version;
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.RepairType;
 import io.cassandrareaper.core.Snapshot;
 import io.cassandrareaper.core.Table;
 import io.cassandrareaper.resources.view.NodesStatus;
 import io.cassandrareaper.service.RingRange;
+
 import java.io.IOException;
 import java.math.BigInteger;
 import java.net.UnknownHostException;
@@ -30,8 +30,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
+
 import javax.management.JMException;
 import javax.validation.constraints.NotNull;
+
+import com.datastax.oss.driver.api.core.Version;
 import org.apache.cassandra.repair.RepairParallelism;
 
 public interface ICassandraManagementProxy {

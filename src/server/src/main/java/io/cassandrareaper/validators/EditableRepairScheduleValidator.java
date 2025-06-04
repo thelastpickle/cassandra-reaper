@@ -17,6 +17,7 @@
 package io.cassandrareaper.validators;
 
 import io.cassandrareaper.core.EditableRepairSchedule;
+
 import javax.validation.ConstraintValidator;
 import javax.validation.ConstraintValidatorContext;
 

@@ -18,10 +18,13 @@
 package io.cassandrareaper.resources.auth;
 
 import io.cassandrareaper.AppContext;
+
 import java.security.Principal;
+
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.HttpMethod;
+
 import org.apache.shiro.SecurityUtils;
 import org.apache.shiro.mgt.DefaultSecurityManager;
 import org.apache.shiro.subject.Subject;

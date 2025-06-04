@@ -17,12 +17,14 @@
 
 package io.cassandrareaper.storage.repairunit;
 
-import com.datastax.oss.driver.api.core.uuid.Uuids;
-import com.google.common.base.Preconditions;
 import io.cassandrareaper.core.RepairUnit;
 import io.cassandrareaper.storage.MemoryStorageFacade;
+
 import java.util.Optional;
 import java.util.UUID;
+
+import com.datastax.oss.driver.api.core.uuid.Uuids;
+import com.google.common.base.Preconditions;
 
 public class MemoryRepairUnitDao implements IRepairUnitDao {
   private final MemoryStorageFacade storage;

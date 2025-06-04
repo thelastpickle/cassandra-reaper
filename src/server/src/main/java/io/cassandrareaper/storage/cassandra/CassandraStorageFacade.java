@@ -15,15 +15,6 @@
 
 package io.cassandrareaper.storage.cassandra;
 
-import brave.Tracing;
-import com.datastax.oss.driver.api.core.ConsistencyLevel;
-import com.datastax.oss.driver.api.core.CqlSession;
-import com.datastax.oss.driver.api.core.Version;
-import com.datastax.oss.driver.api.core.cql.PreparedStatement;
-import com.datastax.oss.driver.api.core.cql.ResultSet;
-import com.datastax.oss.driver.api.core.cql.SimpleStatement;
-import com.datastax.oss.driver.api.core.uuid.Uuids;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperApplicationConfiguration;
 import io.cassandrareaper.ReaperException;
@@ -50,14 +41,25 @@ import io.cassandrareaper.storage.repairunit.CassandraRepairUnitDao;
 import io.cassandrareaper.storage.repairunit.IRepairUnitDao;
 import io.cassandrareaper.storage.snapshot.CassandraSnapshotDao;
 import io.cassandrareaper.storage.snapshot.ISnapshotDao;
-import io.dropwizard.cassandra.CassandraFactory;
-import io.dropwizard.cassandra.request.RequestOptionsFactory;
-import io.dropwizard.core.setup.Environment;
+
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
+
+import brave.Tracing;
+import com.datastax.oss.driver.api.core.ConsistencyLevel;
+import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.Version;
+import com.datastax.oss.driver.api.core.cql.PreparedStatement;
+import com.datastax.oss.driver.api.core.cql.ResultSet;
+import com.datastax.oss.driver.api.core.cql.SimpleStatement;
+import com.datastax.oss.driver.api.core.uuid.Uuids;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.dropwizard.cassandra.CassandraFactory;
+import io.dropwizard.cassandra.request.RequestOptionsFactory;
+import io.dropwizard.core.setup.Environment;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

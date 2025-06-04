@@ -17,12 +17,14 @@
 
 package io.cassandrareaper.core;
 
+import io.cassandrareaper.core.RepairRun.RunState;
+
+import java.util.Set;
+import java.util.UUID;
+
 import static org.junit.Assert.assertEquals;
 
 import com.google.common.collect.ImmutableSet;
-import io.cassandrareaper.core.RepairRun.RunState;
-import java.util.Set;
-import java.util.UUID;
 import org.apache.cassandra.repair.RepairParallelism;
 import org.joda.time.DateTime;
 import org.junit.Test;

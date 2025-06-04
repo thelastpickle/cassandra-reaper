@@ -15,11 +15,6 @@
 
 package io.cassandrareaper.storage.cassandra;
 
-import brave.Tracing;
-import com.datastax.oss.driver.api.core.CqlSession;
-import com.datastax.oss.driver.api.core.Version;
-import com.datastax.oss.driver.api.core.uuid.Uuids;
-import com.google.common.base.Preconditions;
 import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperApplicationConfiguration;
 import io.cassandrareaper.storage.cassandra.migrations.Migration016;
@@ -27,11 +22,18 @@ import io.cassandrareaper.storage.cassandra.migrations.Migration021;
 import io.cassandrareaper.storage.cassandra.migrations.Migration024;
 import io.cassandrareaper.storage.cassandra.migrations.Migration025;
 import io.cassandrareaper.storage.cassandra.migrations.Migration034;
-import io.dropwizard.cassandra.CassandraFactory;
-import io.dropwizard.core.setup.Environment;
+
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
+
+import brave.Tracing;
+import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.Version;
+import com.datastax.oss.driver.api.core.uuid.Uuids;
+import com.google.common.base.Preconditions;
+import io.dropwizard.cassandra.CassandraFactory;
+import io.dropwizard.core.setup.Environment;
 import org.apache.commons.lang3.StringUtils;
 import org.cognitor.cassandra.migration.Database;
 import org.cognitor.cassandra.migration.MigrationRepository;

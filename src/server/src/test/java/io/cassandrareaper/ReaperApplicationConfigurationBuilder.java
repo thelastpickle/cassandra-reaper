@@ -18,8 +18,10 @@
 package io.cassandrareaper;
 
 import io.cassandrareaper.core.JmxCredentials;
+
 import java.time.Duration;
 import java.util.Map;
+
 import org.apache.cassandra.repair.RepairParallelism;
 
 public final class ReaperApplicationConfigurationBuilder {

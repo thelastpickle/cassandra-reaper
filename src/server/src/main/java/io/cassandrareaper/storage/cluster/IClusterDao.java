@@ -18,6 +18,7 @@
 package io.cassandrareaper.storage.cluster;
 
 import io.cassandrareaper.core.Cluster;
+
 import java.util.Collection;
 
 public interface IClusterDao {

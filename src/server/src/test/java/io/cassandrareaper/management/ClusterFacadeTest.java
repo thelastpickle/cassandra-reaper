@@ -15,6 +15,26 @@
 
 package io.cassandrareaper.management;
 
+import io.cassandrareaper.AppContext;
+import io.cassandrareaper.ReaperApplicationConfiguration;
+import io.cassandrareaper.ReaperApplicationConfiguration.DatacenterAvailability;
+import io.cassandrareaper.ReaperException;
+import io.cassandrareaper.core.Cluster;
+import io.cassandrareaper.core.Compaction;
+import io.cassandrareaper.core.CompactionStats;
+import io.cassandrareaper.core.JmxCredentials;
+import io.cassandrareaper.management.jmx.JmxCassandraManagementProxy;
+import io.cassandrareaper.management.jmx.JmxManagementConnectionFactory;
+
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+
 import static io.cassandrareaper.service.RepairRunnerTest.scyllaThreeNodeClusterWithIps;
 import static io.cassandrareaper.service.RepairRunnerTest.threeNodeClusterWithIps;
 import static org.junit.Assert.assertEquals;
@@ -28,24 +48,6 @@ import static org.mockito.Mockito.when;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.google.common.collect.ImmutableList;
-import io.cassandrareaper.AppContext;
-import io.cassandrareaper.ReaperApplicationConfiguration;
-import io.cassandrareaper.ReaperApplicationConfiguration.DatacenterAvailability;
-import io.cassandrareaper.ReaperException;
-import io.cassandrareaper.core.Cluster;
-import io.cassandrareaper.core.Compaction;
-import io.cassandrareaper.core.CompactionStats;
-import io.cassandrareaper.core.JmxCredentials;
-import io.cassandrareaper.management.jmx.JmxCassandraManagementProxy;
-import io.cassandrareaper.management.jmx.JmxManagementConnectionFactory;
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
 import org.junit.Test;
 import org.mockito.Mockito;
 

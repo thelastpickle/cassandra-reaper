@@ -17,11 +17,13 @@
 
 package io.cassandrareaper.resources.view;
 
-import static org.junit.Assert.assertEquals;
-
 import io.cassandrareaper.core.RepairRun;
+
 import java.util.Collections;
 import java.util.UUID;
+
+import static org.junit.Assert.assertEquals;
+
 import org.apache.cassandra.repair.RepairParallelism;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;

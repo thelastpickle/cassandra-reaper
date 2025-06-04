@@ -18,7 +18,9 @@
 package io.cassandrareaper.service;
 
 import io.cassandrareaper.core.Segment;
+
 import java.util.Set;
+
 import org.apache.cassandra.repair.RepairParallelism;
 
 /** Represents the parameters of a repair command given to Cassandra. */

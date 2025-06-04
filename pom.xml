@@ -349,6 +349,9 @@
                             <version>1.19.1</version>
                             <style>GOOGLE</style>
                         </googleJavaFormat>
+                        <importOrder>
+                            <order>io.cassandrareaper,\,java,javax,\#</order>
+                        </importOrder>
                         <removeUnusedImports />
                         <trimTrailingWhitespace />
                         <endWithNewline />

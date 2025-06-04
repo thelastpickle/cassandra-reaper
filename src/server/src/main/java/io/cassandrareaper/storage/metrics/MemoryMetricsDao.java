@@ -17,14 +17,16 @@
 
 package io.cassandrareaper.storage.metrics;
 
-import com.google.common.collect.Maps;
 import io.cassandrareaper.core.PercentRepairedMetric;
+
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
+
+import com.google.common.collect.Maps;
 
 public class MemoryMetricsDao implements IMetricsDao {
   public final ConcurrentMap<String, Map<String, PercentRepairedMetric>> percentRepairedMetrics =

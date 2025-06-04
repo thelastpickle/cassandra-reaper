@@ -18,6 +18,7 @@
 package io.cassandrareaper.storage.metrics;
 
 import io.cassandrareaper.core.PercentRepairedMetric;
+
 import java.util.List;
 import java.util.UUID;
 

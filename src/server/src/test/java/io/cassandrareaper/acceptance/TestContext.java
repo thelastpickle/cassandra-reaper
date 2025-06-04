@@ -17,8 +17,8 @@
 
 package io.cassandrareaper.acceptance;
 
-import com.google.common.collect.Lists;
 import io.cassandrareaper.core.DiagEventSubscription;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -27,8 +27,11 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+
 import javax.ws.rs.sse.InboundSseEvent;
 import javax.ws.rs.sse.SseEventSource;
+
+import com.google.common.collect.Lists;
 
 /**
  * Helper class for holding acceptance test scenario state. Contains also methods for getting

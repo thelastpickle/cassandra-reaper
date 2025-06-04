@@ -17,13 +17,16 @@
 
 package io.cassandrareaper.resources.auth;
 
-import com.google.common.annotations.VisibleForTesting;
 import io.cassandrareaper.resources.RequestUtils;
+
 import java.io.IOException;
 import java.util.Date;
+
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletResponse;
+
+import com.google.common.annotations.VisibleForTesting;
 import org.apache.shiro.subject.Subject;
 import org.apache.shiro.web.filter.authz.HttpMethodPermissionFilter;
 import org.apache.shiro.web.util.WebUtils;

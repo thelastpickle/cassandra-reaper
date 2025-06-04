@@ -17,13 +17,14 @@
 
 package io.cassandrareaper.resources.view;
 
+import io.cassandrareaper.SimpleReaperClient;
+import io.cassandrareaper.core.RepairSchedule;
+
 import static org.junit.Assert.assertEquals;
 
 import com.datastax.oss.driver.api.core.uuid.Uuids;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
-import io.cassandrareaper.SimpleReaperClient;
-import io.cassandrareaper.core.RepairSchedule;
 import org.apache.cassandra.repair.RepairParallelism;
 import org.joda.time.DateTime;
 import org.junit.Test;

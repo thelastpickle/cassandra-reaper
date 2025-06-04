@@ -17,15 +17,16 @@
 
 package io.cassandrareaper.service;
 
+import java.math.BigInteger;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 import com.google.common.base.Preconditions;
-import java.math.BigInteger;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
 
 // TODO: Check if this duplicates org.apache.cassandra.dht.Range.
 @JsonIgnoreProperties(ignoreUnknown = true)

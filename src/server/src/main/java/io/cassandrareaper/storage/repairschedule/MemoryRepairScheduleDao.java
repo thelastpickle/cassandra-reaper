@@ -18,19 +18,21 @@
 
 package io.cassandrareaper.storage.repairschedule;
 
-import com.datastax.oss.driver.api.core.uuid.Uuids;
-import com.google.common.collect.Lists;
 import io.cassandrareaper.core.RepairSchedule;
 import io.cassandrareaper.core.RepairUnit;
 import io.cassandrareaper.resources.view.RepairScheduleStatus;
 import io.cassandrareaper.storage.MemoryStorageFacade;
 import io.cassandrareaper.storage.repairunit.MemoryRepairUnitDao;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
+
+import com.datastax.oss.driver.api.core.uuid.Uuids;
+import com.google.common.collect.Lists;
 
 public class MemoryRepairScheduleDao implements IRepairScheduleDao {
 

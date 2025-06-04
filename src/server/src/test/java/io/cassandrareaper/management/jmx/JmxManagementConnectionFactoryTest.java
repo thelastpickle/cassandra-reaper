@@ -17,6 +17,19 @@
 
 package io.cassandrareaper.management.jmx;
 
+import io.cassandrareaper.AppContext;
+import io.cassandrareaper.ReaperApplicationConfiguration;
+import io.cassandrareaper.core.Cluster;
+import io.cassandrareaper.core.JmxCredentials;
+import io.cassandrareaper.core.Node;
+import io.cassandrareaper.crypto.Cryptograph;
+import io.cassandrareaper.storage.IStorageDao;
+import io.cassandrareaper.storage.cluster.IClusterDao;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -27,17 +40,6 @@ import static org.mockito.Mockito.when;
 import com.codahale.metrics.MetricRegistry;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import io.cassandrareaper.AppContext;
-import io.cassandrareaper.ReaperApplicationConfiguration;
-import io.cassandrareaper.core.Cluster;
-import io.cassandrareaper.core.JmxCredentials;
-import io.cassandrareaper.core.Node;
-import io.cassandrareaper.crypto.Cryptograph;
-import io.cassandrareaper.storage.IStorageDao;
-import io.cassandrareaper.storage.cluster.IClusterDao;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
 import org.junit.Test;
 
 public class JmxManagementConnectionFactoryTest {

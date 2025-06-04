@@ -18,6 +18,14 @@
 
 package io.cassandrareaper.storage.cassandra;
 
+import io.cassandrareaper.AppContext;
+import io.cassandrareaper.core.RepairSegment;
+
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
 import com.datastax.oss.driver.api.core.ConsistencyLevel;
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.Version;
@@ -29,12 +37,6 @@ import com.datastax.oss.driver.api.core.cql.ResultSet;
 import com.datastax.oss.driver.api.core.cql.Row;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.google.common.base.Preconditions;
-import io.cassandrareaper.AppContext;
-import io.cassandrareaper.core.RepairSegment;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
-import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

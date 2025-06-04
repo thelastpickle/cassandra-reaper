@@ -17,13 +17,15 @@
 
 package io.cassandrareaper.management.jmx;
 
+import io.cassandrareaper.ReaperException;
+import io.cassandrareaper.management.ICassandraManagementProxy;
+
+import java.net.UnknownHostException;
+import java.util.Random;
+
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 
-import io.cassandrareaper.ReaperException;
-import io.cassandrareaper.management.ICassandraManagementProxy;
-import java.net.UnknownHostException;
-import java.util.Random;
 import org.junit.Test;
 import org.mockito.Mockito;
 

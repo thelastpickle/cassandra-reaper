@@ -19,6 +19,7 @@ package io.cassandrareaper.resources;
 
 import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperException;
+
 import java.util.concurrent.TimeUnit;
 
 /** Provides an endpoint to check the health of the running Reaper instance. */

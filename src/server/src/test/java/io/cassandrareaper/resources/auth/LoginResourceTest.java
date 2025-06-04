@@ -19,6 +19,7 @@ package io.cassandrareaper.resources.auth;
 
 import java.io.IOException;
 import java.io.InputStream;
+
 import org.apache.shiro.authc.UsernamePasswordToken;
 import org.apache.shiro.config.Ini;
 import org.apache.shiro.io.ResourceUtils;

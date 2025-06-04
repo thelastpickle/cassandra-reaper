@@ -17,6 +17,20 @@
 
 package io.cassandrareaper.management.http;
 
+import io.cassandrareaper.ReaperException;
+import io.cassandrareaper.core.Cluster;
+import io.cassandrareaper.core.GenericMetric;
+import io.cassandrareaper.core.Node;
+
+import java.io.IOException;
+import java.net.URL;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+
+import javax.management.JMException;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -26,17 +40,6 @@ import static org.mockito.Mockito.when;
 import com.datastax.mgmtapi.client.api.DefaultApi;
 import com.google.common.base.Charsets;
 import com.google.common.io.Resources;
-import io.cassandrareaper.ReaperException;
-import io.cassandrareaper.core.Cluster;
-import io.cassandrareaper.core.GenericMetric;
-import io.cassandrareaper.core.Node;
-import java.io.IOException;
-import java.net.URL;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import javax.management.JMException;
 import okhttp3.Call;
 import okhttp3.OkHttpClient;
 import okhttp3.Response;

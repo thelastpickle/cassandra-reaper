@@ -14,9 +14,6 @@
 
 package io.cassandrareaper.service;
 
-import com.datastax.oss.driver.api.core.NoNodeAvailableException;
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Supplier;
 import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.PercentRepairedMetric;
@@ -25,6 +22,7 @@ import io.cassandrareaper.core.RepairSchedule;
 import io.cassandrareaper.core.RepairUnit;
 import io.cassandrareaper.storage.IDistributedStorage;
 import io.cassandrareaper.storage.repairrun.IRepairRunDao;
+
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -33,6 +31,10 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
+
+import com.datastax.oss.driver.api.core.NoNodeAvailableException;
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Supplier;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

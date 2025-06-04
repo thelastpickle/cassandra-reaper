@@ -16,11 +16,6 @@
 
 package io.cassandrareaper.resources;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
 import io.cassandrareaper.AppContext;
 import io.cassandrareaper.core.EditableRepairSchedule;
 import io.cassandrareaper.core.RepairSchedule;
@@ -30,13 +25,21 @@ import io.cassandrareaper.service.TestRepairConfiguration;
 import io.cassandrareaper.storage.IStorageDao;
 import io.cassandrareaper.storage.MemoryStorageFacade;
 import io.cassandrareaper.storage.repairschedule.IRepairScheduleDao;
-import io.dropwizard.jersey.validation.ValidationErrorMessage;
+
 import java.net.URI;
 import java.util.Optional;
 import java.util.UUID;
+
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.UriInfo;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+import io.dropwizard.jersey.validation.ValidationErrorMessage;
 import org.apache.cassandra.repair.RepairParallelism;
 import org.joda.time.DateTime;
 import org.junit.Test;

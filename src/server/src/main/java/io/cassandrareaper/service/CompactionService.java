@@ -22,8 +22,11 @@ import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.CompactionStats;
 import io.cassandrareaper.core.Node;
 import io.cassandrareaper.management.ClusterFacade;
+
 import java.io.IOException;
+
 import javax.management.JMException;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

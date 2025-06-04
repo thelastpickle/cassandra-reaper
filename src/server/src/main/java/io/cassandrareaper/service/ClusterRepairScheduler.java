@@ -17,10 +17,6 @@
 
 package io.cassandrareaper.service;
 
-import static java.lang.String.format;
-
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Sets;
 import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
@@ -28,11 +24,17 @@ import io.cassandrareaper.core.RepairSchedule;
 import io.cassandrareaper.core.RepairUnit;
 import io.cassandrareaper.management.ClusterFacade;
 import io.cassandrareaper.storage.repairrun.IRepairRunDao;
+
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
+
+import static java.lang.String.format;
+
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

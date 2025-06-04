@@ -17,17 +17,19 @@
 
 package io.cassandrareaper;
 
-import com.codahale.metrics.MetricRegistry;
-import com.datastax.oss.driver.api.core.uuid.Uuids;
-import com.google.common.base.Preconditions;
 import io.cassandrareaper.management.IManagementConnectionFactory;
 import io.cassandrareaper.service.RepairManager;
 import io.cassandrareaper.service.SchedulingManager;
 import io.cassandrareaper.storage.IStorageDao;
+
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
+
+import com.codahale.metrics.MetricRegistry;
+import com.datastax.oss.driver.api.core.uuid.Uuids;
+import com.google.common.base.Preconditions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

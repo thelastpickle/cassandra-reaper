@@ -17,12 +17,14 @@
 
 package io.cassandrareaper.resources;
 
-import com.google.common.collect.BiMap;
 import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperApplicationConfiguration.DatacenterAvailability;
 import io.cassandrareaper.service.TestRepairConfiguration;
 import io.cassandrareaper.storage.MemoryStorageFacade;
+
 import javax.ws.rs.core.Response;
+
+import com.google.common.collect.BiMap;
 import junit.framework.TestCase;
 import org.eclipse.jetty.http.HttpStatus;
 import org.junit.Test;

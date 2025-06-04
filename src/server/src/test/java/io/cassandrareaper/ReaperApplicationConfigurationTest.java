@@ -17,6 +17,9 @@
 
 package io.cassandrareaper;
 
+import javax.validation.Validation;
+import javax.validation.Validator;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
@@ -26,8 +29,6 @@ import com.codahale.metrics.health.HealthCheckRegistry;
 import com.datastax.oss.driver.api.core.CqlSession;
 import io.dropwizard.cassandra.CassandraFactory;
 import io.dropwizard.lifecycle.setup.LifecycleEnvironment;
-import javax.validation.Validation;
-import javax.validation.Validator;
 import org.apache.cassandra.repair.RepairParallelism;
 import org.hibernate.validator.HibernateValidator;
 import org.junit.Before;

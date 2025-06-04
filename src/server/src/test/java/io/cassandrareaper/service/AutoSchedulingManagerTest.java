@@ -17,15 +17,16 @@
 
 package io.cassandrareaper.service;
 
+import io.cassandrareaper.AppContext;
+import io.cassandrareaper.ReaperException;
+import io.cassandrareaper.core.Cluster;
+import io.cassandrareaper.storage.MemoryStorageFacade;
+
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 import com.google.common.collect.ImmutableSet;
-import io.cassandrareaper.AppContext;
-import io.cassandrareaper.ReaperException;
-import io.cassandrareaper.core.Cluster;
-import io.cassandrareaper.storage.MemoryStorageFacade;
 import org.junit.Before;
 import org.junit.Test;
 

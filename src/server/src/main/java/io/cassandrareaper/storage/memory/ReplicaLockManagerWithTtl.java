@@ -16,7 +16,6 @@
 
 package io.cassandrareaper.storage.memory;
 
-import com.google.common.annotations.VisibleForTesting;
 import java.util.Collections;
 import java.util.Set;
 import java.util.UUID;
@@ -26,6 +25,8 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+
+import com.google.common.annotations.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

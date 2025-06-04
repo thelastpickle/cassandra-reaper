@@ -17,12 +17,13 @@
 
 package io.cassandrareaper.management;
 
-import static org.junit.Assert.assertEquals;
-
 import io.cassandrareaper.core.DroppedMessages;
 import io.cassandrareaper.core.GenericMetric;
 import io.cassandrareaper.core.MetricsHistogram;
 import io.cassandrareaper.core.ThreadPoolStat;
+
+import static org.junit.Assert.assertEquals;
+
 import org.junit.Test;
 
 public class MetricsProxyTest {

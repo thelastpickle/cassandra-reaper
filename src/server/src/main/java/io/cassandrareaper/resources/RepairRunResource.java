@@ -17,11 +17,6 @@
 
 package io.cassandrareaper.resources;
 
-import static java.lang.Math.min;
-
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
 import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
@@ -36,6 +31,7 @@ import io.cassandrareaper.service.PurgeService;
 import io.cassandrareaper.service.RepairRunService;
 import io.cassandrareaper.service.RepairUnitService;
 import io.cassandrareaper.storage.repairrun.IRepairRunDao;
+
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -46,6 +42,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+
 import javax.annotation.Nullable;
 import javax.validation.ValidationException;
 import javax.ws.rs.DELETE;
@@ -61,6 +58,12 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.UriInfo;
+
+import static java.lang.Math.min;
+
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import org.apache.cassandra.repair.RepairParallelism;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

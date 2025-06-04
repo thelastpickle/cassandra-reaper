@@ -17,10 +17,12 @@
 
 package io.cassandrareaper.resources.view;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import io.cassandrareaper.core.Cluster;
+
 import java.util.Collection;
 import java.util.Set;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 public final class ClusterStatus {
 

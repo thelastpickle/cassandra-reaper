@@ -15,21 +15,6 @@
 
 package io.cassandrareaper.management.http;
 
-import com.codahale.metrics.MetricRegistry;
-import com.datastax.mgmtapi.client.api.DefaultApi;
-import com.datastax.mgmtapi.client.invoker.ApiException;
-import com.datastax.mgmtapi.client.model.CompactRequest;
-import com.datastax.mgmtapi.client.model.EndpointStates;
-import com.datastax.mgmtapi.client.model.Job;
-import com.datastax.mgmtapi.client.model.RepairRequest;
-import com.datastax.mgmtapi.client.model.RepairRequestResponse;
-import com.datastax.mgmtapi.client.model.SnapshotDetails;
-import com.datastax.mgmtapi.client.model.StatusChange;
-import com.datastax.mgmtapi.client.model.TakeSnapshotRequest;
-import com.datastax.mgmtapi.client.model.TokenRangeToEndpointResponse;
-import com.datastax.mgmtapi.client.model.TokenRangeToEndpoints;
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.Maps;
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.GenericMetric;
 import io.cassandrareaper.core.Node;
@@ -41,6 +26,7 @@ import io.cassandrareaper.management.RepairStatusHandler;
 import io.cassandrareaper.management.http.models.JobStatusTracker;
 import io.cassandrareaper.resources.view.NodesStatus;
 import io.cassandrareaper.service.RingRange;
+
 import java.io.IOException;
 import java.math.BigInteger;
 import java.net.InetAddress;
@@ -61,8 +47,25 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+
 import javax.management.JMException;
 import javax.validation.constraints.NotNull;
+
+import com.codahale.metrics.MetricRegistry;
+import com.datastax.mgmtapi.client.api.DefaultApi;
+import com.datastax.mgmtapi.client.invoker.ApiException;
+import com.datastax.mgmtapi.client.model.CompactRequest;
+import com.datastax.mgmtapi.client.model.EndpointStates;
+import com.datastax.mgmtapi.client.model.Job;
+import com.datastax.mgmtapi.client.model.RepairRequest;
+import com.datastax.mgmtapi.client.model.RepairRequestResponse;
+import com.datastax.mgmtapi.client.model.SnapshotDetails;
+import com.datastax.mgmtapi.client.model.StatusChange;
+import com.datastax.mgmtapi.client.model.TakeSnapshotRequest;
+import com.datastax.mgmtapi.client.model.TokenRangeToEndpointResponse;
+import com.datastax.mgmtapi.client.model.TokenRangeToEndpoints;
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.Maps;
 import org.apache.cassandra.repair.RepairParallelism;
 import org.apache.cassandra.utils.progress.ProgressEventType;
 import org.slf4j.Logger;

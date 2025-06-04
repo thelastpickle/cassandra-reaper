@@ -17,10 +17,11 @@
 
 package io.cassandrareaper.management;
 
-import com.codahale.metrics.MetricRegistry;
-import com.google.common.collect.Maps;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import com.codahale.metrics.MetricRegistry;
+import com.google.common.collect.Maps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

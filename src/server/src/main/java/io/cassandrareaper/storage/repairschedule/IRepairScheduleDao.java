@@ -20,6 +20,7 @@ package io.cassandrareaper.storage.repairschedule;
 
 import io.cassandrareaper.core.RepairSchedule;
 import io.cassandrareaper.resources.view.RepairScheduleStatus;
+
 import java.util.Collection;
 import java.util.Optional;
 import java.util.UUID;

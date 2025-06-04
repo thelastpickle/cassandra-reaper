@@ -17,10 +17,11 @@
 
 package io.cassandrareaper.resources.auth;
 
-import static io.cassandrareaper.resources.auth.EmbeddedLdapTest.DOMAIN_DSN;
-
 import java.io.IOException;
 import java.io.InputStream;
+
+import static io.cassandrareaper.resources.auth.EmbeddedLdapTest.DOMAIN_DSN;
+
 import org.apache.shiro.authc.UsernamePasswordToken;
 import org.apache.shiro.config.Ini;
 import org.apache.shiro.io.ResourceUtils;

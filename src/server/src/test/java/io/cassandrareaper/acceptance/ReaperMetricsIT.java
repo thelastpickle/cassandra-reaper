@@ -17,14 +17,15 @@
 
 package io.cassandrareaper.acceptance;
 
-import cucumber.api.CucumberOptions;
-import cucumber.api.junit.Cucumber;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Comparator;
 import java.util.stream.Stream;
+
+import cucumber.api.CucumberOptions;
+import cucumber.api.junit.Cucumber;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.runner.RunWith;

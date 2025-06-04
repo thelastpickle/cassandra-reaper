@@ -17,17 +17,6 @@
 
 package io.cassandrareaper.service;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
-import com.codahale.metrics.Metric;
-import com.codahale.metrics.MetricRegistry;
-import com.datastax.oss.driver.api.core.uuid.Uuids;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperApplicationConfiguration;
 import io.cassandrareaper.ReaperException;
@@ -41,6 +30,7 @@ import io.cassandrareaper.storage.cluster.IClusterDao;
 import io.cassandrareaper.storage.repairrun.IRepairRunDao;
 import io.cassandrareaper.storage.repairschedule.IRepairScheduleDao;
 import io.cassandrareaper.storage.repairunit.IRepairUnitDao;
+
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -48,6 +38,18 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+import com.codahale.metrics.Metric;
+import com.codahale.metrics.MetricRegistry;
+import com.datastax.oss.driver.api.core.uuid.Uuids;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import org.apache.cassandra.repair.RepairParallelism;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;

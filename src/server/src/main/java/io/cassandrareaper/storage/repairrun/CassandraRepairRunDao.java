@@ -15,6 +15,26 @@
 
 package io.cassandrareaper.storage.repairrun;
 
+import io.cassandrareaper.core.RepairRun;
+import io.cassandrareaper.core.RepairSegment;
+import io.cassandrareaper.core.RepairUnit;
+import io.cassandrareaper.resources.view.RepairRunStatus;
+import io.cassandrareaper.storage.cluster.CassandraClusterDao;
+import io.cassandrareaper.storage.repairsegment.CassandraRepairSegmentDao;
+import io.cassandrareaper.storage.repairunit.CassandraRepairUnitDao;
+
+import java.time.Instant;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.SortedSet;
+import java.util.UUID;
+import java.util.concurrent.CompletionStage;
+import java.util.stream.Collectors;
+
 import com.datastax.oss.driver.api.core.ConsistencyLevel;
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
@@ -30,24 +50,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import io.cassandrareaper.core.RepairRun;
-import io.cassandrareaper.core.RepairSegment;
-import io.cassandrareaper.core.RepairUnit;
-import io.cassandrareaper.resources.view.RepairRunStatus;
-import io.cassandrareaper.storage.cluster.CassandraClusterDao;
-import io.cassandrareaper.storage.repairsegment.CassandraRepairSegmentDao;
-import io.cassandrareaper.storage.repairunit.CassandraRepairUnitDao;
-import java.time.Instant;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
-import java.util.SortedSet;
-import java.util.UUID;
-import java.util.concurrent.CompletionStage;
-import java.util.stream.Collectors;
 import org.apache.cassandra.repair.RepairParallelism;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;

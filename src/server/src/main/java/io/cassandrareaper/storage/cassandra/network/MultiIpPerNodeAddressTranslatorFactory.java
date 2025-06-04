@@ -17,14 +17,15 @@
 
 package io.cassandrareaper.storage.cassandra.network;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import com.datastax.oss.driver.api.core.config.DefaultDriverOption;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.google.common.annotations.VisibleForTesting;
 import io.dropwizard.cassandra.DropwizardProgrammaticDriverConfigLoaderBuilder;
 import io.dropwizard.cassandra.network.AddressTranslatorFactory;
-import java.util.ArrayList;
-import java.util.List;
 import org.hibernate.validator.constraints.NotEmpty;
 
 /**

@@ -15,12 +15,14 @@
 
 package io.cassandrareaper.storage.snapshot;
 
+import io.cassandrareaper.core.Snapshot;
+
+import java.time.Instant;
+
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.cql.PreparedStatement;
 import com.datastax.oss.driver.api.core.cql.ResultSet;
 import com.datastax.oss.driver.api.core.cql.Row;
-import io.cassandrareaper.core.Snapshot;
-import java.time.Instant;
 import org.joda.time.DateTime;
 
 public class CassandraSnapshotDao implements ISnapshotDao {

@@ -17,9 +17,10 @@
 
 package io.cassandrareaper.core;
 
-import com.google.common.base.Preconditions;
 import java.util.Objects;
 import java.util.Optional;
+
+import com.google.common.base.Preconditions;
 
 public final class Node {
 

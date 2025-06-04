@@ -18,6 +18,25 @@
 
 package io.cassandrareaper.storage.repairsegment;
 
+import io.cassandrareaper.core.RepairSegment;
+import io.cassandrareaper.core.Segment;
+import io.cassandrareaper.service.RingRange;
+import io.cassandrareaper.storage.JsonParseUtils;
+import io.cassandrareaper.storage.cassandra.CassandraConcurrencyDao;
+import io.cassandrareaper.storage.repairunit.CassandraRepairUnitDao;
+
+import java.time.Instant;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
+import javax.annotation.Nullable;
+
 import com.datastax.oss.driver.api.core.ConsistencyLevel;
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.cql.BatchStatement;
@@ -32,22 +51,6 @@ import com.datastax.oss.driver.api.core.servererrors.InvalidQueryException;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import io.cassandrareaper.core.RepairSegment;
-import io.cassandrareaper.core.Segment;
-import io.cassandrareaper.service.RingRange;
-import io.cassandrareaper.storage.JsonParseUtils;
-import io.cassandrareaper.storage.cassandra.CassandraConcurrencyDao;
-import io.cassandrareaper.storage.repairunit.CassandraRepairUnitDao;
-import java.time.Instant;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
-import java.util.stream.Collectors;
-import javax.annotation.Nullable;
 import org.joda.time.DateTime;
 
 public class CassandraRepairSegmentDao implements IRepairSegmentDao {

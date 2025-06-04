@@ -17,10 +17,11 @@
 
 package io.cassandrareaper.core;
 
+import java.time.LocalDate;
+
 import static org.junit.Assert.assertEquals;
 
 import com.google.common.collect.ImmutableSet;
-import java.time.LocalDate;
 import org.assertj.core.api.Assertions;
 import org.junit.Test;
 

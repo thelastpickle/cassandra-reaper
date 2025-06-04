@@ -21,6 +21,7 @@ package io.cassandrareaper.storage.repairrun;
 import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairSegment;
 import io.cassandrareaper.resources.view.RepairRunStatus;
+
 import java.util.Collection;
 import java.util.Optional;
 import java.util.SortedSet;

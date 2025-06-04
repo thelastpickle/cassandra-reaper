@@ -17,18 +17,6 @@
 
 package io.cassandrareaper.service;
 
-import static org.junit.Assert.assertEquals;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
-import com.datastax.oss.driver.api.core.uuid.Uuids;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperApplicationConfiguration;
 import io.cassandrareaper.ReaperException;
@@ -44,6 +32,7 @@ import io.cassandrareaper.storage.cluster.IClusterDao;
 import io.cassandrareaper.storage.repairrun.IRepairRunDao;
 import io.cassandrareaper.storage.repairsegment.IRepairSegmentDao;
 import io.cassandrareaper.storage.repairunit.IRepairUnitDao;
+
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -55,6 +44,19 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+
+import static org.junit.Assert.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+import com.datastax.oss.driver.api.core.uuid.Uuids;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import org.apache.cassandra.repair.RepairParallelism;
 import org.assertj.core.api.Assertions;
 import org.junit.Test;

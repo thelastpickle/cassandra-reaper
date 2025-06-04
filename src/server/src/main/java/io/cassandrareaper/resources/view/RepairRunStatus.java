@@ -17,13 +17,16 @@
 
 package io.cassandrareaper.resources.view;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairUnit;
+
 import java.util.Collection;
 import java.util.UUID;
+
 import javax.annotation.Nullable;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.apache.cassandra.repair.RepairParallelism;
 import org.apache.commons.lang3.time.DurationFormatUtils;
 import org.joda.time.DateTime;

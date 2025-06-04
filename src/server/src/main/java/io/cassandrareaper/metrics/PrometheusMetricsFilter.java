@@ -17,10 +17,11 @@
 
 package io.cassandrareaper.metrics;
 
-import com.codahale.metrics.Metric;
-import com.codahale.metrics.MetricFilter;
 import java.util.HashSet;
 import java.util.Set;
+
+import com.codahale.metrics.Metric;
+import com.codahale.metrics.MetricFilter;
 
 /*
  * This class helps drop Dropwizard metrics that we don't want converted to the Prometheus format.

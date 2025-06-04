@@ -17,9 +17,10 @@
 
 package io.cassandrareaper.management.http;
 
+import java.util.Map;
+
 import com.datastax.mgmtapi.client.model.Compaction;
 import com.google.common.collect.ImmutableMap;
-import java.util.Map;
 
 /** Helper methods to manipulate {@link com.datastax.mgmtapi.client.model.Compaction} instances. */
 final class Compactions {

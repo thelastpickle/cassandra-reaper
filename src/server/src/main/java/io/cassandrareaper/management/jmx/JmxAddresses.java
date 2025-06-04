@@ -15,9 +15,11 @@
 
 package io.cassandrareaper.management.jmx;
 
-import com.google.common.base.Preconditions;
 import java.net.MalformedURLException;
+
 import javax.management.remote.JMXServiceURL;
+
+import com.google.common.base.Preconditions;
 
 public final class JmxAddresses {
   private static final String JMX_URL = "service:jmx:rmi:///jndi/rmi://%s:%d/jmxrmi";

@@ -17,14 +17,6 @@
 
 package io.cassandrareaper.service;
 
-import static io.cassandrareaper.metrics.MetricNameUtils.cleanHostName;
-import static io.cassandrareaper.metrics.MetricNameUtils.cleanName;
-
-import com.codahale.metrics.MetricRegistry;
-import com.codahale.metrics.Timer;
-import com.google.common.base.Preconditions;
-import com.google.common.collect.Maps;
-import com.sun.management.UnixOperatingSystemMXBean;
 import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperApplicationConfiguration.DatacenterAvailability;
 import io.cassandrareaper.ReaperException;
@@ -37,6 +29,7 @@ import io.cassandrareaper.management.ICassandraManagementProxy;
 import io.cassandrareaper.management.RepairStatusHandler;
 import io.cassandrareaper.management.SnapshotProxy;
 import io.cassandrareaper.storage.IDistributedStorage;
+
 import java.lang.management.ManagementFactory;
 import java.lang.management.OperatingSystemMXBean;
 import java.util.Arrays;
@@ -50,6 +43,15 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Condition;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import static io.cassandrareaper.metrics.MetricNameUtils.cleanHostName;
+import static io.cassandrareaper.metrics.MetricNameUtils.cleanName;
+
+import com.codahale.metrics.MetricRegistry;
+import com.codahale.metrics.Timer;
+import com.google.common.base.Preconditions;
+import com.google.common.collect.Maps;
+import com.sun.management.UnixOperatingSystemMXBean;
 import org.apache.cassandra.repair.RepairParallelism;
 import org.apache.cassandra.utils.progress.ProgressEventType;
 import org.joda.time.DateTime;

@@ -17,10 +17,11 @@
 
 package io.cassandrareaper.storage.cassandra.network;
 
-import com.datastax.oss.driver.api.core.addresstranslation.AddressTranslator;
 import java.net.InetSocketAddress;
 import java.util.HashMap;
 import java.util.Map;
+
+import com.datastax.oss.driver.api.core.addresstranslation.AddressTranslator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

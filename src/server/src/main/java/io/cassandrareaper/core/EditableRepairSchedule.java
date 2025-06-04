@@ -16,11 +16,13 @@
 
 package io.cassandrareaper.core;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import io.cassandrareaper.validators.NullOrNotBlank;
 import io.cassandrareaper.validators.ValidEditableRepairSchedule;
+
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.apache.cassandra.repair.RepairParallelism;
 
 @ValidEditableRepairSchedule

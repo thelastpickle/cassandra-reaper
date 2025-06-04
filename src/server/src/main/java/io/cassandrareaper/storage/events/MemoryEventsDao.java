@@ -17,12 +17,14 @@
 
 package io.cassandrareaper.storage.events;
 
-import com.google.common.base.Preconditions;
 import io.cassandrareaper.core.DiagEventSubscription;
 import io.cassandrareaper.storage.MemoryStorageFacade;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.UUID;
+
+import com.google.common.base.Preconditions;
 
 public class MemoryEventsDao implements IEventsDao {
   private final MemoryStorageFacade storage;

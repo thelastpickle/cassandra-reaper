@@ -17,14 +17,16 @@
 
 package io.cassandrareaper.resources.view;
 
+import io.cassandrareaper.management.http.HttpCassandraManagementProxy;
+
+import java.util.Collections;
+import java.util.Map;
+import java.util.function.Consumer;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.datastax.mgmtapi.client.model.EndpointStates;
 import com.google.common.collect.ImmutableMap;
-import io.cassandrareaper.management.http.HttpCassandraManagementProxy;
-import java.util.Collections;
-import java.util.Map;
-import java.util.function.Consumer;
 import org.junit.Test;
 
 /**

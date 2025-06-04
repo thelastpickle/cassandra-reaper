@@ -20,7 +20,9 @@ package io.cassandrareaper.management.jmx;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.concurrent.ExecutionException;
+
 import javax.management.NotificationEmitter;
+
 import org.apache.cassandra.service.StorageServiceMBean;
 
 public interface StorageServiceMBean20 extends NotificationEmitter, StorageServiceMBean {

@@ -17,14 +17,16 @@
 
 package io.cassandrareaper.resources.view;
 
+import io.cassandrareaper.resources.view.NodesStatus.EndpointState;
+
+import java.util.List;
+import java.util.Map;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
-import io.cassandrareaper.resources.view.NodesStatus.EndpointState;
-import java.util.List;
-import java.util.Map;
 import org.junit.Test;
 
 public final class NodesStatusTest {

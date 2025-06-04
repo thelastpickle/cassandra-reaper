@@ -17,18 +17,20 @@
 
 package io.cassandrareaper.service;
 
+import io.cassandrareaper.ReaperException;
+import io.cassandrareaper.core.Segment;
+
+import java.math.BigInteger;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import io.cassandrareaper.ReaperException;
-import io.cassandrareaper.core.Segment;
-import java.math.BigInteger;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
 import org.junit.Test;
 
 public final class SegmentGeneratorTest {

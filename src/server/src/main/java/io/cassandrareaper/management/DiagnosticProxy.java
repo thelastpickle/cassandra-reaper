@@ -19,13 +19,16 @@ package io.cassandrareaper.management;
 
 import io.cassandrareaper.management.jmx.JmxCassandraManagementProxy;
 import io.cassandrareaper.service.DiagEventSubscriptionService;
+
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.Map;
 import java.util.SortedMap;
+
 import javax.management.InstanceNotFoundException;
 import javax.management.JMException;
 import javax.management.NotificationListener;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

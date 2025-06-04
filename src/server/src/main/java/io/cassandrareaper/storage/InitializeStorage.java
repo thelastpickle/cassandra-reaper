@@ -16,12 +16,14 @@
 
 package io.cassandrareaper.storage;
 
-import com.google.common.base.Preconditions;
 import io.cassandrareaper.ReaperApplicationConfiguration;
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.storage.cassandra.CassandraStorageFacade;
-import io.dropwizard.core.setup.Environment;
+
 import java.util.UUID;
+
+import com.google.common.base.Preconditions;
+import io.dropwizard.core.setup.Environment;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

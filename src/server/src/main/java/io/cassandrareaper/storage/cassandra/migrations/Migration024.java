@@ -17,10 +17,11 @@
 
 package io.cassandrareaper.storage.cassandra.migrations;
 
+import java.util.Map;
+
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.Version;
-import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

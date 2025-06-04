@@ -17,10 +17,12 @@
 package io.cassandrareaper;
 
 import io.cassandrareaper.storage.InitializeStorage;
+
+import javax.validation.Validation;
+
 import io.dropwizard.core.cli.ConfiguredCommand;
 import io.dropwizard.core.setup.Bootstrap;
 import io.dropwizard.core.setup.Environment;
-import javax.validation.Validation;
 import net.sourceforge.argparse4j.inf.Namespace;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

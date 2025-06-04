@@ -17,11 +17,12 @@
 
 package io.cassandrareaper.core;
 
-import com.google.common.base.Preconditions;
 import java.util.Collections;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+
+import com.google.common.base.Preconditions;
 import org.apache.cassandra.repair.RepairParallelism;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeComparator;

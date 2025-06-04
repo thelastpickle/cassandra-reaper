@@ -16,15 +16,18 @@
 
 package io.cassandrareaper.validators;
 
+import io.cassandrareaper.core.EditableRepairSchedule;
+
+import java.util.Set;
+
+import javax.validation.ConstraintViolation;
+import javax.validation.Validation;
+import javax.validation.Validator;
+
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-import io.cassandrareaper.core.EditableRepairSchedule;
-import java.util.Set;
-import javax.validation.ConstraintViolation;
-import javax.validation.Validation;
-import javax.validation.Validator;
 import org.apache.cassandra.repair.RepairParallelism;
 import org.junit.Test;
 

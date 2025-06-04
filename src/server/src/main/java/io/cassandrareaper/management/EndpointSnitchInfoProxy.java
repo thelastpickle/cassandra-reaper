@@ -17,10 +17,12 @@
 
 package io.cassandrareaper.management;
 
+import io.cassandrareaper.ReaperException;
+
+import java.util.concurrent.ExecutionException;
+
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
-import io.cassandrareaper.ReaperException;
-import java.util.concurrent.ExecutionException;
 
 public final class EndpointSnitchInfoProxy {
 

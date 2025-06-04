@@ -18,19 +18,22 @@ package io.cassandrareaper.resources.auth;
 import io.cassandrareaper.AppContext;
 import io.cassandrareaper.resources.RequestUtils;
 import io.cassandrareaper.storage.cassandra.CassandraStorageFacade;
-import io.jsonwebtoken.Jwts;
+
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
+
 import javax.crypto.spec.SecretKeySpec;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
+
+import io.jsonwebtoken.Jwts;
 
 @Path("/jwt")
 public final class ShiroJwtProvider {

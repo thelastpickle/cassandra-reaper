@@ -17,13 +17,13 @@
 
 package io.cassandrareaper.management.jmx;
 
-import com.google.common.collect.Lists;
 import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperApplicationConfiguration.DatacenterAvailability;
 import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.management.ClusterFacade;
 import io.cassandrareaper.management.ICassandraManagementProxy;
 import io.cassandrareaper.storage.IDistributedStorage;
+
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -34,6 +34,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+
+import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

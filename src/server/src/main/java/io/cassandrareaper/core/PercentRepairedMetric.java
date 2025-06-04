@@ -16,9 +16,10 @@
 
 package io.cassandrareaper.core;
 
+import java.util.UUID;
+
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
-import java.util.UUID;
 
 @JsonDeserialize(builder = PercentRepairedMetric.Builder.class)
 public final class PercentRepairedMetric {

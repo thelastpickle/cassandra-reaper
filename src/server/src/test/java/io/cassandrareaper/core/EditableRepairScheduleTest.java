@@ -18,6 +18,7 @@
 package io.cassandrareaper.core;
 
 import java.util.UUID;
+
 import org.apache.cassandra.repair.RepairParallelism;
 import org.assertj.core.api.Assertions;
 import org.joda.time.DateTime;

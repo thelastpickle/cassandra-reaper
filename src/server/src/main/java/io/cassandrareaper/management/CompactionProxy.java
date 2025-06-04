@@ -17,12 +17,9 @@
 
 package io.cassandrareaper.management;
 
-import com.codahale.metrics.InstrumentedExecutorService;
-import com.codahale.metrics.MetricRegistry;
-import com.datastax.oss.driver.api.core.uuid.Uuids;
-import com.google.common.collect.Lists;
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Compaction;
+
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
@@ -30,8 +27,14 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicReference;
+
 import javax.management.MalformedObjectNameException;
 import javax.management.ReflectionException;
+
+import com.codahale.metrics.InstrumentedExecutorService;
+import com.codahale.metrics.MetricRegistry;
+import com.datastax.oss.driver.api.core.uuid.Uuids;
+import com.google.common.collect.Lists;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

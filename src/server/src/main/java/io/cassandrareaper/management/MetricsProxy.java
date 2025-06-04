@@ -17,7 +17,6 @@
 
 package io.cassandrareaper.management;
 
-import com.google.common.collect.Lists;
 import io.cassandrareaper.core.DroppedMessages;
 import io.cassandrareaper.core.GenericMetric;
 import io.cassandrareaper.core.JmxStat;
@@ -28,11 +27,15 @@ import io.cassandrareaper.management.http.HttpCassandraManagementProxy;
 import io.cassandrareaper.management.http.HttpMetricsProxy;
 import io.cassandrareaper.management.jmx.JmxCassandraManagementProxy;
 import io.cassandrareaper.management.jmx.JmxMetricsProxy;
+
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+
 import javax.management.JMException;
+
+import com.google.common.collect.Lists;
 import org.joda.time.DateTime;
 
 public interface MetricsProxy {

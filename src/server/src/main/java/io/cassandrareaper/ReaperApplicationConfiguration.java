@@ -14,26 +14,29 @@
 
 package io.cassandrareaper;
 
-import com.datastax.oss.driver.api.core.addresstranslation.AddressTranslator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.annotations.VisibleForTesting;
 import io.cassandrareaper.core.JmxCredentials;
 import io.cassandrareaper.crypto.CryptographFactory;
-import io.dropwizard.cassandra.BasicCassandraFactory;
-import io.dropwizard.cassandra.CassandraFactory;
-import io.dropwizard.client.HttpClientConfiguration;
-import io.dropwizard.core.Configuration;
+
 import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+
 import javax.annotation.Nullable;
 import javax.validation.Valid;
 import javax.validation.constraints.DecimalMin;
 import javax.validation.constraints.Max;
 import javax.validation.constraints.NotNull;
 import javax.ws.rs.DefaultValue;
+
+import com.datastax.oss.driver.api.core.addresstranslation.AddressTranslator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.annotations.VisibleForTesting;
+import io.dropwizard.cassandra.BasicCassandraFactory;
+import io.dropwizard.cassandra.CassandraFactory;
+import io.dropwizard.client.HttpClientConfiguration;
+import io.dropwizard.core.Configuration;
 import org.apache.cassandra.repair.RepairParallelism;
 import org.hibernate.validator.constraints.NotEmpty;
 import org.secnod.dropwizard.shiro.ShiroConfiguration;

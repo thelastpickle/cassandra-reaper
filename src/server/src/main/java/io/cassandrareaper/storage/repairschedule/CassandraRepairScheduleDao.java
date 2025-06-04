@@ -18,6 +18,20 @@
 
 package io.cassandrareaper.storage.repairschedule;
 
+import io.cassandrareaper.core.RepairSchedule;
+import io.cassandrareaper.core.RepairUnit;
+import io.cassandrareaper.resources.view.RepairScheduleStatus;
+import io.cassandrareaper.storage.repairunit.CassandraRepairUnitDao;
+
+import java.time.Instant;
+import java.util.Collection;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.CompletionStage;
+import java.util.stream.Collectors;
+
 import com.datastax.oss.driver.api.core.ConsistencyLevel;
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
@@ -29,18 +43,6 @@ import com.datastax.oss.driver.api.core.uuid.Uuids;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import io.cassandrareaper.core.RepairSchedule;
-import io.cassandrareaper.core.RepairUnit;
-import io.cassandrareaper.resources.view.RepairScheduleStatus;
-import io.cassandrareaper.storage.repairunit.CassandraRepairUnitDao;
-import java.time.Instant;
-import java.util.Collection;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.CompletionStage;
-import java.util.stream.Collectors;
 import org.apache.cassandra.repair.RepairParallelism;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;

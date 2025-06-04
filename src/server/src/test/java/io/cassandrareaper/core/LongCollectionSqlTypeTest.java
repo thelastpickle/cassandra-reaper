@@ -17,11 +17,13 @@
 
 package io.cassandrareaper.core;
 
-import static org.junit.Assert.assertEquals;
-
 import io.cassandrareaper.core.RepairSchedule.LongCollectionSqlType;
+
 import java.util.Arrays;
 import java.util.List;
+
+import static org.junit.Assert.assertEquals;
+
 import org.junit.Test;
 
 public final class LongCollectionSqlTypeTest {

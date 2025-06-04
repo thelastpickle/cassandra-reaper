@@ -20,6 +20,7 @@ package io.cassandrareaper.service;
 import io.cassandrareaper.ReaperApplicationConfiguration;
 import io.cassandrareaper.ReaperApplicationConfigurationBuilder;
 import io.cassandrareaper.ReaperApplicationConfigurationBuilder.AutoSchedulingConfigurationBuilder;
+
 import org.apache.cassandra.repair.RepairParallelism;
 
 public final class TestRepairConfiguration {

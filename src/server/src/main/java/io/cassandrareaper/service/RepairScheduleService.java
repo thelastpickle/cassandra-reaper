@@ -17,22 +17,24 @@
 
 package io.cassandrareaper.service;
 
-import static io.cassandrareaper.metrics.MetricNameUtils.cleanId;
-import static io.cassandrareaper.metrics.MetricNameUtils.cleanName;
-
-import com.codahale.metrics.Gauge;
-import com.codahale.metrics.MetricRegistry;
-import com.google.common.base.Preconditions;
 import io.cassandrareaper.AppContext;
 import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairSchedule;
 import io.cassandrareaper.core.RepairUnit;
 import io.cassandrareaper.storage.repairrun.IRepairRunDao;
+
 import java.util.Collection;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
+
+import static io.cassandrareaper.metrics.MetricNameUtils.cleanId;
+import static io.cassandrareaper.metrics.MetricNameUtils.cleanName;
+
+import com.codahale.metrics.Gauge;
+import com.codahale.metrics.MetricRegistry;
+import com.google.common.base.Preconditions;
 import org.apache.cassandra.repair.RepairParallelism;
 import org.joda.time.DateTime;
 

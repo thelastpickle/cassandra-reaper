@@ -18,9 +18,6 @@
 
 package io.cassandrareaper.storage.repairrun;
 
-import com.datastax.oss.driver.api.core.uuid.Uuids;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
 import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairSegment;
 import io.cassandrareaper.core.RepairUnit;
@@ -29,6 +26,7 @@ import io.cassandrareaper.service.RepairRunService;
 import io.cassandrareaper.storage.MemoryStorageFacade;
 import io.cassandrareaper.storage.repairsegment.MemoryRepairSegmentDao;
 import io.cassandrareaper.storage.repairunit.MemoryRepairUnitDao;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -39,6 +37,10 @@ import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.UUID;
 import java.util.stream.Collectors;
+
+import com.datastax.oss.driver.api.core.uuid.Uuids;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import org.joda.time.DateTime;
 
 public class MemoryRepairRunDao implements IRepairRunDao {
