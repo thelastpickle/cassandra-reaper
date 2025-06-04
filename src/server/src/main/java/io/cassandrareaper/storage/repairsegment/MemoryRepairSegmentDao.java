@@ -22,8 +22,10 @@ import io.cassandrareaper.core.RepairSegment;
 import io.cassandrareaper.storage.MemoryStorageFacade;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -85,8 +87,23 @@ public class MemoryRepairSegmentDao implements IRepairSegmentDao {
 
   @Override
   public List<RepairSegment> getNextFreeSegments(UUID runId) {
-    return memoryStorageFacade.getRepairSegmentsByRunId(runId).stream()
-        .filter(seg -> seg.getState() == RepairSegment.State.NOT_STARTED)
+    List<RepairSegment> segments =
+        memoryStorageFacade.getRepairSegmentsByRunId(runId).stream()
+            .filter(seg -> seg.getState() == RepairSegment.State.NOT_STARTED)
+            .collect(Collectors.toList());
+
+    Set<String> lockedNodes =
+        memoryStorageFacade.getLockedNodesForRun(runId).stream()
+            .map(lockKey -> lockKey.substring(0, lockKey.indexOf(runId.toString())))
+            .collect(Collectors.toSet());
+
+    // Filter out segments which have a node that is locked by another segment in this run
+    // We only allow one segment per node per run.
+    return segments.stream()
+        .filter(
+            seg ->
+                seg.getState().equals(RepairSegment.State.NOT_STARTED)
+                    && Collections.disjoint(lockedNodes, seg.getReplicas().keySet()))
         .collect(Collectors.toList());
   }
 
