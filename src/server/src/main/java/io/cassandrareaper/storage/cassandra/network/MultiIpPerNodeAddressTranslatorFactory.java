@@ -20,6 +20,8 @@ package io.cassandrareaper.storage.cassandra.network;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.validation.constraints.NotBlank;
+
 import com.datastax.oss.driver.api.core.config.DefaultDriverOption;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
@@ -52,10 +54,10 @@ public class MultiIpPerNodeAddressTranslatorFactory implements AddressTranslator
      * An IP address as returned by {@link java.net.InetAddress#getHostAddress()}. This IP address
      * will be tranlated to the "to" hostname.
      */
-    @JsonProperty private String from;
+    @JsonProperty @NotBlank private String from;
 
     /** An IP address or hostname to translate to. */
-    @JsonProperty private String to;
+    @JsonProperty @NotBlank private String to;
 
     public String getFrom() {
       return from;

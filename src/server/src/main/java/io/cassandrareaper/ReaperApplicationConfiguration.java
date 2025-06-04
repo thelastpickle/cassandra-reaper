@@ -27,6 +27,7 @@ import javax.annotation.Nullable;
 import javax.validation.Valid;
 import javax.validation.constraints.DecimalMin;
 import javax.validation.constraints.Max;
+import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import javax.ws.rs.DefaultValue;
 
@@ -87,7 +88,7 @@ public final class ReaperApplicationConfiguration extends Configuration {
 
   @JsonProperty @NotNull private Integer hangingRepairTimeoutMins;
 
-  private String storageType;
+  @NotBlank private String storageType;
 
   private String enableCrossOrigin;
 
