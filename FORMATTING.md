@@ -35,6 +35,35 @@ will fail if code is not properly formatted.
 1. Download [eclipse-java-google-style.xml](https://github.com/google/styleguide/blob/gh-pages/eclipse-java-google-style.xml)
 2. Import via `Window` → `Preferences` → `Java` → `Code Style` → `Formatter` → `Import`
 
+## Import Order
+
+The project uses a custom import order that differs from the standard Google Java Format ordering:
+
+1. **Project imports**: `io.cassandrareaper.*`
+2. **Third-party libraries**: All other external dependencies
+3. **Java standard library**: `java.*`
+4. **Java extensions**: `javax.*`
+5. **Static imports**: All static imports (at the end)
+
+### Example:
+```java
+import io.cassandrareaper.AppContext;
+import io.cassandrareaper.core.Cluster;
+
+import com.google.common.collect.ImmutableSet;
+import org.apache.commons.lang3.StringUtils;
+
+import java.net.URI;
+import java.util.Optional;
+
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+
+import static com.google.common.base.Preconditions.checkArgument;
+```
+
+This ordering is automatically applied when running `mvn spotless:apply`.
+
 ## Pre-commit Hook (Optional)
 
 To automatically format code before commits, you can add this to your git pre-commit hook:
@@ -48,6 +77,7 @@ git add .
 
 The configuration includes:
 - Google Java Format style
+- Custom import order (project → third-party → java → javax → static)
 - Remove unused imports
 - Trim trailing whitespace
 - End files with newline
