@@ -54,6 +54,7 @@ The Docker environment variables listed in this section map directly to Reaper s
 <code class="codeLarge">REAPER_MAX_PARALLEL_REPAIRS</code> | [maxParallelRepairs]({{< relref "reaper_specific.md#maxParallelRepairs" >}})                                         | 2
 <code class="codeLarge">CRYPTO_SYSTEM_PROPERTY_SECRET</code> | [cryptograph/systemPropertySecret]({{< relref "reaper_specific.md#cryptograph" >}})                                  | Unset
 <code class="codeLarge">REAPER_HTTP_MANAGEMENT_ENABLE</code> | [httpManagement/enabled]({{< relref "reaper_specific.md#httpManagement" >}})                                            | false
+<code class="codeLarge">REAPER_PURGE_RECORDS_AFTER_IN_DAYS</code> | [purgeRecordsAfterInDays]({{< relref "reaper_specific.md#purgeRecordsAfterInDays" >}})                                            | 30
 
 <br/>
 

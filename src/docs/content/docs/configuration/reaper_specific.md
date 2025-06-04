@@ -375,6 +375,14 @@ In a 10 nodes cluster, setting a value of 20 segments per node will generate a r
 
 <br/>
 
+## `purgeRecordsAfterInDays`
+
+Type: *Integer*
+
+Default: *30*
+
+Defines the amount of days after which a repair run will get purged from storage.
+
 ### `server`
 
 Settings to configure the application UI server.

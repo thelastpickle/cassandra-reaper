@@ -84,7 +84,8 @@ ENV REAPER_SEGMENT_COUNT_PER_NODE=64 \
     REAPER_HTTP_MANAGEMENT_TRUSTSTORE_PATH="" \
     REAPER_HTTP_MANAGEMENT_TRUSTSTORES_DIR="" \
     REAPER_TMP_DIRECTORY="/var/tmp/cassandra-reaper" \
-    REAPER_MEMORY_STORAGE_DIRECTORY="/var/lib/cassandra-reaper/storage"
+    REAPER_MEMORY_STORAGE_DIRECTORY="/var/lib/cassandra-reaper/storage" \
+    REAPER_PURGE_RECORDS_AFTER_IN_DAYS=30
 
 # used to run spreaper cli
 RUN apk add --update \
