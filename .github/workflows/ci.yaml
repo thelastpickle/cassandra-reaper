@@ -59,18 +59,24 @@ jobs:
         with:
           fail-on-severity: high
           comment-summary-in-pr: true
-      - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@master
+
+      - name: Setup Java for Snyk
+        uses: actions/setup-java@v4
         with:
-          scan-type: 'fs'
-          scan-ref: '.'
-          format: 'sarif'
-          output: 'trivy-results.sarif'
-      - name: Upload Trivy scan results to GitHub Security tab
+          distribution: 'temurin'
+          java-version: '11'
+      - name: Run Snyk to check for vulnerabilities
+        uses: snyk/actions/maven@master
+        continue-on-error: true
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --severity-threshold=high --sarif-file-output=snyk.sarif
+      - name: Upload Snyk results to GitHub Code Scanning
         uses: github/codeql-action/upload-sarif@v3
         if: always()
         with:
-          sarif_file: 'trivy-results.sarif'
+          sarif_file: snyk.sarif
 
   docker-tests:
     name: Docker Image Tests
