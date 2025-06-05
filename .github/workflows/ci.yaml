@@ -68,7 +68,7 @@ jobs:
       - name: Run Snyk to check for vulnerabilities
         run: |
           snyk auth $SNYK_TOKEN
-          snyk test --severity-threshold=medium --sarif-file-output=snyk.sarif || true
+          snyk test --maven-aggregate-project --severity-threshold=medium --sarif-file-output=snyk.sarif || true
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
       - name: Upload Snyk results to GitHub Code Scanning
