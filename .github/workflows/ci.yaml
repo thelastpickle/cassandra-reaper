@@ -69,6 +69,7 @@ jobs:
         continue-on-error: true
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+          JAVA_HOME: ${{ env.JAVA_HOME }}
         with:
           args: --severity-threshold=high --sarif-file-output=snyk.sarif
       - name: Upload Snyk results to GitHub Code Scanning
