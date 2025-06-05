@@ -29,8 +29,7 @@ RUN apt-get update \
     && DEBIAN_FRONTEND="noninteractive" apt-get install -y \
         build-essential \
         git \
-        openjdk-8-jdk \
-        openjdk-11-jdk \
+        openjdk-21-jdk \
         maven \
         nodejs \
         python2 \
