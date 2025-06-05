@@ -169,6 +169,19 @@
                     <groupId>org.yaml</groupId>
                     <artifactId>snakeyaml</artifactId>
                 </exclusion>
+                <!-- Exclude problematic SJK parsers with invalid system paths -->
+                <exclusion>
+                    <groupId>org.perfkit.sjk.parsers</groupId>
+                    <artifactId>sjk-jfr5</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.perfkit.sjk.parsers</groupId>
+                    <artifactId>sjk-jfr6</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.perfkit.sjk.parsers</groupId>
+                    <artifactId>sjk-nps</artifactId>
+                </exclusion>
             </exclusions>
         </dependency>
         <dependency>
