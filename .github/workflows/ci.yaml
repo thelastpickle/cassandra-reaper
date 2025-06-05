@@ -46,6 +46,33 @@ jobs:
 
       - uses: codecov/codecov-action@v5
 
+
+  vuln-scan:
+    name: Vulnerability Scan
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup
+        uses: ./.github/actions/setup
+      - name: 'Dependency Review'
+        uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: high
+          comment-summary-in-pr: true
+      - uses: snyk/actions/setup@master
+      - name: Run Snyk to check for vulnerabilities
+        run: |
+          snyk auth $SNYK_TOKEN
+          snyk test --maven-aggregate-project --severity-threshold=medium --sarif-file-output=snyk.sarif --debug || true
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+      - name: Upload Snyk results to GitHub Code Scanning
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: snyk.sarif
+
   docker-tests:
     name: Docker Image Tests
     needs: build
@@ -79,7 +106,7 @@ jobs:
           TEST_TYPE: ${{ matrix.test-type }}
 
       - name: Setup tmate session
-        if: "failure()"
+        if: failure()
         uses: mxschmitt/action-tmate@v3
         timeout-minutes: 30
 
@@ -139,7 +166,7 @@ jobs:
       - uses: codecov/codecov-action@v1
 
       - name: Setup tmate session
-        if: "failure()"
+        if: failure()
         uses: mxschmitt/action-tmate@v3
         timeout-minutes: 30
 
@@ -198,7 +225,7 @@ jobs:
       - uses: codecov/codecov-action@v1
 
       - name: Setup tmate session
-        if: "failure()"
+        if: failure()
         uses: mxschmitt/action-tmate@v3
         timeout-minutes: 30
 
@@ -341,7 +368,7 @@ jobs:
 
       # Add a tmate action to debug failures. 
       - name: Setup tmate session
-        if: ${{ failure() }}
+        if: failure()
         uses: mxschmitt/action-tmate@v3
         timeout-minutes: 30
 

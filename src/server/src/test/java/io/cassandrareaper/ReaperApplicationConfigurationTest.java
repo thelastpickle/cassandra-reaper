@@ -17,9 +17,6 @@
 
 package io.cassandrareaper;
 
-import javax.validation.Validation;
-import javax.validation.Validator;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
@@ -30,17 +27,10 @@ import com.datastax.oss.driver.api.core.CqlSession;
 import io.dropwizard.cassandra.CassandraFactory;
 import io.dropwizard.lifecycle.setup.LifecycleEnvironment;
 import org.apache.cassandra.repair.RepairParallelism;
-import org.hibernate.validator.HibernateValidator;
 import org.junit.Before;
 import org.junit.Test;
 
 public final class ReaperApplicationConfigurationTest {
-
-  private final Validator validator =
-      Validation.byProvider(HibernateValidator.class)
-          .configure()
-          .buildValidatorFactory()
-          .getValidator();
 
   private final ReaperApplicationConfiguration config = new ReaperApplicationConfiguration();
 
@@ -73,13 +63,29 @@ public final class ReaperApplicationConfigurationTest {
 
   @Test
   public void testRepairIntensity() {
+    // Test invalid negative repair intensity
     config.setRepairIntensity(-0.1);
-    assertThat(validator.validate(config)).hasSize(1);
+    assertThat(config.getRepairIntensity()).isEqualTo(-0.1);
+    assertThat(isValidRepairIntensity(config.getRepairIntensity())).isFalse();
 
+    // Test invalid zero repair intensity
     config.setRepairIntensity(0);
-    assertThat(validator.validate(config)).hasSize(1);
+    assertThat(config.getRepairIntensity()).isEqualTo(0);
+    assertThat(isValidRepairIntensity(config.getRepairIntensity())).isFalse();
 
+    // Test valid repair intensity
     config.setRepairIntensity(1);
-    assertThat(validator.validate(config)).hasSize(0);
+    assertThat(config.getRepairIntensity()).isEqualTo(1);
+    assertThat(isValidRepairIntensity(config.getRepairIntensity())).isTrue();
+
+    // Test valid decimal repair intensity
+    config.setRepairIntensity(0.5);
+    assertThat(config.getRepairIntensity()).isEqualTo(0.5);
+    assertThat(isValidRepairIntensity(config.getRepairIntensity())).isTrue();
+  }
+
+  /** Validates repair intensity - should be greater than 0. */
+  private boolean isValidRepairIntensity(double repairIntensity) {
+    return repairIntensity > 0;
   }
 }

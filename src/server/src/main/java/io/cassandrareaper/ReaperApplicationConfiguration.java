@@ -27,6 +27,7 @@ import javax.annotation.Nullable;
 import javax.validation.Valid;
 import javax.validation.constraints.DecimalMin;
 import javax.validation.constraints.Max;
+import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import javax.ws.rs.DefaultValue;
 
@@ -38,7 +39,6 @@ import io.dropwizard.cassandra.CassandraFactory;
 import io.dropwizard.client.HttpClientConfiguration;
 import io.dropwizard.core.Configuration;
 import org.apache.cassandra.repair.RepairParallelism;
-import org.hibernate.validator.constraints.NotEmpty;
 import org.secnod.dropwizard.shiro.ShiroConfiguration;
 
 public final class ReaperApplicationConfiguration extends Configuration {
@@ -88,7 +88,7 @@ public final class ReaperApplicationConfiguration extends Configuration {
 
   @JsonProperty @NotNull private Integer hangingRepairTimeoutMins;
 
-  @NotEmpty private String storageType;
+  @NotBlank private String storageType;
 
   private String enableCrossOrigin;
 
