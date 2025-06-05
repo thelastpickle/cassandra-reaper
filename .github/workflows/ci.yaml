@@ -60,6 +60,10 @@ jobs:
         with:
           fail-on-severity: high
           comment-summary-in-pr: true
+      - name: Set JAVA_HOME for Snyk
+        run: |
+          echo "JAVA_HOME=$(dirname $(dirname $(which java)))" >> $GITHUB_ENV
+          echo "Java Home: $JAVA_HOME"
       - name: Run Snyk to check for vulnerabilities
         uses: snyk/actions/maven@master
         continue-on-error: true
