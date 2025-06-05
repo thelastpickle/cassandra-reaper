@@ -60,18 +60,17 @@ jobs:
         with:
           fail-on-severity: high
           comment-summary-in-pr: true
-      - name: Set JAVA_HOME for Snyk
+      - name: Install Snyk CLI
         run: |
-          echo "JAVA_HOME=$(dirname $(dirname $(which java)))" >> $GITHUB_ENV
-          echo "Java Home: $JAVA_HOME"
+          curl -Lo snyk https://github.com/snyk/cli/releases/latest/download/snyk-linux
+          chmod +x snyk
+          sudo mv snyk /usr/local/bin/
       - name: Run Snyk to check for vulnerabilities
-        uses: snyk/actions/maven@master
-        continue-on-error: true
+        run: |
+          snyk auth $SNYK_TOKEN
+          snyk test --severity-threshold=high --sarif-file-output=snyk.sarif || true
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-          JAVA_HOME: ${{ env.JAVA_HOME }}
-        with:
-          args: --severity-threshold=high --sarif-file-output=snyk.sarif
       - name: Upload Snyk results to GitHub Code Scanning
         uses: github/codeql-action/upload-sarif@v3
         if: always()
@@ -111,7 +110,7 @@ jobs:
           TEST_TYPE: ${{ matrix.test-type }}
 
       - name: Setup tmate session
-        if: "failure()"
+        if: failure()
         uses: mxschmitt/action-tmate@v3
         timeout-minutes: 30
 
@@ -171,7 +170,7 @@ jobs:
       - uses: codecov/codecov-action@v1
 
       - name: Setup tmate session
-        if: "failure()"
+        if: failure()
         uses: mxschmitt/action-tmate@v3
         timeout-minutes: 30
 
@@ -230,7 +229,7 @@ jobs:
       - uses: codecov/codecov-action@v1
 
       - name: Setup tmate session
-        if: "failure()"
+        if: failure()
         uses: mxschmitt/action-tmate@v3
         timeout-minutes: 30
 
@@ -373,7 +372,7 @@ jobs:
 
       # Add a tmate action to debug failures. 
       - name: Setup tmate session
-        if: ${{ failure() }}
+        if: failure()
         uses: mxschmitt/action-tmate@v3
         timeout-minutes: 30
 
