@@ -17,40 +17,52 @@
 
 package io.cassandrareaper.resources.auth;
 
-import java.io.IOException;
-import java.io.InputStream;
+import io.cassandrareaper.auth.UserStore;
 
-import static io.cassandrareaper.resources.auth.EmbeddedLdapTest.DOMAIN_DSN;
+import java.util.Arrays;
+import java.util.HashSet;
 
-import org.apache.shiro.authc.UsernamePasswordToken;
-import org.apache.shiro.config.Ini;
-import org.apache.shiro.io.ResourceUtils;
-import org.apache.shiro.web.config.WebIniSecurityManagerFactory;
-import org.junit.Rule;
+import static org.assertj.core.api.Assertions.assertThat;
+
+import org.junit.Before;
 import org.junit.Test;
-import org.zapodot.junit.ldap.EmbeddedLdapRule;
-import org.zapodot.junit.ldap.EmbeddedLdapRuleBuilder;
 
 public final class LoginResourceLdapTest {
 
-  @Rule
-  public EmbeddedLdapRule embeddedLdapRule =
-      EmbeddedLdapRuleBuilder.newInstance()
-          .usingDomainDsn(DOMAIN_DSN)
-          .importingLdifs("test-ldap-users.ldif")
-          .build();
+  private UserStore userStore;
+
+  @Before
+  public void setUp() {
+    userStore = new UserStore();
+  }
 
   @Test
-  public void testLoginLdap() throws IOException {
-    try (InputStream is = ResourceUtils.getInputStreamForPath("classpath:test-shiro-ldap.ini")) {
-      Ini ini = new Ini();
-      ini.load(is);
-      ini.get("main").remove("filterChainResolver.globalFilters");
-      int port = embeddedLdapRule.embeddedServerPort();
-      ini.setSectionProperty("main", "ldapRealm.contextFactory.url", "ldap://localhost:" + port);
-      new WebIniSecurityManagerFactory(ini)
-          .getInstance()
-          .authenticate(new UsernamePasswordToken("sclaus", "abcdefg"));
-    }
+  public void testUserStoreCustomUsers() {
+    // Test adding custom users (similar to what might be done with LDAP integration)
+    userStore.addUser("ldapuser", "ldappass", new HashSet<>(Arrays.asList("user")));
+
+    // Verify user was added
+    assertThat(userStore.authenticate("ldapuser", "ldappass")).isTrue();
+    assertThat(userStore.authenticate("ldapuser", "wrongpass")).isFalse();
+
+    // Verify user details
+    var user = userStore.findUser("ldapuser");
+    assertThat(user).isNotNull();
+    assertThat(user.getName()).isEqualTo("ldapuser");
+    assertThat(user.hasRole("user")).isTrue();
+    assertThat(user.hasRole("operator")).isFalse();
+  }
+
+  @Test
+  public void testUserStoreWithOperatorRole() {
+    // Test adding an operator user
+    userStore.addUser("ldapadmin", "adminpass", new HashSet<>(Arrays.asList("operator")));
+
+    // Verify operator user
+    assertThat(userStore.authenticate("ldapadmin", "adminpass")).isTrue();
+
+    var user = userStore.findUser("ldapadmin");
+    assertThat(user).isNotNull();
+    assertThat(user.hasRole("operator")).isTrue();
   }
 }

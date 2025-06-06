@@ -39,7 +39,6 @@ import io.dropwizard.client.HttpClientConfiguration;
 import io.dropwizard.core.Configuration;
 import org.apache.cassandra.repair.RepairParallelism;
 import org.hibernate.validator.constraints.NotEmpty;
-import org.secnod.dropwizard.shiro.ShiroConfiguration;
 
 public final class ReaperApplicationConfiguration extends Configuration {
 
@@ -120,7 +119,6 @@ public final class ReaperApplicationConfiguration extends Configuration {
   private Integer clusterTimeoutInDays;
 
   @JsonProperty private DatacenterAvailability datacenterAvailability;
-  @JsonProperty private AccessControlConfiguration accessControl;
   @JsonProperty private Integer repairThreadCount;
 
   /** If set to more than 0, defines how many days of run history should be kept. Default: 30 */
@@ -147,6 +145,8 @@ public final class ReaperApplicationConfiguration extends Configuration {
   @JsonProperty private Boolean scheduleRetryOnError;
 
   @JsonProperty private Duration scheduleRetryDelay;
+
+  @JsonProperty private AccessControlConfiguration accessControl;
 
   public HttpManagement getHttpManagement() {
     return httpManagement;
@@ -384,18 +384,6 @@ public final class ReaperApplicationConfiguration extends Configuration {
     this.datacenterAvailability = datacenterAvailability;
   }
 
-  public AccessControlConfiguration getAccessControl() {
-    return accessControl;
-  }
-
-  public void setAccessControl(AccessControlConfiguration accessControl) {
-    this.accessControl = accessControl;
-  }
-
-  public boolean isAccessControlEnabled() {
-    return getAccessControl() != null;
-  }
-
   public int getRepairThreadCount() {
     return repairThreadCount != null ? repairThreadCount : 1;
   }
@@ -513,6 +501,14 @@ public final class ReaperApplicationConfiguration extends Configuration {
 
   public void setScheduleRetryDelay(Duration scheduleRetryDelay) {
     this.scheduleRetryDelay = scheduleRetryDelay;
+  }
+
+  public AccessControlConfiguration getAccessControl() {
+    return accessControl;
+  }
+
+  public void setAccessControl(AccessControlConfiguration accessControl) {
+    this.accessControl = accessControl;
   }
 
   public enum DatacenterAvailability {
@@ -682,20 +678,6 @@ public final class ReaperApplicationConfiguration extends Configuration {
     }
   }
 
-  public static final class AccessControlConfiguration {
-
-    @JsonProperty private ShiroConfiguration shiro;
-    @JsonProperty private Duration sessionTimeout;
-
-    public ShiroConfiguration getShiroConfiguration() {
-      return shiro;
-    }
-
-    public Duration getSessionTimeout() {
-      return sessionTimeout != null ? sessionTimeout : Duration.ofMinutes(10);
-    }
-  }
-
   public static final class HttpManagement {
     @JsonProperty private Boolean enabled = false;
 
@@ -762,6 +744,87 @@ public final class ReaperApplicationConfiguration extends Configuration {
     @JsonProperty("mgmtApiMetricsPort")
     public void setMgmtApiMetricsPort(int mgmtApiMetricsPort) {
       this.mgmtApiMetricsPort = mgmtApiMetricsPort;
+    }
+  }
+
+  public static final class AccessControlConfiguration {
+    @JsonProperty private Duration sessionTimeout;
+    @JsonProperty private JwtConfiguration jwt;
+    @JsonProperty private List<UserConfiguration> users = Collections.emptyList();
+
+    public Duration getSessionTimeout() {
+      return sessionTimeout != null ? sessionTimeout : Duration.ofMinutes(10);
+    }
+
+    public void setSessionTimeout(Duration sessionTimeout) {
+      this.sessionTimeout = sessionTimeout;
+    }
+
+    public JwtConfiguration getJwt() {
+      return jwt;
+    }
+
+    public void setJwt(JwtConfiguration jwt) {
+      this.jwt = jwt;
+    }
+
+    public List<UserConfiguration> getUsers() {
+      return users != null ? users : Collections.emptyList();
+    }
+
+    public void setUsers(List<UserConfiguration> users) {
+      this.users = users != null ? users : Collections.emptyList();
+    }
+  }
+
+  public static final class JwtConfiguration {
+    @JsonProperty private String secret;
+    @JsonProperty private Duration tokenExpirationTime;
+
+    public String getSecret() {
+      return secret;
+    }
+
+    public void setSecret(String secret) {
+      this.secret = secret;
+    }
+
+    public Duration getTokenExpirationTime() {
+      return tokenExpirationTime;
+    }
+
+    public void setTokenExpirationTime(Duration tokenExpirationTime) {
+      this.tokenExpirationTime = tokenExpirationTime;
+    }
+  }
+
+  public static final class UserConfiguration {
+    @JsonProperty private String username;
+    @JsonProperty private String password;
+    @JsonProperty private List<String> roles = Collections.emptyList();
+
+    public String getUsername() {
+      return username;
+    }
+
+    public void setUsername(String username) {
+      this.username = username;
+    }
+
+    public String getPassword() {
+      return password;
+    }
+
+    public void setPassword(String password) {
+      this.password = password;
+    }
+
+    public List<String> getRoles() {
+      return roles != null ? roles : Collections.emptyList();
+    }
+
+    public void setRoles(List<String> roles) {
+      this.roles = roles != null ? roles : Collections.emptyList();
     }
   }
 }

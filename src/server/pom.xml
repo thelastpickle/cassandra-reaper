@@ -33,7 +33,6 @@
         <jersey.version>2.35</jersey.version>
         <logback.version>1.3.14</logback.version>
         <cxf.version>3.4.5</cxf.version>
-        <shiro.version>1.13.0</shiro.version>
         <prometheus.version>0.12.0</prometheus.version>
         <docker.directory>src/main/docker</docker.directory>
         <timestamp>${maven.build.timestamp}</timestamp>
@@ -98,6 +97,11 @@
         <dependency>
             <groupId>io.dropwizard</groupId>
             <artifactId>dropwizard-assets</artifactId>
+            <version>${dropwizard.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.dropwizard</groupId>
+            <artifactId>dropwizard-auth</artifactId>
             <version>${dropwizard.version}</version>
         </dependency>
         <dependency>
@@ -173,40 +177,6 @@
             <groupId>io.prometheus</groupId>
             <artifactId>simpleclient_dropwizard</artifactId>
             <version>${prometheus.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.secnod.dropwizard</groupId>
-            <artifactId>dropwizard-shiro</artifactId>
-            <version>0.4.0</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.apache.shiro</groupId>
-                    <artifactId>shiro-core</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.apache.shiro</groupId>
-                    <artifactId>shiro-web</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.apache.shiro</groupId>
-                    <artifactId>shiro-jaxrs</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.shiro</groupId>
-            <artifactId>shiro-core</artifactId>
-            <version>${shiro.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.shiro</groupId>
-            <artifactId>shiro-web</artifactId>
-            <version>${shiro.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.shiro</groupId>
-            <artifactId>shiro-jaxrs</artifactId>
-            <version>${shiro.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.commons</groupId>

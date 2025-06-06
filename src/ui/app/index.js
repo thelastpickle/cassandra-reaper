@@ -30,6 +30,17 @@ import {
 
 jQuery(document).ready(function($){
   document.documentElement.setAttribute('data-theme', Cookies.get('reaper-theme'));
+  
+  // Set up JWT authorization header if token exists
+  const token = sessionStorage.getItem('jwtToken');
+  if (token) {
+    $.ajaxSetup({
+      beforeSend: function(xhr) {
+        xhr.setRequestHeader('Authorization', 'Bearer ' + token);
+      }
+    });
+  }
+  
   $.urlParam = function(name){
     var results = new RegExp('[\?&]' + name + '=([^&#]*)').exec(window.location.href);
     if (results) {

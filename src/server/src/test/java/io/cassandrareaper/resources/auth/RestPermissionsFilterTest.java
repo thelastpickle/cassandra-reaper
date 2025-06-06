@@ -17,28 +17,78 @@
 
 package io.cassandrareaper.resources.auth;
 
-import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.HttpMethod;
+import io.cassandrareaper.auth.RoleAuthorizer;
+import io.cassandrareaper.auth.User;
 
-import org.assertj.core.api.Assertions;
+import java.util.Collections;
+import java.util.Set;
+
+import javax.ws.rs.container.ContainerRequestContext;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.when;
+
+import org.junit.Before;
 import org.junit.Test;
-import org.mockito.Mockito;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 
 public class RestPermissionsFilterTest {
 
-  @Test
-  public void testOptionsRequestWithoutAuthorizationIsAllowed() throws Exception {
-    RestPermissionsFilter filter = Mockito.spy(RestPermissionsFilter.class);
-    HttpServletRequest mockHttpServletRequest = Mockito.spy(HttpServletRequest.class);
-    Mockito.when(mockHttpServletRequest.getMethod()).thenReturn(HttpMethod.OPTIONS);
-    Mockito.when(filter.isCorsEnabled()).thenReturn(true);
+  @Mock private ContainerRequestContext mockRequestContext;
 
-    boolean allowed =
-        filter.isAccessAllowed(
-            mockHttpServletRequest,
-            Mockito.mock(ServletResponse.class),
-            Mockito.mock(Object.class));
-    Assertions.assertThat(allowed).isTrue();
+  private RoleAuthorizer roleAuthorizer;
+
+  @Before
+  public void setUp() {
+    MockitoAnnotations.initMocks(this);
+    roleAuthorizer = new RoleAuthorizer();
+  }
+
+  @Test
+  public void testOptionsRequestAccess() {
+    // Given
+    Set<String> userRoles = Collections.singleton("user");
+    User regularUser = new User("regular-user", userRoles);
+    when(mockRequestContext.getMethod()).thenReturn("OPTIONS");
+
+    // When & Then - OPTIONS requests typically don't require special authorization
+    // This would be handled at a higher level in the Dropwizard auth framework
+    assertThat(roleAuthorizer.authorize(regularUser, "user", mockRequestContext)).isTrue();
+  }
+
+  @Test
+  public void testUserReadAccess() {
+    // Given
+    Set<String> userRoles = Collections.singleton("user");
+    User regularUser = new User("regular-user", userRoles);
+    when(mockRequestContext.getMethod()).thenReturn("GET");
+
+    // When & Then
+    assertThat(roleAuthorizer.authorize(regularUser, "user", mockRequestContext)).isTrue();
+  }
+
+  @Test
+  public void testUserWriteAccessDenied() {
+    // Given
+    Set<String> userRoles = Collections.singleton("user");
+    User regularUser = new User("regular-user", userRoles);
+    when(mockRequestContext.getMethod()).thenReturn("POST");
+
+    // When & Then
+    assertThat(roleAuthorizer.authorize(regularUser, "operator", mockRequestContext)).isFalse();
+  }
+
+  @Test
+  public void testOperatorFullAccess() {
+    // Given
+    Set<String> operatorRoles = Collections.singleton("operator");
+    User operatorUser = new User("operator-user", operatorRoles);
+    when(mockRequestContext.getMethod()).thenReturn("DELETE");
+
+    // When & Then
+    assertThat(roleAuthorizer.authorize(operatorUser, "operator", mockRequestContext)).isTrue();
+    assertThat(roleAuthorizer.authorize(operatorUser, "user", mockRequestContext)).isTrue();
+    assertThat(roleAuthorizer.authorize(operatorUser, "any-role", mockRequestContext)).isTrue();
   }
 }

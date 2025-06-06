@@ -19,6 +19,12 @@
 package io.cassandrareaper;
 
 import io.cassandrareaper.ReaperApplicationConfiguration.DatacenterAvailability;
+import io.cassandrareaper.auth.AuthLoginResource;
+import io.cassandrareaper.auth.BasicAuthenticator;
+import io.cassandrareaper.auth.JwtAuthenticator;
+import io.cassandrareaper.auth.RoleAuthorizer;
+import io.cassandrareaper.auth.User;
+import io.cassandrareaper.auth.UserStore;
 import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.Node;
 import io.cassandrareaper.crypto.Cryptograph;
@@ -39,9 +45,6 @@ import io.cassandrareaper.resources.RepairRunResource;
 import io.cassandrareaper.resources.RepairScheduleResource;
 import io.cassandrareaper.resources.RequestUtils;
 import io.cassandrareaper.resources.SnapshotResource;
-import io.cassandrareaper.resources.auth.LoginResource;
-import io.cassandrareaper.resources.auth.ShiroExceptionMapper;
-import io.cassandrareaper.resources.auth.ShiroJwtProvider;
 import io.cassandrareaper.service.AutoSchedulingManager;
 import io.cassandrareaper.service.Heart;
 import io.cassandrareaper.service.PurgeService;
@@ -53,6 +56,7 @@ import io.cassandrareaper.storage.InitializeStorage;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.EnumSet;
+import java.util.HashSet;
 import java.util.Optional;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -68,6 +72,10 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import io.dropwizard.assets.AssetsBundle;
+import io.dropwizard.auth.AuthDynamicFeature;
+import io.dropwizard.auth.AuthValueFactoryProvider;
+import io.dropwizard.auth.basic.BasicCredentialAuthFilter;
+import io.dropwizard.auth.oauth.OAuthCredentialAuthFilter;
 import io.dropwizard.client.HttpClientBuilder;
 import io.dropwizard.configuration.EnvironmentVariableSubstitutor;
 import io.dropwizard.configuration.SubstitutingSourceProvider;
@@ -83,8 +91,6 @@ import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.servlets.CrossOriginFilter;
 import org.joda.time.DateTimeZone;
-import org.secnod.dropwizard.shiro.ShiroBundle;
-import org.secnod.dropwizard.shiro.ShiroConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -148,20 +154,7 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
             bootstrap.getConfigurationSourceProvider(), new EnvironmentVariableSubstitutor(false));
     bootstrap.setConfigurationSourceProvider(envSourceProvider);
 
-    bootstrap.addBundle(
-        new ShiroBundle<ReaperApplicationConfiguration>() {
-          @Override
-          public void run(ReaperApplicationConfiguration configuration, Environment environment) {
-            if (configuration.isAccessControlEnabled()) {
-              super.run(configuration, environment);
-            }
-          }
-
-          @Override
-          protected ShiroConfiguration narrow(ReaperApplicationConfiguration configuration) {
-            return configuration.getAccessControl().getShiroConfiguration();
-          }
-        });
+    // Dropwizard auth configuration will be done in run() method
 
     bootstrap.setConfigurationSourceProvider(
         new SubstitutingSourceProvider(
@@ -274,16 +267,61 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
       environment.jersey().register(diagEvents);
     }
 
-    if (config.isAccessControlEnabled()) {
+    if (config.getAccessControl() != null) {
       SessionHandler sessionHandler = new SessionHandler();
-      sessionHandler.setMaxInactiveInterval(
-          (int) config.getAccessControl().getSessionTimeout().getSeconds());
-      RequestUtils.setSessionTimeout(config.getAccessControl().getSessionTimeout());
       environment.getApplicationContext().setSessionHandler(sessionHandler);
       environment.servlets().setSessionHandler(sessionHandler);
-      environment.jersey().register(new ShiroExceptionMapper());
-      environment.jersey().register(new LoginResource());
-      environment.jersey().register(new ShiroJwtProvider(context));
+
+      // Setup Dropwizard authentication using configuration
+      UserStore userStore = new UserStore();
+
+      // Add users from configuration
+      if (config.getAccessControl().getUsers() != null) {
+        for (ReaperApplicationConfiguration.UserConfiguration userConfig :
+            config.getAccessControl().getUsers()) {
+          userStore.addUser(
+              userConfig.getUsername(),
+              userConfig.getPassword(),
+              new HashSet<>(userConfig.getRoles()));
+        }
+      }
+
+      String jwtSecret =
+          config.getAccessControl().getJwt() != null
+              ? config.getAccessControl().getJwt().getSecret()
+              : "MySecretKeyForJWTWhichMustBeLongEnoughForHS256Algorithm";
+
+      // JWT authentication for REST API
+      JwtAuthenticator jwtAuthenticator = new JwtAuthenticator(jwtSecret, userStore);
+      BasicAuthenticator basicAuthenticator = new BasicAuthenticator(userStore);
+      RoleAuthorizer authorizer = new RoleAuthorizer();
+
+      // Register JWT/OAuth filter for REST endpoints
+      environment
+          .jersey()
+          .register(
+              new AuthDynamicFeature(
+                  new OAuthCredentialAuthFilter.Builder<User>()
+                      .setAuthenticator(jwtAuthenticator)
+                      .setAuthorizer(authorizer)
+                      .setPrefix("Bearer")
+                      .buildAuthFilter()));
+
+      // Register Basic Auth filter as backup
+      environment
+          .jersey()
+          .register(
+              new AuthDynamicFeature(
+                  new BasicCredentialAuthFilter.Builder<User>()
+                      .setAuthenticator(basicAuthenticator)
+                      .setAuthorizer(authorizer)
+                      .buildAuthFilter()));
+
+      // Register @Auth parameter injection
+      environment.jersey().register(new AuthValueFactoryProvider.Binder<>(User.class));
+
+      // Register login resource
+      environment.jersey().register(new AuthLoginResource(userStore, jwtSecret));
     }
 
     Thread.sleep(1000);

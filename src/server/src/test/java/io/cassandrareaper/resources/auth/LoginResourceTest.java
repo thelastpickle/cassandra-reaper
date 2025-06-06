@@ -17,36 +17,69 @@
 
 package io.cassandrareaper.resources.auth;
 
-import java.io.IOException;
-import java.io.InputStream;
+import io.cassandrareaper.auth.AuthLoginResource;
+import io.cassandrareaper.auth.User;
+import io.cassandrareaper.auth.UserStore;
 
-import org.apache.shiro.authc.UsernamePasswordToken;
-import org.apache.shiro.config.Ini;
-import org.apache.shiro.io.ResourceUtils;
-import org.apache.shiro.web.config.WebIniSecurityManagerFactory;
+import static org.assertj.core.api.Assertions.assertThat;
+
+import org.junit.Before;
 import org.junit.Test;
 
 public final class LoginResourceTest {
 
-  @Test
-  public void testShiroConfig() throws IOException {
-    try (InputStream is = ResourceUtils.getInputStreamForPath("classpath:shiro.ini")) {
-      Ini ini = new Ini();
-      ini.load(is);
-      ini.get("main").remove("filterChainResolver.globalFilters");
-      new WebIniSecurityManagerFactory(ini).getInstance();
-    }
+  private UserStore userStore;
+  private AuthLoginResource loginResource;
+  private static final String JWT_SECRET =
+      "MySecretKeyForJWTWhichMustBeLongEnoughForHS256Algorithm";
+
+  @Before
+  public void setUp() {
+    userStore = new UserStore();
+    loginResource = new AuthLoginResource(userStore, JWT_SECRET);
   }
 
   @Test
-  public void testLogin() throws IOException {
-    try (InputStream is = ResourceUtils.getInputStreamForPath("classpath:shiro.ini")) {
-      Ini ini = new Ini();
-      ini.load(is);
-      ini.get("main").remove("filterChainResolver.globalFilters");
-      new WebIniSecurityManagerFactory(ini)
-          .getInstance()
-          .authenticate(new UsernamePasswordToken("admin", "admin"));
-    }
+  public void testUserStoreDefaultUsers() {
+    // Test that default users are loaded
+    User adminUser = userStore.findUser("admin");
+    assertThat(adminUser).isNotNull();
+    assertThat(adminUser.getName()).isEqualTo("admin");
+    assertThat(adminUser.hasRole("operator")).isTrue();
+
+    User regularUser = userStore.findUser("user");
+    assertThat(regularUser).isNotNull();
+    assertThat(regularUser.getName()).isEqualTo("user");
+    assertThat(regularUser.hasRole("user")).isTrue();
+  }
+
+  @Test
+  public void testAuthentication() {
+    // Test admin authentication
+    assertThat(userStore.authenticate("admin", "admin")).isTrue();
+    assertThat(userStore.authenticate("admin", "wrong")).isFalse();
+
+    // Test user authentication
+    assertThat(userStore.authenticate("user", "user")).isTrue();
+    assertThat(userStore.authenticate("user", "wrong")).isFalse();
+
+    // Test non-existent user
+    assertThat(userStore.authenticate("nonexistent", "password")).isFalse();
+  }
+
+  @Test
+  public void testLogin() {
+    // Test successful login
+    AuthLoginResource.LoginResponse response = loginResource.login("admin", "admin", false);
+    assertThat(response).isNotNull();
+    assertThat(response.getToken()).isNotNull();
+    assertThat(response.getUsername()).isEqualTo("admin");
+    assertThat(response.getRoles()).contains("operator");
+  }
+
+  @Test(expected = javax.ws.rs.WebApplicationException.class)
+  public void testLoginFailure() {
+    // Test failed login
+    loginResource.login("admin", "wrong_password", false);
   }
 }
