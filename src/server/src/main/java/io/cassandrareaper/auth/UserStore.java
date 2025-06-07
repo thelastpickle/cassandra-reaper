@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 public class UserStore {
@@ -44,6 +45,11 @@ public class UserStore {
   public User findUser(String username) {
     UserCredentials creds = users.get(username);
     return creds != null ? new User(creds.username, creds.roles) : null;
+  }
+
+  public Optional<User> getUser(String username) {
+    User user = findUser(username);
+    return Optional.ofNullable(user);
   }
 
   private static class UserCredentials {

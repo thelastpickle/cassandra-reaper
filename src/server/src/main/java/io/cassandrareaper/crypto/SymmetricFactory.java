@@ -17,11 +17,10 @@
 
 package io.cassandrareaper.crypto;
 
-import javax.validation.constraints.NotNull;
-import javax.ws.rs.DefaultValue;
-
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
+import jakarta.validation.constraints.NotNull;
+import jakarta.ws.rs.DefaultValue;
 
 @JsonTypeName("symmetric")
 public class SymmetricFactory implements CryptographFactory {

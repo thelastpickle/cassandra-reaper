@@ -22,6 +22,7 @@ import java.util.Optional;
 
 import javax.crypto.SecretKey;
 
+import io.dropwizard.auth.AuthenticationException;
 import io.dropwizard.auth.Authenticator;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
@@ -43,26 +44,40 @@ public class JwtAuthenticator implements Authenticator<String, User> {
   }
 
   @Override
-  public Optional<User> authenticate(String token) {
+  public Optional<User> authenticate(String token) throws AuthenticationException {
+    LOG.info(
+        "JWT AUTHENTICATOR: authenticate() called with token: {}",
+        token != null ? "[PRESENT]" : "[NULL]");
+
+    if (token == null || token.trim().isEmpty()) {
+      LOG.info("JWT AUTHENTICATOR: Token is null or empty - authentication failed");
+      return Optional.empty();
+    }
+
     try {
+      // Parse and validate the JWT token
       Jws<Claims> jws =
           Jwts.parser().verifyWith((SecretKey) jwtKey).build().parseSignedClaims(token);
-
       Claims claims = jws.getPayload();
+
       String username = claims.getSubject();
+      LOG.info("JWT AUTHENTICATOR: Successfully parsed JWT for user: {}", username);
 
       if (username == null) {
-        LOG.warn("JWT token missing subject claim");
+        LOG.info("JWT AUTHENTICATOR: No subject found in JWT claims");
         return Optional.empty();
       }
 
-      User user = userStore.findUser(username);
-      if (user == null) {
-        LOG.warn("User {} not found in user store", username);
-        return Optional.empty();
+      // Get user from user store
+      Optional<User> user = userStore.getUser(username);
+      if (user.isPresent()) {
+        LOG.info(
+            "JWT AUTHENTICATOR: User {} found with roles: {}", username, user.get().getRoles());
+      } else {
+        LOG.info("JWT AUTHENTICATOR: User {} not found in user store", username);
       }
 
-      return Optional.of(user);
+      return user;
     } catch (JwtException e) {
       LOG.warn("Invalid JWT token: {}", e.getMessage());
       return Optional.empty();

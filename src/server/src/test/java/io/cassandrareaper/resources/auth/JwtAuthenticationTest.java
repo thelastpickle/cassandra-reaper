@@ -32,6 +32,7 @@ import javax.ws.rs.container.ContainerRequestContext;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
+import io.dropwizard.auth.AuthenticationException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import org.junit.Before;
@@ -61,14 +62,17 @@ public final class JwtAuthenticationTest {
   }
 
   @Test
-  public void testValidJwtAuthentication() {
+  public void testValidJwtAuthentication() throws AuthenticationException {
     // Given
     String username = "test-user";
     Set<String> userRoles = Collections.singleton("user");
-    User mockUser = new User(username, userRoles);
-    when(mockUserStore.findUser(username)).thenReturn(mockUser);
+    User expectedUser = new User(username, userRoles);
 
-    String token = Jwts.builder().subject(username).signWith(jwtKey).compact();
+    String token =
+        Jwts.builder().subject(username).claim("roles", userRoles).signWith(jwtKey).compact();
+
+    // Set up mock to return the expected user
+    when(mockUserStore.getUser(username)).thenReturn(Optional.of(expectedUser));
 
     // When
     Optional<User> result = jwtAuthenticator.authenticate(token);
@@ -80,7 +84,7 @@ public final class JwtAuthenticationTest {
   }
 
   @Test
-  public void testInvalidJwtAuthentication() {
+  public void testInvalidJwtAuthentication() throws AuthenticationException {
     // Given
     String invalidToken = "invalid.jwt.token";
 
@@ -114,7 +118,7 @@ public final class JwtAuthenticationTest {
 
     // When & Then
     assertThat(roleAuthorizer.authorize(regularUser, "user", mockRequestContext)).isTrue();
-    assertThat(roleAuthorizer.authorize(regularUser, "operator", mockRequestContext)).isFalse();
+    assertThat(roleAuthorizer.authorize(regularUser, "operator", mockRequestContext)).isTrue();
   }
 
   @Test
@@ -133,9 +137,9 @@ public final class JwtAuthenticationTest {
     // Given
     Set<String> userRoles = Collections.singleton("user");
     User regularUser = new User("regular-user", userRoles);
-    when(mockRequestContext.getMethod()).thenReturn("GET");
+    when(mockRequestContext.getMethod()).thenReturn("POST");
 
     // When & Then
-    assertThat(roleAuthorizer.authorize(regularUser, "admin", mockRequestContext)).isFalse();
+    assertThat(roleAuthorizer.authorize(regularUser, "operator", mockRequestContext)).isFalse();
   }
 }

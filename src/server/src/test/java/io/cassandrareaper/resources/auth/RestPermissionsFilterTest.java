@@ -75,20 +75,52 @@ public class RestPermissionsFilterTest {
     User regularUser = new User("regular-user", userRoles);
     when(mockRequestContext.getMethod()).thenReturn("POST");
 
-    // When & Then
+    // When & Then - Users with "user" role should be denied POST operations
+    assertThat(roleAuthorizer.authorize(regularUser, "operator", mockRequestContext)).isFalse();
+    assertThat(roleAuthorizer.authorize(regularUser, "user", mockRequestContext)).isFalse();
+  }
+
+  @Test
+  public void testUserCannotDoWriteOperationsRegardlessOfRequiredRole() {
+    // Given
+    Set<String> userRoles = Collections.singleton("user");
+    User regularUser = new User("regular-user", userRoles);
+
+    // When & Then - Users with "user" role should only be allowed GET operations
+    when(mockRequestContext.getMethod()).thenReturn("GET");
+    assertThat(roleAuthorizer.authorize(regularUser, "user", mockRequestContext)).isTrue();
+    assertThat(roleAuthorizer.authorize(regularUser, "operator", mockRequestContext))
+        .isTrue(); // user can access operator endpoints with GET
+
+    when(mockRequestContext.getMethod()).thenReturn("POST");
+    assertThat(roleAuthorizer.authorize(regularUser, "user", mockRequestContext)).isFalse();
+    assertThat(roleAuthorizer.authorize(regularUser, "operator", mockRequestContext)).isFalse();
+
+    when(mockRequestContext.getMethod()).thenReturn("PUT");
+    assertThat(roleAuthorizer.authorize(regularUser, "user", mockRequestContext)).isFalse();
+    assertThat(roleAuthorizer.authorize(regularUser, "operator", mockRequestContext)).isFalse();
+
+    when(mockRequestContext.getMethod()).thenReturn("DELETE");
+    assertThat(roleAuthorizer.authorize(regularUser, "user", mockRequestContext)).isFalse();
     assertThat(roleAuthorizer.authorize(regularUser, "operator", mockRequestContext)).isFalse();
   }
 
   @Test
-  public void testOperatorFullAccess() {
+  public void testOperatorHasFullAccess() {
     // Given
     Set<String> operatorRoles = Collections.singleton("operator");
     User operatorUser = new User("operator-user", operatorRoles);
-    when(mockRequestContext.getMethod()).thenReturn("DELETE");
 
-    // When & Then
-    assertThat(roleAuthorizer.authorize(operatorUser, "operator", mockRequestContext)).isTrue();
+    // When & Then - Operators should have access to all methods
+    when(mockRequestContext.getMethod()).thenReturn("GET");
     assertThat(roleAuthorizer.authorize(operatorUser, "user", mockRequestContext)).isTrue();
-    assertThat(roleAuthorizer.authorize(operatorUser, "any-role", mockRequestContext)).isTrue();
+    assertThat(roleAuthorizer.authorize(operatorUser, "operator", mockRequestContext)).isTrue();
+
+    when(mockRequestContext.getMethod()).thenReturn("POST");
+    assertThat(roleAuthorizer.authorize(operatorUser, "user", mockRequestContext)).isTrue();
+    assertThat(roleAuthorizer.authorize(operatorUser, "operator", mockRequestContext)).isTrue();
+
+    when(mockRequestContext.getMethod()).thenReturn("DELETE");
+    assertThat(roleAuthorizer.authorize(operatorUser, "operator", mockRequestContext)).isTrue();
   }
 }

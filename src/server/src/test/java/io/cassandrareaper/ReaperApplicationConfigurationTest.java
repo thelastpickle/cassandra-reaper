@@ -73,6 +73,7 @@ public final class ReaperApplicationConfigurationTest {
     config.setIncrementalRepair(false);
     config.setSubrangeIncrementalRepair(false);
     config.setBlacklistTwcsTables(true);
+    config.setRepairIntensity(1.0);
   }
 
   @Test

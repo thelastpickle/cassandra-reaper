@@ -19,6 +19,7 @@ package io.cassandrareaper.auth;
 
 import java.util.Optional;
 
+import io.dropwizard.auth.AuthenticationException;
 import io.dropwizard.auth.Authenticator;
 import io.dropwizard.auth.basic.BasicCredentials;
 import org.slf4j.Logger;
@@ -34,19 +35,29 @@ public class BasicAuthenticator implements Authenticator<BasicCredentials, User>
   }
 
   @Override
-  public Optional<User> authenticate(BasicCredentials credentials) {
+  public Optional<User> authenticate(BasicCredentials credentials) throws AuthenticationException {
+    LOG.info(
+        "BASIC AUTHENTICATOR: authenticate() called for user: {}",
+        credentials != null ? credentials.getUsername() : "[NULL_CREDENTIALS]");
+
+    if (credentials == null) {
+      LOG.info("BASIC AUTHENTICATOR: Credentials are null");
+      return Optional.empty();
+    }
+
     String username = credentials.getUsername();
     String password = credentials.getPassword();
 
     if (userStore.authenticate(username, password)) {
       User user = userStore.findUser(username);
       if (user != null) {
-        LOG.debug("Authenticated user: {}", username);
+        LOG.info(
+            "BASIC AUTHENTICATOR: User {} authenticated with roles: {}", username, user.getRoles());
         return Optional.of(user);
       }
     }
 
-    LOG.warn("Authentication failed for user: {}", username);
+    LOG.info("BASIC AUTHENTICATOR: Authentication failed for user: {}", username);
     return Optional.empty();
   }
 }

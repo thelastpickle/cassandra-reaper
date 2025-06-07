@@ -25,6 +25,7 @@ import io.cassandrareaper.auth.JwtAuthenticator;
 import io.cassandrareaper.auth.RoleAuthorizer;
 import io.cassandrareaper.auth.User;
 import io.cassandrareaper.auth.UserStore;
+import io.cassandrareaper.auth.WebuiAuthenticationFilter;
 import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.Node;
 import io.cassandrareaper.crypto.Cryptograph;
@@ -61,9 +62,6 @@ import java.util.Optional;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import javax.servlet.DispatcherType;
-import javax.servlet.FilterRegistration;
-
 import static io.cassandrareaper.metrics.PrometheusMetricsConfiguration.getCustomSampleMethodBuilder;
 
 import com.codahale.metrics.InstrumentedScheduledExecutorService;
@@ -84,7 +82,9 @@ import io.dropwizard.core.setup.Bootstrap;
 import io.dropwizard.core.setup.Environment;
 import io.prometheus.client.CollectorRegistry;
 import io.prometheus.client.dropwizard.DropwizardExports;
-import io.prometheus.client.exporter.MetricsServlet;
+import io.prometheus.client.exporter.jakarta.servlet.MetricsServlet;
+import jakarta.servlet.DispatcherType;
+import jakarta.servlet.FilterRegistration;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
@@ -165,6 +165,21 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
   public void run(ReaperApplicationConfiguration config, Environment environment) throws Exception {
     // Using UTC times everywhere as default. Affects only Yoda time.
     DateTimeZone.setDefault(DateTimeZone.UTC);
+
+    LOG.info(
+        "CONFIGURATION DEBUG: AccessControl config is: {}",
+        config.getAccessControl() != null ? "PRESENT" : "NULL");
+    if (config.getAccessControl() != null) {
+      LOG.info(
+          "CONFIGURATION DEBUG: JWT config is: {}",
+          config.getAccessControl().getJwt() != null ? "PRESENT" : "NULL");
+      LOG.info(
+          "CONFIGURATION DEBUG: Users config has {} users",
+          config.getAccessControl().getUsers() != null
+              ? config.getAccessControl().getUsers().size()
+              : 0);
+    }
+
     checkConfiguration(config);
     context.config = config;
     context.metricRegistry = environment.metrics();
@@ -268,6 +283,7 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
     }
 
     if (config.getAccessControl() != null) {
+      LOG.info("ACCESS CONTROL: Setting up authentication - accessControl config found");
       SessionHandler sessionHandler = new SessionHandler();
       environment.getApplicationContext().setSessionHandler(sessionHandler);
       environment.servlets().setSessionHandler(sessionHandler);
@@ -277,13 +293,22 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
 
       // Add users from configuration
       if (config.getAccessControl().getUsers() != null) {
+        LOG.info(
+            "ACCESS CONTROL: Adding {} users from configuration",
+            config.getAccessControl().getUsers().size());
         for (ReaperApplicationConfiguration.UserConfiguration userConfig :
             config.getAccessControl().getUsers()) {
           userStore.addUser(
               userConfig.getUsername(),
               userConfig.getPassword(),
               new HashSet<>(userConfig.getRoles()));
+          LOG.info(
+              "ACCESS CONTROL: Added user {} with roles {}",
+              userConfig.getUsername(),
+              userConfig.getRoles());
         }
+      } else {
+        LOG.info("ACCESS CONTROL: No users found in configuration");
       }
 
       String jwtSecret =
@@ -291,11 +316,16 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
               ? config.getAccessControl().getJwt().getSecret()
               : "MySecretKeyForJWTWhichMustBeLongEnoughForHS256Algorithm";
 
+      LOG.info(
+          "ACCESS CONTROL: Using JWT secret: {}",
+          jwtSecret != null ? "[REDACTED - length: " + jwtSecret.length() + "]" : "null");
+
       // JWT authentication for REST API
       JwtAuthenticator jwtAuthenticator = new JwtAuthenticator(jwtSecret, userStore);
       BasicAuthenticator basicAuthenticator = new BasicAuthenticator(userStore);
       RoleAuthorizer authorizer = new RoleAuthorizer();
 
+      LOG.info("ACCESS CONTROL: Registering JWT OAuth filter");
       // Register JWT/OAuth filter for REST endpoints
       environment
           .jersey()
@@ -307,6 +337,7 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
                       .setPrefix("Bearer")
                       .buildAuthFilter()));
 
+      LOG.info("ACCESS CONTROL: Registering Basic Auth filter");
       // Register Basic Auth filter as backup
       environment
           .jersey()
@@ -317,11 +348,25 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
                       .setAuthorizer(authorizer)
                       .buildAuthFilter()));
 
+      LOG.info("ACCESS CONTROL: Registering auth value factory provider");
       // Register @Auth parameter injection
       environment.jersey().register(new AuthValueFactoryProvider.Binder<>(User.class));
 
+      LOG.info("ACCESS CONTROL: Registering auth login resource");
       // Register login resource
       environment.jersey().register(new AuthLoginResource(userStore, jwtSecret));
+
+      LOG.info("ACCESS CONTROL: Registering WebUI authentication filter");
+      // Add WebUI authentication filter to protect /webui/* paths
+      FilterRegistration.Dynamic webuiFilter =
+          environment
+              .servlets()
+              .addFilter("webuiAuth", new WebuiAuthenticationFilter(jwtSecret, userStore));
+      webuiFilter.addMappingForUrlPatterns(EnumSet.allOf(DispatcherType.class), true, "/webui/*");
+
+      LOG.info("ACCESS CONTROL: Authentication setup complete");
+    } else {
+      LOG.warn("ACCESS CONTROL: No accessControl configuration found - authentication disabled!");
     }
 
     Thread.sleep(1000);

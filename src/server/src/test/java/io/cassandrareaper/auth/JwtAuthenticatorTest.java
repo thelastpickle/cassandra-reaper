@@ -26,6 +26,7 @@ import javax.crypto.SecretKey;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
+import io.dropwizard.auth.AuthenticationException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import org.junit.Before;
@@ -39,7 +40,6 @@ public class JwtAuthenticatorTest {
       "MySecretKeyForJWTWhichMustBeLongEnoughForHS256Algorithm";
 
   @Mock private UserStore mockUserStore;
-
   private JwtAuthenticator jwtAuthenticator;
   private SecretKey jwtKey;
 
@@ -51,25 +51,64 @@ public class JwtAuthenticatorTest {
   }
 
   @Test
-  public void testAuthenticateValidToken() {
+  public void testAuthenticateValidToken() throws AuthenticationException {
     // Given
     String username = "test-user";
     Set<String> roles = Collections.singleton("user");
-    User mockUser = new User(username, roles);
-    when(mockUserStore.findUser(username)).thenReturn(mockUser);
 
-    String token = Jwts.builder().subject(username).signWith(jwtKey).compact();
+    String token =
+        Jwts.builder().subject(username).claim("roles", roles).signWith(jwtKey).compact();
 
     // When
+    when(mockUserStore.getUser(username)).thenReturn(Optional.of(new User(username, roles)));
     Optional<User> result = jwtAuthenticator.authenticate(token);
 
     // Then
     assertThat(result).isPresent();
     assertThat(result.get().getName()).isEqualTo(username);
+    assertThat(result.get().hasRole("user")).isTrue();
   }
 
   @Test
-  public void testAuthenticateInvalidToken() {
+  public void testAuthenticateTokenWithMultipleRoles() throws AuthenticationException {
+    // Given
+    String username = "admin-user";
+    Set<String> roles = Set.of("user", "operator");
+
+    String token =
+        Jwts.builder().subject(username).claim("roles", roles).signWith(jwtKey).compact();
+
+    // When
+    when(mockUserStore.getUser(username)).thenReturn(Optional.of(new User(username, roles)));
+    Optional<User> result = jwtAuthenticator.authenticate(token);
+
+    // Then
+    assertThat(result).isPresent();
+    assertThat(result.get().getName()).isEqualTo(username);
+    assertThat(result.get().hasRole("user")).isTrue();
+    assertThat(result.get().hasRole("operator")).isTrue();
+  }
+
+  @Test
+  public void testAuthenticateTokenWithoutRoles() throws AuthenticationException {
+    // Given
+    String username = "test-user";
+
+    String token = Jwts.builder().subject(username).signWith(jwtKey).compact();
+
+    // When
+    when(mockUserStore.getUser(username))
+        .thenReturn(Optional.of(new User(username, Collections.emptySet())));
+    Optional<User> result = jwtAuthenticator.authenticate(token);
+
+    // Then
+    assertThat(result).isPresent();
+    assertThat(result.get().getName()).isEqualTo(username);
+    assertThat(result.get().getRoles()).isEmpty();
+  }
+
+  @Test
+  public void testAuthenticateInvalidToken() throws AuthenticationException {
     // Given
     String invalidToken = "invalid.jwt.token";
 
@@ -81,7 +120,7 @@ public class JwtAuthenticatorTest {
   }
 
   @Test
-  public void testAuthenticateTokenWithoutSubject() {
+  public void testAuthenticateTokenWithoutSubject() throws AuthenticationException {
     // Given
     String token = Jwts.builder().claim("someOtherClaim", "value").signWith(jwtKey).compact();
 
@@ -93,22 +132,7 @@ public class JwtAuthenticatorTest {
   }
 
   @Test
-  public void testAuthenticateUserNotFound() {
-    // Given
-    String username = "nonexistent-user";
-    when(mockUserStore.findUser(username)).thenReturn(null);
-
-    String token = Jwts.builder().subject(username).signWith(jwtKey).compact();
-
-    // When
-    Optional<User> result = jwtAuthenticator.authenticate(token);
-
-    // Then
-    assertThat(result).isEmpty();
-  }
-
-  @Test
-  public void testAuthenticateWrongSignature() {
+  public void testAuthenticateWrongSignature() throws AuthenticationException {
     // Given
     String username = "test-user";
     SecretKey wrongKey =

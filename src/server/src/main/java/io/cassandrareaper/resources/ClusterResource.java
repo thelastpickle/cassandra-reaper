@@ -43,25 +43,25 @@ import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import javax.ws.rs.DELETE;
-import javax.ws.rs.FormParam;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.PUT;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriInfo;
-
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
+import jakarta.annotation.security.RolesAllowed;
+import jakarta.ws.rs.DELETE;
+import jakarta.ws.rs.FormParam;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.PUT;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.UriInfo;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -152,6 +152,7 @@ public final class ClusterResource {
   }
 
   @GET
+  @RolesAllowed({"user", "operator"})
   public Response getClusterList(@QueryParam("seedHost") Optional<String> seedHost) {
     LOG.debug("get cluster list called");
 
@@ -167,6 +168,7 @@ public final class ClusterResource {
 
   @GET
   @Path("/{cluster_name}")
+  @RolesAllowed({"user", "operator"})
   public Response getCluster(
       @PathParam("cluster_name") String clusterName, @QueryParam("limit") Optional<Integer> limit) {
 
@@ -216,6 +218,7 @@ public final class ClusterResource {
 
   @GET
   @Path("/{cluster_name}/tables")
+  @RolesAllowed({"user", "operator"})
   public Response getClusterTables(@PathParam("cluster_name") String clusterName)
       throws ReaperException {
     try {
@@ -230,6 +233,7 @@ public final class ClusterResource {
   }
 
   @POST
+  @RolesAllowed("operator")
   public Response addOrUpdateCluster(
       @Context UriInfo uriInfo,
       @QueryParam("seedHost") Optional<String> seedHost,
@@ -242,6 +246,7 @@ public final class ClusterResource {
 
   @POST
   @Path("/auth")
+  @RolesAllowed("operator")
   public Response addOrUpdateCluster(
       @Context UriInfo uriInfo,
       @FormParam("seedHost") Optional<String> seedHost,
@@ -256,6 +261,7 @@ public final class ClusterResource {
 
   @PUT
   @Path("/{cluster_name}")
+  @RolesAllowed("operator")
   public Response addOrUpdateCluster(
       @Context UriInfo uriInfo,
       @PathParam("cluster_name") String clusterName,
@@ -273,6 +279,7 @@ public final class ClusterResource {
 
   @PUT
   @Path("/auth/{cluster_name}")
+  @RolesAllowed("operator")
   public Response addOrUpdateCluster(
       @Context UriInfo uriInfo,
       @PathParam("cluster_name") String clusterName,
@@ -480,6 +487,7 @@ public final class ClusterResource {
    */
   @DELETE
   @Path("/{cluster_name}")
+  @RolesAllowed("operator")
   public Response deleteCluster(
       @PathParam("cluster_name") String clusterName, @QueryParam("force") Optional<Boolean> force) {
 

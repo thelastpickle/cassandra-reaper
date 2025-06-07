@@ -43,27 +43,27 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import javax.annotation.Nullable;
-import javax.validation.ValidationException;
-import javax.ws.rs.DELETE;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.PUT;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.Response.Status;
-import javax.ws.rs.core.UriInfo;
-
 import static java.lang.Math.min;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import jakarta.annotation.Nullable;
+import jakarta.annotation.security.RolesAllowed;
+import jakarta.validation.ValidationException;
+import jakarta.ws.rs.DELETE;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.PUT;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response.Status;
+import jakarta.ws.rs.core.UriInfo;
 import org.apache.cassandra.repair.RepairParallelism;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -334,6 +334,7 @@ public final class RepairRunResource {
    *     errors.
    */
   @POST
+  @RolesAllowed({"operator"})
   public Response addRepairRun(
       @Context UriInfo uriInfo,
       @QueryParam("clusterName") Optional<String> clusterName,
@@ -563,6 +564,7 @@ public final class RepairRunResource {
    */
   @PUT
   @Path("/{id}/state/{state}")
+  @RolesAllowed({"operator"})
   public Response modifyRunState(
       @Context UriInfo uriInfo,
       @PathParam("id") UUID repairRunId,
@@ -632,6 +634,7 @@ public final class RepairRunResource {
    */
   @PUT
   @Path("/{id}/intensity/{intensity}")
+  @RolesAllowed({"operator"})
   public Response modifyRunIntensity(
       @Context UriInfo uriInfo,
       @PathParam("id") UUID repairRunId,
@@ -716,6 +719,7 @@ public final class RepairRunResource {
    */
   @GET
   @Path("/{id}")
+  @RolesAllowed({"user", "operator"})
   public Response getRepairRun(@PathParam("id") UUID repairRunId) {
 
     LOG.debug("get repair_run called with: id = {}", repairRunId);
@@ -733,6 +737,7 @@ public final class RepairRunResource {
    */
   @GET
   @Path("/{id}/segments")
+  @RolesAllowed({"user", "operator"})
   public Response getRepairRunSegments(@PathParam("id") UUID repairRunId) {
 
     LOG.debug("get repair_run called with: id = {}", repairRunId);
@@ -751,6 +756,7 @@ public final class RepairRunResource {
    */
   @POST
   @Path("/{id}/segments/abort/{segment_id}")
+  @RolesAllowed({"operator"})
   public Response abortRepairRunSegment(
       @PathParam("id") UUID repairRunId, @PathParam("segment_id") UUID segmentId) {
     LOG.debug("abort segment called with: run id = {} and segment id = {}", repairRunId, segmentId);
@@ -784,6 +790,7 @@ public final class RepairRunResource {
    */
   @GET
   @Path("/cluster/{clusterName}")
+  @RolesAllowed({"user", "operator"})
   public Response getRepairRunsForCluster(
       @PathParam("clusterName") String clusterName, @QueryParam("limit") Optional<Integer> limit) {
 
@@ -817,6 +824,7 @@ public final class RepairRunResource {
    *     BAD_REQUEST response is returned.
    */
   @GET
+  @RolesAllowed({"user", "operator"})
   public Response listRepairRuns(
       @QueryParam("state") Optional<String> state,
       @QueryParam("cluster_name") Optional<String> cluster,
@@ -886,6 +894,7 @@ public final class RepairRunResource {
    */
   @DELETE
   @Path("/{id}")
+  @RolesAllowed({"operator"})
   public Response deleteRepairRun(
       @PathParam("id") UUID runId, @QueryParam("owner") Optional<String> owner) {
 
@@ -936,6 +945,7 @@ public final class RepairRunResource {
 
   @POST
   @Path("/purge")
+  @RolesAllowed({"operator"})
   public Response purgeRepairRuns() throws ReaperException {
     int purgedRepairs = PurgeService.create(context, repairRunDao).purgeDatabase();
     return Response.ok().entity(purgedRepairs).build();

@@ -23,13 +23,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import javax.annotation.Nullable;
-import javax.validation.Valid;
-import javax.validation.constraints.DecimalMin;
-import javax.validation.constraints.Max;
-import javax.validation.constraints.NotNull;
-import javax.ws.rs.DefaultValue;
-
 import com.datastax.oss.driver.api.core.addresstranslation.AddressTranslator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.annotations.VisibleForTesting;
@@ -37,6 +30,12 @@ import io.dropwizard.cassandra.BasicCassandraFactory;
 import io.dropwizard.cassandra.CassandraFactory;
 import io.dropwizard.client.HttpClientConfiguration;
 import io.dropwizard.core.Configuration;
+import jakarta.annotation.Nullable;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.NotNull;
+import jakarta.ws.rs.DefaultValue;
 import org.apache.cassandra.repair.RepairParallelism;
 import org.hibernate.validator.constraints.NotEmpty;
 

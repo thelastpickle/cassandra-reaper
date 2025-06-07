@@ -16,6 +16,7 @@
 
 import Rx from "rxjs";
 import $ from "jquery";
+import Cookies from "js-cookie";
 import { getUrlPrefix } from "jsx/mixin";
 
 // interval to use for polling entity lists
@@ -50,6 +51,13 @@ export const loginResult = loginSubject.map(login => {
       sessionStorage.setItem('username', response.username);
       sessionStorage.setItem('roles', JSON.stringify(response.roles));
       
+      // Also store token in cookie for servlet filter access
+      Cookies.set('jwtToken', response.token, { 
+        expires: login.rememberMe ? 30 : 1, // 30 days if remember me, 1 day otherwise
+        secure: window.location.protocol === 'https:', 
+        sameSite: 'Lax' 
+      });
+      
       // Set default authorization header for future requests
       $.ajaxSetup({
         beforeSend: function(xhr) {
@@ -77,6 +85,9 @@ export const logoutResult = logoutSubject.map(logout => {
   sessionStorage.removeItem('jwtToken');
   sessionStorage.removeItem('username');
   sessionStorage.removeItem('roles');
+  
+  // Clear JWT cookie
+  Cookies.remove('jwtToken');
   
   // Clear authorization headers
   $.ajaxSetup({
