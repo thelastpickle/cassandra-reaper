@@ -40,6 +40,7 @@ import io.cassandrareaper.resources.DiagEventSseResource;
 import io.cassandrareaper.resources.DiagEventSubscriptionResource;
 import io.cassandrareaper.resources.NodeStatsResource;
 import io.cassandrareaper.resources.PingResource;
+import io.cassandrareaper.resources.PrometheusMetricsResource;
 import io.cassandrareaper.resources.ReaperHealthCheck;
 import io.cassandrareaper.resources.ReaperResource;
 import io.cassandrareaper.resources.RepairRunResource;
@@ -82,7 +83,6 @@ import io.dropwizard.core.setup.Bootstrap;
 import io.dropwizard.core.setup.Environment;
 import io.prometheus.client.CollectorRegistry;
 import io.prometheus.client.dropwizard.DropwizardExports;
-import io.prometheus.client.exporter.jakarta.servlet.MetricsServlet;
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.FilterRegistration;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
@@ -90,6 +90,7 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.servlets.CrossOriginFilter;
+import org.glassfish.jersey.server.filter.RolesAllowedDynamicFeature;
 import org.joda.time.DateTimeZone;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -187,10 +188,7 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
         new DropwizardExports(
             environment.metrics(), new PrometheusMetricsFilter(), getCustomSampleMethodBuilder()));
 
-    environment
-        .admin()
-        .addServlet("prometheusMetrics", new MetricsServlet(CollectorRegistry.defaultRegistry))
-        .addMapping("/prometheusMetrics");
+    environment.jersey().register(new PrometheusMetricsResource());
 
     int repairThreads = config.getRepairRunThreadCount();
     int maxParallelRepairs = config.getMaxParallelRepairs();
@@ -325,7 +323,6 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
       BasicAuthenticator basicAuthenticator = new BasicAuthenticator(userStore);
       RoleAuthorizer authorizer = new RoleAuthorizer();
 
-      LOG.info("ACCESS CONTROL: Registering JWT OAuth filter");
       // Register JWT/OAuth filter for REST endpoints
       environment
           .jersey()
@@ -337,7 +334,6 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
                       .setPrefix("Bearer")
                       .buildAuthFilter()));
 
-      LOG.info("ACCESS CONTROL: Registering Basic Auth filter");
       // Register Basic Auth filter as backup
       environment
           .jersey()
@@ -348,23 +344,19 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
                       .setAuthorizer(authorizer)
                       .buildAuthFilter()));
 
-      LOG.info("ACCESS CONTROL: Registering auth value factory provider");
       // Register @Auth parameter injection
       environment.jersey().register(new AuthValueFactoryProvider.Binder<>(User.class));
 
-      LOG.info("ACCESS CONTROL: Registering auth login resource");
       // Register login resource
       environment.jersey().register(new AuthLoginResource(userStore, jwtSecret));
 
-      LOG.info("ACCESS CONTROL: Registering WebUI authentication filter");
       // Add WebUI authentication filter to protect /webui/* paths
       FilterRegistration.Dynamic webuiFilter =
           environment
               .servlets()
               .addFilter("webuiAuth", new WebuiAuthenticationFilter(jwtSecret, userStore));
       webuiFilter.addMappingForUrlPatterns(EnumSet.allOf(DispatcherType.class), true, "/webui/*");
-
-      LOG.info("ACCESS CONTROL: Authentication setup complete");
+      environment.jersey().register(RolesAllowedDynamicFeature.class);
     } else {
       LOG.warn("ACCESS CONTROL: No accessControl configuration found - authentication disabled!");
     }

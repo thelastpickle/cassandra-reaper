@@ -27,7 +27,6 @@ import java.util.Optional;
 import java.util.Set;
 
 import javax.crypto.SecretKey;
-import javax.ws.rs.container.ContainerRequestContext;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
@@ -35,6 +34,7 @@ import static org.mockito.Mockito.when;
 import io.dropwizard.auth.AuthenticationException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
+import jakarta.ws.rs.container.ContainerRequestContext;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;

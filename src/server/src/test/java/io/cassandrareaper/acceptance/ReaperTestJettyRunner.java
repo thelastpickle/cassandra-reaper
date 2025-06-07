@@ -28,12 +28,11 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-import javax.ws.rs.core.Response;
-
 import com.google.common.collect.Sets;
 import io.dropwizard.testing.ConfigOverride;
 import io.dropwizard.testing.DropwizardTestSupport;
 import io.dropwizard.testing.ResourceHelpers;
+import jakarta.ws.rs.core.Response;
 
 /**
  * Simple Reaper application runner for testing purposes. Starts a Jetty server that wraps Reaper

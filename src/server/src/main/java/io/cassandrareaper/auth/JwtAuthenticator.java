@@ -45,12 +45,12 @@ public class JwtAuthenticator implements Authenticator<String, User> {
 
   @Override
   public Optional<User> authenticate(String token) throws AuthenticationException {
-    LOG.info(
+    LOG.debug(
         "JWT AUTHENTICATOR: authenticate() called with token: {}",
         token != null ? "[PRESENT]" : "[NULL]");
 
     if (token == null || token.trim().isEmpty()) {
-      LOG.info("JWT AUTHENTICATOR: Token is null or empty - authentication failed");
+      LOG.debug("JWT AUTHENTICATOR: Token is null or empty - authentication failed");
       return Optional.empty();
     }
 
@@ -61,20 +61,20 @@ public class JwtAuthenticator implements Authenticator<String, User> {
       Claims claims = jws.getPayload();
 
       String username = claims.getSubject();
-      LOG.info("JWT AUTHENTICATOR: Successfully parsed JWT for user: {}", username);
+      LOG.debug("JWT AUTHENTICATOR: Successfully parsed JWT for user: {}", username);
 
       if (username == null) {
-        LOG.info("JWT AUTHENTICATOR: No subject found in JWT claims");
+        LOG.debug("JWT AUTHENTICATOR: No subject found in JWT claims");
         return Optional.empty();
       }
 
       // Get user from user store
       Optional<User> user = userStore.getUser(username);
       if (user.isPresent()) {
-        LOG.info(
+        LOG.debug(
             "JWT AUTHENTICATOR: User {} found with roles: {}", username, user.get().getRoles());
       } else {
-        LOG.info("JWT AUTHENTICATOR: User {} not found in user store", username);
+        LOG.debug("JWT AUTHENTICATOR: User {} not found in user store", username);
       }
 
       return user;

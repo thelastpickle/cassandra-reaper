@@ -77,7 +77,7 @@ public final class LoginResourceTest {
     assertThat(response.getRoles()).contains("operator");
   }
 
-  @Test(expected = javax.ws.rs.WebApplicationException.class)
+  @Test(expected = jakarta.ws.rs.WebApplicationException.class)
   public void testLoginFailure() {
     // Test failed login
     loginResource.login("admin", "wrong_password", false);

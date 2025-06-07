@@ -23,11 +23,10 @@ import io.cassandrareaper.auth.User;
 import java.util.Collections;
 import java.util.Set;
 
-import javax.ws.rs.container.ContainerRequestContext;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
+import jakarta.ws.rs.container.ContainerRequestContext;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
