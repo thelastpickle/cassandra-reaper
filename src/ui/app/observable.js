@@ -16,6 +16,7 @@
 
 import Rx from "rxjs";
 import $ from "jquery";
+import Cookies from "js-cookie";
 import { getUrlPrefix } from "jsx/mixin";
 
 // interval to use for polling entity lists
@@ -42,8 +43,33 @@ export const loginResult = loginSubject.map(login => {
   return Rx.Observable.fromPromise($.ajax({
     url: `${URL_PREFIX}/login`,
     method: 'POST',
-    data: { username: login.username, password: login.password}
-  }).promise());
+    data: { username: login.username, password: login.password, rememberMe: login.rememberMe}
+  }).promise()).map(response => {
+    // Store JWT token for future requests
+    if (response.token) {
+      sessionStorage.setItem('jwtToken', response.token);
+      sessionStorage.setItem('username', response.username);
+      sessionStorage.setItem('roles', JSON.stringify(response.roles));
+      
+      // Also store token in cookie for servlet filter access
+      Cookies.set('jwtToken', response.token, { 
+        expires: login.rememberMe ? 30 : 1, // 30 days if remember me, 1 day otherwise
+        secure: window.location.protocol === 'https:', 
+        sameSite: 'Lax' 
+      });
+      
+      // Set default authorization header for future requests
+      $.ajaxSetup({
+        beforeSend: function(xhr) {
+          const token = sessionStorage.getItem('jwtToken');
+          if (token) {
+            xhr.setRequestHeader('Authorization', 'Bearer ' + token);
+          }
+        }
+      });
+    }
+    return response;
+  });
 }).share();
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -54,10 +80,27 @@ export const logoutSubject = new Rx.Subject();
 
 export const logoutResult = logoutSubject.map(logout => {
   console.info("Logging out");
-  return Rx.Observable.fromPromise($.ajax({
-    url: `${URL_PREFIX}/logout`,
-    method: 'POST'
-  }).promise());
+  
+  // Clear stored JWT token and user data
+  sessionStorage.removeItem('jwtToken');
+  sessionStorage.removeItem('username');
+  sessionStorage.removeItem('roles');
+  
+  // Clear JWT cookie
+  Cookies.remove('jwtToken');
+  
+  // Clear authorization headers
+  $.ajaxSetup({
+    beforeSend: function(xhr) {
+      // Remove authorization header
+    }
+  });
+  
+  // Redirect to login page
+  window.location.href = '/webui/login.html';
+  
+  // Return empty observable since we're redirecting
+  return Rx.Observable.just({});
 }).share();
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

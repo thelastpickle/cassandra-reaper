@@ -59,7 +59,6 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
 import javax.net.ssl.X509TrustManager;
-import javax.ws.rs.core.Response;
 
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.InstrumentedScheduledExecutorService;
@@ -71,6 +70,7 @@ import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import jakarta.ws.rs.core.Response;
 import okhttp3.OkHttpClient;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;

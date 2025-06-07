@@ -16,8 +16,8 @@
 
 package io.cassandrareaper.validators;
 
-import javax.validation.ConstraintValidator;
-import javax.validation.ConstraintValidatorContext;
+import jakarta.validation.ConstraintValidator;
+import jakarta.validation.ConstraintValidatorContext;
 
 public class NullOrNotBlankValidator implements ConstraintValidator<NullOrNotBlank, String> {
   public void initialize(NullOrNotBlank parameters) {}

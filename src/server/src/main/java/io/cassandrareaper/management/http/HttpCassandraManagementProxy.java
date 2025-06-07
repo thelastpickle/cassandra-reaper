@@ -49,7 +49,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import javax.management.JMException;
-import javax.validation.constraints.NotNull;
 
 import com.codahale.metrics.MetricRegistry;
 import com.datastax.mgmtapi.client.api.DefaultApi;
@@ -66,6 +65,7 @@ import com.datastax.mgmtapi.client.model.TokenRangeToEndpointResponse;
 import com.datastax.mgmtapi.client.model.TokenRangeToEndpoints;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Maps;
+import jakarta.validation.constraints.NotNull;
 import org.apache.cassandra.repair.RepairParallelism;
 import org.apache.cassandra.utils.progress.ProgressEventType;
 import org.slf4j.Logger;

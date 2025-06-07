@@ -39,27 +39,27 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
-import javax.validation.Valid;
-import javax.validation.constraints.NotNull;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.DELETE;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.PUT;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriInfo;
-
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import io.dropwizard.jersey.PATCH;
 import io.dropwizard.jersey.validation.ValidationErrorMessage;
+import jakarta.annotation.security.RolesAllowed;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.DELETE;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.PUT;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.UriInfo;
 import org.apache.cassandra.repair.RepairParallelism;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
@@ -155,6 +155,7 @@ public final class RepairScheduleResource {
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
   @Path("/{id}")
+  @RolesAllowed({"operator"})
   public Response patchRepairSchedule(
       @Context UriInfo uriInfo,
       @PathParam("id") UUID repairScheduleId,
@@ -219,6 +220,7 @@ public final class RepairScheduleResource {
    * @return created repair schedule data as JSON.
    */
   @POST
+  @RolesAllowed({"operator"})
   public Response addRepairSchedule(
       @Context UriInfo uriInfo,
       @QueryParam("clusterName") Optional<String> clusterName,
@@ -531,6 +533,7 @@ public final class RepairScheduleResource {
    */
   @PUT
   @Path("/{id}")
+  @RolesAllowed({"operator"})
   public Response modifyState(
       @Context UriInfo uriInfo,
       @PathParam("id") UUID repairScheduleId,
@@ -601,6 +604,7 @@ public final class RepairScheduleResource {
    */
   @GET
   @Path("/{id}")
+  @RolesAllowed({"user", "operator"})
   public Response getRepairSchedule(@PathParam("id") UUID repairScheduleId) {
     LOG.debug("get repair_schedule called with: id = {}", repairScheduleId);
     Optional<RepairSchedule> repairSchedule =
@@ -621,6 +625,7 @@ public final class RepairScheduleResource {
    */
   @POST
   @Path("/start/{id}")
+  @RolesAllowed({"operator"})
   public Response startRepairSchedule(@PathParam("id") UUID repairScheduleId) {
     LOG.debug("start repair_schedule called with: id = {}", repairScheduleId);
     Optional<RepairSchedule> repairSchedule =
@@ -644,6 +649,7 @@ public final class RepairScheduleResource {
    */
   @GET
   @Path("/cluster/{cluster_name}")
+  @RolesAllowed({"user", "operator"})
   public Response getRepairSchedulesForCluster(@PathParam("cluster_name") String clusterName) {
     LOG.debug("get repair schedules for cluster called with: cluster_name = {}", clusterName);
     Collection<RepairSchedule> repairSchedules =
@@ -672,6 +678,7 @@ public final class RepairScheduleResource {
    * @return All schedules in the system.
    */
   @GET
+  @RolesAllowed({"user", "operator"})
   public Response listSchedules(
       @QueryParam("clusterName") Optional<String> clusterName,
       @QueryParam("keyspace") Optional<String> keyspaceName) {
@@ -719,6 +726,7 @@ public final class RepairScheduleResource {
    */
   @DELETE
   @Path("/{id}")
+  @RolesAllowed({"operator"})
   public Response deleteRepairSchedule(
       @PathParam("id") UUID repairScheduleId, @QueryParam("owner") Optional<String> owner) {
 
@@ -772,6 +780,7 @@ public final class RepairScheduleResource {
 
   @GET
   @Path("/{clusterName}/{id}/percent_repaired")
+  @RolesAllowed({"user", "operator"})
   public List<PercentRepairedMetric> getPercentRepairedMetricsForSchedule(
       @PathParam("clusterName") String clusterName, @PathParam("id") UUID repairScheduleId)
       throws IllegalArgumentException {

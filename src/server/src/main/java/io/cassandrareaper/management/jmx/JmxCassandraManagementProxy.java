@@ -28,7 +28,6 @@ import io.cassandrareaper.service.RingRange;
 
 import java.io.IOException;
 import java.io.Serializable;
-import java.lang.reflect.UndeclaredThrowableException;
 import java.math.BigInteger;
 import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
@@ -77,17 +76,15 @@ import javax.rmi.ssl.SslRMIClientSocketFactory;
 import javax.security.auth.callback.NameCallback;
 import javax.security.auth.callback.PasswordCallback;
 import javax.security.auth.callback.UnsupportedCallbackException;
-import javax.validation.constraints.NotNull;
 
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.MetricRegistry;
 import com.datastax.oss.driver.api.core.addresstranslation.AddressTranslator;
 import com.google.common.base.Preconditions;
-import com.google.common.collect.BiMap;
-import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.net.HostAndPort;
+import jakarta.validation.constraints.NotNull;
 import org.apache.cassandra.db.ColumnFamilyStoreMBean;
 import org.apache.cassandra.db.compaction.CompactionManager;
 import org.apache.cassandra.db.compaction.CompactionManagerMBean;
@@ -361,26 +358,14 @@ public final class JmxCassandraManagementProxy
   @NotNull
   @Override
   public String getLocalEndpoint() throws ReaperException {
-    String cassandraVersion = getCassandraVersion();
-    if (ICassandraManagementProxy.versionCompare(cassandraVersion, "2.1.10") >= 0) {
-      return ssProxy.getHostIdToEndpoint().get(ssProxy.getLocalHostId());
-    } else {
-      // pre-2.1.10 compatibility
-      BiMap<String, String> hostIdBiMap = ImmutableBiMap.copyOf(ssProxy.getHostIdMap());
-      String localHostId = ssProxy.getLocalHostId();
-      return hostIdBiMap.inverse().get(localHostId);
-    }
+    return ssProxy.getHostIdToEndpoint().get(ssProxy.getLocalHostId());
   }
 
   @NotNull
   @Override
   public Map<String, String> getEndpointToHostId() {
     Preconditions.checkNotNull(ssProxy, "Looks like the proxy is not connected");
-    try {
-      return ssProxy.getEndpointToHostId();
-    } catch (UndeclaredThrowableException e) {
-      return ssProxy.getHostIdMap();
-    }
+    return ssProxy.getEndpointToHostId();
   }
 
   @Override

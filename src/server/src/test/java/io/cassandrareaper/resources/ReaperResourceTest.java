@@ -22,9 +22,8 @@ import io.cassandrareaper.ReaperApplicationConfiguration.DatacenterAvailability;
 import io.cassandrareaper.service.TestRepairConfiguration;
 import io.cassandrareaper.storage.MemoryStorageFacade;
 
-import javax.ws.rs.core.Response;
-
 import com.google.common.collect.BiMap;
+import jakarta.ws.rs.core.Response;
 import junit.framework.TestCase;
 import org.eclipse.jetty.http.HttpStatus;
 import org.junit.Test;

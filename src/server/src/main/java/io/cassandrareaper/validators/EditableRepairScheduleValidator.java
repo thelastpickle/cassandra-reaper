@@ -18,8 +18,8 @@ package io.cassandrareaper.validators;
 
 import io.cassandrareaper.core.EditableRepairSchedule;
 
-import javax.validation.ConstraintValidator;
-import javax.validation.ConstraintValidatorContext;
+import jakarta.validation.ConstraintValidator;
+import jakarta.validation.ConstraintValidatorContext;
 
 public class EditableRepairScheduleValidator
     implements ConstraintValidator<ValidEditableRepairSchedule, EditableRepairSchedule> {

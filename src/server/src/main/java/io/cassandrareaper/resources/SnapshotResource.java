@@ -27,21 +27,21 @@ import io.cassandrareaper.storage.snapshot.ISnapshotDao;
 import java.util.List;
 import java.util.Map;
 
-import javax.ws.rs.DELETE;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.Response.Status;
-import javax.ws.rs.core.UriInfo;
-
 import com.google.common.base.Optional;
 import io.dropwizard.core.setup.Environment;
+import jakarta.annotation.security.RolesAllowed;
+import jakarta.ws.rs.DELETE;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response.Status;
+import jakarta.ws.rs.core.UriInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -75,6 +75,7 @@ public final class SnapshotResource {
    */
   @POST
   @Path("/cluster/{clusterName}/{host}")
+  @RolesAllowed({"operator"})
   public Response createSnapshot(
       @Context UriInfo uriInfo,
       @PathParam("clusterName") String clusterName,
@@ -130,6 +131,7 @@ public final class SnapshotResource {
    */
   @POST
   @Path("/cluster/{clusterName}")
+  @RolesAllowed({"operator"})
   public Response createSnapshotClusterWide(
       @Context UriInfo uriInfo,
       @PathParam("clusterName") String clusterName,
@@ -164,6 +166,7 @@ public final class SnapshotResource {
 
   @GET
   @Path("/cluster/{clusterName}/{host}")
+  @RolesAllowed({"user", "operator"})
   public Response listSnapshots(
       @PathParam("clusterName") String clusterName, @PathParam("host") String host) {
     try {
@@ -185,6 +188,7 @@ public final class SnapshotResource {
 
   @GET
   @Path("/cluster/{clusterName}")
+  @RolesAllowed({"user", "operator"})
   public Response listSnapshotsClusterWide(@PathParam("clusterName") String clusterName) {
     Map<String, Map<String, List<Snapshot>>> snapshots;
     try {
@@ -205,6 +209,7 @@ public final class SnapshotResource {
    */
   @DELETE
   @Path("/cluster/{clusterName}/{host}/{snapshotName}")
+  @RolesAllowed({"operator"})
   public Response clearSnapshot(
       @Context UriInfo uriInfo,
       @PathParam("clusterName") String clusterName,
@@ -250,6 +255,7 @@ public final class SnapshotResource {
    */
   @DELETE
   @Path("/cluster/{clusterName}/{snapshotName}")
+  @RolesAllowed({"operator"})
   public Response clearSnapshotClusterWide(
       @Context UriInfo uriInfo,
       @PathParam("clusterName") Optional<String> clusterName,

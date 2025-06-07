@@ -19,9 +19,9 @@ package io.cassandrareaper.resources;
 
 import java.time.Duration;
 
-import javax.servlet.ServletRequest;
-import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.HttpMethod;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.ws.rs.HttpMethod;
 
 public final class RequestUtils {
   private static boolean isCorsEnabled = false;

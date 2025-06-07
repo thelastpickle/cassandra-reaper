@@ -56,8 +56,8 @@ import org.apache.commons.lang3.StringUtils;
 import java.net.URI;
 import java.util.Optional;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
 
 import static com.google.common.base.Preconditions.checkArgument;
 ```

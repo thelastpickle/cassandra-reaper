@@ -29,14 +29,14 @@ import org.slf4j.LoggerFactory;
 @CucumberOptions(
     features = "classpath:io.cassandrareaper.acceptance/access_control.feature",
     plugin = {"pretty"})
-public final class ReaperShiroIT {
+public final class ReaperAuthenticationIT {
 
   private static final Logger LOG = LoggerFactory.getLogger(ReaperIT.class);
   private static ReaperTestJettyRunner runner;
   private static final String MEMORY_CONFIG_FILE =
       "cassandra-reaper-access-control-enabled-at.yaml";
 
-  private ReaperShiroIT() {}
+  private ReaperAuthenticationIT() {}
 
   @BeforeClass
   public static void setUp() throws Exception {

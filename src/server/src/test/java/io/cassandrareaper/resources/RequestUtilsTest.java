@@ -17,12 +17,11 @@
 
 package io.cassandrareaper.resources;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.HttpMethod;
-
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.ws.rs.HttpMethod;
 import org.assertj.core.api.Assertions;
 import org.junit.Test;
 

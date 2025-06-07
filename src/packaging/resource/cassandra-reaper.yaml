@@ -126,6 +126,20 @@ autoScheduling:
 # Authentication is enabled by default
 accessControl:
   sessionTimeout: PT10M
-  shiro:
-    iniConfigs: ["classpath:shiro.ini"]
+  # JWT-based authentication configuration
+  jwt:
+    # Secret key for signing JWT tokens (should be at least 256 bits for HS256)
+    secret: "MySecretKeyForJWTWhichMustBeLongEnoughForHS256Algorithm"
+    # Token expiration time (optional, defaults to session timeout)
+    tokenExpirationTime: PT10M
+  # User store configuration
+  users:
+    # Default admin user
+    - username: "admin"
+      password: "admin"
+      roles: ["operator"]
+    # Default regular user
+    - username: "user"
+      password: "user"
+      roles: ["user"]
 

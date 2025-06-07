@@ -51,7 +51,6 @@ import java.util.stream.Collectors;
 import javax.management.Notification;
 import javax.management.ReflectionException;
 import javax.management.remote.JMXConnectionNotification;
-import javax.ws.rs.core.MediaType;
 
 import com.codahale.metrics.InstrumentedScheduledExecutorService;
 import com.fasterxml.jackson.core.JsonFactory;
@@ -61,6 +60,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.MultimapBuilder;
 import com.google.common.collect.SetMultimap;
+import jakarta.ws.rs.core.MediaType;
 import org.apache.hc.client5.http.classic.methods.HttpPost;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;

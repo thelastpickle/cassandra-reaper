@@ -32,9 +32,9 @@ import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
 import javax.management.JMException;
-import javax.validation.constraints.NotNull;
 
 import com.datastax.oss.driver.api.core.Version;
+import jakarta.validation.constraints.NotNull;
 import org.apache.cassandra.repair.RepairParallelism;
 
 public interface ICassandraManagementProxy {
