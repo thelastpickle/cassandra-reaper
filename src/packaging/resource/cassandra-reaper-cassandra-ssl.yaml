@@ -157,6 +157,22 @@ autoScheduling:
 
 # Authentication is enabled by default
 accessControl:
+  enabled: ${REAPER_AUTH_ENABLED:-true}
   sessionTimeout: PT10M
-  shiro:
-    iniConfigs: ["classpath:shiro.ini"]
+  # JWT-based authentication configuration
+  jwt:
+    # Secret key for signing JWT tokens (should be at least 256 bits for HS256)
+    # Use environment variable in production: ${JWT_SECRET:-defaultValue}
+    secret: "${JWT_SECRET:-MySecretKeyForJWTWhichMustBeLongEnoughForHS256Algorithm}"
+    # Token expiration time (optional, defaults to session timeout)
+    tokenExpirationTime: "${JWT_TOKEN_EXPIRATION:-PT10M}"
+  # User store configuration
+  users:
+    # Default admin user (use env vars in production)
+    - username: "${REAPER_AUTH_USER:-admin}"
+      password: "${REAPER_AUTH_PASSWORD:-admin}"
+      roles: ["operator"]
+    # Default regular user (use env vars in production)
+    - username: "${REAPER_READ_USER:-user}"
+      password: "${REAPER_READ_USER_PASSWORD:-user}"
+      roles: ["user"]

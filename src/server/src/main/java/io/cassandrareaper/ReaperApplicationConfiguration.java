@@ -747,9 +747,18 @@ public final class ReaperApplicationConfiguration extends Configuration {
   }
 
   public static final class AccessControlConfiguration {
+    @JsonProperty private Boolean enabled = true;
     @JsonProperty private Duration sessionTimeout;
     @JsonProperty private JwtConfiguration jwt;
     @JsonProperty private List<UserConfiguration> users = Collections.emptyList();
+
+    public Boolean isEnabled() {
+      return enabled;
+    }
+
+    public void setEnabled(Boolean enabled) {
+      this.enabled = enabled;
+    }
 
     public Duration getSessionTimeout() {
       return sessionTimeout != null ? sessionTimeout : Duration.ofMinutes(10);

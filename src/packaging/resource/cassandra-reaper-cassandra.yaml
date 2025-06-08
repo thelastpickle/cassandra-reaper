@@ -156,6 +156,7 @@ autoScheduling:
 
 # Authentication is enabled by default
 accessControl:
+  enabled: ${REAPER_AUTH_ENABLED:-true}
   sessionTimeout: PT10M
   # JWT-based authentication configuration
   jwt:
@@ -167,10 +168,10 @@ accessControl:
   # User store configuration
   users:
     # Default admin user (use env vars in production)
-    - username: "${REAPER_ADMIN_USER:-admin}"
-      password: "${REAPER_ADMIN_PASSWORD:-admin}"
+    - username: "${REAPER_AUTH_USER:-admin}"
+      password: "${REAPER_AUTH_PASSWORD:-admin}"
       roles: ["operator"]
     # Default regular user (use env vars in production)
-    - username: "${REAPER_USER:-user}"
-      password: "${REAPER_USER_PASSWORD:-user}"
+    - username: "${REAPER_READ_USER:-user}"
+      password: "${REAPER_READ_USER_PASSWORD:-user}"
       roles: ["user"]

@@ -167,20 +167,6 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
     // Using UTC times everywhere as default. Affects only Yoda time.
     DateTimeZone.setDefault(DateTimeZone.UTC);
 
-    LOG.info(
-        "CONFIGURATION DEBUG: AccessControl config is: {}",
-        config.getAccessControl() != null ? "PRESENT" : "NULL");
-    if (config.getAccessControl() != null) {
-      LOG.info(
-          "CONFIGURATION DEBUG: JWT config is: {}",
-          config.getAccessControl().getJwt() != null ? "PRESENT" : "NULL");
-      LOG.info(
-          "CONFIGURATION DEBUG: Users config has {} users",
-          config.getAccessControl().getUsers() != null
-              ? config.getAccessControl().getUsers().size()
-              : 0);
-    }
-
     checkConfiguration(config);
     context.config = config;
     context.metricRegistry = environment.metrics();
@@ -283,7 +269,7 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
       environment.jersey().register(diagEvents);
     }
 
-    if (config.getAccessControl() != null) {
+    if (config.getAccessControl() != null && config.getAccessControl().isEnabled()) {
       LOG.info("ACCESS CONTROL: Setting up authentication - accessControl config found");
       SessionHandler sessionHandler = new SessionHandler();
       environment.getApplicationContext().setSessionHandler(sessionHandler);
