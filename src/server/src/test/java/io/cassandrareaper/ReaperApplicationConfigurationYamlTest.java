@@ -41,37 +41,35 @@ public final class ReaperApplicationConfigurationYamlTest {
   public void testAccessControlConfigurationFromYaml() throws Exception {
     String yamlConfig =
         "accessControl:\n"
+            + "  enabled: true\n"
             + "  sessionTimeout: PT15M\n"
             + "  jwt:\n"
-            + "    secret: 'test-jwt-secret-key'\n"
-            + "    tokenExpirationTime: PT30M\n"
+            + "    secret: 'MySecretKeyForJWTWhichMustBeLongEnoughForHS256Algorithm'\n"
             + "  users:\n"
             + "    - username: 'admin'\n"
-            + "      password: 'admin123'\n"
+            + "      password: 'admin'\n"
             + "      roles: ['operator']\n"
             + "    - username: 'user'\n"
-            + "      password: 'user123'\n"
+            + "      password: 'user'\n"
             + "      roles: ['user']";
 
     ReaperApplicationConfiguration config =
         objectMapper.readValue(yamlConfig, ReaperApplicationConfiguration.class);
 
     assertThat(config.getAccessControl()).isNotNull();
+    assertThat(config.getAccessControl().isEnabled()).isTrue();
     assertThat(config.getAccessControl().getSessionTimeout()).isEqualTo(Duration.ofMinutes(15));
 
     assertThat(config.getAccessControl().getJwt()).isNotNull();
-    assertThat(config.getAccessControl().getJwt().getSecret()).isEqualTo("test-jwt-secret-key");
-    assertThat(config.getAccessControl().getJwt().getTokenExpirationTime())
-        .isEqualTo(Duration.ofMinutes(30));
+    assertThat(config.getAccessControl().getJwt().getSecret())
+        .isEqualTo("MySecretKeyForJWTWhichMustBeLongEnoughForHS256Algorithm");
 
     assertThat(config.getAccessControl().getUsers()).hasSize(2);
-
     assertThat(config.getAccessControl().getUsers().get(0).getUsername()).isEqualTo("admin");
-    assertThat(config.getAccessControl().getUsers().get(0).getPassword()).isEqualTo("admin123");
+    assertThat(config.getAccessControl().getUsers().get(0).getPassword()).isEqualTo("admin");
     assertThat(config.getAccessControl().getUsers().get(0).getRoles()).containsExactly("operator");
-
     assertThat(config.getAccessControl().getUsers().get(1).getUsername()).isEqualTo("user");
-    assertThat(config.getAccessControl().getUsers().get(1).getPassword()).isEqualTo("user123");
+    assertThat(config.getAccessControl().getUsers().get(1).getPassword()).isEqualTo("user");
     assertThat(config.getAccessControl().getUsers().get(1).getRoles()).containsExactly("user");
   }
 
@@ -95,7 +93,6 @@ public final class ReaperApplicationConfigurationYamlTest {
 
     assertThat(config.getAccessControl().getJwt()).isNotNull();
     assertThat(config.getAccessControl().getJwt().getSecret()).isEqualTo("minimal-secret");
-    assertThat(config.getAccessControl().getJwt().getTokenExpirationTime()).isNull();
 
     assertThat(config.getAccessControl().getUsers()).hasSize(1);
     assertThat(config.getAccessControl().getUsers().get(0).getUsername()).isEqualTo("admin");
@@ -107,7 +104,6 @@ public final class ReaperApplicationConfigurationYamlTest {
         "accessControl:\n"
             + "  jwt:\n"
             + "    secret: '${JWT_SECRET:-default-secret}'\n"
-            + "    tokenExpirationTime: PT10M\n"
             + "  users:\n"
             + "    - username: '${REAPER_ADMIN_USER:-admin}'\n"
             + "      password: '${REAPER_ADMIN_PASSWORD:-admin}'\n"
@@ -123,8 +119,6 @@ public final class ReaperApplicationConfigurationYamlTest {
     assertThat(config.getAccessControl().getJwt()).isNotNull();
     assertThat(config.getAccessControl().getJwt().getSecret())
         .isEqualTo("${JWT_SECRET:-default-secret}");
-    assertThat(config.getAccessControl().getJwt().getTokenExpirationTime())
-        .isEqualTo(Duration.ofMinutes(10));
     assertThat(config.getAccessControl().getUsers()).hasSize(2);
     assertThat(config.getAccessControl().getUsers().get(0).getUsername())
         .isEqualTo("${REAPER_ADMIN_USER:-admin}");
@@ -138,7 +132,6 @@ public final class ReaperApplicationConfigurationYamlTest {
         "accessControl:\n"
             + "  jwt:\n"
             + "    secret: 'production-jwt-secret-key'\n"
-            + "    tokenExpirationTime: PT1H\n"
             + "  users:\n"
             + "    - username: 'prodadmin'\n"
             + "      password: 'secure-admin-password'\n"
@@ -154,8 +147,6 @@ public final class ReaperApplicationConfigurationYamlTest {
     assertThat(config.getAccessControl().getJwt()).isNotNull();
     assertThat(config.getAccessControl().getJwt().getSecret())
         .isEqualTo("production-jwt-secret-key");
-    assertThat(config.getAccessControl().getJwt().getTokenExpirationTime())
-        .isEqualTo(Duration.ofHours(1));
     assertThat(config.getAccessControl().getUsers()).hasSize(2);
     assertThat(config.getAccessControl().getUsers().get(0).getUsername()).isEqualTo("prodadmin");
     assertThat(config.getAccessControl().getUsers().get(0).getPassword())
@@ -188,11 +179,7 @@ public final class ReaperApplicationConfigurationYamlTest {
 
   @Test
   public void testJwtOnlyConfiguration() throws Exception {
-    String yamlConfig =
-        "accessControl:\n"
-            + "  jwt:\n"
-            + "    secret: 'jwt-only-secret'\n"
-            + "    tokenExpirationTime: PT1H";
+    String yamlConfig = "accessControl:\n" + "  jwt:\n" + "    secret: 'jwt-only-secret'";
 
     ReaperApplicationConfiguration config =
         objectMapper.readValue(yamlConfig, ReaperApplicationConfiguration.class);
@@ -200,8 +187,6 @@ public final class ReaperApplicationConfigurationYamlTest {
     assertThat(config.getAccessControl()).isNotNull();
     assertThat(config.getAccessControl().getJwt()).isNotNull();
     assertThat(config.getAccessControl().getJwt().getSecret()).isEqualTo("jwt-only-secret");
-    assertThat(config.getAccessControl().getJwt().getTokenExpirationTime())
-        .isEqualTo(Duration.ofHours(1));
     assertThat(config.getAccessControl().getUsers()).isEmpty();
   }
 

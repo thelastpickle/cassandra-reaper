@@ -787,7 +787,6 @@ public final class ReaperApplicationConfiguration extends Configuration {
 
   public static final class JwtConfiguration {
     @JsonProperty private String secret;
-    @JsonProperty private Duration tokenExpirationTime;
 
     public String getSecret() {
       return secret;
@@ -795,14 +794,6 @@ public final class ReaperApplicationConfiguration extends Configuration {
 
     public void setSecret(String secret) {
       this.secret = secret;
-    }
-
-    public Duration getTokenExpirationTime() {
-      return tokenExpirationTime;
-    }
-
-    public void setTokenExpirationTime(Duration tokenExpirationTime) {
-      this.tokenExpirationTime = tokenExpirationTime;
     }
   }
 

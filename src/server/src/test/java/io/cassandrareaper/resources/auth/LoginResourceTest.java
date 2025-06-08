@@ -21,8 +21,15 @@ import io.cassandrareaper.auth.AuthLoginResource;
 import io.cassandrareaper.auth.User;
 import io.cassandrareaper.auth.UserStore;
 
+import java.time.Duration;
+import java.time.Instant;
+import java.util.Date;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.security.Keys;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -84,5 +91,79 @@ public final class LoginResourceTest {
   public void testLoginFailure() {
     // Test failed login
     loginResource.login("admin", "wrong_password", false);
+  }
+
+  @Test
+  public void testJwtTokenWithConfiguredExpirationTime() {
+    // Use sessionTimeout directly - no JWT config needed
+    Duration sessionTimeout = Duration.ofMinutes(5);
+
+    // Create login resource with custom session timeout
+    AuthLoginResource customLoginResource =
+        new AuthLoginResource(userStore, JWT_SECRET, null, sessionTimeout);
+
+    // Perform login
+    Instant beforeLogin = Instant.now();
+    AuthLoginResource.LoginResponse response = customLoginResource.login("admin", "admin", false);
+    Instant afterLogin = Instant.now();
+
+    // Verify token was created
+    assertThat(response).isNotNull();
+    assertThat(response.getToken()).isNotNull();
+
+    // Parse the JWT token to verify expiration time
+    Claims claims =
+        Jwts.parser()
+            .verifyWith(Keys.hmacShaKeyFor(JWT_SECRET.getBytes()))
+            .build()
+            .parseSignedClaims(response.getToken())
+            .getPayload();
+
+    Date expirationDate = claims.getExpiration();
+    Instant expiration = expirationDate.toInstant();
+
+    // The token should expire approximately 5 minutes after login (with some tolerance)
+    Duration expectedExpiration = Duration.ofMinutes(5);
+    Instant expectedExpiry = beforeLogin.plus(expectedExpiration).minusSeconds(1);
+    Instant expectedExpiryEnd = afterLogin.plus(expectedExpiration).plusSeconds(1);
+
+    assertThat(expiration).isBetween(expectedExpiry, expectedExpiryEnd);
+  }
+
+  @Test
+  public void testJwtTokenWithRememberMeIgnoresConfiguration() {
+    // Use sessionTimeout directly - no JWT config needed
+    Duration sessionTimeout = Duration.ofMinutes(5);
+
+    // Create login resource with custom session timeout
+    AuthLoginResource customLoginResource =
+        new AuthLoginResource(userStore, JWT_SECRET, null, sessionTimeout);
+
+    // Perform login with rememberMe=true
+    Instant beforeLogin = Instant.now();
+    AuthLoginResource.LoginResponse response = customLoginResource.login("admin", "admin", true);
+    Instant afterLogin = Instant.now();
+
+    // Verify token was created
+    assertThat(response).isNotNull();
+    assertThat(response.getToken()).isNotNull();
+
+    // Parse the JWT token to verify expiration time
+    Claims claims =
+        Jwts.parser()
+            .verifyWith(Keys.hmacShaKeyFor(JWT_SECRET.getBytes()))
+            .build()
+            .parseSignedClaims(response.getToken())
+            .getPayload();
+
+    Date expirationDate = claims.getExpiration();
+    Instant expiration = expirationDate.toInstant();
+
+    // With rememberMe=true, token should expire in 30 days regardless of configuration
+    Duration expectedExpiration = Duration.ofDays(30);
+    Instant expectedExpiry = beforeLogin.plus(expectedExpiration).minusSeconds(1);
+    Instant expectedExpiryEnd = afterLogin.plus(expectedExpiration).plusSeconds(1);
+
+    assertThat(expiration).isBetween(expectedExpiry, expectedExpiryEnd);
   }
 }

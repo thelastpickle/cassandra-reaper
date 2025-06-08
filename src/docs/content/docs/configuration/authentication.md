@@ -26,10 +26,9 @@ Authentication is configured in the `accessControl` section of your YAML configu
 ```yaml
 accessControl:
   enabled: true                    # Enable/disable authentication
-  sessionTimeout: PT10M            # Session timeout (ISO 8601 duration)
+  sessionTimeout: PT10M            # Session/token timeout (ISO 8601 duration)
   jwt:
     secret: "your-jwt-secret-key"  # JWT signing secret (minimum 256 bits for HS256)
-    tokenExpirationTime: PT10M     # JWT token expiration (defaults to sessionTimeout)
   users:
     - username: "admin"            # REQUIRED: Must not be empty
       password: "secure-password"  # REQUIRED: Must not be empty
@@ -51,18 +50,13 @@ accessControl:
 #### `sessionTimeout`
 - **Type**: ISO 8601 Duration
 - **Default**: `PT10M` (10 minutes)
-- **Description**: Session timeout for WebUI authentication
+- **Description**: Session timeout that applies to both WebUI authentication and JWT token expiration. This is the primary timeout setting.
 
 #### `jwt.secret`
 - **Type**: String
 - **Required**: Yes (when JWT is used)
 - **Description**: Secret key for signing JWT tokens. Must be at least 256 bits (32 characters) for HS256 algorithm
 - **Security**: Use a cryptographically strong random string in production
-
-#### `jwt.tokenExpirationTime`
-- **Type**: ISO 8601 Duration
-- **Default**: Same as `sessionTimeout`
-- **Description**: JWT token expiration time
 
 #### `users`
 - **Type**: Array of user objects
@@ -81,6 +75,27 @@ Reaper validates all user configurations on startup and will **fail to start** i
 - Any user has no roles assigned
 
 This ensures that weak or incomplete authentication configurations are caught early.
+
+## Conditional User Configuration
+
+Reaper supports conditional configuration of additional users through environment variables and Docker configuration scripts. This approach allows you to:
+
+- **Always configure the primary admin user** via `REAPER_AUTH_USER` and `REAPER_AUTH_PASSWORD` (required)
+- **Optionally configure a read-only user** by setting both `REAPER_READ_USER` and `REAPER_READ_USER_PASSWORD` environment variables
+
+### How It Works
+
+The read-only user is configured dynamically at container startup:
+
+1. If both `REAPER_READ_USER` and `REAPER_READ_USER_PASSWORD` are set to non-empty values, a read-only user with the `["user"]` role is automatically added to the configuration
+2. If either variable is empty or unset, no read-only user is configured
+3. This prevents environment variable resolution errors while maintaining security
+
+### Benefits
+
+- **No mandatory unused environment variables**: You don't need to set empty values for unused users
+- **Flexible deployment**: Same Docker image can be used with or without read-only users
+- **Security by default**: Empty or missing credentials don't create weak authentication points
 
 ## User Roles
 
@@ -108,14 +123,12 @@ accessControl:
   sessionTimeout: ${REAPER_SESSION_TIMEOUT:-PT10M}
   jwt:
     secret: "${JWT_SECRET:-MySecretKeyForJWTWhichMustBeLongEnoughForHS256Algorithm}"
-    tokenExpirationTime: "${JWT_TOKEN_EXPIRATION:-PT10M}"
   users:
-    - username: "${REAPER_AUTH_USER:-admin}"
-      password: "${REAPER_AUTH_PASSWORD:-admin}"
+    - username: "${REAPER_AUTH_USER}"
+      password: "${REAPER_AUTH_PASSWORD}"
       roles: ["operator"]
-    - username: "${REAPER_READ_USER:-user}"
-      password: "${REAPER_READ_USER_PASSWORD:-user}"
-      roles: ["user"]
+    # Additional read-only user is configured automatically if REAPER_READ_USER
+    # and REAPER_READ_USER_PASSWORD environment variables are set
 ```
 
 ## Docker Configuration
@@ -130,13 +143,12 @@ REAPER_AUTH_ENABLED=true
 
 # JWT Configuration
 JWT_SECRET="your-production-jwt-secret-key-here"
-JWT_TOKEN_EXPIRATION="PT1H"
 
 # Admin user credentials - REQUIRED when authentication is enabled
 REAPER_AUTH_USER="admin"
 REAPER_AUTH_PASSWORD="your-secure-admin-password-here"
 
-# Read-only user credentials - OPTIONAL
+# Read-only user credentials - OPTIONAL (only configured if both are set)
 REAPER_READ_USER="monitoring"
 REAPER_READ_USER_PASSWORD="your-secure-monitoring-password-here"
 
@@ -144,7 +156,7 @@ REAPER_READ_USER_PASSWORD="your-secure-monitoring-password-here"
 REAPER_SESSION_TIMEOUT="PT30M"
 ```
 
-> **⚠️ Important**: You **must** set `REAPER_AUTH_PASSWORD` and any other password environment variables, or Reaper will fail to start. Never leave passwords empty or use default values.
+> **⚠️ Important**: You **must** set `REAPER_AUTH_USER` and `REAPER_AUTH_PASSWORD`, or Reaper will fail to start. The read-only user (`REAPER_READ_USER` and `REAPER_READ_USER_PASSWORD`) is optional - it will only be configured if both environment variables are set to non-empty values.
 
 ### Docker Compose Example
 
@@ -161,13 +173,14 @@ services:
       # Authentication
       REAPER_AUTH_ENABLED: "true"
       JWT_SECRET: "MyProductionJWTSecretKeyThatIsLongEnoughForHS256"
-      JWT_TOKEN_EXPIRATION: "PT1H"
       
-             # User credentials - CHANGE THESE!
-       REAPER_AUTH_USER: "admin"
-       REAPER_AUTH_PASSWORD: "change-this-secure-password"
-       REAPER_READ_USER: "monitoring"
-       REAPER_READ_USER_PASSWORD: "change-this-monitoring-password"
+                   # User credentials - CHANGE THESE!
+      REAPER_AUTH_USER: "admin"
+      REAPER_AUTH_PASSWORD: "change-this-secure-password"
+      
+      # Optional read-only user (remove these lines to disable)
+      REAPER_READ_USER: "monitoring"
+      REAPER_READ_USER_PASSWORD: "change-this-monitoring-password"
       
       # Session configuration
       REAPER_SESSION_TIMEOUT: "PT30M"
@@ -179,202 +192,3 @@ services:
     depends_on:
       - cassandra
 ```
-
-### Kubernetes Deployment
-
-```yaml
-apiVersion: v1
-kind: Secret
-metadata:
-  name: reaper-auth-secret
-type: Opaque
-stringData:
-  jwt-secret: "your-production-jwt-secret-key"
-  admin-password: "your-secure-admin-password" 
-  user-password: "your-secure-monitoring-password"
-
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: cassandra-reaper
-spec:
-  template:
-    spec:
-      containers:
-      - name: reaper
-        image: cassandra-reaper:latest
-        env:
-        - name: REAPER_AUTH_ENABLED
-          value: "true"
-        - name: JWT_SECRET
-          valueFrom:
-            secretKeyRef:
-              name: reaper-auth-secret
-              key: jwt-secret
-        - name: REAPER_AUTH_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: reaper-auth-secret
-              key: admin-password
-        - name: REAPER_READ_USER_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: reaper-auth-secret
-              key: user-password
-```
-
-## API Authentication
-
-### REST API Access
-
-The REST API supports both JWT and Basic Authentication:
-
-#### JWT Authentication (Recommended)
-
-1. **Login to get JWT token**:
-   ```bash
-   curl -X POST http://localhost:8080/login \
-     -H "Content-Type: application/x-www-form-urlencoded" \
-     -d "username=admin&password=admin"
-   ```
-
-   Response:
-   ```json
-   {
-     "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-     "user": "admin",
-     "roles": ["operator"]
-   }
-   ```
-
-2. **Use JWT token in API calls**:
-   ```bash
-   curl -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \
-     http://localhost:8080/cluster
-   ```
-
-#### Basic Authentication
-
-```bash
-curl -u admin:admin http://localhost:8080/cluster
-```
-
-### Command Line Tool (`spreaper`)
-
-When authentication is enabled, use the login command:
-
-```bash
-# Login and save JWT token
-./spreaper login admin
-Password: *****
-# Logging in...
-You are now authenticated to Reaper.
-# JWT saved
-
-# Use saved token for subsequent commands
-./spreaper cluster list
-
-# Or provide token directly
-./spreaper --jwt <token> cluster list
-```
-
-The JWT token is saved in `~/.reaper/jwt` and automatically used for subsequent calls.
-
-## Web UI Authentication
-
-The web UI is protected by a servlet filter that:
-
-1. **Redirects unauthenticated users** to `/webui/login.html`
-2. **Validates JWT tokens** from:
-   - `Authorization: Bearer <token>` header (for AJAX requests)
-   - `jwtToken` cookie (for browser navigation)
-3. **Allows unrestricted access** to:
-   - Login page (`/webui/login.html`)
-   - Static assets (CSS, JS, images)
-
-### Login Process
-
-1. Navigate to `http://localhost:8080/webui/`
-2. You'll be redirected to the login page
-3. Enter your credentials
-4. Upon successful login, you'll receive a JWT token
-5. The token is stored in browser session storage
-6. All subsequent requests include the token
-
-## Security Considerations
-
-### Production Deployment
-
-1. **Change default credentials** immediately
-2. **Use strong JWT secret** (minimum 256 bits, cryptographically random)
-3. **Use environment variables** for sensitive configuration
-4. **Enable HTTPS** for production deployments
-5. **Set appropriate token expiration** times
-6. **Regularly rotate JWT secrets** and passwords
-
-### JWT Secret Generation
-
-Generate a secure JWT secret:
-
-```bash
-# Generate 32-byte (256-bit) random secret
-openssl rand -base64 32
-
-# Or use a UUID-based approach
-uuidgen | tr -d '-' | head -c 32
-```
-
-### Password Security
-
-Currently, passwords are stored in plain text in the configuration. For enhanced security:
-
-1. Use strong, unique passwords
-2. Limit access to configuration files
-3. Use environment variables in containerized deployments
-4. Consider external secret management systems
-
-## Troubleshooting
-
-### Common Issues
-
-1. **Authentication disabled but still prompted for login**:
-   - Ensure `accessControl.enabled: false` in configuration
-   - Restart Reaper after configuration changes
-
-2. **JWT token expired**:
-   - Re-login to get a new token
-   - Check `tokenExpirationTime` configuration
-
-3. **Invalid JWT secret**:
-   - Ensure secret is at least 32 characters long
-   - Use the same secret across all Reaper instances
-
-4. **Docker environment variables not working**:
-   - Verify environment variable names match exactly
-   - Use quotes around values containing special characters
-
-### Debug Logging
-
-Enable debug logging for authentication:
-
-```yaml
-logging:
-  level: INFO
-  loggers:
-    io.cassandrareaper.auth: DEBUG
-```
-
-This will log authentication attempts, token validation, and authorization decisions.
-
-## Migration from Shiro
-
-If you're migrating from a Shiro-based authentication setup:
-
-1. **Remove Shiro configuration** from your YAML file
-2. **Replace with Dropwizard `accessControl` section**
-3. **Update user definitions** to use the new format
-4. **Replace `shiro.ini` file references** with inline user configuration
-5. **Update any custom authentication integrations** to use JWT/Basic Auth
-
-The new system provides equivalent functionality with modern standards and better Docker/Kubernetes integration.

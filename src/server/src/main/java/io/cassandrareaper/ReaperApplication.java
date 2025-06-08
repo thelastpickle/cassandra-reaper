@@ -362,7 +362,14 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
       environment.jersey().register(new AuthValueFactoryProvider.Binder<>(User.class));
 
       // Register login resource
-      environment.jersey().register(new AuthLoginResource(userStore, jwtSecret));
+      environment
+          .jersey()
+          .register(
+              new AuthLoginResource(
+                  userStore,
+                  jwtSecret,
+                  config.getAccessControl().getJwt(),
+                  config.getAccessControl().getSessionTimeout()));
 
       // Add WebUI authentication filter to protect /webui/* paths
       FilterRegistration.Dynamic webuiFilter =

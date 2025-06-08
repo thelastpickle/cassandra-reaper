@@ -17,7 +17,10 @@
 
 package io.cassandrareaper.auth;
 
+import io.cassandrareaper.ReaperApplicationConfiguration;
+
 import java.security.Key;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
@@ -43,10 +46,24 @@ public class AuthLoginResource {
 
   private final UserStore userStore;
   private final Key jwtKey;
+  private final Duration tokenExpirationTime;
 
   public AuthLoginResource(UserStore userStore, String jwtSecret) {
+    this(userStore, jwtSecret, null, null);
+  }
+
+  public AuthLoginResource(
+      UserStore userStore,
+      String jwtSecret,
+      ReaperApplicationConfiguration.JwtConfiguration jwtConfig,
+      Duration sessionTimeout) {
     this.userStore = userStore;
     this.jwtKey = Keys.hmacShaKeyFor(jwtSecret.getBytes());
+
+    // Use sessionTimeout as the single source of truth for JWT token expiration
+    this.tokenExpirationTime = sessionTimeout != null ? sessionTimeout : Duration.ofMinutes(10);
+
+    LOG.info("JWT token expiration time set to: {}", this.tokenExpirationTime);
   }
 
   @Path("/login")
@@ -77,9 +94,17 @@ public class AuthLoginResource {
       throw new WebApplicationException("User not found", Response.Status.UNAUTHORIZED);
     }
 
-    // Generate JWT token
+    // Generate JWT token using configured expiration time
     Instant now = Instant.now();
-    Instant expiry = rememberMe ? now.plus(30, ChronoUnit.DAYS) : now.plus(8, ChronoUnit.HOURS);
+    Instant expiry;
+
+    if (rememberMe) {
+      // For "remember me", use 30 days as a reasonable default
+      expiry = now.plus(30, ChronoUnit.DAYS);
+    } else {
+      // Use the configured token expiration time
+      expiry = now.plus(tokenExpirationTime.toMillis(), ChronoUnit.MILLIS);
+    }
 
     String token =
         Jwts.builder()
@@ -90,7 +115,7 @@ public class AuthLoginResource {
             .signWith(jwtKey)
             .compact();
 
-    LOG.info("User {} logged in successfully", username);
+    LOG.info("User {} logged in successfully with token expiry: {}", username, expiry);
     return new LoginResponse(token, user.getName(), user.getRoles());
   }
 

@@ -164,8 +164,6 @@ accessControl:
     # Secret key for signing JWT tokens (should be at least 256 bits for HS256)
     # Use environment variable in production: ${JWT_SECRET:-defaultValue}
     secret: "${JWT_SECRET:-MySecretKeyForJWTWhichMustBeLongEnoughForHS256Algorithm}"
-    # Token expiration time (optional, defaults to session timeout)
-    tokenExpirationTime: "${JWT_TOKEN_EXPIRATION:-PT10M}"
   # User store configuration
   # IMPORTANT: Configure your users below. Authentication will fail if no users are configured.
   # Never use default passwords in production - always set REAPER_AUTH_PASSWORD and other env vars!

@@ -102,7 +102,6 @@ public final class ReaperApplicationConfigurationTest {
     ReaperApplicationConfiguration.JwtConfiguration jwt =
         new ReaperApplicationConfiguration.JwtConfiguration();
     jwt.setSecret("test-secret-key-for-jwt-that-is-long-enough");
-    jwt.setTokenExpirationTime(Duration.ofMinutes(30));
     accessControl.setJwt(jwt);
 
     ReaperApplicationConfiguration.UserConfiguration user1 =
@@ -127,8 +126,6 @@ public final class ReaperApplicationConfigurationTest {
     assertThat(config.getAccessControl().getJwt()).isNotNull();
     assertThat(config.getAccessControl().getJwt().getSecret())
         .isEqualTo("test-secret-key-for-jwt-that-is-long-enough");
-    assertThat(config.getAccessControl().getJwt().getTokenExpirationTime())
-        .isEqualTo(Duration.ofMinutes(30));
     assertThat(config.getAccessControl().getUsers()).hasSize(2);
     assertThat(config.getAccessControl().getUsers().get(0).getUsername()).isEqualTo("admin");
     assertThat(config.getAccessControl().getUsers().get(0).getRoles()).containsExactly("operator");
@@ -152,16 +149,13 @@ public final class ReaperApplicationConfigurationTest {
     ReaperApplicationConfiguration.JwtConfiguration jwt =
         new ReaperApplicationConfiguration.JwtConfiguration();
 
-    // Test initial null values
+    // Test initial values
     assertThat(jwt.getSecret()).isNull();
-    assertThat(jwt.getTokenExpirationTime()).isNull();
 
     // Test setting values
-    jwt.setSecret("my-jwt-secret");
-    jwt.setTokenExpirationTime(Duration.ofHours(1));
+    jwt.setSecret("test-secret");
 
-    assertThat(jwt.getSecret()).isEqualTo("my-jwt-secret");
-    assertThat(jwt.getTokenExpirationTime()).isEqualTo(Duration.ofHours(1));
+    assertThat(jwt.getSecret()).isEqualTo("test-secret");
   }
 
   @Test
@@ -217,7 +211,6 @@ public final class ReaperApplicationConfigurationTest {
     ReaperApplicationConfiguration.JwtConfiguration jwt =
         new ReaperApplicationConfiguration.JwtConfiguration();
     jwt.setSecret("valid-jwt-secret-key");
-    jwt.setTokenExpirationTime(Duration.ofMinutes(60));
     accessControl.setJwt(jwt);
 
     ReaperApplicationConfiguration.UserConfiguration adminUser =
