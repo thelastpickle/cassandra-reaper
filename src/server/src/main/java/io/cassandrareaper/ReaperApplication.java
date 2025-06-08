@@ -279,12 +279,35 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
       UserStore userStore = new UserStore();
 
       // Add users from configuration
-      if (config.getAccessControl().getUsers() != null) {
+      if (config.getAccessControl().getUsers() != null
+          && !config.getAccessControl().getUsers().isEmpty()) {
         LOG.info(
             "ACCESS CONTROL: Adding {} users from configuration",
             config.getAccessControl().getUsers().size());
+
+        // Validate all users have required fields
         for (ReaperApplicationConfiguration.UserConfiguration userConfig :
             config.getAccessControl().getUsers()) {
+
+          if (userConfig.getUsername() == null || userConfig.getUsername().trim().isEmpty()) {
+            throw new IllegalArgumentException(
+                "ACCESS CONTROL: User configuration missing username. All users must have a non-empty username.");
+          }
+
+          if (userConfig.getPassword() == null || userConfig.getPassword().trim().isEmpty()) {
+            throw new IllegalArgumentException(
+                String.format(
+                    "ACCESS CONTROL: User '%s' is missing password. All users must have a non-empty password for security reasons.",
+                    userConfig.getUsername()));
+          }
+
+          if (userConfig.getRoles() == null || userConfig.getRoles().isEmpty()) {
+            throw new IllegalArgumentException(
+                String.format(
+                    "ACCESS CONTROL: User '%s' has no roles assigned. All users must have at least one role ('user' or 'operator').",
+                    userConfig.getUsername()));
+          }
+
           userStore.addUser(
               userConfig.getUsername(),
               userConfig.getPassword(),
@@ -295,7 +318,9 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
               userConfig.getRoles());
         }
       } else {
-        LOG.info("ACCESS CONTROL: No users found in configuration");
+        throw new IllegalArgumentException(
+            "ACCESS CONTROL: Authentication is enabled but no users are configured. "
+                + "Please configure at least one user in the 'accessControl.users' section or disable authentication by setting 'accessControl.enabled: false'.");
       }
 
       String jwtSecret =

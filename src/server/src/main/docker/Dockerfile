@@ -94,7 +94,6 @@ RUN apk add --update \
   && rm -rf /var/cache/apk/*
 
 ADD src/server/src/main/docker/cassandra-reaper.yml /etc/cassandra-reaper/cassandra-reaper.yml
-ADD src/server/src/main/docker/shiro.ini /etc/cassandra-reaper/shiro.ini
 ADD src/server/src/main/docker/entrypoint.sh /usr/local/bin/entrypoint.sh
 ADD src/server/src/main/docker/configure-persistence.sh /usr/local/bin/configure-persistence.sh
 ADD src/server/src/main/docker/configure-metrics.sh /usr/local/bin/configure-metrics.sh
@@ -115,7 +114,6 @@ RUN addgroup -g 1001 -S reaper && adduser -G reaper -S -u 1001 reaper && \
         /usr/local/bin/configure-persistence.sh \
         /usr/local/bin/configure-metrics.sh \
         /usr/local/bin/configure-jmx-credentials.sh \
-        /etc/cassandra-reaper/shiro.ini \
         ${REAPER_TMP_DIRECTORY} && \
     chown -R reaper:reaper \
         /var/lib/cassandra-reaper \

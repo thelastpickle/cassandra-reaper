@@ -17,9 +17,7 @@
 
 package io.cassandrareaper.auth;
 
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -27,11 +25,7 @@ import java.util.Set;
 public class UserStore {
   private final Map<String, UserCredentials> users = new HashMap<>();
 
-  public UserStore() {
-    // Default hardcoded users (matching current shiro.ini)
-    addUser("admin", "admin", new HashSet<>(Arrays.asList("operator")));
-    addUser("user", "user", new HashSet<>(Arrays.asList("user")));
-  }
+  public UserStore() {}
 
   public void addUser(String username, String password, Set<String> roles) {
     users.put(username, new UserCredentials(username, password, roles));

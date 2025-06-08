@@ -166,12 +166,14 @@ accessControl:
     # Token expiration time (optional, defaults to session timeout)
     tokenExpirationTime: "${JWT_TOKEN_EXPIRATION:-PT10M}"
   # User store configuration
+  # IMPORTANT: Configure your users below. Authentication will fail if no users are configured.
+  # Never use default passwords in production - always set REAPER_AUTH_PASSWORD and other env vars!
   users:
-    # Default admin user (use env vars in production)
-    - username: "${REAPER_AUTH_USER:-admin}"
-      password: "${REAPER_AUTH_PASSWORD:-admin}"
+    # Admin user - CHANGE THESE CREDENTIALS!
+    - username: "${REAPER_AUTH_USER}"
+      password: "${REAPER_AUTH_PASSWORD}"
       roles: ["operator"]
-    # Default regular user (use env vars in production)
-    - username: "${REAPER_READ_USER:-user}"
-      password: "${REAPER_READ_USER_PASSWORD:-user}"
-      roles: ["user"]
+    # Optional: Read-only user
+    # - username: "${REAPER_READ_USER}"
+    #   password: "${REAPER_READ_USER_PASSWORD}"
+    #   roles: ["user"]

@@ -39,7 +39,6 @@ if [ "$1" = 'cassandra-reaper' ]; then
 
     # get around `/usr/local/bin/configure-persistence.sh: line 65: can't create /etc/cassandra-reaper/cassandra-reaper.yml: Interrupted system call` unknown error
     cp /etc/cassandra-reaper/cassandra-reaper.yml /etc/cassandra-reaper/config/cassandra-reaper.yml
-    cp /etc/cassandra-reaper/shiro.ini /etc/cassandra-reaper/config/shiro.ini
 
     /usr/local/bin/configure-persistence.sh
     /usr/local/bin/configure-metrics.sh
@@ -57,7 +56,6 @@ if [ "$1" = 'schema-migration' ]; then
 
     # get around `/usr/local/bin/configure-persistence.sh: line 65: can't create /etc/cassandra-reaper/cassandra-reaper.yml: Interrupted system call` unknown error
     cp /etc/cassandra-reaper/cassandra-reaper.yml /etc/cassandra-reaper/config/cassandra-reaper.yml
-    cp /etc/cassandra-reaper/shiro.ini /etc/cassandra-reaper/config/shiro.ini
 
     /usr/local/bin/configure-persistence.sh
     /usr/local/bin/configure-metrics.sh

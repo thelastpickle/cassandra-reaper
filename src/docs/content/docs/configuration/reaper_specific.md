@@ -456,15 +456,26 @@ When running multi region clusters in AWS, set type to `ec2MultiRegion` in order
 
 ### `accessControl`
 
-Settings to activate and configure authentication for the web UI.
+Settings to activate and configure authentication for the web UI and REST API.
 Deleting or commenting that block from the yaml file will turn off authentication.
 
-```
+```yaml
 accessControl:
-  sessionTimeout: PT10M
-  shiro:
-    iniConfigs: ["file:/path/to/shiro.ini"]
+  enabled: true                    # Enable/disable authentication
+  sessionTimeout: PT10M            # Session timeout (ISO 8601 duration)
+  jwt:
+    secret: "your-jwt-secret-key"  # JWT signing secret (minimum 256 bits)
+    tokenExpirationTime: PT10M     # JWT token expiration
+  users:
+    - username: "admin"
+      password: "admin123"
+      roles: ["operator"]
+    - username: "user"
+      password: "user123"
+      roles: ["user"]
 ```
+
+For detailed authentication configuration and security considerations, see the [Authentication documentation](/docs/configuration/authentication/).
 
 ### `repairThreadCount`
 
