@@ -40,7 +40,6 @@ import io.cassandrareaper.resources.DiagEventSseResource;
 import io.cassandrareaper.resources.DiagEventSubscriptionResource;
 import io.cassandrareaper.resources.NodeStatsResource;
 import io.cassandrareaper.resources.PingResource;
-import io.cassandrareaper.resources.PrometheusMetricsResource;
 import io.cassandrareaper.resources.ReaperHealthCheck;
 import io.cassandrareaper.resources.ReaperResource;
 import io.cassandrareaper.resources.RepairRunResource;
@@ -83,6 +82,7 @@ import io.dropwizard.core.setup.Bootstrap;
 import io.dropwizard.core.setup.Environment;
 import io.prometheus.client.CollectorRegistry;
 import io.prometheus.client.dropwizard.DropwizardExports;
+import io.prometheus.client.servlet.jakarta.exporter.MetricsServlet;
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.FilterRegistration;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
@@ -188,7 +188,10 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
         new DropwizardExports(
             environment.metrics(), new PrometheusMetricsFilter(), getCustomSampleMethodBuilder()));
 
-    environment.jersey().register(new PrometheusMetricsResource());
+    environment
+        .admin()
+        .addServlet("prometheusMetrics", new MetricsServlet(CollectorRegistry.defaultRegistry))
+        .addMapping("/prometheusMetrics");
 
     int repairThreads = config.getRepairRunThreadCount();
     int maxParallelRepairs = config.getMaxParallelRepairs();

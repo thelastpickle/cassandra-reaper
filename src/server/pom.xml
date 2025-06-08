@@ -33,7 +33,10 @@
         <jersey.version>3.0.17</jersey.version>
         <logback.version>1.5.18</logback.version>
         <cxf.version>3.4.5</cxf.version>
-        <prometheus.version>0.12.0</prometheus.version>
+        <prometheus.version>0.16.0</prometheus.version>
+        <maven.compiler.source>11</maven.compiler.source>
+        <maven.compiler.target>11</maven.compiler.target>
+        <maven.compiler.release>11</maven.compiler.release>
         <docker.directory>src/main/docker</docker.directory>
         <timestamp>${maven.build.timestamp}</timestamp>
         <maven.build.timestamp.format>yyyy-MM-dd HH:mm:ss</maven.build.timestamp.format>
@@ -170,7 +173,7 @@
         </dependency>
         <dependency>
             <groupId>io.prometheus</groupId>
-            <artifactId>simpleclient_servlet</artifactId>
+            <artifactId>simpleclient_servlet_jakarta</artifactId>
             <version>${prometheus.version}</version>
         </dependency>
         <dependency>
@@ -369,9 +372,9 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>
-                    <release>${release.jdk}</release>
-                    <source>9</source>
-                    <target>9</target>
+                    <release>${maven.compiler.release}</release>
+                    <source>${maven.compiler.source}</source>
+                    <target>${maven.compiler.target}</target>
                     <encoding>${project.build.sourceEncoding}</encoding>
                     <optimize>true</optimize>
                     <debug>true</debug>
