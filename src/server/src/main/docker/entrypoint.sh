@@ -60,7 +60,6 @@ if [ "$1" = 'schema-migration' ]; then
     cp /etc/cassandra-reaper/shiro.ini /etc/cassandra-reaper/config/shiro.ini
 
     /usr/local/bin/configure-persistence.sh
-    /usr/local/bin/configure-webui-authentication.sh
     /usr/local/bin/configure-metrics.sh
     /usr/local/bin/configure-jmx-credentials.sh
     exec java \

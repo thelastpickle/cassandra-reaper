@@ -74,7 +74,7 @@ public class JwtAuthenticator implements Authenticator<String, User> {
         LOG.debug(
             "JWT AUTHENTICATOR: User {} found with roles: {}", username, user.get().getRoles());
       } else {
-        LOG.debug("JWT AUTHENTICATOR: User {} not found in user store", username);
+        LOG.info("JWT AUTHENTICATOR: User {} not found in user store", username);
       }
 
       return user;
