@@ -36,12 +36,15 @@ public final class LoginResourceTest {
   @Before
   public void setUp() {
     userStore = new UserStore();
+    // Add test users explicitly since we removed default users for security
+    userStore.addUser("admin", "admin", java.util.Set.of("operator"));
+    userStore.addUser("user", "user", java.util.Set.of("user"));
     loginResource = new AuthLoginResource(userStore, JWT_SECRET);
   }
 
   @Test
-  public void testUserStoreDefaultUsers() {
-    // Test that default users are loaded
+  public void testUserStoreAddedUsers() {
+    // Test that explicitly added users are available
     User adminUser = userStore.findUser("admin");
     assertThat(adminUser).isNotNull();
     assertThat(adminUser.getName()).isEqualTo("admin");
