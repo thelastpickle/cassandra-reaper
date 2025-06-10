@@ -55,7 +55,7 @@ const loginForm = CreateReactClass({
     const login = {
       username: ReactDOM.findDOMNode(this.refs.in_username).value,
       password: ReactDOM.findDOMNode(this.refs.in_password).value,
-      rememberMe: ReactDOM.findDOMNode(this.refs.in_rememberMe).value
+      rememberMe: ReactDOM.findDOMNode(this.refs.in_rememberMe).checked
     };
     this.props.loginSubject.onNext(login);
   },
@@ -89,7 +89,7 @@ const loginForm = CreateReactClass({
             <br/>
             <div className="form-group">
               <label htmlFor="in_rememberMe">Remember Me</label>
-              <input type="checkbox" className="form-control" ref="in_rememberMe" value="true"
+              <input type="checkbox" className="form-control" ref="in_rememberMe"
                     placeholder="RememberMe"/>
             </div>
             <br/>

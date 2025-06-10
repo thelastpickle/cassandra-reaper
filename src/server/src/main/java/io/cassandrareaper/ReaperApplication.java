@@ -323,10 +323,15 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
                 + "Please configure at least one user in the 'accessControl.users' section or disable authentication by setting 'accessControl.enabled: false'.");
       }
 
-      String jwtSecret =
-          config.getAccessControl().getJwt() != null
-              ? config.getAccessControl().getJwt().getSecret()
-              : "MySecretKeyForJWTWhichMustBeLongEnoughForHS256Algorithm";
+      Preconditions.checkState(
+          config.getAccessControl().getJwt() != null,
+          "ACCESS CONTROL: JWT secret is not configured. Please configure a JWT secret in the 'accessControl.jwt.secret' section.");
+
+      String jwtSecret = config.getAccessControl().getJwt().getSecret();
+      if (jwtSecret == null) {
+        throw new IllegalArgumentException(
+            "ACCESS CONTROL: JWT secret is not configured. Please configure a JWT secret in the 'accessControl.jwt.secret' section.");
+      }
 
       LOG.info(
           "ACCESS CONTROL: Using JWT secret: {}",

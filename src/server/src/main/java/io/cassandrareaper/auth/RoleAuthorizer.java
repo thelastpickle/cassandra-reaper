@@ -38,7 +38,7 @@ public class RoleAuthorizer implements Authorizer<User> {
       path = requestContext.getUriInfo().getPath();
     }
 
-    LOG.info(
+    LOG.debug(
         "Authorization check: user={}, roles={}, required_role={}, method={}, path={}",
         user.getName(),
         user.getRoles(),
@@ -48,7 +48,7 @@ public class RoleAuthorizer implements Authorizer<User> {
 
     // Operator role has all permissions
     if (user.hasRole("operator")) {
-      LOG.info("User {} has operator role - access granted", user.getName());
+      LOG.debug("User {} has operator role - access granted", user.getName());
       return true;
     }
 
@@ -57,17 +57,17 @@ public class RoleAuthorizer implements Authorizer<User> {
       if (requestContext != null) {
         // Only allow GET and OPTIONS methods for users with "user" role
         boolean allowed = "GET".equals(method) || "OPTIONS".equals(method);
-        LOG.info("User {} has user role - method {} allowed: {}", user.getName(), method, allowed);
+        LOG.debug("User {} has user role - method {} allowed: {}", user.getName(), method, allowed);
         return allowed;
       }
       // If no request context, deny access for safety
-      LOG.info("User {} has user role but no request context - access denied", user.getName());
+      LOG.debug("User {} has user role but no request context - access denied", user.getName());
       return false;
     }
 
     // For other roles, check if user has the exact required role
     boolean hasRole = user.hasRole(role);
-    LOG.info("User {} role check for '{}': {}", user.getName(), role, hasRole);
+    LOG.debug("User {} role check for '{}': {}", user.getName(), role, hasRole);
     return hasRole;
   }
 }
