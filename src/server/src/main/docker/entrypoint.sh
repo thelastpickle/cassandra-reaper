@@ -37,13 +37,12 @@ if [ "$1" = 'cassandra-reaper' ]; then
         REAPER_HEAP_SIZE="1G"
     fi
 
-    # get around `/usr/local/bin/configure-persistence.sh: line 65: can't create /etc/cassandra-reaper/cassandra-reaper.yml: Interrupted system call` unknown error
     cp /etc/cassandra-reaper/cassandra-reaper.yml /etc/cassandra-reaper/config/cassandra-reaper.yml
 
+    /usr/local/bin/configure-authentication.sh
     /usr/local/bin/configure-persistence.sh
     /usr/local/bin/configure-metrics.sh
     /usr/local/bin/configure-jmx-credentials.sh
-    /usr/local/bin/configure-authentication.sh
     exec java \
             ${JAVA_OPTS} \
             -Xms${REAPER_HEAP_SIZE} \
@@ -55,13 +54,12 @@ fi
 
 if [ "$1" = 'schema-migration' ]; then
 
-    # get around `/usr/local/bin/configure-persistence.sh: line 65: can't create /etc/cassandra-reaper/cassandra-reaper.yml: Interrupted system call` unknown error
     cp /etc/cassandra-reaper/cassandra-reaper.yml /etc/cassandra-reaper/config/cassandra-reaper.yml
 
+    /usr/local/bin/configure-authentication.sh
     /usr/local/bin/configure-persistence.sh
     /usr/local/bin/configure-metrics.sh
     /usr/local/bin/configure-jmx-credentials.sh
-    /usr/local/bin/configure-authentication.sh
     exec java \
             ${JAVA_OPTS} \
             -Djava.io.tmpdir=${REAPER_TMP_DIRECTORY} \
