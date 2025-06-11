@@ -1,12 +1,9 @@
-+++
-[menu.docs]
-name = "Running a Cluster Repair"
-weight = 30
-identifier = "single"
-parent = "usage"
-+++
-
-# Running a Cluster Repair
+---
+title: "Running a Cluster Repair"
+weight: 30
+identifier: "single"
+parent: "usage"
+---
 
 Reaper has the ability to launch a once-off repair on a cluster. This can be done in the following way.
 

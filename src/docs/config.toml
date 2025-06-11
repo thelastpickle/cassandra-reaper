@@ -12,39 +12,58 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Site Configuration
+title = "Reaper: Easy Repair Management for Apache Cassandra"
 baseURL = "http://cassandra-reaper.io/"
 languageCode = "en-us"
-title = "Reaper: Easy Repair Management for Apache Cassandra"
-theme = "hugo-universal-theme"
+theme = "learn"
 
-googleAnalytics = "UA-104925477-1"
+# Build Configuration
 publishDir = "../../docs"
 
+# Google Analytics
+googleAnalytics = "UA-104925477-1"
 
-[menu]
+# Multilingual
+defaultContentLanguage = "en"
 
-[[menu.main]]
-    name = "Documentation"
-    url = "/docs/"
+# Content Configuration
+enableGitInfo = false
+disableKinds = ['taxonomy', 'taxonomyTerm']
 
-[[menu.main]]
-    name = "Downloads"
-    url = "/docs/download/"
+# Markup Configuration
+[markup]
+  [markup.goldmark.renderer]
+    unsafe = true
+  [markup.tableOfContents]
+    startLevel = 1
+    endLevel = 3
 
-[[menu.main]]
-    name = "FAQ"
-    url = "/faq/"
+[outputs]
+home = [ "HTML", "RSS", "JSON"]
 
-[[menu.main]]
-    name = "View on GitHub"
-    url = "https://github.com/thelastpickle/cassandra-reaper"
-
-
+# Parameters
 [params]
+  # Prefix URL to edit current page. Will display an "Edit this page" button on top right hand corner of every page. 
+  # Useful to give opportunity to people to create merge request for your doc.
+  editPage = true
+  description = "Easy Repair Management for Apache Cassandra"
+  author = "The Last Pickle"
+  showVisitedLinks = false
+  disableBreadcrumb = false
+  disableNextPrev = false
+  disableLandingPageButton = false
+  disableMermaid = false
+  customMermaidURL = "https://unpkg.com/mermaid@8.8.0/dist/mermaid.min.js"
+  
+# Menu Configuration
+[[menu.shortcuts]]
+name = "<i class='fab fa-github'></i> GitHub"
+identifier = "ds"
+url = "https://github.com/thelastpickle/cassandra-reaper"
+weight = 10
 
-[params.carousel]
-    enable = true
-
-
-[params.features]
-    enable = true
+[[menu.shortcuts]]
+name = "<i class='fas fa-download'></i> Download"
+url = "/docs/download/"
+weight = 20

@@ -1,14 +1,15 @@
-+++
-[menu.docs]
-name = "Install and Run"
-weight = 1
-identifier = "install"
-parent = "download"
-+++
+---
+title: "Install and Run"
+weight: 1
+identifier: "install"
+parent: "download"
+---
 
+## Requirements
 
+Since Reaper v4, Java 11 is required to compile and run it. More recent versions of the JDK should also be able to run the compiled version of Reaper.
 
-# Running Reaper
+## Running Reaper using the jar
 
 After modifying the `resource/cassandra-reaper.yaml` config file, Reaper can be started using the following command line :
 

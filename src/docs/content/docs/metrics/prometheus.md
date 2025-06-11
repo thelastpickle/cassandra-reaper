@@ -1,10 +1,9 @@
-+++
-[menu.docs]
-name = "Prometheus"
-weight = 1
-identifier = "prometheus"
-parent = "metrics"
-+++
+---
+title: "Prometheus"
+weight: 1
+identifier: "prometheus"
+parent: "metrics"
+---
 
 ## Prometheus
 

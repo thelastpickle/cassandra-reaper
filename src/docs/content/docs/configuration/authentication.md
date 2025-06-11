@@ -1,12 +1,9 @@
-+++
-[menu.docs]
-name = "Authentication"
-weight = 60
-identifier = "auth"
-parent = "configuration"
-+++
-
-# Authentication
+---
+title: "Authentication"
+weight: 60
+identifier: "auth"
+parent: "configuration"
+---
 
 Authentication in Reaper is powered by [Dropwizard Authentication](https://www.dropwizard.io/en/latest/manual/auth.html) with JWT (JSON Web Token) support. This provides a modern, stateless authentication system suitable for both web UI and REST API access.
 

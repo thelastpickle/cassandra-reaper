@@ -1,12 +1,11 @@
-+++
-[menu.docs]
-name = "Building from Source"
-identifier = "building"
-weight = 4
-parent = "download"
-+++
+---
+title: "Building from Source"
+identifier: "building"
+weight: 4
+parent: "download"
+---
 
-# Building Install Packages
+## Building Install Packages
 
 Debian packages and RPMs can be built from this project using Make, for example:
 
@@ -15,7 +14,10 @@ make deb
 make rpm
 ```
 
-# Building JARs from source
+## Building JARs from source
+
+Since Reaper v4, Java 11 is required to compile and run it. More recent versions of the JDK should also be able to run the compiled version of Reaper.
+Node JS v10 is still required to build the UI as part of the maven build, with npm v9.
 
 To build use the following command:
 
@@ -23,11 +25,11 @@ To build use the following command:
 mvn clean package
 ```
 
-# Building Docker Image from source
+## Building Docker Image from source
 
  See the [Docker]({{<ref "/docs/download/docker.md">}}) section for more details.
 
-# Building Using Docker
+## Building Using Docker
 
 To simplify the build toolchain it's possible to build everything using Docker itself. This is the process used to build the release binary artifacts from jar files to debian packages.
 

@@ -1,10 +1,9 @@
-+++
-[menu.docs]
-name = "Dashboards"
-weight = 1
-identifier = "dashboards"
-parent = "metrics"
-+++
+---
+title: "Dashboards"
+weight: 1
+identifier: "dashboards"
+parent: "metrics"
+---
 
 
 ## Dashboards

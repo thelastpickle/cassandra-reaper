@@ -1,11 +1,8 @@
-+++
-[menu.docs]
-name = "Reaper Specific Settings"
-parent = "configuration"
-weight = 4
-+++
-
-# Reaper Specific Settings
+---
+title: "Reaper Specific Settings"
+parent: "configuration"
+weight: 4
+---
 
 Configuration settings in the *cassandra-reaper.yaml* that are specific to Reaper
 
@@ -21,6 +18,9 @@ Optional setting to automatically setup repair schedules for all non-system keys
       periodBetweenPolls: PT10M
       timeBeforeFirstSchedule: PT5M
       scheduleSpreadPeriod: PT6H
+      adaptive: true
+      incremental: false
+      percentUnrepairedThreshold: 10
       excludedKeyspaces: [myTTLKeyspace, ...]
       excludedClusters: [myCluster, ...]
 
@@ -65,6 +65,30 @@ Type: *String*
 Default: *PT6H* (6 hours)
 
 The time spacing between each of the repair schedules that is to be carried out.
+
+#### `adaptive`
+
+Type: *Boolean*
+
+Default: *true*
+
+When enabled, the auto-scheduling will automatically adapt repair schedules based on the cluster's repair history and current state.
+
+#### `incremental`
+
+Type: *Boolean*
+
+Default: *false*
+
+When enabled, auto-scheduled repairs will use incremental repair by default. Note that this is only supported with the PARALLEL repairParallelism setting.
+
+#### `percentUnrepairedThreshold`
+
+Type: *Integer*
+
+Default: *10*
+
+The percentage threshold of unrepaired data that triggers auto-scheduling to create repair schedules. If a keyspace has more than this percentage of unrepaired data, it will be included in auto-scheduling.
 
 #### `excludedKeyspaces`
 
@@ -139,6 +163,53 @@ Type: *Integer*
 The amount of time in minutes to wait for a single repair to finish. If this timeout is reached,
 the repair segment in question will be cancelled, if possible, and then scheduled for later
 repair again within the same repair run process.
+
+<br/>
+
+### `httpManagement`
+
+Settings to configure HTTP management interface for integration with management APIs like DataStax OpsCenter or similar tools.
+
+    httpManagement:
+      enabled: false
+      mgmtApiMetricsPort: 9000
+      keystore: /path/to/keystore.jks
+      truststore: /path/to/truststore.jks
+      truststoresDir: /path/to/truststores
+
+#### `enabled`
+
+Type: *Boolean*
+
+Default: *false*
+
+Enables or disables the HTTP management interface.
+
+#### `mgmtApiMetricsPort`
+
+Type: *Integer*
+
+Default: *9000*
+
+The port number for the management API metrics endpoint.
+
+#### `keystore`
+
+Type: *String*
+
+Path to the keystore file for SSL/TLS configuration of the management interface.
+
+#### `truststore`
+
+Type: *String*
+
+Path to the truststore file for SSL/TLS configuration of the management interface.
+
+#### `truststoresDir`
+
+Type: *String*
+
+Directory path containing truststore files for SSL/TLS configuration.
 
 <br/>
 
@@ -363,6 +434,26 @@ Defines the amount of days to wait between scheduling new repairs. The value con
 
 <br/>
 
+### `scheduleRetryOnError`
+
+Type: *Boolean*
+
+Default: *false*
+
+When enabled, repair schedules will be automatically retried if they fail due to errors. This can help with recovering from temporary failures or network issues.
+
+<br/>
+
+### `scheduleRetryDelay`
+
+Type: *String* (ISO 8601 Duration)
+
+Default: *PT1H* (1 hour)
+
+The delay period before retrying a failed repair schedule. This setting only takes effect when `scheduleRetryOnError` is enabled.
+
+<br/>
+
 ### `segmentCountPerNode`
 
 Type: *Integer*
@@ -438,7 +529,7 @@ When running multi region clusters in AWS, turn this setting to `true` in order 
 
 _**Since 2.1.0**_
 
-Sometimes it’s not possible for Cassandra nodes to broadcast addresses that will work for each and every client; for instance, they might broadcast private IPs because most clients are in the same network, but a particular client could be on another network and go through a router. For such cases, you can configure a custom address translator that will perform additional address translation based on configured mapping.
+Sometimes it's not possible for Cassandra nodes to broadcast addresses that will work for each and every client; for instance, they might broadcast private IPs because most clients are in the same network, but a particular client could be on another network and go through a router. For such cases, you can configure a custom address translator that will perform additional address translation based on configured mapping.
 
 ```yaml
 jmxAddressTranslator:

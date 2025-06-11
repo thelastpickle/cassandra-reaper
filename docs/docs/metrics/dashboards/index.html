@@ -1,337 +1,911 @@
 <!DOCTYPE html>
-<html lang="en-us">
-
+<html lang="en" class="js csstransforms3d">
   <head>
-  <meta charset="utf-8">
-  <meta name="robots" content="all,follow">
-  <meta name="googlebot" content="index,follow,snippet,archive">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title></title>
-  <meta name="author" content="" />
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="Hugo 0.115.2">
+    <meta name="description" content="Easy Repair Management for Apache Cassandra">
+<meta name="author" content="The Last Pickle">
 
-  
+    <link rel="icon" href="/images/favicon.png" type="image/png">
 
-  
+    <title>Dashboards :: Reaper: Easy Repair Management for Apache Cassandra</title>
 
-  <meta name="generator" content="Hugo 0.79.0" />
+    
+    <link href="/css/nucleus.css?1749638303" rel="stylesheet">
+    <link href="/css/fontawesome-all.min.css?1749638303" rel="stylesheet">
+    <link href="/css/hybrid.css?1749638303" rel="stylesheet">
+    <link href="/css/featherlight.min.css?1749638303" rel="stylesheet">
+    <link href="/css/perfect-scrollbar.min.css?1749638303" rel="stylesheet">
+    <link href="/css/auto-complete.css?1749638303" rel="stylesheet">
+    <link href="/css/atom-one-dark-reasonable.css?1749638303" rel="stylesheet">
+    <link href="/css/theme.css?1749638303" rel="stylesheet">
+    <link href="/css/tabs.css?1749638303" rel="stylesheet">
+    <link href="/css/hugo-theme.css?1749638303" rel="stylesheet">
+    
+    
 
-  <link href='//fonts.googleapis.com/css?family=Roboto:400,100,100italic,300,300italic,500,700,800' rel='stylesheet' type='text/css'>
+    <script src="/js/jquery-3.3.1.min.js?1749638303"></script>
 
-  
-  <link href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet" integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" crossorigin="anonymous">
-  <link href="https://stackpath.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
-
-  
-  <link href="http://cassandra-reaper.io/css/animate.css" rel="stylesheet">
-
-  
-  
-    <link href="http://cassandra-reaper.io/css/style.default.css" rel="stylesheet" id="theme-stylesheet">
-  
-
-
-  
-  <link href="http://cassandra-reaper.io/css/custom.css" rel="stylesheet">
-
-  
-  
-    <!--[if lt IE 9]>
-        <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
-        <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
-    <![endif]-->
-  
-
-  
-  <link rel="shortcut icon" href="http://cassandra-reaper.io/img/favicon.ico" type="image/x-icon" />
-  <link rel="apple-touch-icon" href="http://cassandra-reaper.io/img/apple-touch-icon.png" />
-  
-
-  <link href="http://cassandra-reaper.io/css/owl.carousel.css" rel="stylesheet">
-  <link href="http://cassandra-reaper.io/css/owl.theme.css" rel="stylesheet">
-
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/fancybox/3.1.25/jquery.fancybox.min.css" />
+    <style>
+      :root #header + #content > #left > #rlblock_left{
+          display:none !important;
+      }
+      
+    </style>
+    
+  </head>
+  <body class="" data-url="/docs/metrics/dashboards/">
+    <nav id="sidebar" class="">
 
 
-  <link rel="alternate" href="http://cassandra-reaper.io/index.xml" type="application/rss+xml" title="Reaper: Easy Repair Management for Apache Cassandra">
 
-  
-  <meta property="og:title" content="" />
-  <meta property="og:type" content="website" />
-  <meta property="og:url" content="/docs/metrics/dashboards//" />
-  <meta property="og:image" content="" />
-
-</head>
-
-
-  <body>
-
-    <div id="all">
-
-        <header>
-
-          <div class="navbar-affixed-top" data-spy="affix" data-offset-top="200">
-
-    <div class="navbar navbar-default yamm" role="navigation" id="navbar">
-
-        <div class="container">
-            <div class="navbar-header">
-                <a class="navbar-brand home" href="http://cassandra-reaper.io/">
-                    <img src="http://cassandra-reaper.io/img/logo.png" alt=" logo" class="hidden-xs hidden-sm">
-                    <img src="http://cassandra-reaper.io/img/logo-small.png" alt=" logo" class="visible-xs visible-sm">
-                    <span class="sr-only"> - go to homepage</span>
-                </a>
-                <div class="navbar-buttons">
-                    <button type="button" class="navbar-toggle btn-template-main" data-toggle="collapse" data-target="#navigation">
-                      <span class="sr-only">Toggle Navigation</span>
-                        <i class="fa fa-align-justify"></i>
-                    </button>
-                </div>
-            </div>
-            
-
-            <div class="navbar-collapse collapse" id="navigation">
-                <ul class="nav navbar-nav navbar-right">
-                  
-                  <li class="dropdown">
-                    
-                    <a href="/docs/">Documentation</a>
-                    
-                  </li>
-                  
-                  <li class="dropdown">
-                    
-                    <a href="/docs/download/">Downloads</a>
-                    
-                  </li>
-                  
-                  <li class="dropdown">
-                    
-                    <a href="/faq/">FAQ</a>
-                    
-                  </li>
-                  
-                  <li class="dropdown">
-                    
-                    <a href="https://github.com/thelastpickle/cassandra-reaper">View on GitHub</a>
-                    
-                  </li>
-                  
-                </ul>
-            </div>
-            
-
-            <div class="collapse clearfix" id="search">
-
-                <form class="navbar-form" role="search">
-                    <div class="input-group">
-                        <input type="text" class="form-control" placeholder="Search">
-                        <span class="input-group-btn">
-
-                    <button type="submit" class="btn btn-template-main"><i class="fa fa-search"></i></button>
-
-                </span>
-                    </div>
-                </form>
-
-            </div>
-            
-
-        </div>
+  <div id="header-wrapper">
+    <div id="header">
+      <a id="logo" href='/' style="text-decoration: none;">
+  <span style="color: white; font-size: 36px; font-weight: bold; font-family: Arial, sans-serif;">Reaper</span>
+</a> 
     </div>
     
-
+        <div class="searchbox">
+    <label for="search-by"><i class="fas fa-search"></i></label>
+    <input data-search-input id="search-by" type="search" placeholder="Search...">
+    <span data-search-clear=""><i class="fas fa-times"></i></span>
 </div>
 
+<script type="text/javascript" src="/js/lunr.min.js?1749638303"></script>
+<script type="text/javascript" src="/js/auto-complete.js?1749638303"></script>
+<script type="text/javascript">
+    
+        var baseurl = "http:\/\/cassandra-reaper.io\/";
+    
+</script>
+<script type="text/javascript" src="/js/search.js?1749638303"></script>
+
+    
+  </div>
+  
+    <section id="homelinks">
+      <ul>
+        <li>
+            <a class="padding" href='/'><i class='fas fa-home'></i> Home</a>
+        </li>
+      </ul>
+    </section>
+  
+
+    <div class="highlightable">
+    <ul class="topics">
+
+        
+          
+          
 
 
 
-        </header>
 
-        <div id="heading-breadcrumbs">
-    <div class="container">
-        <div class="row">
-            <div class="col-md-12">
-            </div>
-        </div>
-    </div>
-</div>
+ 
+  
+    
+    <li data-nav-id="/docs/" title="Documentation" class="dd-item
+        parent
+        
+        
+        ">
+      <a href="/docs/">
+          Documentation
+          
+      </a>
+      
+      
+        <ul>
+          
+          
+            
+          
+          
 
-
-        <div id="content">
-
+        
+          
+            
             
 
-            <div class="container">
-                <div class="row">
-                    <div class="col-md-3">
-                        <ul class="sidebar-menu">
-    
-    
-    
 
-    <li class="sub-menu">
-    <a href="/docs/download/" class="">
-        
-        <span>Downloads</span>
-        <span class="menu-arrow arrow_carrot-right"></span>
-    </a>
-    <ul class="sub">
-        
-        <li><a href="/docs/download/install/"> Install and Run </a> </li>
-        
-        <li><a href="/docs/download/building/"> Building from Source </a> </li>
-        
-        <li><a href="/docs/download/docker/"> Docker </a> </li>
-        
-    </ul>
+
+
+ 
+  
     
-    </li>
-    
-    
-    <li>
+      <li data-nav-id="/docs/concepts/" title="Core Concepts" class="dd-item ">
         <a href="/docs/concepts/">
-            
-            <span>Core Concepts</span>
+        Core Concepts
+        
         </a>
-        
     </li>
-    
-    
+     
+  
+ 
 
-    <li class="sub-menu">
-    <a href="/docs/backends/" class="">
-        
-        <span>Backends</span>
-        <span class="menu-arrow arrow_carrot-right"></span>
-    </a>
-    <ul class="sub">
-        
-        <li><a href="/docs/backends/memory/"> In Memory </a> </li>
-        
-        <li><a href="/docs/backends/h2/"> H2 </a> </li>
-        
-        <li><a href="/docs/backends/postgres/"> Postgres </a> </li>
-        
-        <li><a href="/docs/backends/cassandra/"> Cassandra </a> </li>
-        
-        <li><a href="/docs/backends/astra/"> Astra </a> </li>
-        
-    </ul>
-    
-    </li>
-    
-    
+            
+          
+            
+            
 
-    <li class="sub-menu">
-    <a href="/docs/configuration/" class="">
-        
-        <span>Configuration Reference</span>
-        <span class="menu-arrow arrow_carrot-right"></span>
-    </a>
-    <ul class="sub">
-        
-        <li><a href="/docs/configuration/reaper_specific/"> Reaper Specific Settings </a> </li>
-        
-        <li><a href="/docs/configuration/backend_specific/"> Backend Specific Settings </a> </li>
-        
-        <li><a href="/docs/configuration/docker_vars/"> Docker Variables </a> </li>
-        
-        <li><a href="/docs/configuration/authentication/"> Shiro Authentication </a> </li>
-        
-    </ul>
-    
-    </li>
-    
-    
 
-    <li class="sub-menu">
-    <a href="/docs/metrics/" class="">
-        
-        <span>Metrics</span>
-        <span class="menu-arrow arrow_carrot-right"></span>
-    </a>
-    <ul class="sub">
-        
-        <li><a href="/docs/metrics/dashboards/"> Dashboards </a> </li>
-        
-        <li><a href="/docs/metrics/graphite/"> Graphite Reporter </a> </li>
-        
-        <li><a href="/docs/metrics/prometheus/"> Prometheus </a> </li>
-        
-    </ul>
-    
-    </li>
-    
-    
 
-    <li class="sub-menu">
-    <a href="/docs/usage/" class="">
-        
-        <span>Using Reaper</span>
-        <span class="menu-arrow arrow_carrot-right"></span>
-    </a>
-    <ul class="sub">
-        
-        <li><a href="/docs/usage/add_cluster/"> Adding a Cluster </a> </li>
-        
-        <li><a href="/docs/usage/health/"> Checking a Cluster&#39;s Health </a> </li>
-        
-        <li><a href="/docs/usage/single/"> Running a Cluster Repair </a> </li>
-        
-        <li><a href="/docs/usage/schedule/"> Scheduling a Cluster Repair </a> </li>
-        
-        <li><a href="/docs/usage/multi_dc_non-distributed/"> Multi DCs with One Reaper </a> </li>
-        
-        <li><a href="/docs/usage/multi_dc_distributed/"> Multi DCs with Multi Reapers </a> </li>
-        
-        <li><a href="/docs/usage/sidecar_mode/"> Sidecar Mode </a> </li>
-        
-        <li><a href="/docs/usage/cassandra-diagnostics/"> Cassandra Diagnostic Events </a> </li>
-        
-    </ul>
+
+ 
+  
     
+    <li data-nav-id="/docs/download/" title="Downloads" class="dd-item
+        
+        
+        
+        ">
+      <a href="/docs/download/">
+          Downloads
+          
+      </a>
+      
+      
+        <ul>
+          
+          
+          
+
+        
+          
+            
+            
+
+
+
+
+ 
+  
+    
+      <li data-nav-id="/docs/download/install/" title="Install and Run" class="dd-item ">
+        <a href="/docs/download/install/">
+        Install and Run
+        
+        </a>
     </li>
+     
+  
+ 
+
+            
+          
+            
+            
+
+
+
+
+ 
+  
     
+      <li data-nav-id="/docs/download/building/" title="Building from Source" class="dd-item ">
+        <a href="/docs/download/building/">
+        Building from Source
+        
+        </a>
+    </li>
+     
+  
+ 
+
+            
+          
+            
+            
+
+
+
+
+ 
+  
     
-    <li>
+      <li data-nav-id="/docs/download/docker/" title="Docker" class="dd-item ">
+        <a href="/docs/download/docker/">
+        Docker
+        
+        </a>
+    </li>
+     
+  
+ 
+
+            
+          
+        
+        </ul>
+      
+    </li>
+  
+ 
+
+            
+          
+            
+            
+
+
+
+
+ 
+  
+    
+    <li data-nav-id="/docs/backends/" title="Backends" class="dd-item
+        
+        
+        
+        ">
+      <a href="/docs/backends/">
+          Backends
+          
+      </a>
+      
+      
+        <ul>
+          
+          
+          
+
+        
+          
+            
+            
+
+
+
+
+ 
+  
+    
+      <li data-nav-id="/docs/backends/memory/" title="Local Backend" class="dd-item ">
+        <a href="/docs/backends/memory/">
+        Local Backend
+        
+        </a>
+    </li>
+     
+  
+ 
+
+            
+          
+            
+            
+
+
+
+
+ 
+  
+    
+      <li data-nav-id="/docs/backends/cassandra/" title="Cassandra Backend" class="dd-item ">
+        <a href="/docs/backends/cassandra/">
+        Cassandra Backend
+        
+        </a>
+    </li>
+     
+  
+ 
+
+            
+          
+        
+        </ul>
+      
+    </li>
+  
+ 
+
+            
+          
+            
+            
+
+
+
+
+ 
+  
+    
+    <li data-nav-id="/docs/configuration/" title="Configuration Reference" class="dd-item
+        
+        
+        
+        ">
+      <a href="/docs/configuration/">
+          Configuration Reference
+          
+      </a>
+      
+      
+        <ul>
+          
+          
+          
+
+        
+          
+            
+            
+
+
+
+
+ 
+  
+    
+      <li data-nav-id="/docs/configuration/reaper_specific/" title="Reaper Specific Settings" class="dd-item ">
+        <a href="/docs/configuration/reaper_specific/">
+        Reaper Specific Settings
+        
+        </a>
+    </li>
+     
+  
+ 
+
+            
+          
+            
+            
+
+
+
+
+ 
+  
+    
+      <li data-nav-id="/docs/configuration/backend_specific/" title="Backend Specific Settings" class="dd-item ">
+        <a href="/docs/configuration/backend_specific/">
+        Backend Specific Settings
+        
+        </a>
+    </li>
+     
+  
+ 
+
+            
+          
+            
+            
+
+
+
+
+ 
+  
+    
+      <li data-nav-id="/docs/configuration/docker_vars/" title="Docker Variables" class="dd-item ">
+        <a href="/docs/configuration/docker_vars/">
+        Docker Variables
+        
+        </a>
+    </li>
+     
+  
+ 
+
+            
+          
+            
+            
+
+
+
+
+ 
+  
+    
+      <li data-nav-id="/docs/configuration/authentication/" title="Authentication" class="dd-item ">
+        <a href="/docs/configuration/authentication/">
+        Authentication
+        
+        </a>
+    </li>
+     
+  
+ 
+
+            
+          
+        
+        </ul>
+      
+    </li>
+  
+ 
+
+            
+          
+            
+            
+
+
+
+
+ 
+  
+    
+    <li data-nav-id="/docs/metrics/" title="Metrics" class="dd-item
+        parent
+        
+        
+        ">
+      <a href="/docs/metrics/">
+          Metrics
+          
+      </a>
+      
+      
+        <ul>
+          
+          
+          
+
+        
+          
+            
+            
+
+
+
+
+ 
+  
+    
+      <li data-nav-id="/docs/metrics/dashboards/" title="Dashboards" class="dd-item active">
+        <a href="/docs/metrics/dashboards/">
+        Dashboards
+        
+        </a>
+    </li>
+     
+  
+ 
+
+            
+          
+            
+            
+
+
+
+
+ 
+  
+    
+      <li data-nav-id="/docs/metrics/graphite/" title="Graphite Reporter" class="dd-item ">
+        <a href="/docs/metrics/graphite/">
+        Graphite Reporter
+        
+        </a>
+    </li>
+     
+  
+ 
+
+            
+          
+            
+            
+
+
+
+
+ 
+  
+    
+      <li data-nav-id="/docs/metrics/prometheus/" title="Prometheus" class="dd-item ">
+        <a href="/docs/metrics/prometheus/">
+        Prometheus
+        
+        </a>
+    </li>
+     
+  
+ 
+
+            
+          
+        
+        </ul>
+      
+    </li>
+  
+ 
+
+            
+          
+            
+            
+
+
+
+
+ 
+  
+    
+    <li data-nav-id="/docs/usage/" title="Using Reaper" class="dd-item
+        
+        
+        
+        ">
+      <a href="/docs/usage/">
+          Using Reaper
+          
+      </a>
+      
+      
+        <ul>
+          
+          
+          
+
+        
+          
+            
+            
+
+
+
+
+ 
+  
+    
+      <li data-nav-id="/docs/usage/add_cluster/" title="Adding a Cluster" class="dd-item ">
+        <a href="/docs/usage/add_cluster/">
+        Adding a Cluster
+        
+        </a>
+    </li>
+     
+  
+ 
+
+            
+          
+            
+            
+
+
+
+
+ 
+  
+    
+      <li data-nav-id="/docs/usage/health/" title="Checking a Cluster&#39;s Health" class="dd-item ">
+        <a href="/docs/usage/health/">
+        Checking a Cluster&#39;s Health
+        
+        </a>
+    </li>
+     
+  
+ 
+
+            
+          
+            
+            
+
+
+
+
+ 
+  
+    
+      <li data-nav-id="/docs/usage/single/" title="Running a Cluster Repair" class="dd-item ">
+        <a href="/docs/usage/single/">
+        Running a Cluster Repair
+        
+        </a>
+    </li>
+     
+  
+ 
+
+            
+          
+            
+            
+
+
+
+
+ 
+  
+    
+      <li data-nav-id="/docs/usage/schedule/" title="Scheduling a Cluster Repair" class="dd-item ">
+        <a href="/docs/usage/schedule/">
+        Scheduling a Cluster Repair
+        
+        </a>
+    </li>
+     
+  
+ 
+
+            
+          
+            
+            
+
+
+
+
+ 
+  
+    
+      <li data-nav-id="/docs/usage/multi_dc_non-distributed/" title="Multi DCs with One Reaper" class="dd-item ">
+        <a href="/docs/usage/multi_dc_non-distributed/">
+        Multi DCs with One Reaper
+        
+        </a>
+    </li>
+     
+  
+ 
+
+            
+          
+            
+            
+
+
+
+
+ 
+  
+    
+      <li data-nav-id="/docs/usage/multi_dc_distributed/" title="Multi DCs with Multi Reapers" class="dd-item ">
+        <a href="/docs/usage/multi_dc_distributed/">
+        Multi DCs with Multi Reapers
+        
+        </a>
+    </li>
+     
+  
+ 
+
+            
+          
+            
+            
+
+
+
+
+ 
+  
+    
+      <li data-nav-id="/docs/usage/sidecar_mode/" title="Sidecar Mode" class="dd-item ">
+        <a href="/docs/usage/sidecar_mode/">
+        Sidecar Mode
+        
+        </a>
+    </li>
+     
+  
+ 
+
+            
+          
+        
+        </ul>
+      
+    </li>
+  
+ 
+
+            
+          
+            
+            
+
+
+
+
+ 
+  
+    
+      <li data-nav-id="/docs/api/" title="Rest API" class="dd-item ">
         <a href="/docs/api/">
-            
-            <span>Rest API</span>
-        </a>
+        Rest API
         
-    </li>
-    
-    
-    <li>
-        <a href="/docs/community/">
-            
-            <span>Community</span>
         </a>
-        
     </li>
-    
-    
-    <li>
-        <a href="/docs/development/">
-            
-            <span>Development</span>
-        </a>
-        
-    </li>
-    
-</ul>
-                    </div>
+     
+  
+ 
 
-                    <div class="col-md-9">
-                        <div>
-                          <h2 id="dashboards">Dashboards</h2>
+            
+          
+            
+            
+
+
+
+
+ 
+  
+    
+      <li data-nav-id="/docs/community/" title="Community" class="dd-item ">
+        <a href="/docs/community/">
+        Community
+        
+        </a>
+    </li>
+     
+  
+ 
+
+            
+          
+            
+            
+
+
+
+
+ 
+  
+    
+      <li data-nav-id="/docs/development/" title="Development" class="dd-item ">
+        <a href="/docs/development/">
+        Development
+        
+        </a>
+    </li>
+     
+  
+ 
+
+            
+          
+        
+        </ul>
+      
+    </li>
+  
+ 
+
+          
+        
+    </ul>
+
+    
+    
+      <section id="shortcuts">
+        <h3>More</h3>
+        <ul>
+          
+              <li>
+                  <a class="padding" href="https://github.com/thelastpickle/cassandra-reaper"><i class='fab fa-github'></i> GitHub</a>
+              </li>
+          
+              <li>
+                  <a class="padding" href="http://cassandra-reaper.io/docs/download/"><i class='fas fa-download'></i> Download</a>
+              </li>
+          
+        </ul>
+      </section>
+    
+
+    
+    <section id="footer">
+      <p>Built with <a href="https://github.com/matcornic/hugo-theme-learn"><i class="fas fa-heart"></i></a> from <a href="https://getgrav.org">Grav</a> and <a href="https://gohugo.io/">Hugo</a></p>
+
+    </section>
+  </div>
+</nav>
+
+
+
+
+        <section id="body">
+        <div id="overlay"></div>
+        <div class="padding highlightable">
+              
+              <div>
+                <div id="top-bar">
+                
+                
+                <div id="breadcrumbs" itemscope="" itemtype="http://data-vocabulary.org/Breadcrumb">
+                    <span id="sidebar-toggle-span">
+                        <a href="#" id="sidebar-toggle" data-sidebar-toggle="">
+                          <i class="fas fa-bars"></i>
+                        </a>
+                    </span>
+                  
+                  <span id="toc-menu"><i class="fas fa-list-alt"></i></span>
+                  
+                  <span class="links">
+                 
+                 
+                    
+          
+          
+            
+            
+          
+          
+            
+            
+          
+          
+            
+            
+          
+          
+            <a href='/'>Reaper for Apache Cassandra</a> > <a href='/docs/'>Documentation</a> > <a href='/docs/metrics/'>Metrics</a> > Dashboards
+          
+        
+          
+        
+          
+        
+          
+        
+                 
+                  </span>
+                </div>
+                
+                    <div class="progress">
+    <div class="wrapper">
+<nav id="TableOfContents">
+  <ul>
+    <li>
+      <ul>
+        <li><a href="#dashboards">Dashboards</a>
+          <ul>
+            <li><a href="#repair-progress">Repair progress</a></li>
+            <li><a href="#segment-duration">Segment duration</a></li>
+            <li><a href="#segments-per-hour">Segments per hour</a></li>
+            <li><a href="#segments-in-the-last-hour">Segments in the last hour</a></li>
+          </ul>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+    </div>
+</div>
+
+                
+              </div>
+            </div>
+            
+        <div id="head-tags">
+        
+        </div>
+        
+        <div id="body-inner">
+          
+            <h1>
+              
+              Dashboards
+            </h1>
+          
+
+        
+
+
+<h2 id="dashboards">Dashboards</h2>
 <p>There are many ways of visualising the metrics Reaper exposes. Here is just a few examples to get you started.</p>
 <p>We are going to use Grafana to visualize metrics fetched from a Prometheus backed. We will also assume the metrics were <a href="../prometheus">relabeled</a>.</p>
 <h3 id="repair-progress">Repair progress</h3>
 <p>One of the simplest things to visualize is repair progress. We can do that using a simple <code>Gauge</code>, where we use use the following query:</p>
-<pre><code>io_cassandrareaper_service_RepairRunner_repairProgress
+<pre tabindex="0"><code>io_cassandrareaper_service_RepairRunner_repairProgress
 </code></pre><p>To make the panel more pretty, we can enter the following in the <code>Legend</code> field:</p>
-<pre><code>{{cluster}} - {{keyspace}}
+<pre tabindex="0"><code>{{cluster}} - {{keyspace}}
 </code></pre><p>With two keyspaces doing repairs, we should see two dials, one for each keyspace:</p>
 <div class = "row">
     <div class = "col-md-6">
@@ -375,7 +949,7 @@
 
 
 <p>To monitor the repair progress in terms of the number of repaired segments, we can use the following query:</p>
-<pre><code>io_cassandrareaper_service_RepairRunner_segmentsDone
+<pre tabindex="0"><code>io_cassandrareaper_service_RepairRunner_segmentsDone
 </code></pre><p>Again, we put this query into the <code>Stat</code> panel, but we also select <code>Last</code> for the <code>Calc</code> field in the <code>Display</code> part of the <code>Visualization</code> tab. We should get a chart that looks like this:</p>
 <div class = "row">
     <div class = "col-md-6">
@@ -400,7 +974,7 @@
 <h3 id="segment-duration">Segment duration</h3>
 <p>When monitoring repairs, we would like to know how much time it takes to repair a segment. As a rule of thumb, we would like each segment to take 10 to 15 minutes. This indicates the segments are big enough to not waste the overhead of a repair session and minimise over-streaming, while not being too large to risk streaming timeouts.</p>
 <p>To check segment durations, we will use the <code>SegmentRunner_runRepair</code> metric. This metric is a timer covering the duration from the moment a <code>SegmentRunner</code> wakes up to repair a segment until the segment finishes. In this case, we will use a <code>Graph</code> and feed it the following querry:</p>
-<pre><code>io_cassandrareaper_service_SegmentRunner_repairing{quantile=&quot;0.5&quot;}
+<pre tabindex="0"><code>io_cassandrareaper_service_SegmentRunner_repairing{quantile=&#34;0.5&#34;}
 </code></pre><p>Unlike previous examples, here we add a filter to explicitly pick the <code>0.5</code>th percentile because we are interested in the majority of the segments, not just the longest ones. Reaper already gives us this duration in seconds, so we pick <code>Seconds (s)</code> as a <code>Unit</code> for the <code>Left Y</code> axis in the <code>Axes</code> section of the Visualization tab. We should end up with a graph that looks like this:</p>
 <div class = "row">
     <div class = "col-md-6">
@@ -426,7 +1000,7 @@
 <h3 id="segments-per-hour">Segments per hour</h3>
 <p>For the last two graphs, we&rsquo;ll try something harder. We&rsquo;ll try to plot the number of segments repaired per hour.</p>
 <p>We create another <code>Graph</code> panel and feed it a query like this:</p>
-<pre><code>(increase(io_cassandrareaper_service_RepairRunner_segmentsDone[1h]))
+<pre tabindex="0"><code>(increase(io_cassandrareaper_service_RepairRunner_segmentsDone[1h]))
 </code></pre><p>The above simply means we ask Prometheus to give us the increase of the given metric in a 1 hour window.</p>
 <p>Next, we enter <code>1h</code> as a <code>Min step</code> in the query tab (it&rsquo;s next to the <code>Legend</code> field), and we set <code>24h</code> as a <code>Relative time</code>. In the <code>Visualization</code> tab, we select to draw <code>Bars</code> and turn on stacking. We should end up with a graph like this:</p>
 <div class = "row">
@@ -473,101 +1047,554 @@
 
 
 
-                        </div>
 
-                    </div>
-
-                </div>
-                
-
-            </div>
-            
-
-            
-        </div>
-        
-
-        <footer id="footer">
-    <div class="container">
-
-        
-
-        <div class="col-md-4 col-sm-6">
-
-            
-
-        </div>
-        
-
-        
-
-    </div>
-    
+<footer class="footline">
+	
 </footer>
 
-
-
-
-
-
-
-<div id="copyright">
-    <div class="container">
-        <div class="col-md-12">
-            
-            <p class="pull-right">
-              Template by <a href="http://bootstrapious.com/free-templates">Bootstrapious</a>.
-              
-
-              Ported to Hugo by <a href="https://github.com/devcows/hugo-universal-theme">DevCows</a>
-            </p>
+        
         </div>
-    </div>
-</div>
+        
+
+      </div>
+
+    <div id="navigation">
+        
+        
+
+        
+            
+            
+                
+                    
+                    
+                
+                
+
+                    
+                    
+                        
+                    
+                    
+
+                    
+                        
+            
+            
+                
+                    
+                    
+                
+                
+
+                    
+                    
+                        
+                    
+                    
+
+                    
+                        
+            
+            
+                
+                    
+                        
+                        
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+                        
+            
+            
+                
+                    
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                        
+                        
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+            
+        
+                    
+            
+        
+
+        
 
 
-
-
-
-    </div>
-    
-
-    
-<script type="application/javascript">
-var doNotTrack = false;
-if (!doNotTrack) {
-	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-	})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
-	ga('create', 'UA-104925477-1', 'auto');
+	 
+	 
+		
+			<a class="nav nav-prev" href="/docs/metrics/" title="Metrics"> <i class="fa fa-chevron-left"></i></a>
+		
+		
+			<a class="nav nav-next" href="/docs/metrics/graphite/" title="Graphite Reporter" style="margin-right: 0px;"><i class="fa fa-chevron-right"></i></a>
+		
 	
-	ga('send', 'pageview');
-}
-</script>
+    </div>
 
+    </section>
 
-<script src="/js/jquery-3.2.1.min.js"></script>
-
-<script src="https://stackpath.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
-
-<script src="//cdnjs.cloudflare.com/ajax/libs/jquery-cookie/1.4.1/jquery.cookie.min.js"></script>
-<script src="//cdnjs.cloudflare.com/ajax/libs/waypoints/4.0.1/jquery.waypoints.min.js"></script>
-<script src="//cdnjs.cloudflare.com/ajax/libs/Counter-Up/1.0/jquery.counterup.min.js"></script>
-<script src="//cdnjs.cloudflare.com/ajax/libs/jquery-parallax/1.1.3/jquery-parallax.js"></script>
-
-<script src="//maps.googleapis.com/maps/api/js?v=3.exp"></script>
-
-<script src="http://cassandra-reaper.io/js/hpneo.gmaps.js"></script>
-<script src="http://cassandra-reaper.io/js/gmaps.init.js"></script>
-<script src="http://cassandra-reaper.io/js/front.js"></script>
-
-
-<script src="http://cassandra-reaper.io/js/owl.carousel.min.js"></script>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/fancybox/3.1.25/jquery.fancybox.min.js"></script>
-
-
+    <div style="left: -1000px; overflow: scroll; position: absolute; top: -1000px; border: none; box-sizing: content-box; height: 200px; margin: 0px; padding: 0px; width: 200px;">
+      <div style="border: none; box-sizing: content-box; height: 200px; margin: 0px; padding: 0px; width: 200px;"></div>
+    </div>
+    <script src="/js/clipboard.min.js?1749638303"></script>
+    <script src="/js/perfect-scrollbar.min.js?1749638303"></script>
+    <script src="/js/perfect-scrollbar.jquery.min.js?1749638303"></script>
+    <script src="/js/jquery.sticky.js?1749638303"></script>
+    <script src="/js/featherlight.min.js?1749638303"></script>
+    <script src="/js/highlight.pack.js?1749638303"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+    <script src="/js/modernizr.custom-3.6.0.js?1749638303"></script>
+    <script src="/js/learn.js?1749638303"></script>
+    <script src="/js/hugo-learn.js?1749638303"></script>
+    
+        
+            <script src="https://unpkg.com/mermaid@8.8.0/dist/mermaid.min.js"></script>
+        
+        <script>
+            mermaid.initialize({ startOnLoad: true });
+        </script>
+    
+    
 
   </body>
 </html>
+
