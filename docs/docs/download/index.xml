@@ -7,38 +7,35 @@
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language><atom:link href="http://cassandra-reaper.io/docs/download/index.xml" rel="self" type="application/rss+xml" />
     <item>
-      <title></title>
+      <title>Install and Run</title>
+      <link>http://cassandra-reaper.io/docs/download/install/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://cassandra-reaper.io/docs/download/install/</guid>
+      <description>Requirements Since Reaper v4, Java 11 is required to compile and run it. More recent versions of the JDK should also be able to run the compiled version of Reaper.
+Running Reaper using the jar After modifying the resource/cassandra-reaper.yaml config file, Reaper can be started using the following command line :
+java -jar target/cassandra-reaper-X.X.X.jar server resource/cassandra-reaper.yaml Once started, the UI can be accessed through : http://127.0.0.1:8080/webui/
+Reaper can also be accessed using the REST API exposed on port 8080, or using the command line tool bin/spreaper</description>
+    </item>
+    
+    <item>
+      <title>Building from Source</title>
       <link>http://cassandra-reaper.io/docs/download/building/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>http://cassandra-reaper.io/docs/download/building/</guid>
       <description>Building Install Packages Debian packages and RPMs can be built from this project using Make, for example:
-make deb make rpm Building JARs from source To build use the following command:
-mvn clean package Building Docker Image from source See the Docker section for more details.
-Building Using Docker To simplify the build toolchain it&amp;rsquo;s possible to build everything using Docker itself. This is the process used to build the release binary artifacts from jar files to debian packages.</description>
+make deb make rpm Building JARs from source Since Reaper v4, Java 11 is required to compile and run it. More recent versions of the JDK should also be able to run the compiled version of Reaper. Node JS v10 is still required to build the UI as part of the maven build, with npm v9.</description>
     </item>
     
     <item>
-      <title></title>
+      <title>Docker</title>
       <link>http://cassandra-reaper.io/docs/download/docker/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>http://cassandra-reaper.io/docs/download/docker/</guid>
       <description>Docker Docker and Docker Compose will need to be installed in order to use the commands in this section.
 Building Reaper Docker Image Prerequisite The generation of the Docker image requires that the JAR file be built and placed in the src/packages directory. If the JAR package is missing from the directory then it can built using either the steps in the Docker package build section (above), or in the Building from Source section.</description>
-    </item>
-    
-    <item>
-      <title></title>
-      <link>http://cassandra-reaper.io/docs/download/install/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>http://cassandra-reaper.io/docs/download/install/</guid>
-      <description>Running Reaper After modifying the resource/cassandra-reaper.yaml config file, Reaper can be started using the following command line :
-java -jar target/cassandra-reaper-X.X.X.jar server resource/cassandra-reaper.yaml Once started, the UI can be accessed through : http://127.0.0.1:8080/webui/
-Reaper can also be accessed using the REST API exposed on port 8080, or using the command line tool bin/spreaper
-Installing and Running as a Service We provide prebuilt packages for reaper on Cloudsmith.
-RPM Install (CentOS, Fedora, RHEK) Grab the RPM from GitHub and install using the rpm command:</description>
     </item>
     
   </channel>

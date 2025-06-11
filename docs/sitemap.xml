@@ -2,11 +2,37 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
+    <loc>http://cassandra-reaper.io/docs/usage/add_cluster/</loc>
+  </url><url>
+    <loc>http://cassandra-reaper.io/docs/metrics/dashboards/</loc>
+  </url><url>
     <loc>http://cassandra-reaper.io/docs/</loc>
+  </url><url>
+    <loc>http://cassandra-reaper.io/docs/metrics/graphite/</loc>
+  </url><url>
+    <loc>http://cassandra-reaper.io/docs/download/install/</loc>
+  </url><url>
+    <loc>http://cassandra-reaper.io/docs/backends/memory/</loc>
+  </url><url>
+    <loc>http://cassandra-reaper.io/docs/metrics/prometheus/</loc>
+  </url><url>
+    <loc>http://cassandra-reaper.io/docs/download/building/</loc>
+  </url><url>
+    <loc>http://cassandra-reaper.io/docs/backends/cassandra/</loc>
+  </url><url>
+    <loc>http://cassandra-reaper.io/docs/configuration/reaper_specific/</loc>
+  </url><url>
+    <loc>http://cassandra-reaper.io/docs/concepts/</loc>
   </url><url>
     <loc>http://cassandra-reaper.io/docs/download/</loc>
   </url><url>
+    <loc>http://cassandra-reaper.io/docs/configuration/backend_specific/</loc>
+  </url><url>
     <loc>http://cassandra-reaper.io/docs/backends/</loc>
+  </url><url>
+    <loc>http://cassandra-reaper.io/docs/usage/health/</loc>
+  </url><url>
+    <loc>http://cassandra-reaper.io/docs/configuration/docker_vars/</loc>
   </url><url>
     <loc>http://cassandra-reaper.io/docs/configuration/</loc>
   </url><url>
@@ -14,59 +40,27 @@
   </url><url>
     <loc>http://cassandra-reaper.io/docs/usage/</loc>
   </url><url>
-    <loc>http://cassandra-reaper.io/faq/</loc>
-  </url><url>
-    <loc>http://cassandra-reaper.io/docs/api/</loc>
-  </url><url>
-    <loc>http://cassandra-reaper.io/docs/backends/cassandra/</loc>
-  </url><url>
-    <loc>http://cassandra-reaper.io/docs/backends/h2/</loc>
-  </url><url>
-    <loc>http://cassandra-reaper.io/docs/backends/memory/</loc>
-  </url><url>
-    <loc>http://cassandra-reaper.io/docs/backends/postgres/</loc>
-  </url><url>
-    <loc>http://cassandra-reaper.io/docs/community/</loc>
-  </url><url>
-    <loc>http://cassandra-reaper.io/docs/concepts/</loc>
-  </url><url>
-    <loc>http://cassandra-reaper.io/docs/configuration/authentication/</loc>
-  </url><url>
-    <loc>http://cassandra-reaper.io/docs/configuration/backend_specific/</loc>
-  </url><url>
-    <loc>http://cassandra-reaper.io/docs/configuration/docker_vars/</loc>
-  </url><url>
-    <loc>http://cassandra-reaper.io/docs/configuration/reaper_specific/</loc>
-  </url><url>
-    <loc>http://cassandra-reaper.io/docs/development/</loc>
-  </url><url>
-    <loc>http://cassandra-reaper.io/docs/download/building/</loc>
-  </url><url>
-    <loc>http://cassandra-reaper.io/docs/download/docker/</loc>
-  </url><url>
-    <loc>http://cassandra-reaper.io/docs/download/install/</loc>
-  </url><url>
-    <loc>http://cassandra-reaper.io/docs/metrics/dashboards/</loc>
-  </url><url>
-    <loc>http://cassandra-reaper.io/docs/metrics/graphite/</loc>
-  </url><url>
-    <loc>http://cassandra-reaper.io/docs/metrics/prometheus/</loc>
-  </url><url>
-    <loc>http://cassandra-reaper.io/docs/usage/add_cluster/</loc>
-  </url><url>
-    <loc>http://cassandra-reaper.io/docs/usage/cassandra-diagnostics/</loc>
-  </url><url>
-    <loc>http://cassandra-reaper.io/docs/usage/health/</loc>
-  </url><url>
-    <loc>http://cassandra-reaper.io/docs/usage/multi_dc_distributed/</loc>
-  </url><url>
-    <loc>http://cassandra-reaper.io/docs/usage/multi_dc_non-distributed/</loc>
+    <loc>http://cassandra-reaper.io/docs/usage/single/</loc>
   </url><url>
     <loc>http://cassandra-reaper.io/docs/usage/schedule/</loc>
   </url><url>
+    <loc>http://cassandra-reaper.io/docs/download/docker/</loc>
+  </url><url>
+    <loc>http://cassandra-reaper.io/docs/usage/multi_dc_non-distributed/</loc>
+  </url><url>
+    <loc>http://cassandra-reaper.io/docs/usage/multi_dc_distributed/</loc>
+  </url><url>
     <loc>http://cassandra-reaper.io/docs/usage/sidecar_mode/</loc>
   </url><url>
-    <loc>http://cassandra-reaper.io/docs/usage/single/</loc>
+    <loc>http://cassandra-reaper.io/docs/configuration/authentication/</loc>
+  </url><url>
+    <loc>http://cassandra-reaper.io/docs/api/</loc>
+  </url><url>
+    <loc>http://cassandra-reaper.io/docs/community/</loc>
+  </url><url>
+    <loc>http://cassandra-reaper.io/faq/</loc>
+  </url><url>
+    <loc>http://cassandra-reaper.io/docs/development/</loc>
   </url><url>
     <loc>http://cassandra-reaper.io/quickstart/</loc>
   </url><url>
