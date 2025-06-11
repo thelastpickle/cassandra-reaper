@@ -1,12 +1,9 @@
-+++
-[menu.docs]
-name = "Checking a Cluster's Health"
-weight = 10
-identifier = "heath"
-parent = "usage"
-+++
-
-# Checking a Cluster's Health
+---
+title: "Checking a Cluster's Health"
+weight: 10
+identifier: "heath"
+parent: "usage"
+---
 
 ## Dashboard
 

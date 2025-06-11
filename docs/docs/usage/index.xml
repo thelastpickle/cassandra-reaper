@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>Reaper: Easy Repair Management for Apache Cassandra</title>
+    <title>Using Reaper on Reaper: Easy Repair Management for Apache Cassandra</title>
     <link>http://cassandra-reaper.io/docs/usage/</link>
-    <description>Recent content on Reaper: Easy Repair Management for Apache Cassandra</description>
+    <description>Recent content in Using Reaper on Reaper: Easy Repair Management for Apache Cassandra</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language><atom:link href="http://cassandra-reaper.io/docs/usage/index.xml" rel="self" type="application/rss+xml" />
     <item>
@@ -13,7 +13,7 @@
       
       <guid>http://cassandra-reaper.io/docs/usage/add_cluster/</guid>
       <description>Adding a Cluster Enter an address of one of the nodes in the cluster, then click Add Cluster Reaper will contact that node and find the rest of the nodes in the cluster automatically.
-      Once successfully completed, the Cluster&amp;rsquo;s health will be displayed.
+Once successfully completed, the Cluster&amp;rsquo;s health will be displayed.
 If JMX authentication is required and all clusters share the same credentials, they have to be filled in the Reaper YAML file, under jmxAuth (see the configuration reference).</description>
     </item>
     
@@ -35,8 +35,7 @@ Enabling Diagnostic Events server-side in Apache Cassandra 4.0 Available from Ap
       
       <guid>http://cassandra-reaper.io/docs/usage/health/</guid>
       <description>Checking a Cluster&amp;rsquo;s Health Dashboard When a cluster has been added to Reaper it will be displayed in the dashboard.
-      Node View Clicking on one of the nodes will open a dialog box containing details of the node&amp;rsquo;s state.
-      </description>
+Node View Clicking on one of the nodes will open a dialog box containing details of the node&amp;rsquo;s state.</description>
     </item>
     
     <item>
@@ -66,7 +65,7 @@ Single Reaper instance with JMX accessible for all DCs In the case where the JMX
       <guid>http://cassandra-reaper.io/docs/usage/schedule/</guid>
       <description>Scheduling a Cluster Repair Reaper has the ability to create and manage repair schedules for a cluster. This can be done in the following way.
 Setup a Repair Schedule Click the schedule menu item on the left side to navigate to the Schedules page. Click Add schedule to open the schedule details form.
-      Fill in the Details Enter values for the keyspace, tables, owner and other fields and click Add Schedule button.</description>
+Fill in the Details Enter values for the keyspace, tables, owner and other fields and click Add Schedule button.</description>
     </item>
     
     <item>
@@ -86,7 +85,7 @@ Setup a Repair Schedule Click the schedule menu item on the left side to navigat
       <guid>http://cassandra-reaper.io/docs/usage/single/</guid>
       <description>Running a Cluster Repair Reaper has the ability to launch a once-off repair on a cluster. This can be done in the following way.
 Start a New Repair Click the repair menu item on the left side to navigate to the Repair page. Click Start a new repair to open the repair details form.
-      Fill in the Details Enter values for the keyspace, tables, owner and other fields and click the Repair button.</description>
+Fill in the Details Enter values for the keyspace, tables, owner and other fields and click the Repair button.</description>
     </item>
     
   </channel>

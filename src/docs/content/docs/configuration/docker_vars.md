@@ -1,11 +1,8 @@
-+++
-[menu.docs]
-name = "Docker Variables"
-parent = "configuration"
-weight = 10
-+++
-
-# Docker Variables
+---
+title: "Docker Variables"
+parent: "configuration"
+weight: 10
+---
 
 The Reaper Docker container has been designed to be highly configurable. Many of the environment variables map directly or indirectly to a settings in the *cassandra-reaper.yaml* configuration file.
 
@@ -13,61 +10,89 @@ The Reaper Docker container has been designed to be highly configurable. Many of
 
 The Docker environment variables listed in this section map directly to Reaper specific settings in the *cassandra-reaper.yaml* configuration file. The following table below lists the Docker environment variables, their associated Reaper specific setting in the *cassandra-reaper.yaml* configuration file, and the default value assigned by the Docker container (if any). Definitions for each Docker environment variable can be found via the link to the associated setting.
 
-<h4>Environment Variable</h4> | <h4>Configuration Setting</h4>                                                                                       | <h4>Default Value</h4>
---- |----------------------------------------------------------------------------------------------------------------------| ---
-<code class="codeLarge">REAPER_AUTO_SCHEDULING_ENABLED</code> | [enabled]({{< relref "reaper_specific.md#enabled" >}})                                                               | false
-<code class="codeLarge">REAPER_AUTO_SCHEDULING_EXCLUDED_KEYSPACES</code> | [excludedKeyspaces]({{< relref "reaper_specific.md#excludedkeyspaces" >}})                                           | []
-<code class="codeLarge">REAPER_AUTO_SCHEDULING_EXCLUDED_CLUSTERS</code> | [excludedClusters]({{< relref "reaper_specific.md#excludedclusters" >}})                                             | []
-<code class="codeLarge">REAPER_AUTO_SCHEDULING_INITIAL_DELAY_PERIOD</code> | [initialDelayPeriod]({{< relref "reaper_specific.md#initialdelayperiod" >}})                                         | PT15S
-<code class="codeLarge">REAPER_AUTO_SCHEDULING_PERIOD_BETWEEN_POLLS</code> | [periodBetweenPolls]({{< relref "reaper_specific.md#periodbetweenpolls" >}})                                         | PT10M
-<code class="codeLarge">REAPER_AUTO_SCHEDULING_SCHEDULE_SPREAD_PERIOD</code> | [scheduleSpreadPeriod]({{< relref "reaper_specific.md#schedulespreadperiod" >}})                                     | PT6H
-<code class="codeLarge">REAPER_AUTO_SCHEDULING_TIME_BEFORE_FIRST_SCHEDULE</code> | [timeBeforeFirstSchedule]({{< relref "reaper_specific.md#timebeforefirstschedule" >}})                               | PT5M
-<code class="codeLarge">REAPER_DATACENTER_AVAILABILITY</code> | [datacenterAvailability]({{< relref "reaper_specific.md#datacenteravailability" >}})                                 | ALL
-<code class="codeLarge">REAPER_ENABLE_CROSS_ORIGIN</code> | [enableCrossOrigin]({{< relref "reaper_specific.md#enablecrossorigin" >}})                                           | true
-<code class="codeLarge">REAPER_ENABLE_DYNAMIC_SEED_LIST</code> | [enableDynamicSeedList]({{< relref "reaper_specific.md#enabledynamicseedlist" >}})                                   | true
-<code class="codeLarge">REAPER_HANGING_REPAIR_TIMEOUT_MINS</code> | [hangingRepairTimeoutMins]({{< relref "reaper_specific.md#hangingrepairtimeoutmins" >}})                             | 30
-<code class="codeLarge">REAPER_INCREMENTAL_REPAIR</code> | [incrementalRepair]({{< relref "reaper_specific.md#incrementalrepair" >}})                                           | false
-<code class="codeLarge">REAPER_SUBRANGE_INCREMENTAL</code> | [subrangeIncrementalRepair]({{< relref "reaper_specific.md#subrangeincremental" >}})                                           | false
-<code class="codeLarge">REAPER_JMX_AUTH_PASSWORD</code> | [password]({{< relref "reaper_specific.md#password" >}})                                                             |
-<code class="codeLarge">REAPER_JMX_AUTH_USERNAME</code> | [username]({{< relref "reaper_specific.md#username" >}})                                                             |
-<code class="codeLarge">REAPER_JMX_CREDENTIALS</code> | [jmxCredentials]({{< relref "reaper_specific.md#jmxcredentials" >}})                                                 |
-<code class="codeLarge">REAPER_JMX_CONNECTION_TIMEOUT_IN_SECONDS</code> | [jmxConnectionTimeoutInSeconds]({{< relref "reaper_specific.md#jmxconnectiontimeoutinseconds" >}})                   | 20
-<code class="codeLarge">REAPER_JMX_PORTS</code> | [jmxPorts]({{< relref "reaper_specific.md#jmxports" >}})                                                             | {}
-<code class="codeLarge">REAPER_LOGGING_APPENDERS_CONSOLE_LOG_FORMAT</code> | [logFormat]({{< relref "reaper_specific.md#logformat" >}})                                                           | "%-6level [%d] [%t] %logger{5} - %msg %n"
-<code class="codeLarge">REAPER_LOGGING_APPENDERS_CONSOLE_THRESHOLD</code> | [threshold]({{< relref "reaper_specific.md#threshold" >}})                                                           | WARN
-<code class="codeLarge">REAPER_LOGGING_LOGGERS</code> | [loggers]({{< relref "reaper_specific.md#loggers" >}})                                                               | {}
-<code class="codeLarge">REAPER_LOGGING_ROOT_LEVEL</code> | [level]({{< relref "reaper_specific.md#level" >}})                                                                   | INFO
-<code class="codeLarge">REAPER_METRICS_FREQUENCY</code> | [fequency]({{< relref "reaper_specific.md#fequency" >}})                                                             | 1 minute
-<code class="codeLarge">REAPER_METRICS_REPORTERS</code> | [reporters]({{< relref "reaper_specific.md#reporters" >}})                                                           | []
-<code class="codeLarge">REAPER_REPAIR_INTENSITY</code> | [repairIntensity]({{< relref "reaper_specific.md#repairintensity" >}})                                               | 0.9
-<code class="codeLarge">REAPER_REPAIR_MANAGER_SCHEDULING_INTERVAL_SECONDS</code> | [repairManagerSchedulingIntervalSeconds]({{< relref "reaper_specific.md#repairmanagerschedulingintervalseconds" >}}) | 30
-<code class="codeLarge">REAPER_REPAIR_PARALELLISM</code> | [repairParallelism]({{< relref "reaper_specific.md#repairparallelism" >}})                                           | DATACENTER_AWARE
-<code class="codeLarge">REAPER_REPAIR_RUN_THREADS</code> | [repairRunThreadCount]({{< relref "reaper_specific.md#repairrunthreadcount" >}})                                     | 15
-<code class="codeLarge">REAPER_SCHEDULE_DAYS_BETWEEN</code> | [scheduleDaysBetween]({{< relref "reaper_specific.md#scheduledaysbetween" >}})                                       | 7
-<code class="codeLarge">REAPER_SEGMENT_COUNT_PER_NODE</code> | [segmentCountPerNode]({{< relref "reaper_specific.md#segmentcount" >}})                                              | 200
-<code class="codeLarge">REAPER_SERVER_ADMIN_BIND_HOST</code> | [bindHost]({{< relref "reaper_specific.md#bindhost" >}})                                                             | 0.0.0.0
-<code class="codeLarge">REAPER_SERVER_ADMIN_PORT</code> | [port]({{< relref "reaper_specific.md#port" >}})                                                                     | 8081
-<code class="codeLarge">REAPER_SERVER_APP_BIND_HOST</code> | [bindHost]({{< relref "reaper_specific.md#bindhost" >}})                                                             | 0.0.0.0
-<code class="codeLarge">REAPER_SERVER_APP_PORT</code> | [port]({{< relref "reaper_specific.md#port" >}})                                                                     | 8080
-<code class="codeLarge">REAPER_STORAGE_TYPE</code> | [storageType]({{< relref "reaper_specific.md#storagetype" >}})                                                       | memory
-<code class="codeLarge">REAPER_USE_ADDRESS_TRANSLATOR</code> | [useAddressTranslator]({{< relref "reaper_specific.md#useaddresstranslator" >}})                                     | false
-<code class="codeLarge">REAPER_MAX_PARALLEL_REPAIRS</code> | [maxParallelRepairs]({{< relref "reaper_specific.md#maxParallelRepairs" >}})                                         | 2
-<code class="codeLarge">CRYPTO_SYSTEM_PROPERTY_SECRET</code> | [cryptograph/systemPropertySecret]({{< relref "reaper_specific.md#cryptograph" >}})                                  | Unset
-<code class="codeLarge">REAPER_HTTP_MANAGEMENT_ENABLE</code> | [httpManagement/enabled]({{< relref "reaper_specific.md#httpManagement" >}})                                            | false
-<code class="codeLarge">REAPER_PURGE_RECORDS_AFTER_IN_DAYS</code> | [purgeRecordsAfterInDays]({{< relref "reaper_specific.md#purgeRecordsAfterInDays" >}})                                            | 30
+| Environment Variable | Configuration Setting | Default Value |
+|---|---|---|
+| `REAPER_AUTO_SCHEDULING_ENABLED` | [enabled]({{< relref "reaper_specific.md#enabled" >}}) | false |
+| `REAPER_AUTO_SCHEDULING_EXCLUDED_KEYSPACES` | [excludedKeyspaces]({{< relref "reaper_specific.md#excludedkeyspaces" >}}) | [] |
+| `REAPER_AUTO_SCHEDULING_EXCLUDED_CLUSTERS` | [excludedClusters]({{< relref "reaper_specific.md#excludedclusters" >}}) | [] |
+| `REAPER_AUTO_SCHEDULING_INITIAL_DELAY_PERIOD` | [initialDelayPeriod]({{< relref "reaper_specific.md#initialdelayperiod" >}}) | PT15S |
+| `REAPER_AUTO_SCHEDULING_PERIOD_BETWEEN_POLLS` | [periodBetweenPolls]({{< relref "reaper_specific.md#periodbetweenpolls" >}}) | PT10M |
+| `REAPER_AUTO_SCHEDULING_SCHEDULE_SPREAD_PERIOD` | [scheduleSpreadPeriod]({{< relref "reaper_specific.md#schedulespreadperiod" >}}) | PT6H |
+| `REAPER_AUTO_SCHEDULING_TIME_BEFORE_FIRST_SCHEDULE` | [timeBeforeFirstSchedule]({{< relref "reaper_specific.md#timebeforefirstschedule" >}}) | PT5M |
+| `REAPER_AUTO_SCHEDULING_ADAPTIVE` | [adaptive]({{< relref "reaper_specific.md#adaptive" >}}) | true |
+| `REAPER_AUTO_SCHEDULING_INCREMENTAL` | [incremental]({{< relref "reaper_specific.md#incremental" >}}) | false |
+| `REAPER_AUTO_SCHEDULING_PERCENT_UNREPAIRED_THRESHOLD` | [percentUnrepairedThreshold]({{< relref "reaper_specific.md#percentunrepairedthreshold" >}}) | 10 |
+| `REAPER_BLACKLIST_TWCS` | [blacklistTwcsTables]({{< relref "reaper_specific.md#blacklisttwcstables" >}}) | false |
+| `REAPER_DATACENTER_AVAILABILITY` | [datacenterAvailability]({{< relref "reaper_specific.md#datacenteravailability" >}}) | ALL |
+| `REAPER_ENABLE_CROSS_ORIGIN` | [enableCrossOrigin]({{< relref "reaper_specific.md#enablecrossorigin" >}}) | true |
+| `REAPER_ENABLE_DYNAMIC_SEED_LIST` | [enableDynamicSeedList]({{< relref "reaper_specific.md#enabledynamicseedlist" >}}) | true |
+| `REAPER_HANGING_REPAIR_TIMEOUT_MINS` | [hangingRepairTimeoutMins]({{< relref "reaper_specific.md#hangingrepairtimeoutmins" >}}) | 30 |
+| `REAPER_INCREMENTAL_REPAIR` | [incrementalRepair]({{< relref "reaper_specific.md#incrementalrepair" >}}) | false |
+| `REAPER_SUBRANGE_INCREMENTAL` | [subrangeIncrementalRepair]({{< relref "reaper_specific.md#subrangeincremental" >}}) | false |
+| `REAPER_JMX_AUTH_PASSWORD` | [password]({{< relref "reaper_specific.md#password" >}}) | |
+| `REAPER_JMX_AUTH_USERNAME` | [username]({{< relref "reaper_specific.md#username" >}}) | |
+| `REAPER_JMX_CREDENTIALS` | [jmxCredentials]({{< relref "reaper_specific.md#jmxcredentials" >}}) | |
+| `REAPER_JMX_CONNECTION_TIMEOUT_IN_SECONDS` | [jmxConnectionTimeoutInSeconds]({{< relref "reaper_specific.md#jmxconnectiontimeoutinseconds" >}}) | 20 |
+| `REAPER_JMX_PORTS` | [jmxPorts]({{< relref "reaper_specific.md#jmxports" >}}) | {} |
+| `REAPER_LOGGING_APPENDERS_CONSOLE_LOG_FORMAT` | [logFormat]({{< relref "reaper_specific.md#logformat" >}}) | "%-6level [%d] [%t] %logger{5} - %msg %n" |
+| `REAPER_LOGGING_APPENDERS_CONSOLE_THRESHOLD` | [threshold]({{< relref "reaper_specific.md#threshold" >}}) | INFO |
+| `REAPER_LOGGING_LOGGERS` | [loggers]({{< relref "reaper_specific.md#loggers" >}}) | {} |
+| `REAPER_LOGGING_ROOT_LEVEL` | [level]({{< relref "reaper_specific.md#level" >}}) | INFO |
+| `REAPER_MAX_PENDING_COMPACTIONS` | [maxPendingCompactions]({{< relref "reaper_specific.md#maxpendingcompactions" >}}) | 20 |
+| `REAPER_METRICS_FREQUENCY` | [fequency]({{< relref "reaper_specific.md#fequency" >}}) | 1 minute |
+| `REAPER_METRICS_REPORTERS` | [reporters]({{< relref "reaper_specific.md#reporters" >}}) | [] |
+| `REAPER_REPAIR_INTENSITY` | [repairIntensity]({{< relref "reaper_specific.md#repairintensity" >}}) | 0.9 |
+| `REAPER_REPAIR_MANAGER_SCHEDULING_INTERVAL_SECONDS` | [repairManagerSchedulingIntervalSeconds]({{< relref "reaper_specific.md#repairmanagerschedulingintervalseconds" >}}) | 30 |
+| `REAPER_REPAIR_PARALELLISM` | [repairParallelism]({{< relref "reaper_specific.md#repairparallelism" >}}) | DATACENTER_AWARE |
+| `REAPER_REPAIR_RUN_THREADS` | [repairRunThreadCount]({{< relref "reaper_specific.md#repairrunthreadcount" >}}) | 15 |
+| `REAPER_SCHEDULE_DAYS_BETWEEN` | [scheduleDaysBetween]({{< relref "reaper_specific.md#scheduledaysbetween" >}}) | 7 |
+| `REAPER_SEGMENT_COUNT_PER_NODE` | [segmentCountPerNode]({{< relref "reaper_specific.md#segmentcount" >}}) | 64 |
+| `REAPER_SERVER_ADMIN_BIND_HOST` | [bindHost]({{< relref "reaper_specific.md#bindhost" >}}) | 0.0.0.0 |
+| `REAPER_SERVER_ADMIN_PORT` | [port]({{< relref "reaper_specific.md#port" >}}) | 8081 |
+| `REAPER_SERVER_APP_BIND_HOST` | [bindHost]({{< relref "reaper_specific.md#bindhost" >}}) | 0.0.0.0 |
+| `REAPER_SERVER_APP_PORT` | [port]({{< relref "reaper_specific.md#port" >}}) | 8080 |
+| `REAPER_STORAGE_TYPE` | [storageType]({{< relref "reaper_specific.md#storagetype" >}}) | memory |
+| `REAPER_USE_ADDRESS_TRANSLATOR` | [useAddressTranslator]({{< relref "reaper_specific.md#useaddresstranslator" >}}) | false |
+| `REAPER_MAX_PARALLEL_REPAIRS` | [maxParallelRepairs]({{< relref "reaper_specific.md#maxParallelRepairs" >}}) | 2 |
+| `CRYPTO_SYSTEM_PROPERTY_SECRET` | [cryptograph/systemPropertySecret]({{< relref "reaper_specific.md#cryptograph" >}}) | Unset |
+| `REAPER_HTTP_MANAGEMENT_ENABLE` | [httpManagement/enabled]({{< relref "reaper_specific.md#httpManagement" >}}) | false |
+| `REAPER_HTTP_MANAGEMENT_KEYSTORE_PATH` | [httpManagement/keystorePath]({{< relref "reaper_specific.md#httpManagement" >}}) | |
+| `REAPER_HTTP_MANAGEMENT_TRUSTSTORE_PATH` | [httpManagement/truststorePath]({{< relref "reaper_specific.md#httpManagement" >}}) | |
+| `REAPER_HTTP_MANAGEMENT_TRUSTSTORES_DIR` | [httpManagement/truststoresDir]({{< relref "reaper_specific.md#httpManagement" >}}) | |
+| `REAPER_MGMT_API_METRICS_PORT` | [mgmtApiMetricsPort]({{< relref "reaper_specific.md#mgmtapimetricsport" >}}) | 9000 |
+| `REAPER_PURGE_RECORDS_AFTER_IN_DAYS` | [purgeRecordsAfterInDays]({{< relref "reaper_specific.md#purgeRecordsAfterInDays" >}}) | 30 |
 
-<br/>
+## Runtime Configuration Variables
+
+The following Docker environment variables control runtime behavior and do not map directly to configuration file settings:
+
+| Environment Variable | Description | Default Value |
+|---|---|---|
+| `REAPER_HEAP_SIZE` | JVM heap size for the Reaper process | 1G |
+| `REAPER_TMP_DIRECTORY` | Temporary directory for Reaper operations | /var/tmp/cassandra-reaper |
+| `REAPER_MEMORY_STORAGE_DIRECTORY` | Directory for memory storage persistence | /var/lib/cassandra-reaper/storage |
+| `JAVA_OPTS` | Additional JVM options to pass to the Reaper process | |
+
+## Cluster Registration Variables
+
+The following Docker environment variables are used when running the `register-clusters` command:
+
+| Environment Variable | Description | Default Value |
+|---|---|---|
+| `REAPER_AUTO_SCHEDULING_SEEDS` | Comma-separated list of 'host:port' entries for Cassandra nodes | |
+| `REAPER_HOST` | Hostname of the Reaper instance | |
+| `REAPER_PORT` | Port of the Reaper instance | 8080 |
 
 ## Using Address translator mapping
 
 The Docker environment variables listed in this section are those related to the feature address translator mapping.
 
-<h4>Environment Variable</h4> | <h4>Configuration Setting</h4> | <h4>Example Values</h4>
---- | --- | ---
-<code class="codeLarge">REAPER_CASS_ADDRESS_TRANSLATOR_TYPE</code> | [addressTranslator]({{< relref "reaper_specific.md#addressTranslator" >}}) | ec2MultiRegion or multiIpPerNode 
-<code class="codeLarge">REAPER_CASS_ADDRESS_TRANSLATOR_MAPPING</code> | [addressTranslator]({{< relref "reaper_specific.md#addressTranslator" >}}) | host1:ip1,host2:ip2,host3:ip3
-<code class="codeLarge">JMX_ADDRESS_TRANSLATOR_TYPE</code> | [jmxAddressTranslator]({{< relref "reaper_specific.md#jmxAddressTranslator" >}}) | ec2MultiRegion or multiIpPerNode 
-<code class="codeLarge">JMX_ADDRESS_TRANSLATOR_MAPPING</code> | [jmxAddressTranslator]({{< relref "reaper_specific.md#jmxAddressTranslator" >}}) | host1:ip1,host2:ip2,host3:ip3
+| Environment Variable | Configuration Setting | Example Values |
+|---|---|---|
+| `REAPER_CASS_ADDRESS_TRANSLATOR_TYPE` | [addressTranslator]({{< relref "reaper_specific.md#addressTranslator" >}}) | ec2MultiRegion or multiIpPerNode |
+| `REAPER_CASS_ADDRESS_TRANSLATOR_MAPPING` | [addressTranslator]({{< relref "reaper_specific.md#addressTranslator" >}}) | host1:ip1,host2:ip2,host3:ip3 |
+| `JMX_ADDRESS_TRANSLATOR_TYPE` | [jmxAddressTranslator]({{< relref "reaper_specific.md#jmxAddressTranslator" >}}) | ec2MultiRegion or multiIpPerNode |
+| `JMX_ADDRESS_TRANSLATOR_MAPPING` | [jmxAddressTranslator]({{< relref "reaper_specific.md#jmxAddressTranslator" >}}) | host1:ip1,host2:ip2,host3:ip3 |
 
 Example :
 
@@ -100,29 +125,26 @@ jmxAddressTranslator:
     - from: "host2"
       to: "ip2"
 ```
-<br/>
+
 **Note:**
 
 ## Authentication Configuration Variables
 
 The following Docker environment variables control authentication settings. These variables are handled specially by configuration scripts that run at container startup.
 
-<h4>Environment Variable</h4> | <h4>Description</h4> | <h4>Required</h4>
----|---|---
-<code class="codeLarge">REAPER_AUTH_ENABLED</code> | Enable/disable authentication globally | No (default: true)
-<code class="codeLarge">REAPER_AUTH_USER</code> | Username for the admin user with operator role | **Yes** (when auth is enabled)
-<code class="codeLarge">REAPER_AUTH_PASSWORD</code> | Password for the admin user | **Yes** (when auth is enabled)
-<code class="codeLarge">REAPER_READ_USER</code> | Username for optional read-only user | No (only configured if both user and password are set)
-<code class="codeLarge">REAPER_READ_USER_PASSWORD</code> | Password for optional read-only user | No (only configured if both user and password are set)
-<code class="codeLarge">JWT_SECRET</code> | Secret key for JWT token signing (minimum 256 bits) | No (has default, change in production)
+| Environment Variable | Description | Required |
+|---|---|---|
+| `REAPER_AUTH_ENABLED` | Enable/disable authentication globally | No (default: true) |
+| `REAPER_AUTH_USER` | Username for the admin user with operator role | **Yes** (when auth is enabled) |
+| `REAPER_AUTH_PASSWORD` | Password for the admin user | **Yes** (when auth is enabled) |
+| `REAPER_READ_USER` | Username for optional read-only user | No (only configured if both user and password are set) |
+| `REAPER_READ_USER_PASSWORD` | Password for optional read-only user | No (only configured if both user and password are set) |
 
 **Note**: The read-only user (`REAPER_READ_USER` and `REAPER_READ_USER_PASSWORD`) is configured conditionally. The user is only added to the authentication configuration if both environment variables are set to non-empty values. This prevents environment variable resolution errors while maintaining security.
 
 ## Associated Reaper Specific Configuration Settings
 
 The following Docker environment variables have no direct mapping to a setting in the *cassandra-reaper.yaml* configuration file. However, they do affect the content contained in the file that is Reaper specific.
-
-</br>
 
 #### `REAPER_METRICS_ENABLED`
 
@@ -153,51 +175,43 @@ docker run \
     thelastpickle/cassandra-reaper:master
 ```
 
-
 ## Direct Mapping to Cassandra Backend Specific Configuration Settings
 
 The Docker environment variables listed in this section map directly to Cassandra backend specific settings in the *cassandra-reaper.yaml* configuration file. The following table below lists the Docker environment variables, their associated Cassandra backend specific setting in the *cassandra-reaper.yaml* configuration file, and the default value assigned by the Docker container (if any). Definitions for each Docker environment variable can be found via the link to the associated setting.
 
 In order for the Cassandra backend to be used, `REAPER_STORAGE_TYPE` must be set to `cassandra`.
 
-<br/>
-
-<h4>Environment Variable</h4> | <h4>Configuration Setting</h4>                                                                      | <h4>Default Value</h4>
----|-----------------------------------------------------------------------------------------------------|---
-<code class="codeLarge">REAPER_CASS_ACTIVATE_QUERY_LOGGER</code> | [activateQueryLogger]({{< relref "backend_specific.md#activatequerylogger" >}})                     | false
-<code class="codeLarge">REAPER_CASS_CLUSTER_NAME</code> | [clusterName]({{< relref "backend_specific.md#clustername" >}})                                     | clustername
-<code class="codeLarge">REAPER_CASS_CONTACT_POINTS</code> | [contactPoints]({{< relref "backend_specific.md#contactpoints" >}})                                 | {"host": "127.0.0.1", "port": "9042"}, {"host": "127.0.0.2", "port": "9042"}
-<code class="codeLarge">REAPER_CASS_KEYSPACE</code> | [keyspace]({{< relref "backend_specific.md#keyspace" >}})                                           | reaper_db
-<code class="codeLarge">REAPER_CASS_LOCAL_DC</code> | [localDC]({{< relref "backend_specific.md#localdc" >}})                                             |
-<code class="codeLarge">REAPER_CASS_AUTH_USERNAME</code> | [username]({{< relref "backend_specific.md#username" >}})                                           | cassandra
-<code class="codeLarge">REAPER_CASS_AUTH_PASSWORD</code> | [password]({{< relref "backend_specific.md#password" >}})                                           | cassandra
-<code class="codeLarge">REAPER_CASS_SCHEMA_AGREEMENT_INTERVAL</code> | [agreementIntervalMilliseconds]({{< relref "backend_specific.md#agreementIntervalMilliseconds" >}}) | 2000
-<code class="codeLarge">REAPER_CASS_SCHEMA_AGREEMENT_TIMEOUT</code> | [agreementTimeoutSeconds]({{< relref "backend_specific.md#agreementTimeoutSeconds" >}})             | 2000
-<code class="codeLarge">REAPER_CASS_REQUEST_TIMEOUT</code> | [requestTimeout]({{< relref "backend_specific.md#requestTimeout" >}})                        | 10s
-
-<br/>
+| Environment Variable | Configuration Setting | Default Value |
+|---|---|---|
+| `REAPER_CASS_ACTIVATE_QUERY_LOGGER` | [activateQueryLogger]({{< relref "backend_specific.md#activatequerylogger" >}}) | false |
+| `REAPER_CASS_CLUSTER_NAME` | [clusterName]({{< relref "backend_specific.md#clustername" >}}) | clustername |
+| `REAPER_CASS_CONTACT_POINTS` | [contactPoints]({{< relref "backend_specific.md#contactpoints" >}}) | {"host": "127.0.0.1", "port": "9042"}, {"host": "127.0.0.2", "port": "9042"} |
+| `REAPER_CASS_KEYSPACE` | [keyspace]({{< relref "backend_specific.md#keyspace" >}}) | reaper_db |
+| `REAPER_CASS_LOCAL_DC` | [localDC]({{< relref "backend_specific.md#localdc" >}}) | |
+| `REAPER_CASS_AUTH_USERNAME` | [username]({{< relref "backend_specific.md#username" >}}) | cassandra |
+| `REAPER_CASS_AUTH_PASSWORD` | [password]({{< relref "backend_specific.md#password" >}}) | cassandra |
+| `REAPER_CASS_SCHEMA_AGREEMENT_INTERVAL` | [agreementIntervalMilliseconds]({{< relref "backend_specific.md#agreementIntervalMilliseconds" >}}) | 2000 |
+| `REAPER_CASS_SCHEMA_AGREEMENT_TIMEOUT` | [agreementTimeoutSeconds]({{< relref "backend_specific.md#agreementTimeoutSeconds" >}}) | 10 |
+| `REAPER_CASS_REQUEST_TIMEOUT` | [requestTimeout]({{< relref "backend_specific.md#requestTimeout" >}}) | 10s |
 
 **Note:**
 
 Some variable names and defaults have changed between the release of Docker-support and Reaper for Apache Cassandra 1.0. The following Cassandra Backend specific variable name changes have occurred in an effort to match closely with our YAML parameter names:
 
-<h4>Pre Reaper 1.0</h4> | <h4>Post Reaper 1.0</h4>
----|---
-`REAPER_ACTIVATE_QUERY_LOGGER` | `REAPER_CASS_ACTIVATE_QUERY_LOGGER`
-
-<br/>
+| Pre Reaper 1.0 | Post Reaper 1.0 |
+|---|---|
+| `REAPER_ACTIVATE_QUERY_LOGGER` | `REAPER_CASS_ACTIVATE_QUERY_LOGGER` |
 
 The following default values have changed:
 
-<h4>Environment Variable</h4> | <h4>Previous Default</h4> | <h4>New Default</h4>
----|---|---
-`REAPER_CASS_KEYSPACE` | *cassandra-reaper* | *reaper_db*
+| Environment Variable | Previous Default | New Default |
+|---|---|---|
+| `REAPER_CASS_KEYSPACE` | *cassandra-reaper* | *reaper_db* |
+| `REAPER_CASS_SCHEMA_AGREEMENT_TIMEOUT` | *2000* | *10* |
 
 ## Associated Cassandra Backend Specific Configuration Settings
 
 The following Docker environment variables have no direct mapping to a setting in the *cassandra-reaper.yaml* configuration file. However, the do affect the content contained in the file that is Cassandra backend specific.
-
-</br>
 
 #### `REAPER_CASS_AUTH_ENABLED`
 
@@ -207,7 +221,13 @@ Default: *false*
 
 Allows Reaper to send authentication credentials when establishing a connection with Cassandra via the native protocol. When enabled, authentication credentials must be specified by setting values for `REAPER_CASS_AUTH_USERNAME` and `REAPER_CASS_AUTH_PASSWORD`.
 
-</br>
+#### `REAPER_CASS_ADDRESS_TRANSLATOR_ENABLED`
+
+Type: *Boolean*
+
+Default: *false*
+
+Enables the use of address translation for Cassandra connections. When enabled, `REAPER_CASS_ADDRESS_TRANSLATOR_TYPE` and `REAPER_CASS_ADDRESS_TRANSLATOR_MAPPING` must be set appropriately.
 
 #### `REAPER_CASS_NATIVE_PROTOCOL_SSL_ENCRYPTION_ENABLED`
 
@@ -217,26 +237,4 @@ Default: *false*
 
 Allows Reaper to establish an encrypted connection when establishing a connection with Cassandra via the native protocol.
 
-## Direct Mapping to H2 or Postgres Backend Configuration Settings
 
-**Removed in v3.0.0**
-
-The Docker environment variables listed in this section map directly to H2/Postgres backend specific settings in the *cassandra-reaper.yaml* configuration file. The following table below lists the Docker environment variables, their associated H2/Postgres backend specific setting in the *cassandra-reaper.yaml* configuration file, and the default value assigned by the Docker container (if any). Definitions for each Docker environment variable can be found via the link to the associated setting.
-
-In order to use the following settings, `REAPER_STORAGE_TYPE` must be set to `h2` or `postgres`.
-
-<h4>Environment Variable</h4> | <h4>Configuration Setting</h4> | <h4>Default Value</h4>
----|---|---
-<code class="codeLarge">REAPER_DB_URL</code> | [url]({{< relref "backend_specific.md#url" >}}) | jdbc:h2:/var/lib/cassandra-reaper/db;MODE=PostgreSQL
-<code class="codeLarge">REAPER_DB_USERNAME</code> | [user]({{< relref "backend_specific.md#user" >}}) |
-<code class="codeLarge">REAPER_DB_PASSWORD</code> | [password]({{< relref "backend_specific.md#password-1" >}}) |
-
-<br/>
-
-**Note:**
-
-Some variable names have changed between the release of Docker-support and Reaper for Apache Cassandra 1.0. The following Reaper specific variable name changes have occurred in an effort to match closely with the YAML parameter names:
-
-<h4>Pre Reaper 1.0</h4> | <h4>Post Reaper 1.0</h4>
----|---
-`REAPER_DB_DRIVER_CLASS` | N/A - The associated parameter has been deprecated

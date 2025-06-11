@@ -1,11 +1,7 @@
-+++
-[menu.docs]
-name = "Cassandra"
-parent = "backends"
-weight = 4
-+++
-
-# Cassandra Backend
+---
+title: "Cassandra Backend"
+weight: 4
+---
 
 To use Apache Cassandra as the persistent storage for Reaper, the `storageType` setting must be set to **cassandra** in the Reaper configuration YAML file. In addition, the connection details for the Apache Cassandra cluster being used to store Reaper data must be specified in the configuration YAML file. An example of how to configure Cassandra as persistent storage for Reaper can be found in the *[cassandra-reaper-cassandra.yaml](https://github.com/thelastpickle/cassandra-reaper/blob/master/src/packaging/resource/cassandra-reaper-cassandra.yaml)*.
 
@@ -52,7 +48,7 @@ When operating Reaper in a production environment, it is recommended that:
 
 Schema initialization and migration will be done automatically upon startup.
 
-Sometimes it’s not possible for Cassandra nodes to broadcast addresses that will work for each and every client; for instance, they might broadcast private IPs because most clients are in the same network, but a particular client could be on another network and go through a router. For such cases, you can configure a custom address translator that will perform additional address translation based on configured mapping.
+Sometimes it's not possible for Cassandra nodes to broadcast addresses that will work for each and every client; for instance, they might broadcast private IPs because most clients are in the same network, but a particular client could be on another network and go through a router. For such cases, you can configure a custom address translator that will perform additional address translation based on configured mapping.
 
 ```yaml
 storageType: cassandra

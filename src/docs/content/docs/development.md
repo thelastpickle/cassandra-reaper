@@ -1,8 +1,7 @@
-+++
-[menu.docs]
-name = "Development"
-weight = 200
-+++
+---
+title: "Development"
+weight: 200
+---
 
 # Forward Merging
 

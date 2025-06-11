@@ -1,11 +1,7 @@
-+++
-[menu.docs]
-name = "Configuration Reference"
-identifier = "configuration"
-weight = 15
-+++
-
-# Configuration
+---
+title: "Configuration Reference"
+weight: 15
+---
 
 An example testing configuration YAML file can be found from within this project repository:
 [src/server/src/test/resources/cassandra-reaper.yaml](https://github.com/thelastpickle/cassandra-reaper/blob/master/src/packaging/resource/cassandra-reaper-cassandra.yaml).

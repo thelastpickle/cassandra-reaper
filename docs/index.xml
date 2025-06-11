@@ -1,11 +1,21 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>Reaper: Easy Repair Management for Apache Cassandra</title>
+    <title>Reaper for Apache Cassandra on Reaper: Easy Repair Management for Apache Cassandra</title>
     <link>http://cassandra-reaper.io/</link>
-    <description>Recent content on Reaper: Easy Repair Management for Apache Cassandra</description>
+    <description>Recent content in Reaper for Apache Cassandra on Reaper: Easy Repair Management for Apache Cassandra</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language><atom:link href="http://cassandra-reaper.io/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Frequently Asked Questions</title>
+      <link>http://cassandra-reaper.io/faq/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://cassandra-reaper.io/faq/</guid>
+      <description>Frequently Asked Questions Why use Reaper instead of nodetool + cron? While it&amp;rsquo;s possible to set up crontab to call nodetool, it requires staggering the crons to ensure overlap is kept to a minimum. Reaper is able to intelligently schedule repairs to avoid putting too much load on the cluster, avoiding impacting performance. Reaper also offers a simple UI to schedule repairs as granularly as needed.
+Do I need to do repairs if I&amp;rsquo;m not deleting data?</description>
+    </item>
+    
     <item>
       <title></title>
       <link>http://cassandra-reaper.io/docs/api/</link>
@@ -13,17 +23,8 @@
       
       <guid>http://cassandra-reaper.io/docs/api/</guid>
       <description>Rest API Source code for all the REST resources can be found from package io.cassandrareaper.resources.
-Login Resource  POST /login  Expected form parameters:
-* username: User to login with as defined in Shiro settings (default user is admin) * password: Password to authenticate with through Shiro (default password of user admin is: admin) * rememberMe: Boolean to have the Web UI remember the username Endpoint for logging in to Reaper    Shiro JWT Provider  GET /jwt  Expected query parameters: None Returns a JWT to use in all REST calls when authentication is turned on in Reaper.</description>
-    </item>
-    
-    <item>
-      <title></title>
-      <link>http://cassandra-reaper.io/docs/backends/astra/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>http://cassandra-reaper.io/docs/backends/astra/</guid>
-      <description>Astra Backend To use Astra (Cassandra managed service by Datastax) as the persistent storage for Reaper, the storageType setting must be set to astra in the Reaper configuration YAML file. In addition, the connection details for the Astra cluster being used to store Reaper data must be specified in the configuration YAML file. An example of how to configure Astra as persistent storage for Reaper can be found in the cassandra-reaper-astra.</description>
+Login Resource POST /login Expected form parameters:
+* username: User to login with as defined in Shiro settings (default user is admin) * password: Password to authenticate with through Shiro (default password of user admin is: admin) * rememberMe: Boolean to have the Web UI remember the username Endpoint for logging in to Reaper Shiro JWT Provider GET /jwt Expected query parameters: None Returns a JWT to use in all REST calls when authentication is turned on in Reaper.</description>
     </item>
     
     <item>
@@ -54,7 +55,7 @@ storageType: h2 h2: # H2 JDBC settings url: jdbc:h2:~/reaper-db/db;MODE=PostgreS
       
       <guid>http://cassandra-reaper.io/docs/backends/memory/</guid>
       <description>In-Memory Backend To use in memory storage as the storage type for Reaper, the storageType setting must be set to memory in the Reaper configuration YAML file. Note that the in memory storage is enabled by default. An example of how to configure Reaper with In-Menory storage can be found in the cassandra-reaper-memory.yaml.
-storageType: memory In-memory storage is volatile and as such all registered cluster, column families and repair information will be lost upon service restart.</description>
+storageType: memory persistenceStoragePath: /var/lib/cassandra-reaper/storage In-memory storage is volatile and as such all registered cluster, column families and repair information will be lost upon service restart.</description>
     </item>
     
     <item>
@@ -91,8 +92,9 @@ To use PostgreSQL as the persistent storage for Reaper, the storageType setting 
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>http://cassandra-reaper.io/docs/configuration/authentication/</guid>
-      <description>Authentication Authentication is activated in Reaper by default. It relies on Apache Shiro, which allows to store users and password in files, databases or connect through LDAP and Active Directory out of the box. The default authentication uses the dummy username and password as found in the default shiro.ini. It is expected you override this in a production environment.
-This default Shiro authentication configuration is referenced via the following block in the Reaper yaml file :</description>
+      <description>Authentication Authentication in Reaper is powered by Dropwizard Authentication with JWT (JSON Web Token) support. This provides a modern, stateless authentication system suitable for both web UI and REST API access.
+Overview Reaper implements a dual authentication strategy:
+JWT Authentication: Used for REST API endpoints and modern web applications Basic Authentication: Available as a fallback for simple integrations WebUI Protection: Custom servlet filter that protects the web interface Authentication is enabled by default but requires explicit user configuration.</description>
     </item>
     
     <item>
@@ -196,7 +198,7 @@ Repair progress One of the simplest things to visualize is repair progress. We c
       <guid>http://cassandra-reaper.io/docs/metrics/graphite/</guid>
       <description>Graphite Reporter Reaper can be configured to periodically report metrics to a Graphite host. This can be done using the following properties in the Reaper configuration YAML file.
 Metrics: frequency: 1 minute reporters: - type: graphite host: &amp;lt;host_address&amp;gt; port: &amp;lt;port_number&amp;gt; prefix: &amp;lt;prefix&amp;gt; Where:
- host_address is hostname of the Graphite server to report to. port_number is port of the Graphite server to report to. prefix is prefix for Metric key names that are reported to the Graphite server.</description>
+host_address is hostname of the Graphite server to report to. port_number is port of the Graphite server to report to. prefix is prefix for Metric key names that are reported to the Graphite server.</description>
     </item>
     
     <item>
@@ -207,7 +209,7 @@ Metrics: frequency: 1 minute reporters: - type: graphite host: &amp;lt;host_addr
       <guid>http://cassandra-reaper.io/docs/metrics/prometheus/</guid>
       <description>Prometheus Reaper exposes all its metrics in a Prometheus-ready format under the /prometheusMetrics endpoint on the admin port.
 It&amp;rsquo;s fairly straightforward to configure Prometheus to grab them. The config can look something like:
-scrape_configs: - job_name: &amp;#39;reaper&amp;#39; metrics_path: &amp;#39;/prometheusMetrics&amp;#39; scrape_interval: 5s static_configs: - targets: [&amp;#39;host.docker.internal:8081&amp;#39;]  The host.docker.internal tells a Prometheus instance running inside a docker container to connect to the host&amp;rsquo;s 8081 port where Raper runs from a JAR.  </description>
+scrape_configs: - job_name: &amp;#39;reaper&amp;#39; metrics_path: &amp;#39;/prometheusMetrics&amp;#39; scrape_interval: 5s static_configs: - targets: [&amp;#39;host.docker.internal:8081&amp;#39;] The host.docker.internal tells a Prometheus instance running inside a docker container to connect to the host&amp;rsquo;s 8081 port where Raper runs from a JAR. </description>
     </item>
     
     <item>
@@ -217,7 +219,7 @@ scrape_configs: - job_name: &amp;#39;reaper&amp;#39; metrics_path: &amp;#39;/pro
       
       <guid>http://cassandra-reaper.io/docs/usage/add_cluster/</guid>
       <description>Adding a Cluster Enter an address of one of the nodes in the cluster, then click Add Cluster Reaper will contact that node and find the rest of the nodes in the cluster automatically.
-      Once successfully completed, the Cluster&amp;rsquo;s health will be displayed.
+Once successfully completed, the Cluster&amp;rsquo;s health will be displayed.
 If JMX authentication is required and all clusters share the same credentials, they have to be filled in the Reaper YAML file, under jmxAuth (see the configuration reference).</description>
     </item>
     
@@ -239,8 +241,7 @@ Enabling Diagnostic Events server-side in Apache Cassandra 4.0 Available from Ap
       
       <guid>http://cassandra-reaper.io/docs/usage/health/</guid>
       <description>Checking a Cluster&amp;rsquo;s Health Dashboard When a cluster has been added to Reaper it will be displayed in the dashboard.
-      Node View Clicking on one of the nodes will open a dialog box containing details of the node&amp;rsquo;s state.
-      </description>
+Node View Clicking on one of the nodes will open a dialog box containing details of the node&amp;rsquo;s state.</description>
     </item>
     
     <item>
@@ -270,7 +271,7 @@ Single Reaper instance with JMX accessible for all DCs In the case where the JMX
       <guid>http://cassandra-reaper.io/docs/usage/schedule/</guid>
       <description>Scheduling a Cluster Repair Reaper has the ability to create and manage repair schedules for a cluster. This can be done in the following way.
 Setup a Repair Schedule Click the schedule menu item on the left side to navigate to the Schedules page. Click Add schedule to open the schedule details form.
-      Fill in the Details Enter values for the keyspace, tables, owner and other fields and click Add Schedule button.</description>
+Fill in the Details Enter values for the keyspace, tables, owner and other fields and click Add Schedule button.</description>
     </item>
     
     <item>
@@ -290,17 +291,7 @@ Setup a Repair Schedule Click the schedule menu item on the left side to navigat
       <guid>http://cassandra-reaper.io/docs/usage/single/</guid>
       <description>Running a Cluster Repair Reaper has the ability to launch a once-off repair on a cluster. This can be done in the following way.
 Start a New Repair Click the repair menu item on the left side to navigate to the Repair page. Click Start a new repair to open the repair details form.
-      Fill in the Details Enter values for the keyspace, tables, owner and other fields and click the Repair button.</description>
-    </item>
-    
-    <item>
-      <title></title>
-      <link>http://cassandra-reaper.io/faq/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>http://cassandra-reaper.io/faq/</guid>
-      <description>Frequently Asked Questions Why use Reaper instead of nodetool + cron? While it&amp;rsquo;s possible to set up crontab to call nodetool, it requires staggering the crons to ensure overlap is kept to a minimum. Reaper is able to intelligently schedule repairs to avoid putting too much load on the cluster, avoiding impacting performance. Reaper also offers a simple UI to schedule repairs as granularly as needed.
-Do I need to do repairs if I&amp;rsquo;m not deleting data?</description>
+Fill in the Details Enter values for the keyspace, tables, owner and other fields and click the Repair button.</description>
     </item>
     
     <item>

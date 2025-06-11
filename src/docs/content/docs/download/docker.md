@@ -1,9 +1,8 @@
-+++
-[menu.docs]
-name = "Docker"
-weight = 50
-parent = "download"
-+++
+---
+title: "Docker"
+weight: 50
+parent: "download"
+---
 
 # Docker
 

@@ -1,20 +1,11 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>Reaper: Easy Repair Management for Apache Cassandra</title>
+    <title>Backends on Reaper: Easy Repair Management for Apache Cassandra</title>
     <link>http://cassandra-reaper.io/docs/backends/</link>
-    <description>Recent content on Reaper: Easy Repair Management for Apache Cassandra</description>
+    <description>Recent content in Backends on Reaper: Easy Repair Management for Apache Cassandra</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language><atom:link href="http://cassandra-reaper.io/docs/backends/index.xml" rel="self" type="application/rss+xml" />
-    <item>
-      <title></title>
-      <link>http://cassandra-reaper.io/docs/backends/astra/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>http://cassandra-reaper.io/docs/backends/astra/</guid>
-      <description>Astra Backend To use Astra (Cassandra managed service by Datastax) as the persistent storage for Reaper, the storageType setting must be set to astra in the Reaper configuration YAML file. In addition, the connection details for the Astra cluster being used to store Reaper data must be specified in the configuration YAML file. An example of how to configure Astra as persistent storage for Reaper can be found in the cassandra-reaper-astra.</description>
-    </item>
-    
     <item>
       <title></title>
       <link>http://cassandra-reaper.io/docs/backends/cassandra/</link>
@@ -43,7 +34,7 @@ storageType: h2 h2: # H2 JDBC settings url: jdbc:h2:~/reaper-db/db;MODE=PostgreS
       
       <guid>http://cassandra-reaper.io/docs/backends/memory/</guid>
       <description>In-Memory Backend To use in memory storage as the storage type for Reaper, the storageType setting must be set to memory in the Reaper configuration YAML file. Note that the in memory storage is enabled by default. An example of how to configure Reaper with In-Menory storage can be found in the cassandra-reaper-memory.yaml.
-storageType: memory In-memory storage is volatile and as such all registered cluster, column families and repair information will be lost upon service restart.</description>
+storageType: memory persistenceStoragePath: /var/lib/cassandra-reaper/storage In-memory storage is volatile and as such all registered cluster, column families and repair information will be lost upon service restart.</description>
     </item>
     
     <item>

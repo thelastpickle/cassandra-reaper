@@ -1,12 +1,9 @@
-+++
-[menu.docs]
-name = "Scheduling a Cluster Repair"
-weight = 40
-identifier = "schedules"
-parent = "usage"
-+++
-
-# Scheduling a Cluster Repair
+---
+title: "Scheduling a Cluster Repair"
+weight: 40
+identifier: "schedules"
+parent: "usage"
+---
 
 Reaper has the ability to create and manage repair schedules for a cluster. This can be done in the following way.
 

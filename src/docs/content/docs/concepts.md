@@ -1,10 +1,7 @@
-+++
-[menu.docs]
-name = "Core Concepts"
-weight = 5
-+++
-
-# Core Concepts
+---
+title: "Core Concepts"
+weight: 5
+---
 
 ## Segments
 

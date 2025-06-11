@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>Reaper: Easy Repair Management for Apache Cassandra</title>
+    <title>Documentation on Reaper: Easy Repair Management for Apache Cassandra</title>
     <link>http://cassandra-reaper.io/docs/</link>
-    <description>Recent content on Reaper: Easy Repair Management for Apache Cassandra</description>
+    <description>Recent content in Documentation on Reaper: Easy Repair Management for Apache Cassandra</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language><atom:link href="http://cassandra-reaper.io/docs/index.xml" rel="self" type="application/rss+xml" />
     <item>
@@ -13,8 +13,8 @@
       
       <guid>http://cassandra-reaper.io/docs/api/</guid>
       <description>Rest API Source code for all the REST resources can be found from package io.cassandrareaper.resources.
-Login Resource  POST /login  Expected form parameters:
-* username: User to login with as defined in Shiro settings (default user is admin) * password: Password to authenticate with through Shiro (default password of user admin is: admin) * rememberMe: Boolean to have the Web UI remember the username Endpoint for logging in to Reaper    Shiro JWT Provider  GET /jwt  Expected query parameters: None Returns a JWT to use in all REST calls when authentication is turned on in Reaper.</description>
+Login Resource POST /login Expected form parameters:
+* username: User to login with as defined in Shiro settings (default user is admin) * password: Password to authenticate with through Shiro (default password of user admin is: admin) * rememberMe: Boolean to have the Web UI remember the username Endpoint for logging in to Reaper Shiro JWT Provider GET /jwt Expected query parameters: None Returns a JWT to use in all REST calls when authentication is turned on in Reaper.</description>
     </item>
     
     <item>

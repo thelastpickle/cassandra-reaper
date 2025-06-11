@@ -1,13 +1,10 @@
-+++
-[menu.docs]
-name = "Adding a Cluster"
-weight = 1
-identifier = "add_cluster"
-parent = "usage"
-+++
+---
+title: "Adding a Cluster"
+weight: 1
+identifier: "add_cluster"
+parent: "usage"
+---
 
-
-# Adding a Cluster
 
 Enter an address of one of the nodes in the cluster, then click *Add Cluster* Reaper will contact that node and find the rest of the nodes in the cluster automatically.
 

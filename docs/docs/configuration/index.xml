@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>Reaper: Easy Repair Management for Apache Cassandra</title>
+    <title>Configuration Reference on Reaper: Easy Repair Management for Apache Cassandra</title>
     <link>http://cassandra-reaper.io/docs/configuration/</link>
-    <description>Recent content on Reaper: Easy Repair Management for Apache Cassandra</description>
+    <description>Recent content in Configuration Reference on Reaper: Easy Repair Management for Apache Cassandra</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language><atom:link href="http://cassandra-reaper.io/docs/configuration/index.xml" rel="self" type="application/rss+xml" />
     <item>
@@ -12,8 +12,9 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>http://cassandra-reaper.io/docs/configuration/authentication/</guid>
-      <description>Authentication Authentication is activated in Reaper by default. It relies on Apache Shiro, which allows to store users and password in files, databases or connect through LDAP and Active Directory out of the box. The default authentication uses the dummy username and password as found in the default shiro.ini. It is expected you override this in a production environment.
-This default Shiro authentication configuration is referenced via the following block in the Reaper yaml file :</description>
+      <description>Authentication Authentication in Reaper is powered by Dropwizard Authentication with JWT (JSON Web Token) support. This provides a modern, stateless authentication system suitable for both web UI and REST API access.
+Overview Reaper implements a dual authentication strategy:
+JWT Authentication: Used for REST API endpoints and modern web applications Basic Authentication: Available as a fallback for simple integrations WebUI Protection: Custom servlet filter that protects the web interface Authentication is enabled by default but requires explicit user configuration.</description>
     </item>
     
     <item>

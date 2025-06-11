@@ -1,0 +1,9 @@
+[submodule "src/docs/themes/doks"]
+	path = src/docs/themes/doks
+	url = https://github.com/h-enk/doks.git
+[submodule "src/docs/themes/hugo-book"]
+	path = src/docs/themes/hugo-book
+	url = https://github.com/alex-shpak/hugo-book
+[submodule "src/docs/themes/learn"]
+	path = src/docs/themes/learn
+	url = https://github.com/matcornic/hugo-theme-learn.git
