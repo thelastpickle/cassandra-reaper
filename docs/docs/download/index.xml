@@ -34,7 +34,7 @@ make deb make rpm Building JARs from source Since Reaper v4, Java 11 is required
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>http://cassandra-reaper.io/docs/download/docker/</guid>
-      <description>Docker Docker and Docker Compose will need to be installed in order to use the commands in this section.
+      <description>Docker and Docker Compose will need to be installed in order to use the commands in this section.
 Building Reaper Docker Image Prerequisite The generation of the Docker image requires that the JAR file be built and placed in the src/packages directory. If the JAR package is missing from the directory then it can built using either the steps in the Docker package build section (above), or in the Building from Source section.</description>
     </item>
     
