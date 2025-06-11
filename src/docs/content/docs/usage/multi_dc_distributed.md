@@ -1,13 +1,10 @@
-+++
-[menu.docs]
-name = "Multi DCs with Multi Reapers"
-weight = 51
-identifier = "multi_dc_distributed"
-parent = "usage"
-+++
+---
+title: "Multi DCs with Multi Reapers"
+weight: 51
+identifier: "multi_dc_distributed"
+parent: "usage"
+---
 
-
-# Operating Multiple DCs using Multiple Reaper
 
 Multiple Reaper instances can operate clusters which have multi datacenter deployment. Multiple Reaper instances, also known as Distributed mode, can only be used when using the Apache Cassandra backend. Using multiple Reaper instances allows improved availability and fault tolerance. It is more likely that a Reaper UI is available via one of the Reaper instances, and that scheduled repairs are executed by one of the running Reaper instances.
 

@@ -1,6 +1,7 @@
-+++
-show_menu = true
-+++
+---
+title: "Documentation"
+weight: 1
+---
 
 ## Welcome to the Reaper for Apache Cassandra documentation!
 
