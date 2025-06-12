@@ -1,5 +1,12 @@
 ## Change Log
 
+### 4.0.0-beta2 (2025/06/12 10:03 +00:00)
+- [c867473](https://github.com/thelastpickle/cassandra-reaper/commit/c86747343ef87dfbab9cad284bd2971a60f13203) Migrate from Apache Shiro to Dropwizard JWT-based authentication (@adejanovski)
+- [#1573](https://github.com/thelastpickle/cassandra-reaper/pull/1573) Big reformat (#1573) (@adejanovski)
+- [#1572](https://github.com/thelastpickle/cassandra-reaper/pull/1572) Add Dockerfile env var for purge configuration to control repair run retention (#1572) (@adejanovski)
+- [#1569](https://github.com/thelastpickle/cassandra-reaper/pull/1569) Upgrade cassandra-all dependency and remove streaming bits (#1569) (@adejanovski)
+- [#1554](https://github.com/thelastpickle/cassandra-reaper/pull/1554) Add clusterName to JMX connection logs (#1554) (@andresbeckruiz)
+
 ### 4.0.0-beta1 (2025/05/06 15:08 +00:00)
 - [#1556](https://github.com/thelastpickle/cassandra-reaper/pull/1556) Upgrade Dropwizard and dropwizard-cassandra to v3 (#1556) (@adejanovski)
 - [#1550](https://github.com/thelastpickle/cassandra-reaper/pull/1550) Upgrade GH actions (#1550) (@adejanovski)
