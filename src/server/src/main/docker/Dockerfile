@@ -77,7 +77,8 @@ ENV REAPER_SEGMENT_COUNT_PER_NODE=64 \
     REAPER_AUTH_ENABLED="true" \
     REAPER_AUTH_USER="" \
     REAPER_AUTH_PASSWORD="" \
-    REAPER_SHIRO_INI="" \
+    REAPER_READ_USER="" \
+    REAPER_READ_USER_PASSWORD="" \
     JAVA_OPTS="" \
     REAPER_MAX_PARALLEL_REPAIRS=2 \
     REAPER_MGMT_API_METRICS_PORT=9000 \
@@ -95,12 +96,11 @@ RUN apk add --update \
   && rm -rf /var/cache/apk/*
 
 ADD src/server/src/main/docker/cassandra-reaper.yml /etc/cassandra-reaper/cassandra-reaper.yml
-ADD src/server/src/main/docker/shiro.ini /etc/cassandra-reaper/shiro.ini
 ADD src/server/src/main/docker/entrypoint.sh /usr/local/bin/entrypoint.sh
 ADD src/server/src/main/docker/configure-persistence.sh /usr/local/bin/configure-persistence.sh
 ADD src/server/src/main/docker/configure-metrics.sh /usr/local/bin/configure-metrics.sh
-ADD src/server/src/main/docker/configure-webui-authentication.sh /usr/local/bin/configure-webui-authentication.sh
 ADD src/server/src/main/docker/configure-jmx-credentials.sh /usr/local/bin/configure-jmx-credentials.sh
+ADD src/server/src/main/docker/configure-authentication.sh /usr/local/bin/configure-authentication.sh
 ADD ${SHADED_JAR} /usr/local/lib/cassandra-reaper.jar
 
 
@@ -115,10 +115,9 @@ RUN addgroup -g 1001 -S reaper && adduser -G reaper -S -u 1001 reaper && \
         /usr/local/lib/cassandra-reaper.jar \
         /usr/local/bin/entrypoint.sh \
         /usr/local/bin/configure-persistence.sh \
-        /usr/local/bin/configure-webui-authentication.sh \
         /usr/local/bin/configure-metrics.sh \
         /usr/local/bin/configure-jmx-credentials.sh \
-        /etc/cassandra-reaper/shiro.ini \
+        /usr/local/bin/configure-authentication.sh \
         ${REAPER_TMP_DIRECTORY} && \
     chown -R reaper:reaper \
         /var/lib/cassandra-reaper \
@@ -128,9 +127,9 @@ RUN addgroup -g 1001 -S reaper && adduser -G reaper -S -u 1001 reaper && \
     chmod +x \
         /usr/local/bin/entrypoint.sh \
         /usr/local/bin/configure-persistence.sh \
-        /usr/local/bin/configure-webui-authentication.sh \
         /usr/local/bin/configure-metrics.sh \
-        /usr/local/bin/configure-jmx-credentials.sh
+        /usr/local/bin/configure-jmx-credentials.sh \
+        /usr/local/bin/configure-authentication.sh
 
 VOLUME /var/lib/cassandra-reaper
 VOLUME /etc/cassandra-reaper/shiro

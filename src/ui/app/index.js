@@ -30,6 +30,26 @@ import {
 
 jQuery(document).ready(function($){
   document.documentElement.setAttribute('data-theme', Cookies.get('reaper-theme'));
+  
+  // Set up JWT authorization header if token exists
+  const token = sessionStorage.getItem('jwtToken');
+  if (token) {
+    // Set cookie for servlet filter access (if not already set)
+    if (!Cookies.get('jwtToken')) {
+      Cookies.set('jwtToken', token, { 
+        expires: 1, // 1 day default
+        secure: window.location.protocol === 'https:', 
+        sameSite: 'Lax' 
+      });
+    }
+    
+    $.ajaxSetup({
+      beforeSend: function(xhr) {
+        xhr.setRequestHeader('Authorization', 'Bearer ' + token);
+      }
+    });
+  }
+  
   $.urlParam = function(name){
     var results = new RegExp('[\?&]' + name + '=([^&#]*)').exec(window.location.href);
     if (results) {

@@ -52,11 +52,17 @@ TAG=latest
 REAPER_JMX_AUTH_USERNAME=reaperUser
 REAPER_JMX_AUTH_PASSWORD=reaperPass
 
+# Authentication credentials (required for security)
+REAPER_AUTH_USER=admin
+REAPER_AUTH_PASSWORD=your-secure-admin-password
+
 docker run \
     -p 8080:8080 \
     -p 8081:8081 \
     -e "REAPER_JMX_AUTH_USERNAME=${REAPER_JMX_AUTH_USERNAME}" \
     -e "REAPER_JMX_AUTH_PASSWORD=${REAPER_JMX_AUTH_PASSWORD}" \
+    -e "REAPER_AUTH_USER=${REAPER_AUTH_USER}" \
+    -e "REAPER_AUTH_PASSWORD=${REAPER_AUTH_PASSWORD}" \
     thelastpickle/cassandra-reaper:${TAG}
 ```
 
@@ -72,6 +78,10 @@ TAG=latest
 REAPER_JMX_AUTH_USERNAME=reaperUser
 REAPER_JMX_AUTH_PASSWORD=reaperPass
 
+# Authentication credentials (required for security)
+REAPER_AUTH_USER=admin
+REAPER_AUTH_PASSWORD=your-secure-admin-password
+
 REAPER_CASS_CLUSTER_NAME=reaper-cluster
 REAPER_CASS_CONTACT_POINTS={\"host\": \"192.168.2.185\", \"port\": \"9042\"}
 
@@ -80,6 +90,8 @@ docker run \
     -p 8081:8081 \
     -e "REAPER_JMX_AUTH_USERNAME=${REAPER_JMX_AUTH_USERNAME}" \
     -e "REAPER_JMX_AUTH_PASSWORD=${REAPER_JMX_AUTH_PASSWORD}" \
+    -e "REAPER_AUTH_USER=${REAPER_AUTH_USER}" \
+    -e "REAPER_AUTH_PASSWORD=${REAPER_AUTH_PASSWORD}" \
     -e "REAPER_STORAGE_TYPE=cassandra" \
     -e "REAPER_CASS_CLUSTER_NAME=${REAPER_CASS_CLUSTER_NAME}" \
     -e "REAPER_CASS_CONTACT_POINTS=${REAPER_CASS_CONTACT_POINTS}" \

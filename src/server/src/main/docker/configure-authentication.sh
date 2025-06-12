@@ -14,15 +14,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set -e
-
-NODETOOL_OPTS=""
-
-if [ "true" = "${NODETOOL_ENABLE_SSL}" ]; then
-    NODETOOL_OPTS="--ssl"
-
-    sed -ie "s/CASSANDRA_KEYSTORE_PASSWORD/${CASSANDRA_KEYSTORE_PASSWORD}/g" ${WORKDIR}/.cassandra/nodetool-ssl.properties
-    sed -ie "s/CASSANDRA_TRUSTSTORE_PASSWORD/${CASSANDRA_TRUSTSTORE_PASSWORD}/g" ${WORKDIR}/.cassandra/nodetool-ssl.properties
-fi
-
-nodetool --host ${CASSANDRA_HOSTNAME} --username cassandraUser --password cassandraPass ${NODETOOL_OPTS} $1
+# Add optional read-only user if environment variables are set
+if [ -n "${REAPER_READ_USER}" ] && [ -n "${REAPER_READ_USER_PASSWORD}" ]; then
+cat <<EOT >> /etc/cassandra-reaper/config/cassandra-reaper.yml
+    # Read-only user configured via environment variables
+    - username: "$(echo "${REAPER_READ_USER}" | sed 's/"/\\"/g')"
+      password: "$(echo "${REAPER_READ_USER_PASSWORD}" | sed 's/"/\\"/g')"
+      roles: ["user"]
+EOT
+fi 

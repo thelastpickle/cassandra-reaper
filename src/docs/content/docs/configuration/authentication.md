@@ -1,6 +1,6 @@
 +++
 [menu.docs]
-name = "Shiro Authentication"
+name = "Authentication"
 weight = 60
 identifier = "auth"
 parent = "configuration"
@@ -8,116 +8,187 @@ parent = "configuration"
 
 # Authentication
 
-Authentication is activated in Reaper by default. It relies on [Apache Shiro](https://shiro.apache.org/), which allows to store users and password in files, databases or connect through LDAP and Active Directory out of the box. The default authentication uses the dummy username and password as found in the default [shiro.ini](https://github.com/thelastpickle/cassandra-reaper/blob/master/src/server/src/main/resources/shiro.ini). It is expected you override this in a production environment.
+Authentication in Reaper is powered by [Dropwizard Authentication](https://www.dropwizard.io/en/latest/manual/auth.html) with JWT (JSON Web Token) support. This provides a modern, stateless authentication system suitable for both web UI and REST API access.
 
-This default Shiro authentication configuration is referenced via the  following block in the Reaper yaml file : 
+## Overview
 
-```ini
+Reaper implements a dual authentication strategy:
+- **JWT Authentication**: Used for REST API endpoints and modern web applications
+- **Basic Authentication**: Available as a fallback for simple integrations
+- **WebUI Protection**: Custom servlet filter that protects the web interface
+
+Authentication is **enabled by default** but **requires explicit user configuration**. No default users are provided for security reasons - you must configure at least one user or authentication will fail to start.
+
+## Configuration
+
+Authentication is configured in the `accessControl` section of your YAML configuration:
+
+```yaml
 accessControl:
-  sessionTimeout: PT10M
-  shiro:
-    iniConfigs: ["classpath:shiro.ini"]
+  enabled: true                    # Enable/disable authentication
+  sessionTimeout: PT10M            # Session/token timeout (ISO 8601 duration)
+  jwt:
+    secret: "your-jwt-secret-key"  # JWT signing secret (minimum 256 bits for HS256)
+  users:
+    - username: "admin"            # REQUIRED: Must not be empty
+      password: "secure-password"  # REQUIRED: Must not be empty
+      roles: ["operator"]          # REQUIRED: Must have at least one role
+    - username: "monitoring"
+      password: "another-secure-password"
+      roles: ["user"]
 ```
 
-## Default settings
+> **⚠️ Security Notice**: You **must** configure at least one user with a non-empty password, or Reaper will fail to start. Never use default or weak passwords in production.
 
-As of Reaper 1.4.0, authentication is enabled by default and credentials are:
-  
-* Username: **admin**
-* Password: **admin** 
+### Configuration Parameters
 
-## With clear passwords
+#### `enabled`
+- **Type**: Boolean
+- **Default**: `true`
+- **Description**: Enables or disables authentication globally
 
-Copy the default `shiro.ini` file and adapt it overriding the "users" section : 
+#### `sessionTimeout`
+- **Type**: ISO 8601 Duration
+- **Default**: `PT10M` (10 minutes)
+- **Description**: Session timeout that applies to both WebUI authentication and JWT token expiration. This is the primary timeout setting.
 
-```ini
-…
+#### `jwt.secret`
+- **Type**: String
+- **Required**: Yes (when JWT is used)
+- **Description**: Secret key for signing JWT tokens. Must be at least 256 bits (32 characters) for HS256 algorithm
+- **Security**: Use a cryptographically strong random string in production
 
-[users]
-user1 = password1
-user2 = password2
+#### `users`
+- **Type**: Array of user objects
+- **Description**: In-memory user store configuration
 
-…
+#### User Object Properties
+- `username`: String - User login name (required, cannot be empty)
+- `password`: String - User password (required, cannot be empty, stored in plain text)  
+- `roles`: Array of strings - User roles (required, must contain at least one role: `["user", "operator"]`)
+
+#### User Validation
+Reaper validates all user configurations on startup and will **fail to start** if:
+- No users are configured when authentication is enabled
+- Any user has an empty or missing username
+- Any user has an empty or missing password
+- Any user has no roles assigned
+
+This ensures that weak or incomplete authentication configurations are caught early.
+
+## Conditional User Configuration
+
+Reaper supports conditional configuration of additional users through environment variables and Docker configuration scripts. This approach allows you to:
+
+- **Always configure the primary admin user** via `REAPER_AUTH_USER` and `REAPER_AUTH_PASSWORD` (required)
+- **Optionally configure a read-only user** by setting both `REAPER_READ_USER` and `REAPER_READ_USER_PASSWORD` environment variables
+
+### How It Works
+
+The read-only user is configured dynamically at container startup:
+
+1. If both `REAPER_READ_USER` and `REAPER_READ_USER_PASSWORD` are set to non-empty values, a read-only user with the `["user"]` role is automatically added to the configuration
+2. If either variable is empty or unset, no read-only user is configured
+3. This prevents environment variable resolution errors while maintaining security
+
+### Benefits
+
+- **No mandatory unused environment variables**: You don't need to set empty values for unused users
+- **Flexible deployment**: Same Docker image can be used with or without read-only users
+- **Security by default**: Empty or missing credentials don't create weak authentication points
+
+## User Roles
+
+Reaper implements role-based access control with two main roles:
+
+### `user` Role
+- **Read-only access** to all resources
+- Can view clusters, repair runs, schedules, and metrics
+- Cannot create, modify, or delete resources
+- Suitable for monitoring and reporting users
+
+### `operator` Role
+- **Full access** to all resources
+- Can create, modify, and delete clusters, repair runs, and schedules
+- Can trigger repairs and manage all Reaper functionality
+- Suitable for administrators and operational users
+
+## Environment Variable Configuration
+
+For production deployments, especially with Docker, use environment variables instead of hardcoded values:
+
+```yaml
+accessControl:
+  enabled: ${REAPER_AUTH_ENABLED:-true}
+  sessionTimeout: ${REAPER_SESSION_TIMEOUT:-PT10M}
+  jwt:
+    secret: "${JWT_SECRET:-MySecretKeyForJWTWhichMustBeLongEnoughForHS256Algorithm}"
+  users:
+    - username: "${REAPER_AUTH_USER}"
+      password: "${REAPER_AUTH_PASSWORD}"
+      roles: ["operator"]
+    # Additional read-only user is configured automatically if REAPER_READ_USER
+    # and REAPER_READ_USER_PASSWORD environment variables are set
 ```
-If you use a container, make sure you set the environment variable `REAPER_SHIRO_INI` to a valid path inside the container otherwise your custom shiro.ini will not be used.
 
-## With encrypted passwords
+## Docker Configuration
 
-Based on [Shiro's document on Encrypting passwords](https://shiro.apache.org/configuration.html#Configuration-EncryptingPasswords) :
+### Environment Variables
 
-```ini
-[main]
-authc = org.apache.shiro.web.filter.authc.PassThruAuthenticationFilter
-authc.loginUrl = /webui/login.html
-sha256Matcher = org.apache.shiro.authc.credential.Sha256CredentialsMatcher
-iniRealm.credentialsMatcher = $sha256Matcher
-filterChainResolver.globalFilters = null
+When running Reaper in Docker, set these environment variables:
 
+```bash
+# Authentication control
+REAPER_AUTH_ENABLED=true
 
-[users]
-john = 807A09440428C0A8AEF58BD3ECE32938B0D76E638119E47619756F5C2C20FF3A
+# JWT Configuration
+JWT_SECRET="your-production-jwt-secret-key-here"
 
-…
+# Admin user credentials - REQUIRED when authentication is enabled
+REAPER_AUTH_USER="admin"
+REAPER_AUTH_PASSWORD="your-secure-admin-password-here"
+
+# Read-only user credentials - OPTIONAL (only configured if both are set)
+REAPER_READ_USER="monitoring"
+REAPER_READ_USER_PASSWORD="your-secure-monitoring-password-here"
+
+# Session timeout
+REAPER_SESSION_TIMEOUT="PT30M"
 ```
 
-To generate a password, you case use for example :
+> **⚠️ Important**: You **must** set `REAPER_AUTH_USER` and `REAPER_AUTH_PASSWORD`, or Reaper will fail to start. The read-only user (`REAPER_READ_USER` and `REAPER_READ_USER_PASSWORD`) is optional - it will only be configured if both environment variables are set to non-empty values.
 
-* From the command line :
+### Docker Compose Example
 
-```shell
-echo -n "Hello World" | shasum -a 256
-echo -n "Hello World" | sha256sum
+```yaml
+version: '3.8'
+
+services:
+  cassandra-reaper:
+    image: cassandra-reaper:latest
+    ports:
+      - "8080:8080"
+      - "8081:8081"
+    environment:
+      # Authentication
+      REAPER_AUTH_ENABLED: "true"
+      JWT_SECRET: "MyProductionJWTSecretKeyThatIsLongEnoughForHS256"
+      
+                   # User credentials - CHANGE THESE!
+      REAPER_AUTH_USER: "admin"
+      REAPER_AUTH_PASSWORD: "change-this-secure-password"
+      
+      # Optional read-only user (remove these lines to disable)
+      REAPER_READ_USER: "monitoring"
+      REAPER_READ_USER_PASSWORD: "change-this-monitoring-password"
+      
+      # Session configuration
+      REAPER_SESSION_TIMEOUT: "PT30M"
+      
+      # Storage configuration
+      REAPER_STORAGE_TYPE: "cassandra"
+      REAPER_CASS_CONTACT_POINTS: "[\"cassandra:9042\"]"
+      
+    depends_on:
+      - cassandra
 ```
-
-* Or some language of your choice  (like Python here) :
-
-```python
-import hashlib
-hash_object = hashlib.sha256(b'Hello World')
-hex_dig = hash_object.hexdigest()
-print(hex_dig)
-a591a6d40bf420404a011733cfb7b190d62c65bf0bcda32b57b277d9ad9f146e
-```
-
-## With LDAP accounts
-
-Based on [Shiro's LDAP realm usage](https://shiro.apache.org/static/1.2.4/apidocs/org/apache/shiro/realm/ldap/JndiLdapContextFactory.html).
-
-An example configuration for LDAP authentication exists (commented out) in the default shiro.ini :
-
-```
-
-# Example LDAP realm, see https://shiro.apache.org/static/1.2.4/apidocs/org/apache/shiro/realm/ldap/JndiLdapContextFactory.html
-ldapRealm = org.apache.shiro.realm.ldap.JndiLdapRealm
-ldapRealm.userDnTemplate = uid={0},ou=users,dc=cassandra-reaper,dc=io
-ldapRealm.contextFactory.url = ldap://ldapHost:389
-;ldapRealm.contextFactory.authenticationMechanism = DIGEST-MD5
-;ldapRealm.contextFactory.systemUsername = cn=Manager, dc=example, dc=com
-;ldapRealm.contextFactory.systemPassword = secret
-;ldapRealm.contextFactory.environment[java.naming.security.credentials] = ldap_password
-
-```
-
-
-## Accessing Reaper via the command line `spreaper`
-
-In order to interact with Reaper through `spreaper` when Shiro authentication is activated, you will first need to login as follows:  
-
-```
-$ ./spreaper login admin
-Password: *****
-# Logging in...
-You are now authenticated to Reaper.
-# JWT saved
-
-```
-
-The JWT will be saved in `~/.reaper/jwt` and automatically used by Reaper for any other call.
-Pre-existing tokens can be passed to spreaper using `--jwt <token>` with any call.
-
-## Accessing Reaper via the REST API
-
-The RESTful endpoints to Reaper can also be authenticated using JWT (Java Web Token).
-
-A token can be generated from the `/jwt` url by passing the Session ID cookie retrieved from the `/login` endpoint.
-Logging in through `/login` is described in the [REST Api page](/docs/api/).

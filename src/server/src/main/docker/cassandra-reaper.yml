@@ -85,3 +85,21 @@ httpManagement:
   keystore: ${REAPER_HTTP_MANAGEMENT_KEYSTORE_PATH}
   truststore: ${REAPER_HTTP_MANAGEMENT_TRUSTSTORE_PATH}
   truststoresDir: ${REAPER_HTTP_MANAGEMENT_TRUSTSTORES_DIR}
+
+# Authentication is enabled by default
+accessControl:
+  enabled: ${REAPER_AUTH_ENABLED}
+  sessionTimeout: PT10M
+  # JWT-based authentication configuration
+  jwt:
+    # Secret key for signing JWT tokens (should be at least 256 bits for HS256)
+    # Use environment variable in production: ${JWT_SECRET:-defaultValue}
+    secret: "${JWT_SECRET:-MySecretKeyForJWTWhichMustBeLongEnoughForHS256Algorithm}"
+  # User store configuration
+  # IMPORTANT: Configure your users below. Authentication will fail if no users are configured.
+  # Never use default passwords in production - always set REAPER_AUTH_PASSWORD and other env vars!
+  users:
+    # Admin user - CHANGE THESE CREDENTIALS!
+    - username: "${REAPER_AUTH_USER}"
+      password: "${REAPER_AUTH_PASSWORD}"
+      roles: ["operator"]

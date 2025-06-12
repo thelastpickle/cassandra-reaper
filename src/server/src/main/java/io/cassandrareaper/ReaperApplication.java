@@ -19,6 +19,13 @@
 package io.cassandrareaper;
 
 import io.cassandrareaper.ReaperApplicationConfiguration.DatacenterAvailability;
+import io.cassandrareaper.auth.AuthLoginResource;
+import io.cassandrareaper.auth.BasicAuthenticator;
+import io.cassandrareaper.auth.JwtAuthenticator;
+import io.cassandrareaper.auth.RoleAuthorizer;
+import io.cassandrareaper.auth.User;
+import io.cassandrareaper.auth.UserStore;
+import io.cassandrareaper.auth.WebuiAuthenticationFilter;
 import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.Node;
 import io.cassandrareaper.crypto.Cryptograph;
@@ -39,9 +46,6 @@ import io.cassandrareaper.resources.RepairRunResource;
 import io.cassandrareaper.resources.RepairScheduleResource;
 import io.cassandrareaper.resources.RequestUtils;
 import io.cassandrareaper.resources.SnapshotResource;
-import io.cassandrareaper.resources.auth.LoginResource;
-import io.cassandrareaper.resources.auth.ShiroExceptionMapper;
-import io.cassandrareaper.resources.auth.ShiroJwtProvider;
 import io.cassandrareaper.service.AutoSchedulingManager;
 import io.cassandrareaper.service.Heart;
 import io.cassandrareaper.service.PurgeService;
@@ -53,12 +57,10 @@ import io.cassandrareaper.storage.InitializeStorage;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.EnumSet;
+import java.util.HashSet;
 import java.util.Optional;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-
-import javax.servlet.DispatcherType;
-import javax.servlet.FilterRegistration;
 
 import static io.cassandrareaper.metrics.PrometheusMetricsConfiguration.getCustomSampleMethodBuilder;
 
@@ -68,6 +70,10 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import io.dropwizard.assets.AssetsBundle;
+import io.dropwizard.auth.AuthDynamicFeature;
+import io.dropwizard.auth.AuthValueFactoryProvider;
+import io.dropwizard.auth.basic.BasicCredentialAuthFilter;
+import io.dropwizard.auth.oauth.OAuthCredentialAuthFilter;
 import io.dropwizard.client.HttpClientBuilder;
 import io.dropwizard.configuration.EnvironmentVariableSubstitutor;
 import io.dropwizard.configuration.SubstitutingSourceProvider;
@@ -76,15 +82,16 @@ import io.dropwizard.core.setup.Bootstrap;
 import io.dropwizard.core.setup.Environment;
 import io.prometheus.client.CollectorRegistry;
 import io.prometheus.client.dropwizard.DropwizardExports;
-import io.prometheus.client.exporter.MetricsServlet;
+import io.prometheus.client.servlet.jakarta.exporter.MetricsServlet;
+import jakarta.servlet.DispatcherType;
+import jakarta.servlet.FilterRegistration;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.servlets.CrossOriginFilter;
+import org.glassfish.jersey.server.filter.RolesAllowedDynamicFeature;
 import org.joda.time.DateTimeZone;
-import org.secnod.dropwizard.shiro.ShiroBundle;
-import org.secnod.dropwizard.shiro.ShiroConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -148,20 +155,7 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
             bootstrap.getConfigurationSourceProvider(), new EnvironmentVariableSubstitutor(false));
     bootstrap.setConfigurationSourceProvider(envSourceProvider);
 
-    bootstrap.addBundle(
-        new ShiroBundle<ReaperApplicationConfiguration>() {
-          @Override
-          public void run(ReaperApplicationConfiguration configuration, Environment environment) {
-            if (configuration.isAccessControlEnabled()) {
-              super.run(configuration, environment);
-            }
-          }
-
-          @Override
-          protected ShiroConfiguration narrow(ReaperApplicationConfiguration configuration) {
-            return configuration.getAccessControl().getShiroConfiguration();
-          }
-        });
+    // Dropwizard auth configuration will be done in run() method
 
     bootstrap.setConfigurationSourceProvider(
         new SubstitutingSourceProvider(
@@ -172,6 +166,7 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
   public void run(ReaperApplicationConfiguration config, Environment environment) throws Exception {
     // Using UTC times everywhere as default. Affects only Yoda time.
     DateTimeZone.setDefault(DateTimeZone.UTC);
+
     checkConfiguration(config);
     context.config = config;
     context.metricRegistry = environment.metrics();
@@ -274,16 +269,122 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
       environment.jersey().register(diagEvents);
     }
 
-    if (config.isAccessControlEnabled()) {
+    if (config.getAccessControl() != null && config.getAccessControl().isEnabled()) {
+      LOG.info("ACCESS CONTROL: Setting up authentication - accessControl config found");
       SessionHandler sessionHandler = new SessionHandler();
-      sessionHandler.setMaxInactiveInterval(
-          (int) config.getAccessControl().getSessionTimeout().getSeconds());
-      RequestUtils.setSessionTimeout(config.getAccessControl().getSessionTimeout());
       environment.getApplicationContext().setSessionHandler(sessionHandler);
       environment.servlets().setSessionHandler(sessionHandler);
-      environment.jersey().register(new ShiroExceptionMapper());
-      environment.jersey().register(new LoginResource());
-      environment.jersey().register(new ShiroJwtProvider(context));
+
+      // Setup Dropwizard authentication using configuration
+      UserStore userStore = new UserStore();
+
+      // Add users from configuration
+      if (config.getAccessControl().getUsers() != null
+          && !config.getAccessControl().getUsers().isEmpty()) {
+        LOG.info(
+            "ACCESS CONTROL: Adding {} users from configuration",
+            config.getAccessControl().getUsers().size());
+
+        // Validate all users have required fields
+        for (ReaperApplicationConfiguration.UserConfiguration userConfig :
+            config.getAccessControl().getUsers()) {
+
+          if (userConfig.getUsername() == null || userConfig.getUsername().trim().isEmpty()) {
+            throw new IllegalArgumentException(
+                "ACCESS CONTROL: User configuration missing username. All users must have a non-empty username.");
+          }
+
+          if (userConfig.getPassword() == null || userConfig.getPassword().trim().isEmpty()) {
+            throw new IllegalArgumentException(
+                String.format(
+                    "ACCESS CONTROL: User '%s' is missing password. All users must have a non-empty password for security reasons.",
+                    userConfig.getUsername()));
+          }
+
+          if (userConfig.getRoles() == null || userConfig.getRoles().isEmpty()) {
+            throw new IllegalArgumentException(
+                String.format(
+                    "ACCESS CONTROL: User '%s' has no roles assigned. All users must have at least one role ('user' or 'operator').",
+                    userConfig.getUsername()));
+          }
+
+          userStore.addUser(
+              userConfig.getUsername(),
+              userConfig.getPassword(),
+              new HashSet<>(userConfig.getRoles()));
+          LOG.info(
+              "ACCESS CONTROL: Added user {} with roles {}",
+              userConfig.getUsername(),
+              userConfig.getRoles());
+        }
+      } else {
+        throw new IllegalArgumentException(
+            "ACCESS CONTROL: Authentication is enabled but no users are configured. "
+                + "Please configure at least one user in the 'accessControl.users' section or disable authentication by setting 'accessControl.enabled: false'.");
+      }
+
+      Preconditions.checkState(
+          config.getAccessControl().getJwt() != null,
+          "ACCESS CONTROL: JWT secret is not configured. Please configure a JWT secret in the 'accessControl.jwt.secret' section.");
+
+      String jwtSecret = config.getAccessControl().getJwt().getSecret();
+      if (jwtSecret == null) {
+        throw new IllegalArgumentException(
+            "ACCESS CONTROL: JWT secret is not configured. Please configure a JWT secret in the 'accessControl.jwt.secret' section.");
+      }
+
+      LOG.info(
+          "ACCESS CONTROL: Using JWT secret: {}",
+          jwtSecret != null ? "[REDACTED - length: " + jwtSecret.length() + "]" : "null");
+
+      // JWT authentication for REST API
+      JwtAuthenticator jwtAuthenticator = new JwtAuthenticator(jwtSecret, userStore);
+      BasicAuthenticator basicAuthenticator = new BasicAuthenticator(userStore);
+      RoleAuthorizer authorizer = new RoleAuthorizer();
+
+      // Register JWT/OAuth filter for REST endpoints
+      environment
+          .jersey()
+          .register(
+              new AuthDynamicFeature(
+                  new OAuthCredentialAuthFilter.Builder<User>()
+                      .setAuthenticator(jwtAuthenticator)
+                      .setAuthorizer(authorizer)
+                      .setPrefix("Bearer")
+                      .buildAuthFilter()));
+
+      // Register Basic Auth filter as backup
+      environment
+          .jersey()
+          .register(
+              new AuthDynamicFeature(
+                  new BasicCredentialAuthFilter.Builder<User>()
+                      .setAuthenticator(basicAuthenticator)
+                      .setAuthorizer(authorizer)
+                      .buildAuthFilter()));
+
+      // Register @Auth parameter injection
+      environment.jersey().register(new AuthValueFactoryProvider.Binder<>(User.class));
+
+      // Register login resource
+      environment
+          .jersey()
+          .register(
+              new AuthLoginResource(
+                  userStore,
+                  jwtSecret,
+                  config.getAccessControl().getJwt(),
+                  config.getAccessControl().getSessionTimeout()));
+
+      // Add WebUI authentication filter to protect /webui/* paths
+      FilterRegistration.Dynamic webuiFilter =
+          environment
+              .servlets()
+              .addFilter("webuiAuth", new WebuiAuthenticationFilter(jwtSecret, userStore));
+      webuiFilter.addMappingForUrlPatterns(EnumSet.allOf(DispatcherType.class), true, "/webui/*");
+      environment.jersey().register(RolesAllowedDynamicFeature.class);
+    } else {
+      LOG.warn("ACCESS CONTROL: No accessControl configuration found - authentication disabled!");
     }
 
     Thread.sleep(1000);

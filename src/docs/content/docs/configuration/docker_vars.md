@@ -103,6 +103,21 @@ jmxAddressTranslator:
 <br/>
 **Note:**
 
+## Authentication Configuration Variables
+
+The following Docker environment variables control authentication settings. These variables are handled specially by configuration scripts that run at container startup.
+
+<h4>Environment Variable</h4> | <h4>Description</h4> | <h4>Required</h4>
+---|---|---
+<code class="codeLarge">REAPER_AUTH_ENABLED</code> | Enable/disable authentication globally | No (default: true)
+<code class="codeLarge">REAPER_AUTH_USER</code> | Username for the admin user with operator role | **Yes** (when auth is enabled)
+<code class="codeLarge">REAPER_AUTH_PASSWORD</code> | Password for the admin user | **Yes** (when auth is enabled)
+<code class="codeLarge">REAPER_READ_USER</code> | Username for optional read-only user | No (only configured if both user and password are set)
+<code class="codeLarge">REAPER_READ_USER_PASSWORD</code> | Password for optional read-only user | No (only configured if both user and password are set)
+<code class="codeLarge">JWT_SECRET</code> | Secret key for JWT token signing (minimum 256 bits) | No (has default, change in production)
+
+**Note**: The read-only user (`REAPER_READ_USER` and `REAPER_READ_USER_PASSWORD`) is configured conditionally. The user is only added to the authentication configuration if both environment variables are set to non-empty values. This prevents environment variable resolution errors while maintaining security.
+
 ## Associated Reaper Specific Configuration Settings
 
 The following Docker environment variables have no direct mapping to a setting in the *cassandra-reaper.yaml* configuration file. However, they do affect the content contained in the file that is Reaper specific.
