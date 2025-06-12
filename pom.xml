@@ -206,6 +206,8 @@
                 <exclude>src/packaging/**</exclude>
                 <exclude>codecov.yml</exclude>
                 <exclude>.github/files/*.yaml</exclude>
+                <exclude>.gitmodules</exclude>
+                <exclude>src/docs/.hugo_build.lock</exclude>
               </excludes>
             </configuration>
             <executions>

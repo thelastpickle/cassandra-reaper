@@ -1,24 +1,35 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>Reaper: Easy Repair Management for Apache Cassandra</title>
+    <title>Documentation on Reaper: Easy Repair Management for Apache Cassandra</title>
     <link>http://cassandra-reaper.io/docs/</link>
-    <description>Recent content on Reaper: Easy Repair Management for Apache Cassandra</description>
+    <description>Recent content in Documentation on Reaper: Easy Repair Management for Apache Cassandra</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language><atom:link href="http://cassandra-reaper.io/docs/index.xml" rel="self" type="application/rss+xml" />
     <item>
-      <title></title>
+      <title>Core Concepts</title>
+      <link>http://cassandra-reaper.io/docs/concepts/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://cassandra-reaper.io/docs/concepts/</guid>
+      <description>Segments Reaper splits repair runs in segments. A segment is a subrange of tokens that fits entirely in one of the cluster token ranges. The minimum number of segments for a repair run is the number of token ranges in the cluster. With a 3 nodes cluster using 256 vnodes per node, a repair run will have at least 768 segments. If necessary, each repair can define a higher number of segments than the number of token ranges.</description>
+    </item>
+    
+    <item>
+      <title>Rest API</title>
       <link>http://cassandra-reaper.io/docs/api/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>http://cassandra-reaper.io/docs/api/</guid>
-      <description>Rest API Source code for all the REST resources can be found from package io.cassandrareaper.resources.
-Login Resource  POST /login  Expected form parameters:
-* username: User to login with as defined in Shiro settings (default user is admin) * password: Password to authenticate with through Shiro (default password of user admin is: admin) * rememberMe: Boolean to have the Web UI remember the username Endpoint for logging in to Reaper    Shiro JWT Provider  GET /jwt  Expected query parameters: None Returns a JWT to use in all REST calls when authentication is turned on in Reaper.</description>
+      <description>Source code for all the REST resources can be found from package io.cassandrareaper.resources.
+Login Resource POST /login Expected form parameters:
+* username : User to login with as defined in authentication settings (default user is admin)
+* password : Password to authenticate with (default password of user admin is: admin)
+* rememberMe : Boolean to have the Web UI remember the username (Optional) Endpoint for logging in to Reaper. Returns a JWT token in the response that must be passed in the Authorization HTTP header for authenticated requests: Authorization: Bearer [JWT value] Ping Resource GET /ping</description>
     </item>
     
     <item>
-      <title></title>
+      <title>Community</title>
       <link>http://cassandra-reaper.io/docs/community/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
@@ -27,24 +38,16 @@ Login Resource  POST /login  Expected form parameters:
     </item>
     
     <item>
-      <title></title>
-      <link>http://cassandra-reaper.io/docs/concepts/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>http://cassandra-reaper.io/docs/concepts/</guid>
-      <description>Core Concepts Segments Reaper splits repair runs in segments. A segment is a subrange of tokens that fits entirely in one of the cluster token ranges. The minimum number of segments for a repair run is the number of token ranges in the cluster. With a 3 nodes cluster using 256 vnodes per node, a repair run will have at least 768 segments. If necessary, each repair can define a higher number of segments than the number of token ranges.</description>
-    </item>
-    
-    <item>
-      <title></title>
+      <title>Development</title>
       <link>http://cassandra-reaper.io/docs/development/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>http://cassandra-reaper.io/docs/development/</guid>
-      <description>Forward Merging Reaper practices forward merging commits.
-Fixes and improvements required to release branches are first committed to those branches. These changes are merged forward onto master afterwards.
-An example where a bugfix developed and approved for the release branch 1.4 is to be merged;
-# first rebase the work one last time off the latest 1.4 branch git checkout bob/1.4_bugfix git rebase 1.4 git push # switch to the 1.</description>
+      <description>Cutting Releases Cutting a release involves the following steps.
+Consult with the community to confirm the codebase is ready for release by reviewing outstanding issues and pull requests.
+For major releases, create a release branch from master following the naming convention: 1.0, 1.1, 1.2, 1.3, etc.
+Generate the changelog by running:
+github-changes -o thelastpickle -r cassandra-reaper --use-commit-body -a -f changelog.tmp -b &amp;lt;sha-of-release&amp;gt; -v Review and edit the generated changelog to include only relevant commits, then update CHANGELOG.</description>
     </item>
     
   </channel>

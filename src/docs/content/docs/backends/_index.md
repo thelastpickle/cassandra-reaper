@@ -1,11 +1,7 @@
-+++
-[menu.docs]
-name = "Backends"
-identifier = "backends"
-weight = 10
-+++
-
-# Backends
+---
+title: "Backends"
+weight: 10
+---
 
 Reaper for Apache Cassandra can be used with either an ephemeral memory storage or persistent database. For persistent scalable database storage, a Cassandra cluster can be set up to back Reaper. To use a Cassandra cluster as the backed storage for Reaper set `storageType` to a value of **cassandra** in the Reaper configuration file.
 

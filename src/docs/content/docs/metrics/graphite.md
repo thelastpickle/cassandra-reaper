@@ -1,10 +1,9 @@
-+++
-[menu.docs]
-name = "Graphite Reporter"
-weight = 1
-identifier = "graphite"
-parent = "metrics"
-+++
+---
+title: "Graphite Reporter"
+weight: 1
+identifier: "graphite"
+parent: "metrics"
+---
 
 ## Graphite Reporter
 
