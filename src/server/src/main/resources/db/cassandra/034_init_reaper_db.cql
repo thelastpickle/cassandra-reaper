@@ -34,9 +34,7 @@ CREATE TABLE IF NOT EXISTS cluster (
     AND gc_grace_seconds = 864000
     AND max_index_interval = 2048
     AND memtable_flush_period_in_ms = 0
-    AND min_index_interval = 128
-    AND read_repair = 'BLOCKING'
-    AND speculative_retry = '99p';
+    AND min_index_interval = 128;
 
 CREATE TABLE IF NOT EXISTS diagnostic_event_subscription (
     id uuid PRIMARY KEY,
@@ -59,9 +57,7 @@ CREATE TABLE IF NOT EXISTS diagnostic_event_subscription (
     AND gc_grace_seconds = 864000
     AND max_index_interval = 2048
     AND memtable_flush_period_in_ms = 0
-    AND min_index_interval = 128
-    AND read_repair = 'BLOCKING'
-    AND speculative_retry = '99p';
+    AND min_index_interval = 128;
 
 CREATE TABLE IF NOT EXISTS leader (
     leader_id timeuuid PRIMARY KEY,
@@ -80,9 +76,7 @@ CREATE TABLE IF NOT EXISTS leader (
     AND gc_grace_seconds = 600
     AND max_index_interval = 2048
     AND memtable_flush_period_in_ms = 0
-    AND min_index_interval = 128
-    AND read_repair = 'BLOCKING'
-    AND speculative_retry = '99p';
+    AND min_index_interval = 128;
 
 CREATE TABLE IF NOT EXISTS node_metrics_v1 (
     run_id uuid,
@@ -108,9 +102,7 @@ CREATE TABLE IF NOT EXISTS node_metrics_v1 (
     AND gc_grace_seconds = 120
     AND max_index_interval = 2048
     AND memtable_flush_period_in_ms = 0
-    AND min_index_interval = 128
-    AND read_repair = 'BLOCKING'
-    AND speculative_retry = '99p';
+    AND min_index_interval = 128;
 
 CREATE TABLE IF NOT EXISTS node_metrics_v3 (
     cluster text,
@@ -137,9 +129,7 @@ CREATE TABLE IF NOT EXISTS node_metrics_v3 (
     AND gc_grace_seconds = 300
     AND max_index_interval = 2048
     AND memtable_flush_period_in_ms = 0
-    AND min_index_interval = 128
-    AND read_repair = 'BLOCKING'
-    AND speculative_retry = '99p';
+    AND min_index_interval = 128;
 
 CREATE TABLE IF NOT EXISTS node_operations (
     cluster text,
@@ -162,9 +152,7 @@ CREATE TABLE IF NOT EXISTS node_operations (
     AND gc_grace_seconds = 300
     AND max_index_interval = 2048
     AND memtable_flush_period_in_ms = 0
-    AND min_index_interval = 128
-    AND read_repair = 'BLOCKING'
-    AND speculative_retry = '99p';
+    AND min_index_interval = 128;
 
 CREATE TABLE IF NOT EXISTS percent_repaired_by_schedule (
     cluster_name text,
@@ -189,9 +177,7 @@ CREATE TABLE IF NOT EXISTS percent_repaired_by_schedule (
     AND gc_grace_seconds = 300
     AND max_index_interval = 2048
     AND memtable_flush_period_in_ms = 0
-    AND min_index_interval = 128
-    AND read_repair = 'BLOCKING'
-    AND speculative_retry = '99p';
+    AND min_index_interval = 128;
 
 CREATE TABLE IF NOT EXISTS repair_run (
     id timeuuid,
@@ -235,9 +221,7 @@ CREATE TABLE IF NOT EXISTS repair_run (
     AND gc_grace_seconds = 864000
     AND max_index_interval = 2048
     AND memtable_flush_period_in_ms = 0
-    AND min_index_interval = 128
-    AND read_repair = 'BLOCKING'
-    AND speculative_retry = '99p';
+    AND min_index_interval = 128;
 
 CREATE TABLE IF NOT EXISTS repair_run_by_cluster (
     cluster_name text,
@@ -256,9 +240,7 @@ CREATE TABLE IF NOT EXISTS repair_run_by_cluster (
     AND gc_grace_seconds = 864000
     AND max_index_interval = 2048
     AND memtable_flush_period_in_ms = 0
-    AND min_index_interval = 128
-    AND read_repair = 'BLOCKING'
-    AND speculative_retry = '99p';
+    AND min_index_interval = 128;
 
 CREATE TABLE IF NOT EXISTS repair_run_by_cluster_v2 (
     cluster_name text,
@@ -278,9 +260,7 @@ CREATE TABLE IF NOT EXISTS repair_run_by_cluster_v2 (
     AND gc_grace_seconds = 864000
     AND max_index_interval = 2048
     AND memtable_flush_period_in_ms = 0
-    AND min_index_interval = 128
-    AND read_repair = 'BLOCKING'
-    AND speculative_retry = '99p';
+    AND min_index_interval = 128;
 
 CREATE INDEX IF NOT EXISTS state2i ON repair_run_by_cluster_v2 (repair_run_state);
 
@@ -301,9 +281,7 @@ CREATE TABLE IF NOT EXISTS repair_run_by_unit (
     AND gc_grace_seconds = 864000
     AND max_index_interval = 2048
     AND memtable_flush_period_in_ms = 0
-    AND min_index_interval = 128
-    AND read_repair = 'BLOCKING'
-    AND speculative_retry = '99p';
+    AND min_index_interval = 128;
 
 CREATE TABLE IF NOT EXISTS repair_schedule_by_cluster_and_keyspace (
     cluster_name text,
@@ -323,9 +301,7 @@ CREATE TABLE IF NOT EXISTS repair_schedule_by_cluster_and_keyspace (
     AND gc_grace_seconds = 864000
     AND max_index_interval = 2048
     AND memtable_flush_period_in_ms = 0
-    AND min_index_interval = 128
-    AND read_repair = 'BLOCKING'
-    AND speculative_retry = '99p';
+    AND min_index_interval = 128;
 
 CREATE TABLE IF NOT EXISTS repair_schedule_v1 (
     id timeuuid PRIMARY KEY,
@@ -356,9 +332,7 @@ CREATE TABLE IF NOT EXISTS repair_schedule_v1 (
     AND gc_grace_seconds = 864000
     AND max_index_interval = 2048
     AND memtable_flush_period_in_ms = 0
-    AND min_index_interval = 128
-    AND read_repair = 'BLOCKING'
-    AND speculative_retry = '99p';
+    AND min_index_interval = 128;
 
 CREATE TABLE IF NOT EXISTS repair_unit_v1 (
     id timeuuid PRIMARY KEY,
@@ -384,9 +358,7 @@ CREATE TABLE IF NOT EXISTS repair_unit_v1 (
     AND gc_grace_seconds = 864000
     AND max_index_interval = 2048
     AND memtable_flush_period_in_ms = 0
-    AND min_index_interval = 128
-    AND read_repair = 'BLOCKING'
-    AND speculative_retry = '99p';
+    AND min_index_interval = 128;
 
 CREATE TABLE IF NOT EXISTS running_reapers (
     reaper_instance_id uuid PRIMARY KEY,
@@ -404,9 +376,7 @@ CREATE TABLE IF NOT EXISTS running_reapers (
     AND gc_grace_seconds = 180
     AND max_index_interval = 2048
     AND memtable_flush_period_in_ms = 0
-    AND min_index_interval = 128
-    AND read_repair = 'BLOCKING'
-    AND speculative_retry = '99p';
+    AND min_index_interval = 128;
 
 CREATE TABLE IF NOT EXISTS running_repairs (
     repair_id uuid,
@@ -428,9 +398,7 @@ CREATE TABLE IF NOT EXISTS running_repairs (
     AND gc_grace_seconds = 300
     AND max_index_interval = 2048
     AND memtable_flush_period_in_ms = 0
-    AND min_index_interval = 128
-    AND read_repair = 'BLOCKING'
-    AND speculative_retry = '99p';
+    AND min_index_interval = 128;
 
 CREATE TABLE IF NOT EXISTS schema_migration (
     applied_successful boolean,
@@ -452,9 +420,7 @@ CREATE TABLE IF NOT EXISTS schema_migration (
     AND gc_grace_seconds = 864000
     AND max_index_interval = 2048
     AND memtable_flush_period_in_ms = 0
-    AND min_index_interval = 128
-    AND read_repair = 'BLOCKING'
-    AND speculative_retry = '99p';
+    AND min_index_interval = 128;
 
 CREATE TABLE IF NOT EXISTS schema_migration_leader (
     keyspace_name text PRIMARY KEY,
@@ -473,9 +439,7 @@ CREATE TABLE IF NOT EXISTS schema_migration_leader (
     AND gc_grace_seconds = 864000
     AND max_index_interval = 2048
     AND memtable_flush_period_in_ms = 0
-    AND min_index_interval = 128
-    AND read_repair = 'BLOCKING'
-    AND speculative_retry = '99p';
+    AND min_index_interval = 128;
 
 CREATE TABLE IF NOT EXISTS snapshot (
     cluster text,
@@ -496,6 +460,4 @@ CREATE TABLE IF NOT EXISTS snapshot (
     AND gc_grace_seconds = 864000
     AND max_index_interval = 2048
     AND memtable_flush_period_in_ms = 0
-    AND min_index_interval = 128
-    AND read_repair = 'BLOCKING'
-    AND speculative_retry = '99p';
+    AND min_index_interval = 128;
