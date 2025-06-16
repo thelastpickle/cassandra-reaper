@@ -1,5 +1,8 @@
 ## Change Log
 
+### 4.0.0-beta3 (2025/06/13 12:20 +00:00)
+- [#1579](https://github.com/thelastpickle/cassandra-reaper/pull/1579) Fix remaining CVEs and remove some table properties which can cause compatibility issues (#1579) (@adejanovski)
+
 ### 4.0.0-beta2 (2025/06/12 10:03 +00:00)
 - [c867473](https://github.com/thelastpickle/cassandra-reaper/commit/c86747343ef87dfbab9cad284bd2971a60f13203) Migrate from Apache Shiro to Dropwizard JWT-based authentication (@adejanovski)
 - [#1573](https://github.com/thelastpickle/cassandra-reaper/pull/1573) Big reformat (#1573) (@adejanovski)
