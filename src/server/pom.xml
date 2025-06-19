@@ -159,7 +159,7 @@
         <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty-handler</artifactId>
-            <version>4.1.121.Final</version> 
+            <version>4.2.1.Final</version> 
         </dependency>
         <dependency>
             <groupId>org.cognitor.cassandra</groupId>
