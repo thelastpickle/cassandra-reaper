@@ -589,7 +589,8 @@ final class RepairRunner implements Runnable {
             ? ((IDistributedStorage) context.storage)
                 .getNextFreeSegmentsForRanges(repairRunId, localEndpointRanges)
             : context.storage.getRepairSegmentDao().getNextFreeSegments(repairRunId);
-
+    // Shuffle the list of segments
+    Collections.shuffle(nextRepairSegments);
     LOG.debug("Next repair segments: {}", nextRepairSegments.size());
     Optional<RepairSegment> nextRepairSegment = Optional.empty();
     final Collection<String> potentialReplicas = new HashSet<>();

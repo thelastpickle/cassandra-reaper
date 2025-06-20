@@ -347,4 +347,9 @@ public final class MemoryStorageFacade implements IStorageDao {
   public Set<UUID> getLockedSegmentsForRun(UUID runId) {
     return replicaLockManagerWithTtl.getLockedSegmentsForRun(runId);
   }
+
+  public Set<String> getLockedNodesForRun(UUID runId) {
+    // List the nodes which are locked for the runId
+    return replicaLockManagerWithTtl.getLockedNodesForRun(runId);
+  }
 }

@@ -25,6 +25,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.stream.Collectors;
 
 import com.google.common.annotations.VisibleForTesting;
 import org.slf4j.Logger;
@@ -196,5 +197,13 @@ public class ReplicaLockManagerWithTtl {
       this.runId = runId;
       this.expirationTime = expirationTime;
     }
+  }
+
+  public Set<String> getLockedNodesForRun(UUID runId) {
+    // List the nodes which are locked for the runId
+    return replicaLocks.entrySet().stream()
+        .filter(entry -> entry.getValue().runId.equals(runId))
+        .map(entry -> entry.getKey())
+        .collect(Collectors.toSet());
   }
 }
