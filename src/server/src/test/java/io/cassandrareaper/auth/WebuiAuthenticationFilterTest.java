@@ -1,6 +1,5 @@
 /*
- * Copyright 2014-2017 Spotify AB
- * Copyright 2016-2019 The Last Pickle Ltd
+ * Copyright 2025-2025 DataStax, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,14 +20,19 @@ import java.io.IOException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
-import java.util.HashSet;
 import java.util.Set;
 
-import static org.mockito.Mockito.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import jakarta.servlet.FilterChain;
+import jakarta.servlet.FilterConfig;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
@@ -40,152 +44,254 @@ import org.mockito.MockitoAnnotations;
 
 public class WebuiAuthenticationFilterTest {
 
-  private static final String JWT_SECRET =
-      "MySecretKeyForJWTWhichMustBeLongEnoughForHS256Algorithm";
+  private static final String JWT_SECRET = "test-secret-key-that-is-long-enough-for-hmac-256";
+  private static final String TEST_USERNAME = "testuser";
 
-  @Mock private HttpServletRequest mockRequest;
-  @Mock private HttpServletResponse mockResponse;
-  @Mock private FilterChain mockFilterChain;
+  @Mock private UserStore userStore;
+  @Mock private HttpServletRequest request;
+  @Mock private HttpServletResponse response;
+  @Mock private FilterChain filterChain;
+  @Mock private FilterConfig filterConfig;
 
   private WebuiAuthenticationFilter filter;
-  private UserStore userStore;
 
   @Before
   public void setUp() {
     MockitoAnnotations.initMocks(this);
-    userStore = new UserStore();
-    Set<String> roles = new HashSet<>();
-    roles.add("operator");
-    userStore.addUser("testuser", "testpass", roles);
-
     filter = new WebuiAuthenticationFilter(JWT_SECRET, userStore);
   }
 
   @Test
-  public void testAllowsLoginPage() throws IOException, ServletException {
-    // Given
-    when(mockRequest.getRequestURI()).thenReturn("/webui/login.html");
+  public void testInit() throws ServletException {
+    // Given/When
+    filter.init(filterConfig);
 
-    // When
-    filter.doFilter(mockRequest, mockResponse, mockFilterChain);
-
-    // Then
-    verify(mockFilterChain).doFilter(mockRequest, mockResponse);
-    verify(mockResponse, never()).sendRedirect(anyString());
+    // Then - no exception should be thrown
+    assertThat(filter).isNotNull();
   }
 
   @Test
-  public void testAllowsStaticAssets() throws IOException, ServletException {
-    // Given
-    when(mockRequest.getRequestURI()).thenReturn("/webui/assets/style.css");
+  public void testDestroy() {
+    // Given/When
+    filter.destroy();
 
-    // When
-    filter.doFilter(mockRequest, mockResponse, mockFilterChain);
-
-    // Then
-    verify(mockFilterChain).doFilter(mockRequest, mockResponse);
-    verify(mockResponse, never()).sendRedirect(anyString());
+    // Then - no exception should be thrown
+    assertThat(filter).isNotNull();
   }
 
   @Test
-  public void testRedirectsUnauthenticatedRequest() throws IOException, ServletException {
+  public void testDoFilter_allowsLoginPage() throws IOException, ServletException {
     // Given
-    when(mockRequest.getRequestURI()).thenReturn("/webui/index.html");
-    when(mockRequest.getContextPath()).thenReturn("");
-    when(mockRequest.getHeader("Authorization")).thenReturn(null);
-    when(mockRequest.getCookies()).thenReturn(null);
+    when(request.getRequestURI()).thenReturn("/webui/login.html");
 
     // When
-    filter.doFilter(mockRequest, mockResponse, mockFilterChain);
+    filter.doFilter(request, response, filterChain);
 
     // Then
-    verify(mockResponse).sendRedirect("/webui/login.html");
-    verify(mockFilterChain, never()).doFilter(mockRequest, mockResponse);
+    verify(filterChain).doFilter(request, response);
+    verify(response, never()).sendRedirect(anyString());
   }
 
   @Test
-  public void testAllowsValidJwtInHeader() throws IOException, ServletException {
+  public void testDoFilter_allowsStaticAssets() throws IOException, ServletException {
     // Given
-    String validToken = createValidJwtToken("testuser");
-    when(mockRequest.getRequestURI()).thenReturn("/webui/index.html");
-    when(mockRequest.getHeader("Authorization")).thenReturn("Bearer " + validToken);
+    String[] allowedPaths = {
+      "/webui/assets/style.css",
+      "/webui/script.js",
+      "/webui/logo.png",
+      "/webui/banner.jpg",
+      "/webui/icon.gif",
+      "/webui/favicon.ico",
+      "/webui/font.woff",
+      "/webui/font.woff2",
+      "/webui/font.ttf"
+    };
 
-    // When
-    filter.doFilter(mockRequest, mockResponse, mockFilterChain);
+    for (String path : allowedPaths) {
+      // Given
+      when(request.getRequestURI()).thenReturn(path);
 
-    // Then
-    verify(mockFilterChain).doFilter(mockRequest, mockResponse);
-    verify(mockResponse, never()).sendRedirect(anyString());
+      // When
+      filter.doFilter(request, response, filterChain);
+
+      // Then
+      verify(filterChain).doFilter(request, response);
+    }
   }
 
   @Test
-  public void testAllowsValidJwtInCookie() throws IOException, ServletException {
+  public void testDoFilter_redirectsWhenNoToken() throws IOException, ServletException {
     // Given
-    String validToken = createValidJwtToken("testuser");
+    when(request.getRequestURI()).thenReturn("/webui/dashboard.html");
+    when(request.getContextPath()).thenReturn("/reaper");
+    when(request.getHeader("Authorization")).thenReturn(null);
+    when(request.getCookies()).thenReturn(null);
+
+    // When
+    filter.doFilter(request, response, filterChain);
+
+    // Then
+    verify(response).sendRedirect("/reaper/webui/login.html");
+    verify(filterChain, never()).doFilter(any(), any());
+  }
+
+  @Test
+  public void testDoFilter_allowsValidBearerToken() throws IOException, ServletException {
+    // Given
+    String validToken = createValidToken();
+    when(request.getRequestURI()).thenReturn("/webui/dashboard.html");
+    when(request.getHeader("Authorization")).thenReturn("Bearer " + validToken);
+    when(userStore.findUser(TEST_USERNAME)).thenReturn(new User(TEST_USERNAME, Set.of("user")));
+
+    // When
+    filter.doFilter(request, response, filterChain);
+
+    // Then
+    verify(filterChain).doFilter(request, response);
+    verify(response, never()).sendRedirect(anyString());
+  }
+
+  @Test
+  public void testDoFilter_allowsValidCookieToken() throws IOException, ServletException {
+    // Given
+    String validToken = createValidToken();
     Cookie jwtCookie = new Cookie("jwtToken", validToken);
-    when(mockRequest.getRequestURI()).thenReturn("/webui/index.html");
-    when(mockRequest.getHeader("Authorization")).thenReturn(null);
-    when(mockRequest.getCookies()).thenReturn(new Cookie[] {jwtCookie});
+    Cookie[] cookies = {jwtCookie};
+
+    when(request.getRequestURI()).thenReturn("/webui/dashboard.html");
+    when(request.getHeader("Authorization")).thenReturn(null);
+    when(request.getCookies()).thenReturn(cookies);
+    when(userStore.findUser(TEST_USERNAME)).thenReturn(new User(TEST_USERNAME, Set.of("user")));
 
     // When
-    filter.doFilter(mockRequest, mockResponse, mockFilterChain);
+    filter.doFilter(request, response, filterChain);
 
     // Then
-    verify(mockFilterChain).doFilter(mockRequest, mockResponse);
-    verify(mockResponse, never()).sendRedirect(anyString());
+    verify(filterChain).doFilter(request, response);
+    verify(response, never()).sendRedirect(anyString());
   }
 
   @Test
-  public void testRejectsInvalidJwtToken() throws IOException, ServletException {
+  public void testDoFilter_redirectsWhenUserNotFound() throws IOException, ServletException {
     // Given
-    when(mockRequest.getRequestURI()).thenReturn("/webui/index.html");
-    when(mockRequest.getContextPath()).thenReturn("");
-    when(mockRequest.getHeader("Authorization")).thenReturn("Bearer invalid_token");
+    String validToken = createValidToken();
+    when(request.getRequestURI()).thenReturn("/webui/dashboard.html");
+    when(request.getContextPath()).thenReturn("");
+    when(request.getHeader("Authorization")).thenReturn("Bearer " + validToken);
+    when(userStore.findUser(TEST_USERNAME)).thenReturn(null);
 
     // When
-    filter.doFilter(mockRequest, mockResponse, mockFilterChain);
+    filter.doFilter(request, response, filterChain);
 
     // Then
-    verify(mockResponse).sendRedirect("/webui/login.html");
-    verify(mockFilterChain, never()).doFilter(mockRequest, mockResponse);
+    verify(response).sendRedirect("/webui/login.html");
+    verify(filterChain, never()).doFilter(any(), any());
   }
 
   @Test
-  public void testRejectsExpiredJwtToken() throws IOException, ServletException {
+  public void testDoFilter_redirectsWhenTokenExpired() throws IOException, ServletException {
     // Given
-    String expiredToken = createExpiredJwtToken("testuser");
-    when(mockRequest.getRequestURI()).thenReturn("/webui/index.html");
-    when(mockRequest.getContextPath()).thenReturn("");
-    when(mockRequest.getHeader("Authorization")).thenReturn("Bearer " + expiredToken);
+    String expiredToken = createExpiredToken();
+    when(request.getRequestURI()).thenReturn("/webui/dashboard.html");
+    when(request.getContextPath()).thenReturn("");
+    when(request.getHeader("Authorization")).thenReturn("Bearer " + expiredToken);
 
     // When
-    filter.doFilter(mockRequest, mockResponse, mockFilterChain);
+    filter.doFilter(request, response, filterChain);
 
     // Then
-    verify(mockResponse).sendRedirect("/webui/login.html");
-    verify(mockFilterChain, never()).doFilter(mockRequest, mockResponse);
+    verify(response).sendRedirect("/webui/login.html");
+    verify(filterChain, never()).doFilter(any(), any());
   }
 
-  private String createValidJwtToken(String username) {
-    Instant now = Instant.now();
-    Instant expiry = now.plus(1, ChronoUnit.HOURS);
+  @Test
+  public void testDoFilter_redirectsWhenTokenMalformed() throws IOException, ServletException {
+    // Given
+    String malformedToken = "invalid.token.here";
+    when(request.getRequestURI()).thenReturn("/webui/dashboard.html");
+    when(request.getContextPath()).thenReturn("");
+    when(request.getHeader("Authorization")).thenReturn("Bearer " + malformedToken);
 
+    // When
+    filter.doFilter(request, response, filterChain);
+
+    // Then
+    verify(response).sendRedirect("/webui/login.html");
+    verify(filterChain, never()).doFilter(any(), any());
+  }
+
+  @Test
+  public void testDoFilter_handlesEmptyContextPath() throws IOException, ServletException {
+    // Given
+    when(request.getRequestURI()).thenReturn("/webui/dashboard.html");
+    when(request.getContextPath()).thenReturn("");
+    when(request.getHeader("Authorization")).thenReturn(null);
+    when(request.getCookies()).thenReturn(null);
+
+    // When
+    filter.doFilter(request, response, filterChain);
+
+    // Then
+    verify(response).sendRedirect("/webui/login.html");
+  }
+
+  @Test
+  public void testDoFilter_handlesMultipleCookies() throws IOException, ServletException {
+    // Given
+    String validToken = createValidToken();
+    Cookie otherCookie = new Cookie("other", "value");
+    Cookie jwtCookie = new Cookie("jwtToken", validToken);
+    Cookie[] cookies = {otherCookie, jwtCookie};
+
+    when(request.getRequestURI()).thenReturn("/webui/dashboard.html");
+    when(request.getHeader("Authorization")).thenReturn(null);
+    when(request.getCookies()).thenReturn(cookies);
+    when(userStore.findUser(TEST_USERNAME)).thenReturn(new User(TEST_USERNAME, Set.of("user")));
+
+    // When
+    filter.doFilter(request, response, filterChain);
+
+    // Then
+    verify(filterChain).doFilter(request, response);
+    verify(response, never()).sendRedirect(anyString());
+  }
+
+  @Test
+  public void testDoFilter_prefersAuthorizationHeaderOverCookie()
+      throws IOException, ServletException {
+    // Given
+    String validToken = createValidToken();
+    String invalidToken = "invalid.token";
+    Cookie jwtCookie = new Cookie("jwtToken", invalidToken);
+    Cookie[] cookies = {jwtCookie};
+
+    when(request.getRequestURI()).thenReturn("/webui/dashboard.html");
+    when(request.getHeader("Authorization")).thenReturn("Bearer " + validToken);
+    when(request.getCookies()).thenReturn(cookies);
+    when(userStore.findUser(TEST_USERNAME)).thenReturn(new User(TEST_USERNAME, Set.of("user")));
+
+    // When
+    filter.doFilter(request, response, filterChain);
+
+    // Then
+    verify(filterChain).doFilter(request, response);
+    verify(response, never()).sendRedirect(anyString());
+  }
+
+  private String createValidToken() {
     return Jwts.builder()
-        .setSubject(username)
-        .setIssuedAt(Date.from(now))
-        .setExpiration(Date.from(expiry))
+        .setSubject(TEST_USERNAME)
+        .setIssuedAt(new Date())
+        .setExpiration(Date.from(Instant.now().plus(1, ChronoUnit.HOURS)))
         .signWith(Keys.hmacShaKeyFor(JWT_SECRET.getBytes()))
         .compact();
   }
 
-  private String createExpiredJwtToken(String username) {
-    Instant now = Instant.now();
-    Instant expiry = now.minus(1, ChronoUnit.HOURS); // Expired 1 hour ago
-
+  private String createExpiredToken() {
     return Jwts.builder()
-        .setSubject(username)
-        .setIssuedAt(Date.from(now.minus(2, ChronoUnit.HOURS)))
-        .setExpiration(Date.from(expiry))
+        .setSubject(TEST_USERNAME)
+        .setIssuedAt(Date.from(Instant.now().minus(2, ChronoUnit.HOURS)))
+        .setExpiration(Date.from(Instant.now().minus(1, ChronoUnit.HOURS)))
         .signWith(Keys.hmacShaKeyFor(JWT_SECRET.getBytes()))
         .compact();
   }
