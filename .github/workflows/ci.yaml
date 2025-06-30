@@ -137,10 +137,6 @@ jobs:
           CUCUMBER_OPTIONS: ${{ matrix.cucumber-options }}
           JDK_VERSION: ${{ matrix.jdk-version }}
 
-      - uses: codecov/codecov-action@v5
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-
       - name: Setup tmate session
         if: "failure()"
         uses: mxschmitt/action-tmate@v3
@@ -197,10 +193,6 @@ jobs:
           STORAGE_TYPE: ${{ matrix.storage-type }}
           CUCUMBER_OPTIONS: ${{ matrix.cucumber-options }}
           JDK_VERSION: ${{ matrix.jdk-version }}
-
-      - uses: codecov/codecov-action@v5
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
 
       - name: Setup tmate session
         if: "failure()"
@@ -267,10 +259,6 @@ jobs:
           GRIM_MIN: ${{ matrix.grim-min }}
           CUCUMBER_OPTIONS: ${{ matrix.cucumber-options }}
           JDK_VERSION: ${{ matrix.jdk-version }}
-
-      - uses: codecov/codecov-action@v5
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
 
   its-http-management:
     needs: [ build ]
@@ -352,10 +340,6 @@ jobs:
         uses: mxschmitt/action-tmate@v3
         timeout-minutes: 30
 
-      - uses: codecov/codecov-action@v5
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-
   its-each:
     needs: [docker-tests] #, its-ccm-local, its-ccm-cass]
     name: Each DC Availability
@@ -407,10 +391,6 @@ jobs:
           GRIM_MIN: ${{ matrix.grim-min }}
           CUCUMBER_OPTIONS: ${{ matrix.cucumber-options }}
           JDK_VERSION: ${{ matrix.jdk-version }}
-
-      - uses: codecov/codecov-action@v5
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
 
   its-distributed:
     needs: [docker-tests] #, its-ccm-local, its-ccm-cass]
@@ -468,10 +448,6 @@ jobs:
           GRIM_MIN: ${{ matrix.grim-min }}
           JDK_VERSION: ${{ matrix.jdk-version }}
 
-      - uses: codecov/codecov-action@v5
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-
   its-flapping:
     needs: [docker-tests] #, its-ccm-local, its-ccm-cass]
     name: Flapping reapers
@@ -523,10 +499,6 @@ jobs:
           GRIM_MAX: ${{ matrix.grim-max }}
           GRIM_MIN: ${{ matrix.grim-min }}
           JDK_VERSION: ${{ matrix.jdk-version }}
-
-      - uses: codecov/codecov-action@v5
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
 
   release:
     name: Release Reaper
