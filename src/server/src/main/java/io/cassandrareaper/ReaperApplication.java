@@ -36,8 +36,6 @@ import io.cassandrareaper.management.jmx.JmxManagementConnectionFactory;
 import io.cassandrareaper.metrics.PrometheusMetricsFilter;
 import io.cassandrareaper.resources.ClusterResource;
 import io.cassandrareaper.resources.CryptoResource;
-import io.cassandrareaper.resources.DiagEventSseResource;
-import io.cassandrareaper.resources.DiagEventSubscriptionResource;
 import io.cassandrareaper.resources.NodeStatsResource;
 import io.cassandrareaper.resources.PingResource;
 import io.cassandrareaper.resources.ReaperHealthCheck;
@@ -86,8 +84,6 @@ import io.prometheus.client.servlet.jakarta.exporter.MetricsServlet;
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.FilterRegistration;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
-import org.eclipse.jetty.server.Handler;
-import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.servlets.CrossOriginFilter;
 import org.glassfish.jersey.server.filter.RolesAllowedDynamicFeature;
@@ -108,19 +104,6 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
 
   public static void main(String[] args) throws Exception {
     new ReaperApplication().run(args);
-  }
-
-  private static void setupSse(Environment environment) {
-    // Enabling gzip buffering will prevent flushing of server-side-events, so we disable
-    // compression for SSE
-    environment
-        .lifecycle()
-        .addServerLifecycleListener(
-            server -> {
-              for (Handler handler : server.getChildHandlersByClass(GzipHandler.class)) {
-                ((GzipHandler) handler).addExcludedMimeTypes("text/event-stream");
-              }
-            });
   }
 
   @Override
@@ -220,7 +203,6 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
       co.addMappingForUrlPatterns(EnumSet.allOf(DispatcherType.class), true, "/*");
     }
 
-    setupSse(environment);
     LOG.info("creating and registering health checks");
     // Notice that health checks are registered under the admin application on /healthcheck
     final ReaperHealthCheck healthCheck = new ReaperHealthCheck(context);
@@ -231,11 +213,7 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
     environment.jersey().register(pingResource);
 
     final ClusterResource addClusterResource =
-        ClusterResource.create(
-            context,
-            cryptograph,
-            context.storage.getEventsDao(),
-            context.storage.getRepairRunDao());
+        ClusterResource.create(context, cryptograph, context.storage.getRepairRunDao());
     environment.jersey().register(addClusterResource);
     final RepairRunResource addRepairRunResource =
         new RepairRunResource(context, context.storage.getRepairRunDao());
@@ -254,20 +232,6 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
 
     final CryptoResource addCryptoResource = new CryptoResource(cryptograph);
     environment.jersey().register(addCryptoResource);
-
-    CloseableHttpClient httpClient = createHttpClient(config, environment);
-
-    if (config.getHttpManagement() == null || !config.getHttpManagement().isEnabled()) {
-      ScheduledExecutorService ses =
-          environment.lifecycle().scheduledExecutorService("Diagnostics").threads(6).build();
-      final DiagEventSubscriptionResource eventsResource =
-          new DiagEventSubscriptionResource(
-              context, httpClient, ses, context.storage.getEventsDao());
-      environment.jersey().register(eventsResource);
-      final DiagEventSseResource diagEvents =
-          new DiagEventSseResource(context, httpClient, ses, context.storage.getEventsDao());
-      environment.jersey().register(diagEvents);
-    }
 
     if (config.getAccessControl() != null && config.getAccessControl().isEnabled()) {
       LOG.info("ACCESS CONTROL: Setting up authentication - accessControl config found");

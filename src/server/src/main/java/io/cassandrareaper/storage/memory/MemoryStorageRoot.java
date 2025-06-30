@@ -17,7 +17,6 @@
 package io.cassandrareaper.storage.memory;
 
 import io.cassandrareaper.core.Cluster;
-import io.cassandrareaper.core.DiagEventSubscription;
 import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairSchedule;
 import io.cassandrareaper.core.RepairSegment;
@@ -35,8 +34,6 @@ public final class MemoryStorageRoot {
       new ConcurrentHashMap<>();
   private final ConcurrentMap<UUID, RepairRun> repairRuns = new ConcurrentHashMap<>();
   private final ConcurrentMap<UUID, RepairSchedule> repairSchedules = new ConcurrentHashMap<>();
-  private final ConcurrentMap<UUID, DiagEventSubscription> subscriptionsById =
-      new ConcurrentHashMap<>();
   private final ConcurrentMap<String, Cluster> clusters = new ConcurrentHashMap<>();
 
   public MemoryStorageRoot() {
@@ -138,11 +135,6 @@ public final class MemoryStorageRoot {
 
   public RepairRun getRepairRunById(UUID id) {
     return this.repairRuns.get(id);
-  }
-
-  // Subscription operations
-  public Map<UUID, DiagEventSubscription> getSubscriptionsById() {
-    return this.subscriptionsById;
   }
 
   public static String toString(RepairSegment segment) {

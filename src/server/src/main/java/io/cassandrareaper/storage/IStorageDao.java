@@ -18,7 +18,6 @@
 package io.cassandrareaper.storage;
 
 import io.cassandrareaper.storage.cluster.IClusterDao;
-import io.cassandrareaper.storage.events.IEventsDao;
 import io.cassandrareaper.storage.metrics.IMetricsDao;
 import io.cassandrareaper.storage.repairrun.IRepairRunDao;
 import io.cassandrareaper.storage.repairschedule.IRepairScheduleDao;
@@ -43,8 +42,6 @@ public interface IStorageDao extends Managed, IMetricsDao {
   Set<UUID> getLockedSegmentsForRun(UUID runId);
 
   boolean isStorageConnected();
-
-  IEventsDao getEventsDao();
 
   ISnapshotDao getSnapshotDao();
 

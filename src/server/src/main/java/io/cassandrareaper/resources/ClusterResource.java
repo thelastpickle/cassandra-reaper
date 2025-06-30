@@ -29,7 +29,6 @@ import io.cassandrareaper.management.jmx.JmxManagementConnectionFactory;
 import io.cassandrareaper.resources.view.ClusterStatus;
 import io.cassandrareaper.service.ClusterRepairScheduler;
 import io.cassandrareaper.service.RepairScheduleService;
-import io.cassandrareaper.storage.events.IEventsDao;
 import io.cassandrareaper.storage.repairrun.IRepairRunDao;
 
 import java.net.URI;
@@ -74,7 +73,6 @@ public final class ClusterResource {
 
   private final AppContext context;
 
-  private final IEventsDao eventsDao;
   private final ClusterRepairScheduler clusterRepairScheduler;
   private final ClusterFacade clusterFacade;
   private final Cryptograph cryptograph;
@@ -85,14 +83,12 @@ public final class ClusterResource {
       AppContext context,
       Cryptograph cryptograph,
       Supplier<ClusterFacade> clusterFacadeSupplier,
-      IEventsDao eventsDao,
       IRepairRunDao repairRunDao) {
     this.context = context;
     this.clusterRepairScheduler = new ClusterRepairScheduler(context, repairRunDao);
     this.clusterFacade = clusterFacadeSupplier.get();
     this.cryptograph = cryptograph;
     this.repairScheduleService = RepairScheduleService.create(context, repairRunDao);
-    this.eventsDao = eventsDao;
     this.repairRunDao = repairRunDao;
   }
 
@@ -101,18 +97,14 @@ public final class ClusterResource {
       AppContext context,
       Cryptograph cryptograph,
       Supplier<ClusterFacade> supplier,
-      IEventsDao eventsDao,
       IRepairRunDao repairRunDao) {
-    return new ClusterResource(context, cryptograph, supplier, eventsDao, repairRunDao);
+    return new ClusterResource(context, cryptograph, supplier, repairRunDao);
   }
 
   public static ClusterResource create(
-      AppContext context,
-      Cryptograph cryptograph,
-      IEventsDao eventsDao,
-      IRepairRunDao repairRunDao) {
+      AppContext context, Cryptograph cryptograph, IRepairRunDao repairRunDao) {
     return new ClusterResource(
-        context, cryptograph, () -> ClusterFacade.create(context), eventsDao, repairRunDao);
+        context, cryptograph, () -> ClusterFacade.create(context), repairRunDao);
   }
 
   /*
@@ -505,14 +497,6 @@ public final class ClusterResource {
         if (!repairRunDao.getRepairRunsForCluster(clusterName, Optional.empty()).isEmpty()) {
           return Response.status(Response.Status.CONFLICT)
               .entity("cluster \"" + clusterName + "\" cannot be deleted, as it has repair runs")
-              .build();
-        }
-        if (!eventsDao.getEventSubscriptions(clusterName).isEmpty()) {
-          return Response.status(Response.Status.CONFLICT)
-              .entity(
-                  "cluster \""
-                      + clusterName
-                      + "\" cannot be deleted, as it has diagnostic events subscriptions")
               .build();
         }
       }
