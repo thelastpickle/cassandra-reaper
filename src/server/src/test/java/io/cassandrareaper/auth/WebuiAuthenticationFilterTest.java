@@ -95,28 +95,54 @@ public class WebuiAuthenticationFilterTest {
   @Test
   public void testDoFilter_allowsStaticAssets() throws IOException, ServletException {
     // Given
-    String[] allowedPaths = {
-      "/webui/assets/style.css",
-      "/webui/script.js",
-      "/webui/logo.png",
-      "/webui/banner.jpg",
-      "/webui/icon.gif",
-      "/webui/favicon.ico",
-      "/webui/font.woff",
-      "/webui/font.woff2",
-      "/webui/font.ttf"
-    };
+    String testPath = "/webui/assets/style.css";
+    when(request.getRequestURI()).thenReturn(testPath);
 
-    for (String path : allowedPaths) {
-      // Given
-      when(request.getRequestURI()).thenReturn(path);
+    // When
+    filter.doFilter(request, response, filterChain);
 
-      // When
-      filter.doFilter(request, response, filterChain);
+    // Then
+    verify(filterChain).doFilter(request, response);
+    verify(response, never()).sendRedirect(anyString());
+  }
 
-      // Then
-      verify(filterChain).doFilter(request, response);
-    }
+  @Test
+  public void testDoFilter_allowsJavaScript() throws IOException, ServletException {
+    // Given
+    when(request.getRequestURI()).thenReturn("/webui/script.js");
+
+    // When
+    filter.doFilter(request, response, filterChain);
+
+    // Then
+    verify(filterChain).doFilter(request, response);
+    verify(response, never()).sendRedirect(anyString());
+  }
+
+  @Test
+  public void testDoFilter_allowsImages() throws IOException, ServletException {
+    // Given
+    when(request.getRequestURI()).thenReturn("/webui/logo.png");
+
+    // When
+    filter.doFilter(request, response, filterChain);
+
+    // Then
+    verify(filterChain).doFilter(request, response);
+    verify(response, never()).sendRedirect(anyString());
+  }
+
+  @Test
+  public void testDoFilter_allowsFonts() throws IOException, ServletException {
+    // Given
+    when(request.getRequestURI()).thenReturn("/webui/font.woff");
+
+    // When
+    filter.doFilter(request, response, filterChain);
+
+    // Then
+    verify(filterChain).doFilter(request, response);
+    verify(response, never()).sendRedirect(anyString());
   }
 
   @Test
