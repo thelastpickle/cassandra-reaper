@@ -44,6 +44,8 @@ jobs:
           mv src/server/target/site/jacoco src/server/target/site/jacoco_ut
 
       - uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
 
   docker-tests:
     name: Docker Image Tests
