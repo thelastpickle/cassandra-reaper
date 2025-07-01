@@ -1,5 +1,15 @@
 ## Change Log
 
+### 4.0.0-beta4 (2025/07/01 06:06 +00:00)
+- [#1591](https://github.com/thelastpickle/cassandra-reaper/pull/1591) Update the codecov actions and set the token (#1591) (@adejanovski)
+- [#1589](https://github.com/thelastpickle/cassandra-reaper/pull/1589) fix: upgrade org.apache.cassandra:cassandra-all from 5.0.3 to 5.0.4 (#1589) (@adejanovski)
+- [#1587](https://github.com/thelastpickle/cassandra-reaper/pull/1587) fix: upgrade io.dropwizard:dropwizard-core from 4.0.13 to 4.0.14 (#1587) (@adejanovski)
+- [#1574](https://github.com/thelastpickle/cassandra-reaper/pull/1574) Shuffle segments during scheduling to avoid blockage if a segment can't run immediately (#1574) (@adejanovski)
+- [#1584](https://github.com/thelastpickle/cassandra-reaper/pull/1584) fix: upgrade com.squareup.okio:okio-jvm from 3.4.0 to 3.12.0 (#1584) (@adejanovski)
+- [#1583](https://github.com/thelastpickle/cassandra-reaper/pull/1583) fix: upgrade org.jetbrains.kotlin:kotlin-stdlib from 2.1.0 to 2.1.21 (#1583) (@adejanovski)
+- [#1582](https://github.com/thelastpickle/cassandra-reaper/pull/1582) fix: upgrade io.netty:netty-handler from 4.1.121.Final to 4.2.1.Final (#1582) (@adejanovski)
+- [#1581](https://github.com/thelastpickle/cassandra-reaper/pull/1581) fix: upgrade org.glassfish.jersey.core:jersey-client from 3.0.17 to 3.1.10 (#1581) (@adejanovski)
+
 ### 4.0.0-beta3 (2025/06/13 12:20 +00:00)
 - [#1579](https://github.com/thelastpickle/cassandra-reaper/pull/1579) Fix remaining CVEs and remove some table properties which can cause compatibility issues (#1579) (@adejanovski)
 
