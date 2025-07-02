@@ -67,9 +67,6 @@ module.exports = {
     login: [
       path.join(__dirname, 'app', 'login.js')
     ],
-    events: [
-      path.join(__dirname, 'app', 'events.js')
-    ],
     deps: _commonDeps
   },
   output: {

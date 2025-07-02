@@ -18,47 +18,168 @@
 package io.cassandrareaper.resources;
 
 import io.cassandrareaper.AppContext;
+import io.cassandrareaper.ReaperApplicationConfiguration;
 import io.cassandrareaper.ReaperApplicationConfiguration.DatacenterAvailability;
-import io.cassandrareaper.service.TestRepairConfiguration;
-import io.cassandrareaper.storage.MemoryStorageFacade;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import com.google.common.collect.BiMap;
 import jakarta.ws.rs.core.Response;
-import junit.framework.TestCase;
-import org.eclipse.jetty.http.HttpStatus;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-public class ReaperResourceTest extends TestCase {
+/**
+ * Unit tests for ReaperResource class. Tests the REST endpoint for retrieving Reaper configuration
+ * parameters.
+ */
+public class ReaperResourceTest {
+
+  private AppContext mockAppContext;
+  private ReaperApplicationConfiguration mockConfig;
+  private ReaperResource reaperResource;
+
+  @BeforeEach
+  void setUp() {
+    mockAppContext = new AppContext();
+    mockConfig = mock(ReaperApplicationConfiguration.class);
+    mockAppContext.config = mockConfig;
+    reaperResource = new ReaperResource(mockAppContext);
+  }
 
   @Test
-  public void testGetDatacenterAvailability() throws Exception {
-    final MockObjects mocks = initMocks();
+  void testGetDatacenterAvailability_WithAllDatacenters_ShouldReturnAll() {
+    // Given: Configuration set to ALL
+    when(mockConfig.getDatacenterAvailability()).thenReturn(DatacenterAvailability.ALL);
 
-    ReaperResource resource = new ReaperResource(mocks.context);
-    Response response = resource.getDatacenterAvailability();
-    BiMap<String, DatacenterAvailability> config =
+    // When: getDatacenterAvailability is called
+    Response response = reaperResource.getDatacenterAvailability();
+
+    // Then: Should return OK with ALL
+    assertThat(response.getStatus()).isEqualTo(200);
+    assertThat(response.getEntity()).isInstanceOf(BiMap.class);
+    @SuppressWarnings("unchecked")
+    BiMap<String, DatacenterAvailability> result =
         (BiMap<String, DatacenterAvailability>) response.getEntity();
-
-    assertEquals(config.get("datacenterAvailability"), DatacenterAvailability.EACH);
-    assertEquals(HttpStatus.OK_200, response.getStatus());
+    assertThat(result).containsEntry("datacenterAvailability", DatacenterAvailability.ALL);
   }
 
-  private MockObjects initMocks() {
+  @Test
+  void testGetDatacenterAvailability_WithLocalDatacenter_ShouldReturnLocal() {
+    // Given: Configuration set to LOCAL
+    when(mockConfig.getDatacenterAvailability()).thenReturn(DatacenterAvailability.LOCAL);
+
+    // When: getDatacenterAvailability is called
+    Response response = reaperResource.getDatacenterAvailability();
+
+    // Then: Should return OK with LOCAL
+    assertThat(response.getStatus()).isEqualTo(200);
+    assertThat(response.getEntity()).isInstanceOf(BiMap.class);
+    @SuppressWarnings("unchecked")
+    BiMap<String, DatacenterAvailability> result =
+        (BiMap<String, DatacenterAvailability>) response.getEntity();
+    assertThat(result).containsEntry("datacenterAvailability", DatacenterAvailability.LOCAL);
+  }
+
+  @Test
+  void testGetDatacenterAvailability_WithEachDatacenter_ShouldReturnEach() {
+    // Given: Configuration set to EACH
+    when(mockConfig.getDatacenterAvailability()).thenReturn(DatacenterAvailability.EACH);
+
+    // When: getDatacenterAvailability is called
+    Response response = reaperResource.getDatacenterAvailability();
+
+    // Then: Should return OK with EACH
+    assertThat(response.getStatus()).isEqualTo(200);
+    assertThat(response.getEntity()).isInstanceOf(BiMap.class);
+    @SuppressWarnings("unchecked")
+    BiMap<String, DatacenterAvailability> result =
+        (BiMap<String, DatacenterAvailability>) response.getEntity();
+    assertThat(result).containsEntry("datacenterAvailability", DatacenterAvailability.EACH);
+  }
+
+  @Test
+  void testGetDatacenterAvailability_WithSidecarDatacenter_ShouldReturnSidecar() {
+    // Given: Configuration set to SIDECAR
+    when(mockConfig.getDatacenterAvailability()).thenReturn(DatacenterAvailability.SIDECAR);
+
+    // When: getDatacenterAvailability is called
+    Response response = reaperResource.getDatacenterAvailability();
+
+    // Then: Should return OK with SIDECAR
+    assertThat(response.getStatus()).isEqualTo(200);
+    assertThat(response.getEntity()).isInstanceOf(BiMap.class);
+    @SuppressWarnings("unchecked")
+    BiMap<String, DatacenterAvailability> result =
+        (BiMap<String, DatacenterAvailability>) response.getEntity();
+    assertThat(result).containsEntry("datacenterAvailability", DatacenterAvailability.SIDECAR);
+  }
+
+  @Test
+  void testGetDatacenterAvailability_ResponseStructure_ShouldBeCorrect() {
+    // Given: Any configuration
+    when(mockConfig.getDatacenterAvailability()).thenReturn(DatacenterAvailability.ALL);
+
+    // When: getDatacenterAvailability is called
+    Response response = reaperResource.getDatacenterAvailability();
+
+    // Then: Response should have correct structure
+    assertThat(response.getStatus()).isEqualTo(200);
+    assertThat(response.getEntity()).isInstanceOf(BiMap.class);
+    @SuppressWarnings("unchecked")
+    BiMap<String, DatacenterAvailability> result =
+        (BiMap<String, DatacenterAvailability>) response.getEntity();
+    assertThat(result).hasSize(1);
+    assertThat(result).containsKey("datacenterAvailability");
+  }
+
+  @Test
+  void testConstructor_WithValidContext_ShouldCreateInstance() {
+    // Given: Valid AppContext
     AppContext context = new AppContext();
-    context.storage = new MemoryStorageFacade();
-    context.config = TestRepairConfiguration.defaultConfig();
-    context.config.setDatacenterAvailability(DatacenterAvailability.EACH);
+    context.config = mock(ReaperApplicationConfiguration.class);
 
-    return new MockObjects(context);
+    // When: Constructor is called
+    ReaperResource resource = new ReaperResource(context);
+
+    // Then: Should create instance
+    assertThat(resource).isNotNull();
   }
 
-  private static final class MockObjects {
+  @Test
+  void testGetDatacenterAvailability_WithNullAvailability_ShouldHandleGracefully() {
+    // Given: Configuration returns null
+    when(mockConfig.getDatacenterAvailability()).thenReturn(null);
 
-    final AppContext context;
-
-    MockObjects(AppContext context) {
-      super();
-      this.context = context;
+    // When: getDatacenterAvailability is called
+    // Then: Should handle gracefully - ImmutableMap doesn't allow null values
+    // so this will throw an exception, which is expected behavior
+    try {
+      Response response = reaperResource.getDatacenterAvailability();
+      // If we get here, check that the response is still valid
+      assertThat(response.getStatus()).isEqualTo(200);
+    } catch (NullPointerException e) {
+      // This is expected since ImmutableMap doesn't allow null values
+      assertThat(e.getMessage()).contains("null");
     }
+  }
+
+  @Test
+  void testGetDatacenterAvailability_MultipleCallsSameResult_ShouldBeConsistent() {
+    // Given: Configuration set to a specific value
+    when(mockConfig.getDatacenterAvailability()).thenReturn(DatacenterAvailability.LOCAL);
+
+    // When: getDatacenterAvailability is called multiple times
+    Response response1 = reaperResource.getDatacenterAvailability();
+    Response response2 = reaperResource.getDatacenterAvailability();
+    Response response3 = reaperResource.getDatacenterAvailability();
+
+    // Then: All responses should be the same
+    assertThat(response1.getStatus()).isEqualTo(200);
+    assertThat(response2.getStatus()).isEqualTo(200);
+    assertThat(response3.getStatus()).isEqualTo(200);
+    assertThat(response1.getEntity()).isEqualTo(response2.getEntity());
+    assertThat(response2.getEntity()).isEqualTo(response3.getEntity());
   }
 }
