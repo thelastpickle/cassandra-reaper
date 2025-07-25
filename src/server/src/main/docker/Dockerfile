@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM registry.access.redhat.com/ubi9/ubi-minimal:latest
+FROM amazoncorretto:11-alpine
 
 ARG SHADED_JAR
 
@@ -91,11 +91,9 @@ ENV REAPER_SEGMENT_COUNT_PER_NODE=64 \
     REAPER_PURGE_RECORDS_AFTER_IN_DAYS=30
 
 
-RUN microdnf install -y \
-    java-11-openjdk-headless \
+RUN apk add --update \
     bash \
-    shadow-utils \
-  && microdnf clean all
+  && rm -rf /var/cache/apk/*
 
 ADD src/server/src/main/docker/cassandra-reaper.yml /etc/cassandra-reaper/cassandra-reaper.yml
 ADD src/server/src/main/docker/entrypoint.sh /usr/local/bin/entrypoint.sh
@@ -106,7 +104,7 @@ ADD src/server/src/main/docker/configure-authentication.sh /usr/local/bin/config
 ADD ${SHADED_JAR} /usr/local/lib/cassandra-reaper.jar
 
 
-RUN groupadd -g 1001 reaper && useradd -g reaper -u 1001 reaper && \
+RUN addgroup -g 1001 -S reaper && adduser -G reaper -S -u 1001 reaper && \
     mkdir -p /var/lib/cassandra-reaper && \
     mkdir -p /etc/cassandra-reaper/shiro && \
     mkdir -p /etc/cassandra-reaper/config && \
