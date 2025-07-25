@@ -55,6 +55,7 @@ jobs:
       matrix:
         storage-type: [cassandra]
         test-type: [docker]
+        dockerfile: [Dockerfile, Dockerfile-spreaper, Dockerfile-ubi]
     steps:
       - name: Raise open files limit
         run: |
@@ -78,6 +79,7 @@ jobs:
         run: ./.github/scripts/run-tests.sh
         env:
           TEST_TYPE: ${{ matrix.test-type }}
+          DOCKERFILE: ${{ matrix.dockerfile }}
 
       - name: Setup tmate session
         if: "failure()"
@@ -556,6 +558,19 @@ jobs:
             SHADED_JAR=${{ env.SHADED_JAR }}
           push: true
           tags: ${{ env.DOCKER_TAG1 }},${{ env.DOCKER_TAG2 }}
+          platforms: linux/amd64,linux/arm64
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=local,dest=/tmp/.buildx-cache
+      - name: Build ubi image and push
+        id: docker_build_ubi
+        uses: docker/build-push-action@v4
+        with:
+          file: src/server/src/main/docker/Dockerfile-ubi
+          context: .
+          build-args: |
+            SHADED_JAR=${{ env.SHADED_JAR }}
+          push: true
+          tags: ${{ env.DOCKER_TAG1 }}-ubi,${{ env.DOCKER_TAG2 }}-ubi
           platforms: linux/amd64,linux/arm64
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache

@@ -220,7 +220,7 @@ case "${TEST_TYPE}" in
         sudo apt-get install jq -y
         mvn -B package -DskipTests
         VERSION=$(printf 'VER\t${project.version}' | mvn help:evaluate | grep '^VER' | cut -f2)
-        docker build --build-arg SHADED_JAR=src/server/target/cassandra-reaper-${VERSION}.jar -f src/server/src/main/docker/Dockerfile -t thelastpickle/cassandra-reaper:ci-build .
+        docker build --build-arg SHADED_JAR=src/server/target/cassandra-reaper-${VERSION}.jar -f src/server/src/main/docker/${DOCKERFILE} -t thelastpickle/cassandra-reaper:ci-build .
         docker images
 
         # start a kind cluster with 2 worker nodes
