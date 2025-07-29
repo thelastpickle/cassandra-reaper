@@ -1,3 +1,8 @@
+// Add globalThis polyfill for Node.js < 12 compatibility
+if (typeof globalThis === 'undefined') {
+  globalThis = global || self || this || {};
+}
+
 //
 //  Copyright 2015-2016 Stefan Podkowinski
 //  Copyright 2016-2019 The Last Pickle Ltd
@@ -158,14 +163,6 @@ module.exports = {
       template: path.join(__dirname, 'app', 'html_template.ejs'),
       inject: 'head',
       baseUrl: isDev ? '/' : '/webui/'
-    }),
-    new HtmlWebpackPlugin({
-      filename: 'events.html',
-      chunks: ['deps', 'events'],
-      hash: true,
-      title: ' - User Auditing',
-      template: path.join(__dirname, 'app', 'html_template.ejs'),
-      inject: 'head'
     }),
     new webpack.ProvidePlugin({
       $: "jquery",
