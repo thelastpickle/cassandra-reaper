@@ -27,7 +27,7 @@
     "jsx-loader": "^0.13.0",
     "lodash": "^4.17.0",
     "moment": "^2.22.2",
-    "node-sass": "^4.9.0",
+    "sass": "^1.89.2",
     "react": "^16.13.0",
     "react-bootstrap": "^0.33.0",
     "react-dom": "^16.12.0",
