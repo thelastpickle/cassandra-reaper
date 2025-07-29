@@ -2,7 +2,7 @@
 
 ### 4.0.0-rc1 (2025/07/29 15:16 +00:00)
 - [#1602](https://github.com/thelastpickle/cassandra-reaper/pull/1602) Upgrade commons-lang3 to 3.18.0 to fix CVE-2025-48924 (#1602) (@adejanovski)
-- [#1601](https://github.com/thelastpickle/cassandra-reaper/pull/1601) Node sass arm build fix (#1601) (@adejanovski)
+- [#1601](https://github.com/thelastpickle/cassandra-reaper/pull/1601) Node sass arm build fix (#1601) (@mamccorm)
 - [#1597](https://github.com/thelastpickle/cassandra-reaper/pull/1597) fix: upgrade com.squareup.okio:okio-jvm from 3.12.0 to 3.13.0 (#1597) (@adejanovski)
 - [#1593](https://github.com/thelastpickle/cassandra-reaper/pull/1593) fix: upgrade io.netty:netty-handler from 4.2.1.Final to 4.2.2.Final (#1593) (@adejanovski)
 - [65a8610](https://github.com/thelastpickle/cassandra-reaper/commit/65a8610ecdc03f40d572cb678c0a9a9acf0ac334) Ninja fix the corretto image (@adejanovski)
