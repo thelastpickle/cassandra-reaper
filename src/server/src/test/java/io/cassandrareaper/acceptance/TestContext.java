@@ -17,8 +17,6 @@
 
 package io.cassandrareaper.acceptance;
 
-import io.cassandrareaper.core.DiagEventSubscription;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -56,10 +54,6 @@ public final class TestContext {
   /* Used for targeting an object accessed in last test step. */
   private final List<UUID> currentSchedules = Lists.newCopyOnWriteArrayList();
   private final List<UUID> currentRepairs = Lists.newCopyOnWriteArrayList();
-  private final List<DiagEventSubscription> currentEventSubscriptions =
-      Lists.newCopyOnWriteArrayList();
-  private final List<DiagEventSubscription> retrievedEventSubscriptions =
-      Lists.newCopyOnWriteArrayList();
   private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
   TestContext() {}
@@ -101,28 +95,6 @@ public final class TestContext {
     }
   }
 
-  void addCurrentEventSubscription(DiagEventSubscription eventSubscription) {
-    lock.writeLock().lock();
-    try {
-      if (currentEventSubscriptions.isEmpty()
-          || !getCurrentEventSubscription().equals(eventSubscription)) {
-        currentEventSubscriptions.add(eventSubscription);
-      }
-    } finally {
-      lock.writeLock().unlock();
-    }
-  }
-
-  void updateRetrievedEventSubscriptions(List<DiagEventSubscription> eventSubscriptions) {
-    lock.writeLock().lock();
-    try {
-      retrievedEventSubscriptions.clear();
-      retrievedEventSubscriptions.addAll(eventSubscriptions);
-    } finally {
-      lock.writeLock().unlock();
-    }
-  }
-
   UUID getCurrentScheduleId() {
     lock.readLock().lock();
     try {
@@ -141,37 +113,10 @@ public final class TestContext {
     }
   }
 
-  DiagEventSubscription getCurrentEventSubscription() {
-    lock.readLock().lock();
-    try {
-      return currentEventSubscriptions.get(currentEventSubscriptions.size() - 1);
-    } finally {
-      lock.readLock().unlock();
-    }
-  }
-
-  DiagEventSubscription removeCurrentEventSubscription() {
-    lock.readLock().lock();
-    try {
-      return currentEventSubscriptions.remove(currentEventSubscriptions.size() - 1);
-    } finally {
-      lock.readLock().unlock();
-    }
-  }
-
   List<UUID> getCurrentRepairIds() {
     lock.readLock().lock();
     try {
       return Collections.unmodifiableList(currentRepairs);
-    } finally {
-      lock.readLock().unlock();
-    }
-  }
-
-  List<DiagEventSubscription> getRetrievedEventSubscriptions() {
-    lock.readLock().lock();
-    try {
-      return Collections.unmodifiableList(retrievedEventSubscriptions);
     } finally {
       lock.readLock().unlock();
     }

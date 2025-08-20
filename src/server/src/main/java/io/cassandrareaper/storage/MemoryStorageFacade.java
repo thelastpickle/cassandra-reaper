@@ -15,7 +15,6 @@
 package io.cassandrareaper.storage;
 
 import io.cassandrareaper.core.Cluster;
-import io.cassandrareaper.core.DiagEventSubscription;
 import io.cassandrareaper.core.PercentRepairedMetric;
 import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairSchedule;
@@ -23,8 +22,6 @@ import io.cassandrareaper.core.RepairSegment;
 import io.cassandrareaper.core.RepairUnit;
 import io.cassandrareaper.storage.cluster.IClusterDao;
 import io.cassandrareaper.storage.cluster.MemoryClusterDao;
-import io.cassandrareaper.storage.events.IEventsDao;
-import io.cassandrareaper.storage.events.MemoryEventsDao;
 import io.cassandrareaper.storage.memory.MemoryStorageRoot;
 import io.cassandrareaper.storage.memory.ReplicaLockManagerWithTtl;
 import io.cassandrareaper.storage.metrics.MemoryMetricsDao;
@@ -77,10 +74,8 @@ public final class MemoryStorageFacade implements IStorageDao {
       new MemoryRepairRunDao(this, memRepairSegment, memoryRepairUnitDao);
   private final MemoryRepairScheduleDao memRepairScheduleDao =
       new MemoryRepairScheduleDao(this, memoryRepairUnitDao);
-  private final MemoryEventsDao memEventsDao = new MemoryEventsDao(this);
   private final MemoryClusterDao memClusterDao =
-      new MemoryClusterDao(
-          this, memoryRepairUnitDao, memoryRepairRunDao, memRepairScheduleDao, memEventsDao);
+      new MemoryClusterDao(this, memoryRepairUnitDao, memoryRepairRunDao, memRepairScheduleDao);
   private final MemorySnapshotDao memSnapshotDao = new MemorySnapshotDao();
   private final MemoryMetricsDao memMetricsDao = new MemoryMetricsDao();
   private final ReplicaLockManagerWithTtl replicaLockManagerWithTtl;
@@ -161,11 +156,6 @@ public final class MemoryStorageFacade implements IStorageDao {
     if (this.embeddedStorage != null) {
       this.embeddedStorage.shutdown();
     }
-  }
-
-  @Override
-  public IEventsDao getEventsDao() {
-    return this.memEventsDao;
   }
 
   @Override
@@ -319,11 +309,6 @@ public final class MemoryStorageFacade implements IStorageDao {
     return this.memoryStorageRoot.getRepairSegments().values().stream()
         .filter(segment -> segment.getRunId().equals(runId))
         .collect(Collectors.toSet());
-  }
-
-  // RepairSubscription operations
-  public Map<UUID, DiagEventSubscription> getSubscriptionsById() {
-    return this.memoryStorageRoot.getSubscriptionsById();
   }
 
   @Override
