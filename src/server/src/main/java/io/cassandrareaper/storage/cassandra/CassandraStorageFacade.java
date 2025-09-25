@@ -26,8 +26,6 @@ import io.cassandrareaper.storage.IDistributedStorage;
 import io.cassandrareaper.storage.IStorageDao;
 import io.cassandrareaper.storage.cluster.CassandraClusterDao;
 import io.cassandrareaper.storage.cluster.IClusterDao;
-import io.cassandrareaper.storage.events.CassandraEventsDao;
-import io.cassandrareaper.storage.events.IEventsDao;
 import io.cassandrareaper.storage.metrics.CassandraMetricsDao;
 import io.cassandrareaper.storage.operations.CassandraOperationsDao;
 import io.cassandrareaper.storage.operations.IOperationsDao;
@@ -77,7 +75,6 @@ public final class CassandraStorageFacade implements IStorageDao, IDistributedSt
   private final CassandraRepairUnitDao cassRepairUnitDao;
   private final CassandraRepairScheduleDao cassRepairScheduleDao;
   private final CassandraClusterDao cassClusterDao;
-  private final CassandraEventsDao cassEventsDao;
   private final CassandraMetricsDao cassMetricsDao;
   private final CassandraConcurrencyDao concurrency;
   private final CassandraSnapshotDao cassSnapshotDao;
@@ -131,7 +128,6 @@ public final class CassandraStorageFacade implements IStorageDao, IDistributedSt
           cassandraFactory, environment, config, version, mode);
     }
 
-    this.cassEventsDao = new CassandraEventsDao(cassandra);
     this.cassMetricsDao = new CassandraMetricsDao(cassandra);
     this.cassSnapshotDao = new CassandraSnapshotDao(cassandra);
     this.operationsDao = new CassandraOperationsDao(cassandra);
@@ -141,8 +137,7 @@ public final class CassandraStorageFacade implements IStorageDao, IDistributedSt
         new CassandraRepairSegmentDao(concurrency, cassRepairUnitDao, cassandra);
     this.cassRepairScheduleDao = new CassandraRepairScheduleDao(cassRepairUnitDao, cassandra);
     this.cassClusterDao =
-        new CassandraClusterDao(
-            cassRepairScheduleDao, cassRepairUnitDao, cassEventsDao, cassandra, objectMapper);
+        new CassandraClusterDao(cassRepairScheduleDao, cassRepairUnitDao, cassandra, objectMapper);
     this.cassRepairRunDao =
         new CassandraRepairRunDao(
             cassRepairUnitDao, cassClusterDao, cassRepairSegmentDao, cassandra, objectMapper);
@@ -338,11 +333,6 @@ public final class CassandraStorageFacade implements IStorageDao, IDistributedSt
     // Statements executed when the server shuts down.
     LOG.info("Reaper is stopping, removing this instance from running reapers...");
     cassandra.execute(deleteHeartbeatPrepStmt.bind(reaperInstanceId));
-  }
-
-  @Override
-  public IEventsDao getEventsDao() {
-    return this.cassEventsDao;
   }
 
   @Override

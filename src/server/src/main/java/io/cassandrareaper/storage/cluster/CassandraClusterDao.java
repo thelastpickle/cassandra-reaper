@@ -20,7 +20,6 @@ package io.cassandrareaper.storage.cluster;
 
 import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.ClusterProperties;
-import io.cassandrareaper.storage.events.CassandraEventsDao;
 import io.cassandrareaper.storage.repairschedule.CassandraRepairScheduleDao;
 import io.cassandrareaper.storage.repairunit.CassandraRepairUnitDao;
 
@@ -64,14 +63,12 @@ public class CassandraClusterDao implements IClusterDao {
   private final AtomicLong clustersCacheAge = new AtomicLong(0);
   private final CassandraRepairScheduleDao cassRepairScheduleDao;
   private final CassandraRepairUnitDao cassRepairUnitDao;
-  private final CassandraEventsDao cassEventsDao;
 
   private final CqlSession session;
 
   public CassandraClusterDao(
       CassandraRepairScheduleDao cassRepairScheduleDao,
       CassandraRepairUnitDao cassRepairUnitDao,
-      CassandraEventsDao cassEventsDao,
       CqlSession session,
       ObjectMapper objectMapper) {
 
@@ -79,7 +76,6 @@ public class CassandraClusterDao implements IClusterDao {
     this.objectMapper = objectMapper;
     this.cassRepairScheduleDao = cassRepairScheduleDao;
     this.cassRepairUnitDao = cassRepairUnitDao;
-    this.cassEventsDao = cassEventsDao;
     prepareStatements();
   }
 
@@ -230,10 +226,6 @@ public class CassandraClusterDao implements IClusterDao {
         .getRepairSchedulesForCluster(clusterName)
         .forEach(schedule -> cassRepairScheduleDao.deleteRepairSchedule(schedule.getId()));
     session.executeAsync(deleteRepairRunByClusterPrepStmt.bind(clusterName));
-
-    cassEventsDao.getEventSubscriptions(clusterName).stream()
-        .filter(subscription -> subscription.getId().isPresent())
-        .forEach(subscription -> cassEventsDao.deleteEventSubscription(subscription.getId().get()));
 
     SimpleStatement stmt =
         SimpleStatement.builder(CassandraRepairUnitDao.SELECT_REPAIR_UNIT)
