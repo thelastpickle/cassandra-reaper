@@ -1,5 +1,13 @@
 ## Change Log
 
+### 4.0.0 (2025/09/25 13:52 +00:00)
+- [#1586](https://github.com/thelastpickle/cassandra-reaper/pull/1586) fix: upgrade com.fasterxml.jackson.datatype:jackson-datatype-joda from 2.18.4 to 2.19.0 (#1586) (@adejanovski)
+- [#1603](https://github.com/thelastpickle/cassandra-reaper/pull/1603) fix: upgrade com.squareup.okio:okio-jvm from 3.13.0 to 3.15.0 (#1603) (@adejanovski)
+- [#1608](https://github.com/thelastpickle/cassandra-reaper/pull/1608) fix: upgrade org.jetbrains.kotlin:kotlin-stdlib from 2.2.0 to 2.2.10 (#1608) (@adejanovski)
+- [#1609](https://github.com/thelastpickle/cassandra-reaper/pull/1609) fix: upgrade io.netty:netty-handler from 4.2.3.Final to 4.2.4.Final (#1609) (@adejanovski)
+- [#1604](https://github.com/thelastpickle/cassandra-reaper/pull/1604) fix: upgrade io.netty:netty-handler from 4.2.2.Final to 4.2.3.Final (#1604) (@adejanovski)
+- [#1606](https://github.com/thelastpickle/cassandra-reaper/pull/1606) fix: upgrade io.dropwizard:dropwizard-core from 4.0.14 to 4.0.15 (#1606) (@adejanovski)
+
 ### 4.0.0-rc1 (2025/07/29 15:16 +00:00)
 - [#1602](https://github.com/thelastpickle/cassandra-reaper/pull/1602) Upgrade commons-lang3 to 3.18.0 to fix CVE-2025-48924 (#1602) (@adejanovski)
 - [#1601](https://github.com/thelastpickle/cassandra-reaper/pull/1601) Node sass arm build fix (#1601) (@mamccorm)
