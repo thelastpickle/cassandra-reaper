@@ -805,9 +805,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
       long repairDuration = Math.max(1, repairEnd - repairStart);
       long delay = (long) (repairDuration / intensity - repairDuration);
       LOG.debug("Scheduling next runner run() with delay {} ms", delay);
-      int nbRunningReapers = countRunningReapers();
-      LOG.debug("Concurrent reaper instances : {}", nbRunningReapers);
-      return delay * nbRunningReapers;
+      return delay;
     } else {
       LOG.error(
           "Segment {} returned with startTime {} and endTime {}. This should not happen."
