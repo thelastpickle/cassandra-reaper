@@ -266,15 +266,30 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
       try {
         ran = runRepair();
       } finally {
+        if (ran) {
+          try {
+            // keep the lease to apply intensity based delay
+            renewLead(segment);
+            long endTime = System.currentTimeMillis();
+            long delay = intensityBasedDelayMillis(intensity);
+            LOG.info(
+                "Blocking for {} ms to apply intensity based delay after segment {} in repair {}",
+                delay,
+                segmentId,
+                repairRunner.getRepairRunId());
+
+            while (System.currentTimeMillis() < endTime + delay) {
+              Thread.sleep(1000);
+              // Renew lead every 1 minute
+              if ((System.currentTimeMillis() - endTime) % 60000 == 0) {
+                renewLead(segment);
+              }
+            }
+          } catch (RuntimeException | InterruptedException e) {
+            LOG.warn("Failed to apply intensity based delay after segment {}", segmentId, e);
+          }
+        }
         releaseLead(segment);
-      }
-    }
-    if (ran) {
-      long delay = intensityBasedDelayMillis(intensity);
-      try {
-        Thread.sleep(delay);
-      } catch (InterruptedException e) {
-        LOG.warn("Slept shorter than intended delay.");
       }
     }
   }

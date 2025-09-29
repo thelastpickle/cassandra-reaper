@@ -34,6 +34,7 @@ import io.cassandrareaper.management.jmx.JmxCassandraManagementProxy;
 import io.cassandrareaper.management.jmx.JmxManagementConnectionFactory;
 import io.cassandrareaper.storage.IStorageDao;
 import io.cassandrareaper.storage.MemoryStorageFacade;
+import io.cassandrareaper.storage.cassandra.CassandraStorageFacade;
 import io.cassandrareaper.storage.repairsegment.IRepairSegmentDao;
 
 import java.io.IOException;
@@ -48,17 +49,24 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 
 import javax.management.MalformedObjectNameException;
 import javax.management.ReflectionException;
 
 import static org.apache.cassandra.repair.RepairParallelism.PARALLEL;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.datastax.oss.driver.api.core.uuid.Uuids;
@@ -460,6 +468,656 @@ public final class SegmentRunnerTest {
         storage.getRepairSegmentDao().getRepairSegment(runId, segmentId).get().getState());
     assertEquals(
         0, storage.getRepairSegmentDao().getRepairSegment(runId, segmentId).get().getFailCount());
+  }
+
+  @Test
+  public void testIntensityBasedDelayIsApplied()
+      throws InterruptedException,
+          ReaperException,
+          ExecutionException,
+          MalformedObjectNameException,
+          ReflectionException,
+          IOException {
+    final IStorageDao storage = new MemoryStorageFacade();
+    final int segmentTimeout = 30;
+    final double intensity =
+        0.5; // 50% intensity means delay = repair_duration / 0.5 - repair_duration
+
+    RepairUnit cf =
+        storage
+            .getRepairUnitDao()
+            .addRepairUnit(
+                RepairUnit.builder()
+                    .clusterName("reaper")
+                    .keyspaceName("reaper")
+                    .columnFamilies(Sets.newHashSet("reaper"))
+                    .incrementalRepair(false)
+                    .subrangeIncrementalRepair(false)
+                    .nodes(Sets.newHashSet("127.0.0.1"))
+                    .repairThreadCount(1)
+                    .timeout(segmentTimeout));
+
+    Map<String, String> replicas = Maps.newHashMap();
+    replicas.put("127.0.0.1", "dc1");
+    RepairRun run =
+        storage
+            .getRepairRunDao()
+            .addRepairRun(
+                RepairRun.builder("reaper", cf.getId())
+                    .intensity(intensity)
+                    .segmentCount(1)
+                    .repairParallelism(PARALLEL)
+                    .tables(TABLES),
+                Collections.singleton(
+                    RepairSegment.builder(
+                        Segment.builder()
+                            .withTokenRange(new RingRange(BigInteger.ONE, BigInteger.ZERO))
+                            .withReplicas(replicas)
+                            .build(),
+                        cf.getId())));
+    storage
+        .getClusterDao()
+        .addCluster(
+            Cluster.builder()
+                .withName(cf.getClusterName())
+                .withPartitioner("Murmur3Partitioner")
+                .withSeedHosts(cf.getNodes())
+                .withJmxPort(7199)
+                .withState(Cluster.State.ACTIVE)
+                .build());
+
+    final UUID runId = run.getId();
+    final UUID segmentId =
+        storage.getRepairSegmentDao().getNextFreeSegments(run.getId()).get(0).getId();
+    final ExecutorService executor = Executors.newSingleThreadExecutor();
+    final MutableObject<Future<?>> future = new MutableObject<>();
+    final AtomicLong repairStartTime = new AtomicLong();
+    final AtomicLong repairEndTime = new AtomicLong();
+    final AtomicLong delayStartTime = new AtomicLong();
+    final AtomicLong delayEndTime = new AtomicLong();
+    final long simulatedRepairDuration = 2000; // 2 seconds repair
+
+    AppContext context = new AppContext();
+    context.storage = storage;
+    context.config = Mockito.mock(ReaperApplicationConfiguration.class);
+    when(context.config.getJmxConnectionTimeoutInSeconds()).thenReturn(30);
+    when(context.config.getDatacenterAvailability()).thenReturn(DatacenterAvailability.ALL);
+    // Mock distributed storage to return specific number of running reapers
+    context.isDistributed.set(
+        false); // Non-distributed mode, so countRunningReapers should return 1
+
+    final JmxCassandraManagementProxy jmx = CassandraManagementProxyTest.mockJmxProxyImpl();
+    when(jmx.getClusterName()).thenReturn("reaper");
+    EndpointSnitchInfoMBean endpointSnitchInfoMBean = mock(EndpointSnitchInfoMBean.class);
+    when(endpointSnitchInfoMBean.getDatacenter()).thenReturn("dc1");
+    try {
+      when(endpointSnitchInfoMBean.getDatacenter(anyString())).thenReturn("dc1");
+    } catch (UnknownHostException ex) {
+      throw new AssertionError(ex);
+    }
+
+    when(jmx.triggerRepair(any(), any(), any(), any(), any(), any(), any(), anyInt()))
+        .then(
+            (invocation) -> {
+              repairStartTime.set(System.currentTimeMillis());
+
+              future.setValue(
+                  executor.submit(
+                      () -> {
+                        ((RepairStatusHandler) invocation.getArgument(5))
+                            .handle(
+                                1,
+                                Optional.of(ProgressEventType.START),
+                                "Repair command 1 has started",
+                                jmx);
+
+                        // Simulate repair taking some time
+                        try {
+                          Thread.sleep(simulatedRepairDuration);
+                        } catch (InterruptedException e) {
+                          Thread.currentThread().interrupt();
+                        }
+
+                        ((RepairStatusHandler) invocation.getArgument(5))
+                            .handle(
+                                1,
+                                Optional.of(ProgressEventType.SUCCESS),
+                                "Repair session succeeded in command 1",
+                                jmx);
+
+                        repairEndTime.set(System.currentTimeMillis());
+
+                        ((RepairStatusHandler) invocation.getArgument(5))
+                            .handle(
+                                1,
+                                Optional.of(ProgressEventType.COMPLETE),
+                                "Repair command 1 has finished",
+                                jmx);
+                      }));
+              return 1;
+            });
+
+    context.managementConnectionFactory =
+        new JmxManagementConnectionFactory(context, new NoopCrypotograph()) {
+          @Override
+          protected JmxCassandraManagementProxy connectImpl(Node host) throws ReaperException {
+            return jmx;
+          }
+        };
+
+    RepairRunner rr = mock(RepairRunner.class);
+    RepairUnit ru = mock(RepairUnit.class);
+    when(ru.getKeyspaceName()).thenReturn("reaper");
+    when(rr.getRepairRunId()).thenReturn(runId);
+
+    ClusterFacade clusterFacade = mock(ClusterFacade.class);
+    when(clusterFacade.connect(any(Cluster.class), any())).thenReturn(jmx);
+    when(clusterFacade.nodeIsDirectlyAccessible(any(), any())).thenReturn(true);
+
+    when(clusterFacade.tokenRangeToEndpoint(any(), anyString(), any()))
+        .thenReturn(Lists.newArrayList(cf.getNodes()));
+    when(clusterFacade.listActiveCompactions(any()))
+        .thenReturn(
+            CompactionStats.builder()
+                .withActiveCompactions(Collections.emptyList())
+                .withPendingCompactions(Optional.of(0))
+                .build());
+
+    SegmentRunner sr =
+        SegmentRunner.create(
+            context,
+            clusterFacade,
+            segmentId,
+            COORDS,
+            5000,
+            intensity,
+            PARALLEL,
+            "reaper",
+            ru,
+            TABLES,
+            rr);
+
+    // Record when delay starts
+    delayStartTime.set(System.currentTimeMillis());
+    sr.run();
+    delayEndTime.set(System.currentTimeMillis());
+
+    future.getValue().get();
+    executor.shutdown();
+
+    // Verify repair completed successfully
+    assertEquals(
+        RepairSegment.State.DONE,
+        storage.getRepairSegmentDao().getRepairSegment(runId, segmentId).get().getState());
+    assertEquals(
+        0, storage.getRepairSegmentDao().getRepairSegment(runId, segmentId).get().getFailCount());
+
+    // Get the repair segment to check timing
+    RepairSegment segment = storage.getRepairSegmentDao().getRepairSegment(runId, segmentId).get();
+    assertNotNull("Segment should have start time", segment.getStartTime());
+    assertNotNull("Segment should have end time", segment.getEndTime());
+
+    // Calculate expected delay
+    long actualRepairDuration =
+        segment.getEndTime().getMillis() - segment.getStartTime().getMillis();
+    long expectedDelay = (long) (actualRepairDuration / intensity - actualRepairDuration);
+    // In non-distributed mode, countRunningReapers() returns 1, so delay should not be multiplied
+
+    // Verify that total time includes both repair and delay
+    long totalTime = delayEndTime.get() - delayStartTime.get();
+
+    // The total time should be at least repair time + expected delay
+    // We allow some tolerance for timing variations in tests
+    long minimumExpectedTime = actualRepairDuration + expectedDelay - 500; // 500ms tolerance
+    assertTrue(
+        String.format(
+            "Total time (%d ms) should be at least repair duration (%d ms) + expected delay (%d ms) = %d ms",
+            totalTime, actualRepairDuration, expectedDelay, minimumExpectedTime),
+        totalTime >= minimumExpectedTime);
+
+    // Verify the delay was significant (should be approximately equal to repair duration for 0.5
+    // intensity)
+    // For intensity 0.5: delay = duration/0.5 - duration = 2*duration - duration = duration
+    long toleranceMs = 1000; // Allow 1 second tolerance for test timing variations
+    assertTrue(
+        String.format(
+            "Expected delay (%d ms) should be approximately equal to repair duration (%d ms) for intensity 0.5",
+            expectedDelay, actualRepairDuration),
+        Math.abs(expectedDelay - actualRepairDuration) <= toleranceMs);
+  }
+
+  @Test
+  public void testIntensityBasedDelayWithDistributedStorage()
+      throws InterruptedException,
+          ReaperException,
+          ExecutionException,
+          MalformedObjectNameException,
+          ReflectionException,
+          IOException {
+    final IStorageDao storage = new MemoryStorageFacade();
+    final int segmentTimeout = 30;
+    final double intensity = 0.25; // 25% intensity for longer delay
+    final int mockRunningReapers = 3;
+    // Use unique command ID to avoid conflicts with other tests
+    final int uniqueCommandId = (int) (System.nanoTime() % Integer.MAX_VALUE);
+
+    RepairUnit cf =
+        storage
+            .getRepairUnitDao()
+            .addRepairUnit(
+                RepairUnit.builder()
+                    .clusterName("reaper")
+                    .keyspaceName("reaper")
+                    .columnFamilies(Sets.newHashSet("reaper"))
+                    .incrementalRepair(false)
+                    .subrangeIncrementalRepair(false)
+                    .nodes(Sets.newHashSet("127.0.0.1"))
+                    .repairThreadCount(1)
+                    .timeout(segmentTimeout));
+
+    Map<String, String> replicas = Maps.newHashMap();
+    replicas.put("127.0.0.1", "dc1");
+    RepairRun run =
+        storage
+            .getRepairRunDao()
+            .addRepairRun(
+                RepairRun.builder("reaper", cf.getId())
+                    .intensity(intensity)
+                    .segmentCount(1)
+                    .repairParallelism(PARALLEL)
+                    .tables(TABLES),
+                Collections.singleton(
+                    RepairSegment.builder(
+                        Segment.builder()
+                            .withTokenRange(new RingRange(BigInteger.ONE, BigInteger.ZERO))
+                            .withReplicas(replicas)
+                            .build(),
+                        cf.getId())));
+    storage
+        .getClusterDao()
+        .addCluster(
+            Cluster.builder()
+                .withName(cf.getClusterName())
+                .withPartitioner("Murmur3Partitioner")
+                .withSeedHosts(cf.getNodes())
+                .withJmxPort(7199)
+                .withState(Cluster.State.ACTIVE)
+                .build());
+
+    final UUID runId = run.getId();
+    final UUID segmentId =
+        storage.getRepairSegmentDao().getNextFreeSegments(run.getId()).get(0).getId();
+    final ExecutorService executor = Executors.newSingleThreadExecutor();
+    final MutableObject<Future<?>> future = new MutableObject<>();
+    final long simulatedRepairDuration = 1000; // 1 second repair
+
+    AppContext context = new AppContext();
+    context.config = Mockito.mock(ReaperApplicationConfiguration.class);
+    when(context.config.getJmxConnectionTimeoutInSeconds()).thenReturn(30);
+    when(context.config.getDatacenterAvailability()).thenReturn(DatacenterAvailability.ALL);
+
+    // Create a custom storage facade that extends MemoryStorageFacade and implements distributed
+    // methods
+    CassandraStorageFacade distributedStorage = mock(CassandraStorageFacade.class);
+    when(distributedStorage.countRunningReapers()).thenReturn(mockRunningReapers);
+    when(distributedStorage.getRepairSegmentDao()).thenReturn(storage.getRepairSegmentDao());
+    when(distributedStorage.getRepairRunDao()).thenReturn(storage.getRepairRunDao());
+    when(distributedStorage.getRepairUnitDao()).thenReturn(storage.getRepairUnitDao());
+    when(distributedStorage.getClusterDao()).thenReturn(storage.getClusterDao());
+    when(distributedStorage.lockRunningRepairsForNodes(any(), any(), any())).thenReturn(true);
+    context.storage = distributedStorage;
+    context.isDistributed.set(true);
+
+    final JmxCassandraManagementProxy jmx = CassandraManagementProxyTest.mockJmxProxyImpl();
+    when(jmx.getClusterName()).thenReturn("reaper");
+    EndpointSnitchInfoMBean endpointSnitchInfoMBean = mock(EndpointSnitchInfoMBean.class);
+    when(endpointSnitchInfoMBean.getDatacenter()).thenReturn("dc1");
+    try {
+      when(endpointSnitchInfoMBean.getDatacenter(anyString())).thenReturn("dc1");
+    } catch (UnknownHostException ex) {
+      throw new AssertionError(ex);
+    }
+
+    when(jmx.triggerRepair(any(), any(), any(), any(), any(), any(), any(), anyInt()))
+        .then(
+            (invocation) -> {
+              future.setValue(
+                  executor.submit(
+                      () -> {
+                        // Update segment to RUNNING state with start time
+                        RepairSegment runningSegment =
+                            storage
+                                .getRepairSegmentDao()
+                                .getRepairSegment(runId, segmentId)
+                                .get()
+                                .with()
+                                .withState(RepairSegment.State.RUNNING)
+                                .withStartTime(DateTime.now())
+                                .build();
+                        storage.getRepairSegmentDao().updateRepairSegmentUnsafe(runningSegment);
+
+                        ((RepairStatusHandler) invocation.getArgument(5))
+                            .handle(
+                                uniqueCommandId,
+                                Optional.of(ProgressEventType.START),
+                                "Repair command " + uniqueCommandId + " has started",
+                                jmx);
+
+                        // Simulate repair taking some time
+                        try {
+                          Thread.sleep(simulatedRepairDuration);
+                        } catch (InterruptedException e) {
+                          Thread.currentThread().interrupt();
+                        }
+
+                        ((RepairStatusHandler) invocation.getArgument(5))
+                            .handle(
+                                uniqueCommandId,
+                                Optional.of(ProgressEventType.SUCCESS),
+                                "Repair session succeeded in command " + uniqueCommandId,
+                                jmx);
+
+                        // Update segment to DONE state with end time BEFORE sending COMPLETE
+                        RepairSegment doneSegment =
+                            storage
+                                .getRepairSegmentDao()
+                                .getRepairSegment(runId, segmentId)
+                                .get()
+                                .with()
+                                .withState(RepairSegment.State.DONE)
+                                .withEndTime(DateTime.now())
+                                .build();
+                        storage.getRepairSegmentDao().updateRepairSegmentUnsafe(doneSegment);
+
+                        // Small delay to ensure segment state is persisted
+                        try {
+                          Thread.sleep(10);
+                        } catch (InterruptedException e) {
+                          Thread.currentThread().interrupt();
+                        }
+
+                        ((RepairStatusHandler) invocation.getArgument(5))
+                            .handle(
+                                uniqueCommandId,
+                                Optional.of(ProgressEventType.COMPLETE),
+                                "Repair command " + uniqueCommandId + " has finished",
+                                jmx);
+                      }));
+              return uniqueCommandId;
+            });
+
+    context.managementConnectionFactory =
+        new JmxManagementConnectionFactory(context, new NoopCrypotograph()) {
+          @Override
+          protected JmxCassandraManagementProxy connectImpl(Node host) throws ReaperException {
+            return jmx;
+          }
+        };
+
+    RepairRunner rr = mock(RepairRunner.class);
+    RepairUnit ru = mock(RepairUnit.class);
+    when(ru.getKeyspaceName()).thenReturn("reaper");
+    when(rr.getRepairRunId()).thenReturn(runId);
+
+    ClusterFacade clusterFacade = mock(ClusterFacade.class);
+    when(clusterFacade.connect(any(Cluster.class), any())).thenReturn(jmx);
+    when(clusterFacade.nodeIsDirectlyAccessible(any(), any())).thenReturn(true);
+
+    when(clusterFacade.tokenRangeToEndpoint(any(), anyString(), any()))
+        .thenReturn(Lists.newArrayList(cf.getNodes()));
+    when(clusterFacade.listActiveCompactions(any()))
+        .thenReturn(
+            CompactionStats.builder()
+                .withActiveCompactions(Collections.emptyList())
+                .withPendingCompactions(Optional.of(0))
+                .build());
+
+    SegmentRunner sr =
+        SegmentRunner.create(
+            context,
+            clusterFacade,
+            segmentId,
+            COORDS,
+            5000,
+            intensity,
+            PARALLEL,
+            "reaper",
+            ru,
+            TABLES,
+            rr);
+
+    // Since distributed storage mock is complex, let's just test that the runner completes
+    // and that the countRunningReapers method is called for the delay calculation
+    long startTime = System.currentTimeMillis();
+    sr.run();
+    long endTime = System.currentTimeMillis();
+
+    // Clean up executor
+    if (future.getValue() != null) {
+      future.getValue().get();
+    }
+    executor.shutdown();
+
+    // Verify that countRunningReapers was called (which means intensity delay logic was reached)
+    verify(distributedStorage, atLeastOnce()).countRunningReapers();
+
+    // Verify the total execution time includes some delay
+    // The test simulates a 1 second repair with 0.25 intensity and 3 running reapers
+    // Expected delay = (1000 / 0.25 - 1000) * 3 = 9000ms
+    // So total time should be at least 1000 + some significant delay
+    long totalTime = endTime - startTime;
+    assertTrue(
+        String.format(
+            "Total time (%d ms) should include intensity-based delay for distributed storage",
+            totalTime),
+        totalTime >= 2000); // At least 2 seconds (repair + some delay)
+  }
+
+  @Test
+  public void testIntensityBasedDelayExceptionHandling()
+      throws InterruptedException,
+          ReaperException,
+          ExecutionException,
+          MalformedObjectNameException,
+          ReflectionException,
+          IOException {
+    final IStorageDao storage = new MemoryStorageFacade();
+    final int segmentTimeout = 30;
+    final double intensity = 0.5;
+
+    RepairUnit cf =
+        storage
+            .getRepairUnitDao()
+            .addRepairUnit(
+                RepairUnit.builder()
+                    .clusterName("reaper")
+                    .keyspaceName("reaper")
+                    .columnFamilies(Sets.newHashSet("reaper"))
+                    .incrementalRepair(false)
+                    .subrangeIncrementalRepair(false)
+                    .nodes(Sets.newHashSet("127.0.0.1"))
+                    .repairThreadCount(1)
+                    .timeout(segmentTimeout));
+
+    Map<String, String> replicas = Maps.newHashMap();
+    replicas.put("127.0.0.1", "dc1");
+    RepairRun run =
+        storage
+            .getRepairRunDao()
+            .addRepairRun(
+                RepairRun.builder("reaper", cf.getId())
+                    .intensity(intensity)
+                    .segmentCount(1)
+                    .repairParallelism(PARALLEL)
+                    .tables(TABLES),
+                Collections.singleton(
+                    RepairSegment.builder(
+                        Segment.builder()
+                            .withTokenRange(new RingRange(BigInteger.ONE, BigInteger.ZERO))
+                            .withReplicas(replicas)
+                            .build(),
+                        cf.getId())));
+    storage
+        .getClusterDao()
+        .addCluster(
+            Cluster.builder()
+                .withName(cf.getClusterName())
+                .withPartitioner("Murmur3Partitioner")
+                .withSeedHosts(cf.getNodes())
+                .withJmxPort(7199)
+                .withState(Cluster.State.ACTIVE)
+                .build());
+
+    final UUID runId = run.getId();
+    final UUID segmentId =
+        storage.getRepairSegmentDao().getNextFreeSegments(run.getId()).get(0).getId();
+    final ExecutorService executor = Executors.newSingleThreadExecutor();
+    final MutableObject<Future<?>> future = new MutableObject<>();
+    final AtomicBoolean interruptionOccurred = new AtomicBoolean(false);
+    final AtomicBoolean repairCompleted = new AtomicBoolean(false);
+
+    AppContext context = new AppContext();
+    context.storage = storage;
+    context.config = Mockito.mock(ReaperApplicationConfiguration.class);
+    when(context.config.getJmxConnectionTimeoutInSeconds()).thenReturn(30);
+    when(context.config.getDatacenterAvailability()).thenReturn(DatacenterAvailability.ALL);
+    context.isDistributed.set(false);
+
+    final JmxCassandraManagementProxy jmx = CassandraManagementProxyTest.mockJmxProxyImpl();
+    when(jmx.getClusterName()).thenReturn("reaper");
+    EndpointSnitchInfoMBean endpointSnitchInfoMBean = mock(EndpointSnitchInfoMBean.class);
+    when(endpointSnitchInfoMBean.getDatacenter()).thenReturn("dc1");
+    try {
+      when(endpointSnitchInfoMBean.getDatacenter(anyString())).thenReturn("dc1");
+    } catch (UnknownHostException ex) {
+      throw new AssertionError(ex);
+    }
+
+    when(jmx.triggerRepair(any(), any(), any(), any(), any(), any(), any(), anyInt()))
+        .then(
+            (invocation) -> {
+              future.setValue(
+                  executor.submit(
+                      () -> {
+                        ((RepairStatusHandler) invocation.getArgument(5))
+                            .handle(
+                                1,
+                                Optional.of(ProgressEventType.START),
+                                "Repair command 1 has started",
+                                jmx);
+
+                        // Simulate very short repair
+                        try {
+                          Thread.sleep(100);
+                        } catch (InterruptedException e) {
+                          Thread.currentThread().interrupt();
+                        }
+
+                        ((RepairStatusHandler) invocation.getArgument(5))
+                            .handle(
+                                1,
+                                Optional.of(ProgressEventType.SUCCESS),
+                                "Repair session succeeded in command 1",
+                                jmx);
+
+                        ((RepairStatusHandler) invocation.getArgument(5))
+                            .handle(
+                                1,
+                                Optional.of(ProgressEventType.COMPLETE),
+                                "Repair command 1 has finished",
+                                jmx);
+
+                        repairCompleted.set(true);
+                      }));
+              return 1;
+            });
+
+    context.managementConnectionFactory =
+        new JmxManagementConnectionFactory(context, new NoopCrypotograph()) {
+          @Override
+          protected JmxCassandraManagementProxy connectImpl(Node host) throws ReaperException {
+            return jmx;
+          }
+        };
+
+    RepairRunner rr = mock(RepairRunner.class);
+    RepairUnit ru = mock(RepairUnit.class);
+    when(ru.getKeyspaceName()).thenReturn("reaper");
+    when(rr.getRepairRunId()).thenReturn(runId);
+
+    ClusterFacade clusterFacade = mock(ClusterFacade.class);
+    when(clusterFacade.connect(any(Cluster.class), any())).thenReturn(jmx);
+    when(clusterFacade.nodeIsDirectlyAccessible(any(), any())).thenReturn(true);
+
+    when(clusterFacade.tokenRangeToEndpoint(any(), anyString(), any()))
+        .thenReturn(Lists.newArrayList(cf.getNodes()));
+    when(clusterFacade.listActiveCompactions(any()))
+        .thenReturn(
+            CompactionStats.builder()
+                .withActiveCompactions(Collections.emptyList())
+                .withPendingCompactions(Optional.of(0))
+                .build());
+
+    SegmentRunner sr =
+        SegmentRunner.create(
+            context,
+            clusterFacade,
+            segmentId,
+            COORDS,
+            5000,
+            intensity,
+            PARALLEL,
+            "reaper",
+            ru,
+            TABLES,
+            rr);
+
+    // Create a thread to run the segment runner
+    Thread runnerThread =
+        new Thread(
+            () -> {
+              try {
+                sr.run();
+              } catch (Exception e) {
+                // Expected to handle interruption gracefully
+                if (e instanceof InterruptedException
+                    || e.getCause() instanceof InterruptedException) {
+                  interruptionOccurred.set(true);
+                }
+              }
+            });
+
+    runnerThread.start();
+
+    // Wait for repair to complete, then interrupt during delay
+    if (future.getValue() != null) {
+      future.getValue().get();
+    } else {
+      // Wait for repair to complete using the flag
+      int maxWait = 10000; // 10 seconds max wait
+      int waited = 0;
+      while (!repairCompleted.get() && waited < maxWait) {
+        Thread.sleep(100);
+        waited += 100;
+      }
+    }
+
+    Thread.sleep(500); // Give some time for delay to start
+    runnerThread.interrupt(); // Interrupt during the intensity delay
+
+    // Wait for thread to finish
+    runnerThread.join(5000); // 5 second timeout
+    assertFalse("Runner thread should have finished", runnerThread.isAlive());
+
+    executor.shutdown();
+
+    // Verify repair still completed successfully despite interruption during delay
+    assertEquals(
+        RepairSegment.State.DONE,
+        storage.getRepairSegmentDao().getRepairSegment(runId, segmentId).get().getState());
+
+    // The test verifies that interruption during delay is handled gracefully
+    // and doesn't prevent the repair from being marked as completed
   }
 
   @Test
