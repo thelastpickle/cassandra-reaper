@@ -7,7 +7,7 @@ parent: "usage"
 
 Reaper has the ability to create and manage repair schedules for a cluster. This can be done in the following way.
 
-## Setup a Repair Schedule
+## Set up a Repair Schedule
 
 Click the *schedule* menu item on the left side to navigate to the Schedules page. Click *Add schedule* to open the schedule details form.
 
@@ -23,11 +23,11 @@ Enter values for the keyspace, tables, owner and other fields and click *Add Sch
 
 <br/>
 
-<h4>Option</h4> | <h4>Description</h4>
----|---
-**Start time** | The time to trigger repairs, based in GMT.
-**Interval in days** | The frequency for the schedule to be run.
-**Percent unrepaired threshold** | *For incremental repair only!* Sets the percentage of unrepaired data over which a repair run will be started for this schedule. As soon as one table in the set of tables managed by this schedule gets over the threshold, the run will be triggered.
+| Option                           | Description                                                                                                                                                                                                                                             |
+|----------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Start time**                   | The time to trigger repairs, based in GMT.                                                                                                                                                                                                              |
+| **Interval in days**             | The frequency for the schedule to be run.                                                                                                                                                                                                               |
+| **Percent unrepaired threshold** | *For incremental repair only!* Sets the percentage of unrepaired data over which a repair run will be started for this schedule. As soon as one table in the set of tables managed by this schedule gets over the threshold, the run will be triggered. |
 
 <br/>
 
