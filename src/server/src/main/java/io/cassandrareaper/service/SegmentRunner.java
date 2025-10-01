@@ -281,7 +281,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
             while (System.currentTimeMillis() < endTime + delay) {
               Thread.sleep(1000);
               // Renew lead every 1 minute
-              if ((System.currentTimeMillis() - endTime) % 60000 == 0) {
+              if (((System.currentTimeMillis() - endTime) / 1000) % 60 == 0) {
                 renewLead(segment);
               }
             }
