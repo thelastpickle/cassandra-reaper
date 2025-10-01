@@ -266,15 +266,30 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
       try {
         ran = runRepair();
       } finally {
+        if (ran) {
+          try {
+            // keep the lease to apply intensity based delay
+            renewLead(segment);
+            long endTime = System.currentTimeMillis();
+            long delay = intensityBasedDelayMillis(intensity);
+            LOG.info(
+                "Blocking for {} ms to apply intensity based delay after segment {} in repair {}",
+                delay,
+                segmentId,
+                repairRunner.getRepairRunId());
+
+            while (System.currentTimeMillis() < endTime + delay) {
+              Thread.sleep(1000);
+              // Renew lead every 1 minute
+              if (((System.currentTimeMillis() - endTime) / 1000) % 60 == 0) {
+                renewLead(segment);
+              }
+            }
+          } catch (RuntimeException | InterruptedException e) {
+            LOG.warn("Failed to apply intensity based delay after segment {}", segmentId, e);
+          }
+        }
         releaseLead(segment);
-      }
-    }
-    if (ran) {
-      long delay = intensityBasedDelayMillis(intensity);
-      try {
-        Thread.sleep(delay);
-      } catch (InterruptedException e) {
-        LOG.warn("Slept shorter than intended delay.");
       }
     }
   }
@@ -790,9 +805,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
       long repairDuration = Math.max(1, repairEnd - repairStart);
       long delay = (long) (repairDuration / intensity - repairDuration);
       LOG.debug("Scheduling next runner run() with delay {} ms", delay);
-      int nbRunningReapers = countRunningReapers();
-      LOG.debug("Concurrent reaper instances : {}", nbRunningReapers);
-      return delay * nbRunningReapers;
+      return delay;
     } else {
       LOG.error(
           "Segment {} returned with startTime {} and endTime {}. This should not happen."
