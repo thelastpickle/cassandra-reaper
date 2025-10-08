@@ -183,6 +183,8 @@ final class MigrationManager {
 
         LOG.info("executed Migration" + String.format("%03d", nextVersion));
       } catch (ReflectiveOperationException ignore) {
+      } finally {
+          environment.healthChecks().unregister(cassandra.getName());
       }
       LOG.info(String.format("Migrated keyspace %s to version %d", keyspaceName, nextVersion));
     }
