@@ -34,6 +34,7 @@ import static io.cassandrareaper.metrics.MetricNameUtils.cleanName;
 
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.MetricRegistry;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import org.apache.cassandra.repair.RepairParallelism;
 import org.joda.time.DateTime;
@@ -42,6 +43,7 @@ public final class RepairScheduleService {
 
   public static final String MILLIS_SINCE_LAST_REPAIR_METRIC_NAME =
       "millisSinceLastRepairForSchedule";
+  public static final String UNFULFILLED_REPAIR_SCHEDULE_METRIC_NAME = "unfulfilledRepairSchedule";
   private final AppContext context;
   private final RepairUnitService repairUnitService;
 
@@ -176,6 +178,18 @@ public final class RepairScheduleService {
       context.metricRegistry.register(
           metricName, getMillisSinceLastRepairForSchedule(schedule.getId()));
     }
+
+    String unfulfilledRepairScheduleMetricName =
+        metricName(
+            UNFULFILLED_REPAIR_SCHEDULE_METRIC_NAME,
+            repairUnit.getClusterName(),
+            repairUnit.getKeyspaceName(),
+            schedule.getId());
+
+    if (!context.metricRegistry.getMetrics().containsKey(unfulfilledRepairScheduleMetricName)) {
+      context.metricRegistry.register(
+          unfulfilledRepairScheduleMetricName, getUnfulfilledRepairSchedule(schedule.getId()));
+    }
   }
 
   private void unregisterScheduleMetrics(UUID repairScheduleId) {
@@ -194,6 +208,20 @@ public final class RepairScheduleService {
 
           if (context.metricRegistry.getMetrics().containsKey(metricName)) {
             context.metricRegistry.remove(metricName);
+          }
+
+          String unfulfilledRepairScheduleMetricName =
+              metricName(
+                  UNFULFILLED_REPAIR_SCHEDULE_METRIC_NAME,
+                  repairUnit.getClusterName(),
+                  repairUnit.getKeyspaceName(),
+                  sched.getId());
+
+          if (context
+              .metricRegistry
+              .getMetrics()
+              .containsKey(unfulfilledRepairScheduleMetricName)) {
+            context.metricRegistry.remove(unfulfilledRepairScheduleMetricName);
           }
         });
   }
@@ -221,6 +249,56 @@ public final class RepairScheduleService {
                   DateTime.now()
                       .getMillis()); // Return epoch if no repairs from this schedule were completed
       return millisSinceLastRepair;
+    };
+  }
+
+  @VisibleForTesting
+  Gauge<Long> getUnfulfilledRepairSchedule(UUID repairSchedule) {
+    return () -> {
+      Optional<RepairSchedule> schedule =
+          context.storage.getRepairScheduleDao().getRepairSchedule(repairSchedule);
+
+      Optional<UUID> latestRepairUuid =
+          Optional.ofNullable(
+              schedule
+                  .orElseThrow(() -> new IllegalArgumentException("Repair schedule not found"))
+                  .getLastRun());
+
+      // Cases where it is not relevant to check if the repair schedule is unfulfilled
+      if (schedule.get().getDaysBetween() == 0
+          || schedule.get().getState() == RepairSchedule.State.PAUSED
+          || schedule.get().getState() == RepairSchedule.State.DELETED) {
+        return 0l;
+      }
+
+      // Fail fast if we're past the next activation time by 10% of the cycle time
+      if (DateTime.now().getMillis() - schedule.get().getNextActivation().getMillis()
+          > schedule.get().getDaysBetween() * 24 * 60 * 60 * 1000 * 0.1) {
+        return 1l;
+      }
+
+      Optional<Long> millisSinceLastRepair =
+          latestRepairUuid
+              .map(uuid -> repairRunDao.getRepairRun(uuid))
+              .filter(Optional::isPresent)
+              .map(Optional::get)
+              .filter(repairRun -> repairRun.getRunState() == RepairRun.RunState.DONE)
+              .map(RepairRun::getEndTime)
+              .filter(Objects::nonNull)
+              .map(dateTime -> DateTime.now().getMillis() - dateTime.getMillis());
+
+      if (millisSinceLastRepair.isPresent()) {
+        // we have a last repair that has finished successfully
+        if (millisSinceLastRepair.get() > schedule.get().getDaysBetween() * 24 * 60 * 60 * 1000) {
+          // Return 1 if the last completed repair was not within the repair schedule interval
+          return 1l;
+        }
+        return 0l;
+      }
+
+      // Repair is still running or never started but the next activation time is still in the
+      // future
+      return 0l;
     };
   }
 
