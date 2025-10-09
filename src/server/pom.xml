@@ -21,7 +21,7 @@
     <parent>
         <groupId>io.cassandrareaper</groupId>
         <artifactId>cassandra-reaper-pom</artifactId>
-        <version>4.0.1-SNAPSHOT</version>
+        <version>4.0.1</version>
         <relativePath>../../pom.xml</relativePath>
     </parent>
     <name>Reaper for Apache Cassandra server</name>
