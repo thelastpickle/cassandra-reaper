@@ -31,7 +31,7 @@
     <properties>
         <dropwizard.version>4.0.15</dropwizard.version>
         <jersey.version>3.1.10</jersey.version>
-        <logback.version>1.5.18</logback.version>
+        <logback.version>1.5.19</logback.version>
         <cxf.version>3.4.5</cxf.version>
         <prometheus.version>0.16.0</prometheus.version>
         <maven.compiler.source>11</maven.compiler.source>
