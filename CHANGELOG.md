@@ -1,5 +1,9 @@
 ## Change Log
 
+### 4.0.1 (2025/10/09 15:00 +00:00)
+- [#1619](https://github.com/thelastpickle/cassandra-reaper/pull/1619) Unregister CqlSession from HealthCheckRegistry after close (#1619) (@a-pashchenko)
+- [#1612](https://github.com/thelastpickle/cassandra-reaper/pull/1612) Fix the intensity rule which wasn't properly applied (#1612) (@adejanovski)
+
 ### 4.0.0 (2025/09/25 13:52 +00:00)
 - [#1586](https://github.com/thelastpickle/cassandra-reaper/pull/1586) fix: upgrade com.fasterxml.jackson.datatype:jackson-datatype-joda from 2.18.4 to 2.19.0 (#1586) (@adejanovski)
 - [#1603](https://github.com/thelastpickle/cassandra-reaper/pull/1603) fix: upgrade com.squareup.okio:okio-jvm from 3.13.0 to 3.15.0 (#1603) (@adejanovski)
