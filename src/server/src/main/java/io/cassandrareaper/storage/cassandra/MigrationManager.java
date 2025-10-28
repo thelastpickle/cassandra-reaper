@@ -133,6 +133,8 @@ final class MigrationManager {
                 "Keyspace %s already at schema version %d",
                 cassandra.getKeyspace(), currentVersion));
       }
+    } finally {
+      environment.healthChecks().unregister(cassandra.getName());
     }
   }
 
