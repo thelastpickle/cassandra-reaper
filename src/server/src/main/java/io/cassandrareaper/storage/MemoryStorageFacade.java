@@ -38,8 +38,13 @@ import io.cassandrareaper.storage.repairunit.IRepairUnitDao;
 import io.cassandrareaper.storage.repairunit.MemoryRepairUnitDao;
 import io.cassandrareaper.storage.snapshot.ISnapshotDao;
 import io.cassandrareaper.storage.snapshot.MemorySnapshotDao;
+import io.cassandrareaper.storage.sqlite.EclipseStoreToSqliteMigration;
+import io.cassandrareaper.storage.sqlite.SqliteMigrationManager;
 
-import java.nio.file.Paths;
+import java.io.File;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -49,7 +54,6 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.eclipse.serializer.persistence.types.PersistenceFieldEvaluator;
-import org.eclipse.store.storage.embedded.types.EmbeddedStorage;
 import org.eclipse.store.storage.embedded.types.EmbeddedStorageManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -69,52 +73,80 @@ public final class MemoryStorageFacade implements IStorageDao {
   private static final PersistenceFieldEvaluator TRANSIENT_FIELD_EVALUATOR =
       (clazz, field) -> !field.getName().startsWith("_");
 
+  @Deprecated // Will be removed in favor of direct SQLite access
   private final EmbeddedStorageManager embeddedStorage;
+  @Deprecated // Will be removed in favor of direct SQLite access
   private final MemoryStorageRoot memoryStorageRoot;
-  private final MemoryRepairSegmentDao memRepairSegment = new MemoryRepairSegmentDao(this);
-  private final MemoryRepairUnitDao memoryRepairUnitDao = new MemoryRepairUnitDao(this);
-  private final MemoryRepairRunDao memoryRepairRunDao =
-      new MemoryRepairRunDao(this, memRepairSegment, memoryRepairUnitDao);
-  private final MemoryRepairScheduleDao memRepairScheduleDao =
-      new MemoryRepairScheduleDao(this, memoryRepairUnitDao);
-  private final MemoryEventsDao memEventsDao = new MemoryEventsDao(this);
-  private final MemoryClusterDao memClusterDao =
-      new MemoryClusterDao(
-          this, memoryRepairUnitDao, memoryRepairRunDao, memRepairScheduleDao, memEventsDao);
+  private final Connection sqliteConnection;
+  private final boolean isPersistent;
+  private final MemoryRepairSegmentDao memRepairSegment;
+  private final MemoryRepairUnitDao memoryRepairUnitDao;
+  private final MemoryRepairRunDao memoryRepairRunDao;
+  private final MemoryRepairScheduleDao memRepairScheduleDao;
+  private final MemoryEventsDao memEventsDao;
+  private final MemoryClusterDao memClusterDao;
   private final MemorySnapshotDao memSnapshotDao = new MemorySnapshotDao();
   private final MemoryMetricsDao memMetricsDao = new MemoryMetricsDao();
   private final ReplicaLockManagerWithTtl replicaLockManagerWithTtl;
   private final String persistenceStoragePath;
 
   public MemoryStorageFacade(String persistenceStoragePath, long leadTime) {
-    LOG.info("Using memory storage backend. Persistence storage path: {}", persistenceStoragePath);
+    LOG.info(
+        "Using memory storage backend with SQLite. Persistence storage path: {}",
+        persistenceStoragePath);
     this.persistenceStoragePath = persistenceStoragePath;
-    EmbeddedStorageManager storage = null;
-    MemoryStorageRoot root = null;
-    if (persistenceStoragePath != null && !persistenceStoragePath.isEmpty()) {
-      // If persistence storage path is provided, create a new embedded storage manager
-      storage =
-          EmbeddedStorage.Foundation(Paths.get(this.persistenceStoragePath))
-              .onConnectionFoundation(
-                  c -> {
-                    c.setFieldEvaluatorPersistable(TRANSIENT_FIELD_EVALUATOR);
-                  })
-              .createEmbeddedStorageManager();
-      storage.start();
-      if (storage.root() == null) {
-        LOG.info("Creating new data storage");
-        root = new MemoryStorageRoot();
-        storage.setRoot(root);
+
+    // Initialize SQLite connection
+    try {
+      if (persistenceStoragePath == null || persistenceStoragePath.isEmpty()) {
+        // In-memory mode (volatile)
+        LOG.info("Using in-memory SQLite mode (volatile - data lost on restart)");
+        this.sqliteConnection = DriverManager.getConnection("jdbc:sqlite::memory:");
+        this.isPersistent = false;
       } else {
-        LOG.info("Loading existing data from persistence storage");
-        root = (MemoryStorageRoot) storage.root();
+        // Persistent mode: persistenceStoragePath is a DIRECTORY
+        File storageDir = new File(persistenceStoragePath);
+        if (!storageDir.exists()) {
+          storageDir.mkdirs();
+          LOG.info("Created storage directory: {}", storageDir.getAbsolutePath());
+        }
+
+        String dbPath = new File(storageDir, "reaper.db").getAbsolutePath();
+        LOG.info("Using persistent SQLite mode: {}", dbPath);
+        this.sqliteConnection = DriverManager.getConnection("jdbc:sqlite:" + dbPath);
+        this.isPersistent = true;
+
+        // Check for EclipseStore data and migrate if needed
+        boolean migrated =
+            EclipseStoreToSqliteMigration.migrateIfNeeded(storageDir, sqliteConnection);
+        if (migrated) {
+          LOG.info("Successfully migrated from EclipseStore to SQLite");
+        }
       }
-    } else {
-      // If persistence storage path is not provided, create a new in-memory storage root
-      root = new MemoryStorageRoot();
+
+      // Initialize schema
+      SqliteMigrationManager.initializeSchema(sqliteConnection);
+
+    } catch (SQLException e) {
+      LOG.error("Failed to initialize SQLite connection", e);
+      throw new RuntimeException("Failed to initialize SQLite storage", e);
     }
-    this.embeddedStorage = storage;
-    this.memoryStorageRoot = root;
+
+    // TODO: Remove these deprecated fields in follow-up work
+    // For now, keep them null to avoid breaking existing DAO code that may reference them
+    this.embeddedStorage = null;
+    this.memoryStorageRoot = new MemoryStorageRoot(); // Keep temporarily for compatibility
+
+    // Initialize DAOs (must be done after SQLite connection is established)
+    this.memRepairSegment = new MemoryRepairSegmentDao(this);
+    this.memoryRepairUnitDao = new MemoryRepairUnitDao(this);
+    this.memoryRepairRunDao = new MemoryRepairRunDao(this, memRepairSegment, memoryRepairUnitDao);
+    this.memRepairScheduleDao = new MemoryRepairScheduleDao(this, memoryRepairUnitDao);
+    this.memEventsDao = new MemoryEventsDao(this);
+    this.memClusterDao =
+        new MemoryClusterDao(
+            this, memoryRepairUnitDao, memoryRepairRunDao, memRepairScheduleDao, memEventsDao);
+
     this.replicaLockManagerWithTtl = new ReplicaLockManagerWithTtl(leadTime);
   }
 
@@ -132,8 +164,12 @@ public final class MemoryStorageFacade implements IStorageDao {
 
   @Override
   public boolean isStorageConnected() {
-    // Just assuming the MemoryStorage is always functional when instantiated.
-    return true;
+    try {
+      return this.sqliteConnection != null && !this.sqliteConnection.isClosed();
+    } catch (SQLException e) {
+      LOG.error("Failed to check SQLite connection status", e);
+      return false;
+    }
   }
 
   private boolean addClusterAssertions(Cluster cluster) {
@@ -158,9 +194,36 @@ public final class MemoryStorageFacade implements IStorageDao {
 
   @Override
   public void stop() {
+    if (this.sqliteConnection != null) {
+      try {
+        this.sqliteConnection.close();
+        LOG.info("SQLite connection closed");
+      } catch (SQLException e) {
+        LOG.error("Error closing SQLite connection", e);
+      }
+    }
+    // Deprecated: EclipseStore shutdown
     if (this.embeddedStorage != null) {
       this.embeddedStorage.shutdown();
     }
+  }
+
+  /**
+   * Get the SQLite database connection for use by DAOs.
+   *
+   * @return The SQLite connection
+   */
+  public Connection getSqliteConnection() {
+    return this.sqliteConnection;
+  }
+
+  /**
+   * Check if storage is in persistent mode (backed by disk file).
+   *
+   * @return true if persistent, false if in-memory
+   */
+  public boolean isPersistent() {
+    return this.isPersistent;
   }
 
   @Override
