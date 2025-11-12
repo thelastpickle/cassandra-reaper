@@ -202,4 +202,24 @@ public final class SqliteHelper {
         ? LocalDate.ofEpochDay(epochMilli / 86400000L)
         : null;
   }
+
+  /**
+   * Safely convert a ResultSet Object to Long. SQLite returns Integer for small values and Long for
+   * large values.
+   *
+   * @param value Object from ResultSet (can be Integer, Long, or null)
+   * @return Long value, or null
+   */
+  public static Long toLong(Object value) {
+    if (value == null) {
+      return null;
+    }
+    if (value instanceof Long) {
+      return (Long) value;
+    }
+    if (value instanceof Integer) {
+      return ((Integer) value).longValue();
+    }
+    throw new IllegalArgumentException("Cannot convert " + value.getClass().getName() + " to Long");
+  }
 }

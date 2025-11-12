@@ -116,6 +116,19 @@ public class MemoryRepairSegmentDao implements IRepairSegmentDao {
     }
   }
 
+  /**
+   * Add a repair segment with a predetermined ID (for testing/migration). Use addRepairSegments for
+   * normal operation.
+   */
+  public void addRepairSegmentWithId(RepairSegment segment) {
+    try {
+      insertSegment(segment);
+    } catch (SQLException e) {
+      LOG.error("Failed to add repair segment {}", segment.getId(), e);
+      throw new RuntimeException(e);
+    }
+  }
+
   @Override
   public boolean updateRepairSegment(RepairSegment newRepairSegment) {
     try {
@@ -125,15 +138,18 @@ public class MemoryRepairSegmentDao implements IRepairSegmentDao {
       }
 
       // For efficiency, we can use a lighter UPDATE instead of INSERT OR REPLACE
-      updateSegmentStmt.setString(1, newRepairSegment.getState().name());
-      updateSegmentStmt.setString(2, newRepairSegment.getCoordinatorHost());
-      updateSegmentStmt.setObject(3, SqliteHelper.toEpochMilli(newRepairSegment.getStartTime()));
-      updateSegmentStmt.setObject(4, SqliteHelper.toEpochMilli(newRepairSegment.getEndTime()));
-      updateSegmentStmt.setInt(5, newRepairSegment.getFailCount());
-      updateSegmentStmt.setBytes(6, UuidUtil.toBytes(newRepairSegment.getId()));
+      synchronized (updateSegmentStmt) {
+        updateSegmentStmt.clearParameters();
+        updateSegmentStmt.setString(1, newRepairSegment.getState().name());
+        updateSegmentStmt.setString(2, newRepairSegment.getCoordinatorHost());
+        updateSegmentStmt.setObject(3, SqliteHelper.toEpochMilli(newRepairSegment.getStartTime()));
+        updateSegmentStmt.setObject(4, SqliteHelper.toEpochMilli(newRepairSegment.getEndTime()));
+        updateSegmentStmt.setInt(5, newRepairSegment.getFailCount());
+        updateSegmentStmt.setBytes(6, UuidUtil.toBytes(newRepairSegment.getId()));
 
-      int updated = updateSegmentStmt.executeUpdate();
-      return updated > 0;
+        int updated = updateSegmentStmt.executeUpdate();
+        return updated > 0;
+      }
     } catch (SQLException e) {
       LOG.error("Failed to update repair segment {}", newRepairSegment.getId(), e);
       throw new RuntimeException(e);
@@ -149,10 +165,13 @@ public class MemoryRepairSegmentDao implements IRepairSegmentDao {
   @Override
   public Optional<RepairSegment> getRepairSegment(UUID runId, UUID segmentId) {
     try {
-      getSegmentByIdStmt.setBytes(1, UuidUtil.toBytes(segmentId));
-      try (ResultSet rs = getSegmentByIdStmt.executeQuery()) {
-        if (rs.next()) {
-          return Optional.of(mapRowToRepairSegment(rs));
+      synchronized (getSegmentByIdStmt) {
+        getSegmentByIdStmt.clearParameters();
+        getSegmentByIdStmt.setBytes(1, UuidUtil.toBytes(segmentId));
+        try (ResultSet rs = getSegmentByIdStmt.executeQuery()) {
+          if (rs.next()) {
+            return Optional.of(mapRowToRepairSegment(rs));
+          }
         }
       }
     } catch (SQLException e) {
@@ -277,8 +296,8 @@ public class MemoryRepairSegmentDao implements IRepairSegmentDao {
     BigInteger endToken = new BigInteger(rs.getString("end_token"));
     RepairSegment.State state = RepairSegment.State.valueOf(rs.getString("state"));
     String coordinatorHost = rs.getString("coordinator_host");
-    Long startTimeMilli = (Long) rs.getObject("start_time");
-    Long endTimeMilli = (Long) rs.getObject("end_time");
+    Long startTimeMilli = SqliteHelper.toLong(rs.getObject("start_time"));
+    Long endTimeMilli = SqliteHelper.toLong(rs.getObject("end_time"));
     int failCount = rs.getInt("fail_count");
     Map<String, String> replicas = SqliteHelper.fromJsonStringMap(rs.getString("replicas"));
     byte[] hostIdBytes = rs.getBytes("host_id");

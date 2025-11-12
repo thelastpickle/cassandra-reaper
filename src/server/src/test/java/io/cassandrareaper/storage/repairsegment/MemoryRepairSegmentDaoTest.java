@@ -14,6 +14,7 @@
 
 package io.cassandrareaper.storage.repairsegment;
 
+import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairSegment;
 import io.cassandrareaper.core.RepairUnit;
@@ -49,8 +50,17 @@ public class MemoryRepairSegmentDaoTest {
     memoryStorageFacade = new MemoryStorageFacade();
     memoryRepairSegmentDao = new MemoryRepairSegmentDao(memoryStorageFacade);
 
+    // Set up a cluster (required for foreign key constraints)
+    Cluster cluster =
+        Cluster.builder()
+            .withName("testCluster")
+            .withSeedHosts(Sets.newHashSet("127.0.0.1"))
+            .withState(Cluster.State.ACTIVE)
+            .build();
+    memoryStorageFacade.addCluster(cluster);
+
     // Set up a repair unit
-    RepairUnit repairUnit =
+    RepairUnit.Builder repairUnitBuilder =
         RepairUnit.builder()
             .clusterName("testCluster")
             .keyspaceName("testKeyspace")
@@ -59,22 +69,23 @@ public class MemoryRepairSegmentDaoTest {
             .subrangeIncrementalRepair(false)
             .nodes(Sets.newHashSet("node1", "node2", "node3"))
             .repairThreadCount(1)
-            .timeout(30)
-            .build(Uuids.timeBased());
+            .timeout(30);
 
-    memoryStorageFacade.addRepairUnit(java.util.Optional.of(repairUnit.with()), repairUnit);
+    RepairUnit repairUnit =
+        memoryStorageFacade.addRepairUnit(
+            java.util.Optional.of(repairUnitBuilder), repairUnitBuilder.build(Uuids.timeBased()));
     repairUnitId = repairUnit.getId();
 
     // Set up a repair run
-    RepairRun repairRun =
+    RepairRun.Builder repairRunBuilder =
         RepairRun.builder("testCluster", repairUnitId)
             .intensity(0.5)
             .segmentCount(3)
             .repairParallelism(org.apache.cassandra.repair.RepairParallelism.PARALLEL)
-            .tables(Sets.newHashSet("testTable"))
-            .build(Uuids.timeBased());
+            .tables(Sets.newHashSet("testTable"));
 
-    memoryStorageFacade.addRepairRun(repairRun);
+    RepairRun repairRun =
+        memoryStorageFacade.addRepairRun(repairRunBuilder.build(Uuids.timeBased()));
     repairRunId = repairRun.getId();
   }
 

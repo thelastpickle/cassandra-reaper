@@ -357,10 +357,13 @@ public class MemoryRepairRunDao implements IRepairRunDao {
     String cause = rs.getString("cause");
     String owner = rs.getString("owner");
     RepairRun.RunState state = RepairRun.RunState.valueOf(rs.getString("state"));
-    DateTime creationTime = SqliteHelper.fromEpochMilli((Long) rs.getObject("creation_time"));
-    DateTime startTime = SqliteHelper.fromEpochMilli((Long) rs.getObject("start_time"));
-    DateTime endTime = SqliteHelper.fromEpochMilli((Long) rs.getObject("end_time"));
-    DateTime pauseTime = SqliteHelper.fromEpochMilli((Long) rs.getObject("pause_time"));
+    DateTime creationTime =
+        SqliteHelper.fromEpochMilli(SqliteHelper.toLong(rs.getObject("creation_time")));
+    DateTime startTime =
+        SqliteHelper.fromEpochMilli(SqliteHelper.toLong(rs.getObject("start_time")));
+    DateTime endTime = SqliteHelper.fromEpochMilli(SqliteHelper.toLong(rs.getObject("end_time")));
+    DateTime pauseTime =
+        SqliteHelper.fromEpochMilli(SqliteHelper.toLong(rs.getObject("pause_time")));
     double intensity = rs.getDouble("intensity");
     String lastEvent = rs.getString("last_event");
     int segmentCount = rs.getInt("segment_count");
