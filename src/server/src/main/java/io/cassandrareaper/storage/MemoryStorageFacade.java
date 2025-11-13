@@ -388,6 +388,7 @@ public final class MemoryStorageFacade implements IStorageDao {
     return memoryRepairUnitDao.getRepairUnit(id);
   }
 
+
   @Deprecated
   public RepairUnit getRepairUnitByKey(RepairUnit.Builder key) {
     Optional<RepairUnit> unitOpt = memoryRepairUnitDao.getRepairUnit(key);
