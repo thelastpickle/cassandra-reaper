@@ -28,7 +28,9 @@ CREATE TABLE IF NOT EXISTS cluster (
     properties TEXT, -- JSON object
     state TEXT,
     last_contact INTEGER, -- timestamp millis
-    namespace TEXT
+    namespace TEXT,
+    jmx_username TEXT,
+    jmx_password TEXT
 );
 
 -- Repair units (keyspace + tables configuration for repair)

@@ -75,7 +75,7 @@ public class MemoryClusterDao implements IClusterDao {
       this.insertClusterStmt =
           connection.prepareStatement(
               "INSERT OR REPLACE INTO cluster (name, partitioner, seed_hosts, properties, state, "
-                  + "last_contact, namespace) VALUES (?, ?, ?, ?, ?, ?, ?)");
+                  + "last_contact, namespace, jmx_username, jmx_password) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
       this.getClusterStmt = connection.prepareStatement("SELECT * FROM cluster WHERE name = ?");
       this.getAllClustersStmt = connection.prepareStatement("SELECT * FROM cluster");
       this.deleteClusterStmt = connection.prepareStatement("DELETE FROM cluster WHERE name = ?");
@@ -114,6 +114,10 @@ public class MemoryClusterDao implements IClusterDao {
           6,
           cluster.getLastContact() != null ? cluster.getLastContact().toEpochDay() * 86400000L : 0);
       insertClusterStmt.setString(7, null); // namespace not currently used
+      insertClusterStmt.setString(
+          8, cluster.getJmxCredentials().map(c -> c.getUsername()).orElse(null));
+      insertClusterStmt.setString(
+          9, cluster.getJmxCredentials().map(c -> c.getPassword()).orElse(null));
 
       int updated = insertClusterStmt.executeUpdate();
       return updated > 0;
@@ -223,6 +227,8 @@ public class MemoryClusterDao implements IClusterDao {
     String propertiesJson = rs.getString("properties");
     String state = rs.getString("state");
     long lastContactMillis = rs.getLong("last_contact");
+    String jmxUsername = rs.getString("jmx_username");
+    String jmxPassword = rs.getString("jmx_password");
 
     Set<String> seedHosts =
         SqliteHelper.fromJson(seedHostsJson, new TypeReference<Set<String>>() {});
@@ -231,13 +237,24 @@ public class MemoryClusterDao implements IClusterDao {
     LocalDate lastContact =
         lastContactMillis > 0 ? LocalDate.ofEpochDay(lastContactMillis / 86400000L) : LocalDate.MIN;
 
-    return Cluster.builder()
-        .withName(name)
-        .withPartitioner(partitioner)
-        .withSeedHosts(seedHosts != null ? seedHosts : Collections.emptySet())
-        .withState(Cluster.State.valueOf(state))
-        .withLastContact(lastContact)
-        .withJmxPort(properties != null ? properties.getJmxPort() : Cluster.DEFAULT_JMX_PORT)
-        .build();
+    Cluster.Builder builder =
+        Cluster.builder()
+            .withName(name)
+            .withPartitioner(partitioner)
+            .withSeedHosts(seedHosts != null ? seedHosts : Collections.emptySet())
+            .withState(Cluster.State.valueOf(state))
+            .withLastContact(lastContact)
+            .withJmxPort(properties != null ? properties.getJmxPort() : Cluster.DEFAULT_JMX_PORT);
+
+    // Add JMX credentials if present
+    if (jmxUsername != null && jmxPassword != null) {
+      builder.withJmxCredentials(
+          io.cassandrareaper.core.JmxCredentials.builder()
+              .withUsername(jmxUsername)
+              .withPassword(jmxPassword)
+              .build());
+    }
+
+    return builder.build();
   }
 }

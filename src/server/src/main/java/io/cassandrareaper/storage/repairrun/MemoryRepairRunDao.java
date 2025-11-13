@@ -151,31 +151,34 @@ public class MemoryRepairRunDao implements IRepairRunDao {
   @Override
   public RepairRun addRepairRun(
       RepairRun.Builder repairRun, Collection<RepairSegment.Builder> newSegments) {
-    RepairRun newRepairRun = repairRun.build(Uuids.timeBased());
-    try {
-      insertRepairRunStmt.setBytes(1, UuidUtil.toBytes(newRepairRun.getId()));
-      insertRepairRunStmt.setString(2, newRepairRun.getClusterName());
-      insertRepairRunStmt.setBytes(3, UuidUtil.toBytes(newRepairRun.getRepairUnitId()));
-      insertRepairRunStmt.setString(4, newRepairRun.getCause());
-      insertRepairRunStmt.setString(5, newRepairRun.getOwner());
-      insertRepairRunStmt.setString(6, newRepairRun.getRunState().name());
-      insertRepairRunStmt.setObject(7, SqliteHelper.toEpochMilli(newRepairRun.getCreationTime()));
-      insertRepairRunStmt.setObject(8, SqliteHelper.toEpochMilli(newRepairRun.getStartTime()));
-      insertRepairRunStmt.setObject(9, SqliteHelper.toEpochMilli(newRepairRun.getEndTime()));
-      insertRepairRunStmt.setObject(10, SqliteHelper.toEpochMilli(newRepairRun.getPauseTime()));
-      insertRepairRunStmt.setDouble(11, newRepairRun.getIntensity());
-      insertRepairRunStmt.setString(12, newRepairRun.getLastEvent());
-      insertRepairRunStmt.setInt(13, newRepairRun.getSegmentCount());
-      insertRepairRunStmt.setString(14, newRepairRun.getRepairParallelism().name());
-      insertRepairRunStmt.setString(15, SqliteHelper.toJson(newRepairRun.getTables()));
-      insertRepairRunStmt.setInt(16, newRepairRun.getAdaptiveSchedule() ? 1 : 0);
-      insertRepairRunStmt.executeUpdate();
-    } catch (SQLException e) {
-      LOG.error("Failed to add repair run {}", newRepairRun.getId(), e);
-      throw new RuntimeException(e);
+    synchronized (insertRepairRunStmt) {
+      RepairRun newRepairRun = repairRun.build(Uuids.timeBased());
+      try {
+        insertRepairRunStmt.clearParameters();
+        insertRepairRunStmt.setBytes(1, UuidUtil.toBytes(newRepairRun.getId()));
+        insertRepairRunStmt.setString(2, newRepairRun.getClusterName());
+        insertRepairRunStmt.setBytes(3, UuidUtil.toBytes(newRepairRun.getRepairUnitId()));
+        insertRepairRunStmt.setString(4, newRepairRun.getCause());
+        insertRepairRunStmt.setString(5, newRepairRun.getOwner());
+        insertRepairRunStmt.setString(6, newRepairRun.getRunState().name());
+        insertRepairRunStmt.setObject(7, SqliteHelper.toEpochMilli(newRepairRun.getCreationTime()));
+        insertRepairRunStmt.setObject(8, SqliteHelper.toEpochMilli(newRepairRun.getStartTime()));
+        insertRepairRunStmt.setObject(9, SqliteHelper.toEpochMilli(newRepairRun.getEndTime()));
+        insertRepairRunStmt.setObject(10, SqliteHelper.toEpochMilli(newRepairRun.getPauseTime()));
+        insertRepairRunStmt.setDouble(11, newRepairRun.getIntensity());
+        insertRepairRunStmt.setString(12, newRepairRun.getLastEvent());
+        insertRepairRunStmt.setInt(13, newRepairRun.getSegmentCount());
+        insertRepairRunStmt.setString(14, newRepairRun.getRepairParallelism().name());
+        insertRepairRunStmt.setString(15, SqliteHelper.toJson(newRepairRun.getTables()));
+        insertRepairRunStmt.setInt(16, newRepairRun.getAdaptiveSchedule() ? 1 : 0);
+        insertRepairRunStmt.executeUpdate();
+      } catch (SQLException e) {
+        LOG.error("Failed to add repair run {}", newRepairRun.getId(), e);
+        throw new RuntimeException(e);
+      }
+      memRepairSegment.addRepairSegments(newSegments, newRepairRun.getId());
+      return newRepairRun;
     }
-    memRepairSegment.addRepairSegments(newSegments, newRepairRun.getId());
-    return newRepairRun;
   }
 
   public boolean updateRepairRun(RepairRun repairRun) {
@@ -212,35 +215,41 @@ public class MemoryRepairRunDao implements IRepairRunDao {
   }
 
   public Optional<RepairRun> getRepairRun(UUID id) {
-    try {
-      getRepairRunByIdStmt.setBytes(1, UuidUtil.toBytes(id));
-      try (ResultSet rs = getRepairRunByIdStmt.executeQuery()) {
-        if (rs.next()) {
-          return Optional.of(mapRowToRepairRun(rs));
+    synchronized (getRepairRunByIdStmt) {
+      try {
+        getRepairRunByIdStmt.clearParameters();
+        getRepairRunByIdStmt.setBytes(1, UuidUtil.toBytes(id));
+        try (ResultSet rs = getRepairRunByIdStmt.executeQuery()) {
+          if (rs.next()) {
+            return Optional.of(mapRowToRepairRun(rs));
+          }
         }
+      } catch (SQLException e) {
+        LOG.error("Failed to get repair run {}", id, e);
+        throw new RuntimeException(e);
       }
-    } catch (SQLException e) {
-      LOG.error("Failed to get repair run {}", id, e);
-      throw new RuntimeException(e);
+      return Optional.empty();
     }
-    return Optional.empty();
   }
 
   public List<RepairRun> getRepairRunsForCluster(String clusterName, Optional<Integer> limit) {
-    List<RepairRun> foundRepairRuns = new ArrayList<>();
-    try {
-      getRepairRunsForClusterStmt.setString(1, clusterName);
-      getRepairRunsForClusterStmt.setInt(2, limit.orElse(1000));
-      try (ResultSet rs = getRepairRunsForClusterStmt.executeQuery()) {
-        while (rs.next()) {
-          foundRepairRuns.add(mapRowToRepairRun(rs));
+    synchronized (getRepairRunsForClusterStmt) {
+      List<RepairRun> foundRepairRuns = new ArrayList<>();
+      try {
+        getRepairRunsForClusterStmt.clearParameters();
+        getRepairRunsForClusterStmt.setString(1, clusterName);
+        getRepairRunsForClusterStmt.setInt(2, limit.orElse(1000));
+        try (ResultSet rs = getRepairRunsForClusterStmt.executeQuery()) {
+          while (rs.next()) {
+            foundRepairRuns.add(mapRowToRepairRun(rs));
+          }
         }
+      } catch (SQLException e) {
+        LOG.error("Failed to get repair runs for cluster {}", clusterName, e);
+        throw new RuntimeException(e);
       }
-    } catch (SQLException e) {
-      LOG.error("Failed to get repair runs for cluster {}", clusterName, e);
-      throw new RuntimeException(e);
+      return foundRepairRuns;
     }
-    return foundRepairRuns;
   }
 
   public List<RepairRun> getRepairRunsForClusterPrioritiseRunning(
