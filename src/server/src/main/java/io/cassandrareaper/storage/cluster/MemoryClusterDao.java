@@ -87,43 +87,49 @@ public class MemoryClusterDao implements IClusterDao {
 
   @Override
   public Collection<Cluster> getClusters() {
-    try {
-      ResultSet rs = getAllClustersStmt.executeQuery();
-      Collection<Cluster> clusters = new ArrayList<>();
-      while (rs.next()) {
-        clusters.add(mapRowToCluster(rs));
+    synchronized (connection) {
+      try {
+        ResultSet rs = getAllClustersStmt.executeQuery();
+        Collection<Cluster> clusters = new ArrayList<>();
+        while (rs.next()) {
+          clusters.add(mapRowToCluster(rs));
+        }
+        return clusters;
+      } catch (SQLException e) {
+        LOG.error("Failed to get all clusters", e);
+        throw new RuntimeException("Failed to get clusters", e);
       }
-      return clusters;
-    } catch (SQLException e) {
-      LOG.error("Failed to get all clusters", e);
-      throw new RuntimeException("Failed to get clusters", e);
     }
   }
 
   @Override
   public boolean addCluster(Cluster cluster) {
-    assert addClusterAssertions(cluster);
+    synchronized (connection) {
+      assert addClusterAssertions(cluster);
 
-    try {
-      insertClusterStmt.setString(1, cluster.getName());
-      insertClusterStmt.setString(2, cluster.getPartitioner().orElse(null));
-      insertClusterStmt.setString(3, SqliteHelper.toJson(cluster.getSeedHosts()));
-      insertClusterStmt.setString(4, SqliteHelper.toJson(cluster.getProperties()));
-      insertClusterStmt.setString(5, cluster.getState().name());
-      insertClusterStmt.setLong(
-          6,
-          cluster.getLastContact() != null ? cluster.getLastContact().toEpochDay() * 86400000L : 0);
-      insertClusterStmt.setString(7, null); // namespace not currently used
-      insertClusterStmt.setString(
-          8, cluster.getJmxCredentials().map(c -> c.getUsername()).orElse(null));
-      insertClusterStmt.setString(
-          9, cluster.getJmxCredentials().map(c -> c.getPassword()).orElse(null));
+      try {
+        insertClusterStmt.setString(1, cluster.getName());
+        insertClusterStmt.setString(2, cluster.getPartitioner().orElse(null));
+        insertClusterStmt.setString(3, SqliteHelper.toJson(cluster.getSeedHosts()));
+        insertClusterStmt.setString(4, SqliteHelper.toJson(cluster.getProperties()));
+        insertClusterStmt.setString(5, cluster.getState().name());
+        insertClusterStmt.setLong(
+            6,
+            cluster.getLastContact() != null
+                ? cluster.getLastContact().toEpochDay() * 86400000L
+                : 0);
+        insertClusterStmt.setString(7, null); // namespace not currently used
+        insertClusterStmt.setString(
+            8, cluster.getJmxCredentials().map(c -> c.getUsername()).orElse(null));
+        insertClusterStmt.setString(
+            9, cluster.getJmxCredentials().map(c -> c.getPassword()).orElse(null));
 
-      int updated = insertClusterStmt.executeUpdate();
-      return updated > 0;
-    } catch (SQLException e) {
-      LOG.error("Failed to add cluster: {}", cluster.getName(), e);
-      throw new RuntimeException("Failed to add cluster", e);
+        int updated = insertClusterStmt.executeUpdate();
+        return updated > 0;
+      } catch (SQLException e) {
+        LOG.error("Failed to add cluster: {}", cluster.getName(), e);
+        throw new RuntimeException("Failed to add cluster", e);
+      }
     }
   }
 
@@ -159,18 +165,20 @@ public class MemoryClusterDao implements IClusterDao {
 
   @Override
   public Cluster getCluster(String clusterName) {
-    try {
-      getClusterStmt.setString(1, clusterName);
-      ResultSet rs = getClusterStmt.executeQuery();
+    synchronized (connection) {
+      try {
+        getClusterStmt.setString(1, clusterName);
+        ResultSet rs = getClusterStmt.executeQuery();
 
-      if (rs.next()) {
-        return mapRowToCluster(rs);
-      } else {
-        throw new IllegalArgumentException("no such cluster: " + clusterName);
+        if (rs.next()) {
+          return mapRowToCluster(rs);
+        } else {
+          throw new IllegalArgumentException("no such cluster: " + clusterName);
+        }
+      } catch (SQLException e) {
+        LOG.error("Failed to get cluster: {}", clusterName, e);
+        throw new RuntimeException("Failed to get cluster", e);
       }
-    } catch (SQLException e) {
-      LOG.error("Failed to get cluster: {}", clusterName, e);
-      throw new RuntimeException("Failed to get cluster", e);
     }
   }
 

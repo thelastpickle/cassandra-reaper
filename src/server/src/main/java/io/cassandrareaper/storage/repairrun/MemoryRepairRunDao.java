@@ -151,7 +151,7 @@ public class MemoryRepairRunDao implements IRepairRunDao {
   @Override
   public RepairRun addRepairRun(
       RepairRun.Builder repairRun, Collection<RepairSegment.Builder> newSegments) {
-    synchronized (insertRepairRunStmt) {
+    synchronized (connection) {
       RepairRun newRepairRun = repairRun.build(Uuids.timeBased());
       try {
         insertRepairRunStmt.clearParameters();
@@ -215,7 +215,7 @@ public class MemoryRepairRunDao implements IRepairRunDao {
   }
 
   public Optional<RepairRun> getRepairRun(UUID id) {
-    synchronized (getRepairRunByIdStmt) {
+    synchronized (connection) {
       try {
         getRepairRunByIdStmt.clearParameters();
         getRepairRunByIdStmt.setBytes(1, UuidUtil.toBytes(id));
@@ -233,7 +233,7 @@ public class MemoryRepairRunDao implements IRepairRunDao {
   }
 
   public List<RepairRun> getRepairRunsForCluster(String clusterName, Optional<Integer> limit) {
-    synchronized (getRepairRunsForClusterStmt) {
+    synchronized (connection) {
       List<RepairRun> foundRepairRuns = new ArrayList<>();
       try {
         getRepairRunsForClusterStmt.clearParameters();
