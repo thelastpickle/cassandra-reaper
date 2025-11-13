@@ -20,7 +20,6 @@ import java.time.LocalDate;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -159,13 +158,12 @@ public final class SqliteHelper {
       }
     }
     try {
-      Set<String> set = OBJECT_MAPPER.readValue(json, new TypeReference<Set<String>>() {});
-      if (collectionClass.isInstance(set)) {
-        return (C) set;
-      }
-      // If the target is a different collection type, create and populate it
+      // Deserialize to Collection<String> to avoid Set-specific type issues
+      Collection<String> items =
+          OBJECT_MAPPER.readValue(json, new TypeReference<Collection<String>>() {});
+      // Create and populate the target collection type
       C collection = collectionClass.getDeclaredConstructor().newInstance();
-      collection.addAll(set);
+      collection.addAll(items);
       return collection;
     } catch (Exception e) {
       LOG.warn(
