@@ -114,6 +114,10 @@ public final class MemoryStorageFacade implements IStorageDao {
         }
       }
 
+      // Enable autocommit mode for immediate visibility of writes
+      sqliteConnection.setAutoCommit(true);
+      LOG.info("SQLite autocommit enabled: {}", sqliteConnection.getAutoCommit());
+
       // Initialize schema
       SqliteMigrationManager.initializeSchema(sqliteConnection);
 
