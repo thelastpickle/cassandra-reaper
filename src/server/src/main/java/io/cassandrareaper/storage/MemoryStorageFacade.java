@@ -89,9 +89,11 @@ public final class MemoryStorageFacade implements IStorageDao {
     // Initialize SQLite connection
     try {
       if (persistenceStoragePath == null || persistenceStoragePath.isEmpty()) {
-        // In-memory mode (volatile)
+        // In-memory mode (volatile) with shared cache disabled for test isolation
+        // Using file::memory:?cache=private creates a unique in-memory database per connection
         LOG.info("Using in-memory SQLite mode (volatile - data lost on restart)");
-        this.sqliteConnection = DriverManager.getConnection("jdbc:sqlite::memory:");
+        this.sqliteConnection =
+            DriverManager.getConnection("jdbc:sqlite:file::memory:?cache=private");
         this.isPersistent = false;
       } else {
         // Persistent mode: persistenceStoragePath is a DIRECTORY
