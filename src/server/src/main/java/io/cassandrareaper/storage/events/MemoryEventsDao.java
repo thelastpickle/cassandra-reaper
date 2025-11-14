@@ -33,6 +33,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
+import com.datastax.oss.driver.api.core.uuid.Uuids;
 import com.google.common.base.Preconditions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -119,12 +120,24 @@ public class MemoryEventsDao implements IEventsDao {
       LOG.error("Failed to get event subscription {}", id, e);
       throw new RuntimeException(e);
     }
-    throw new IllegalArgumentException("No event subscription with id " + id);
+    return null;
   }
 
   @Override
   public DiagEventSubscription addEventSubscription(DiagEventSubscription subscription) {
-    Preconditions.checkArgument(subscription.getId().isPresent());
+    // Generate ID if not present
+    if (!subscription.getId().isPresent()) {
+      subscription =
+          new DiagEventSubscription(
+              Optional.of(Uuids.timeBased()),
+              subscription.getCluster(),
+              Optional.ofNullable(subscription.getDescription()),
+              subscription.getNodes(),
+              subscription.getEvents(),
+              subscription.getExportSse(),
+              subscription.getExportFileLogger(),
+              subscription.getExportHttpEndpoint());
+    }
     try {
       insertSubscription(subscription);
       return subscription;

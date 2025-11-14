@@ -41,6 +41,7 @@ import static org.junit.Assert.assertTrue;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import org.apache.cassandra.repair.RepairParallelism;
+import org.joda.time.DateTime;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -224,6 +225,7 @@ public final class MemoryRepairRunDaoTest {
     RepairRun updatedRun =
         run.with()
             .runState(RepairRun.RunState.RUNNING)
+            .startTime(DateTime.now())
             .lastEvent("Started repair")
             .build(run.getId());
 
@@ -252,7 +254,11 @@ public final class MemoryRepairRunDaoTest {
     RepairRun run1 = storage.getRepairRunDao().addRepairRun(runBuilder1, Collections.emptyList());
 
     // Update first run to RUNNING
-    RepairRun runningRun = run1.with().runState(RepairRun.RunState.RUNNING).build(run1.getId());
+    RepairRun runningRun =
+        run1.with()
+            .runState(RepairRun.RunState.RUNNING)
+            .startTime(DateTime.now())
+            .build(run1.getId());
     storage.getRepairRunDao().updateRepairRun(runningRun);
 
     // Create second run (will be NOT_STARTED)
@@ -350,7 +356,11 @@ public final class MemoryRepairRunDaoTest {
 
     // Update one to RUNNING
     RepairRun updated =
-        runningRun.with().runState(RepairRun.RunState.RUNNING).build(runningRun.getId());
+        runningRun
+            .with()
+            .runState(RepairRun.RunState.RUNNING)
+            .startTime(DateTime.now())
+            .build(runningRun.getId());
     storage.getRepairRunDao().updateRepairRun(updated);
 
     // Get prioritized runs - RUNNING should come first

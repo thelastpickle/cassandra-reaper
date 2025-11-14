@@ -145,9 +145,10 @@ public class MemoryClusterDao implements IClusterDao {
 
     // assert we're not overwriting a cluster with the same name but different node list
     Set<String> previousNodes;
-    try {
-      previousNodes = getCluster(cluster.getName()).getSeedHosts();
-    } catch (IllegalArgumentException ignore) {
+    Cluster existingCluster = getCluster(cluster.getName());
+    if (existingCluster != null) {
+      previousNodes = existingCluster.getSeedHosts();
+    } else {
       // there is no previous cluster with same name
       previousNodes = cluster.getSeedHosts();
     }
@@ -167,13 +168,15 @@ public class MemoryClusterDao implements IClusterDao {
   public Cluster getCluster(String clusterName) {
     synchronized (connection) {
       try {
-        getClusterStmt.setString(1, clusterName);
+        // Normalize cluster name to lowercase for case-insensitive lookup
+        String normalizedName = Cluster.toSymbolicName(clusterName);
+        getClusterStmt.setString(1, normalizedName);
         ResultSet rs = getClusterStmt.executeQuery();
 
         if (rs.next()) {
           return mapRowToCluster(rs);
         } else {
-          throw new IllegalArgumentException("no such cluster: " + clusterName);
+          return null;
         }
       } catch (SQLException e) {
         LOG.error("Failed to get cluster: {}", clusterName, e);

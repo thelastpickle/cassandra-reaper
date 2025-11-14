@@ -22,7 +22,6 @@ import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairSegment;
 import io.cassandrareaper.core.RepairUnit;
 import io.cassandrareaper.resources.view.RepairRunStatus;
-import io.cassandrareaper.service.RepairRunService;
 import io.cassandrareaper.storage.MemoryStorageFacade;
 import io.cassandrareaper.storage.repairsegment.MemoryRepairSegmentDao;
 import io.cassandrareaper.storage.repairunit.MemoryRepairUnitDao;
@@ -34,6 +33,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -262,19 +262,35 @@ public class MemoryRepairRunDao implements IRepairRunDao {
   public List<RepairRun> getRepairRunsForClusterPrioritiseRunning(
       String clusterName, Optional<Integer> limit) {
     synchronized (connection) {
-      // Get all runs for cluster, then sort by run state
+      // Get runs prioritized by state: RUNNING, PAUSED, NOT_STARTED, then others
       try {
         List<RepairRun> foundRepairRuns = new ArrayList<>();
+
+        // Query for priority states first (RUNNING, PAUSED, NOT_STARTED)
+        for (String state : Arrays.asList("RUNNING", "PAUSED", "NOT_STARTED")) {
+          PreparedStatement stmt =
+              connection.prepareStatement(
+                  "SELECT * FROM repair_run WHERE cluster_name = ? AND state = ? ORDER BY creation_time DESC");
+          stmt.setString(1, clusterName.toLowerCase(Locale.ROOT));
+          stmt.setString(2, state);
+          try (ResultSet rs = stmt.executeQuery()) {
+            while (rs.next()) {
+              foundRepairRuns.add(mapRowToRepairRun(rs));
+            }
+          }
+        }
+
+        // Then get all other states
         PreparedStatement stmt =
             connection.prepareStatement(
-                "SELECT * FROM repair_run WHERE cluster_name = ? ORDER BY state ASC, creation_time DESC");
+                "SELECT * FROM repair_run WHERE cluster_name = ? AND state NOT IN ('RUNNING', 'PAUSED', 'NOT_STARTED') ORDER BY creation_time DESC");
         stmt.setString(1, clusterName.toLowerCase(Locale.ROOT));
         try (ResultSet rs = stmt.executeQuery()) {
           while (rs.next()) {
             foundRepairRuns.add(mapRowToRepairRun(rs));
           }
         }
-        RepairRunService.sortByRunState(foundRepairRuns);
+
         return foundRepairRuns.subList(0, Math.min(foundRepairRuns.size(), limit.orElse(1000)));
       } catch (SQLException e) {
         LOG.error("Failed to get repair runs for cluster {} prioritized", clusterName, e);
@@ -343,6 +359,10 @@ public class MemoryRepairRunDao implements IRepairRunDao {
               deletedRun
                   .with()
                   .runState(RepairRun.RunState.DELETED)
+                  .startTime(
+                      deletedRun.getStartTime() != null
+                          ? deletedRun.getStartTime()
+                          : DateTime.now())
                   .endTime(DateTime.now())
                   .build(id);
         }
