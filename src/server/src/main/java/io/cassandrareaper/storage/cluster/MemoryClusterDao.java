@@ -187,26 +187,29 @@ public class MemoryClusterDao implements IClusterDao {
 
   @Override
   public Cluster deleteCluster(String clusterName) {
+    // Normalize cluster name for case-insensitive operations
+    String normalizedName = Cluster.toSymbolicName(clusterName);
+
     // Get the cluster before deleting
-    Cluster cluster = getCluster(clusterName);
+    Cluster cluster = getCluster(normalizedName);
 
     // Delete related schedules
     memRepairScheduleDao
-        .getRepairSchedulesForCluster(clusterName)
+        .getRepairSchedulesForCluster(normalizedName)
         .forEach(schedule -> memRepairScheduleDao.deleteRepairSchedule(schedule.getId()));
 
     // Delete related repair runs
     memoryRepairRunDao
-        .getRepairRunIdsForCluster(clusterName, Optional.empty())
+        .getRepairRunIdsForCluster(normalizedName, Optional.empty())
         .forEach(runId -> memoryRepairRunDao.deleteRepairRun(runId));
 
     // Delete related event subscriptions
-    memEventsDao.getEventSubscriptions(clusterName).stream()
+    memEventsDao.getEventSubscriptions(normalizedName).stream()
         .filter(subscription -> subscription.getId().isPresent())
         .forEach(subscription -> memEventsDao.deleteEventSubscription(subscription.getId().get()));
 
     // Delete related repair units
-    memoryRepairUnitDao.getRepairUnitsForCluster(clusterName).stream()
+    memoryRepairUnitDao.getRepairUnitsForCluster(normalizedName).stream()
         .forEach(
             (unit) -> {
               assert memoryRepairRunDao.getRepairRunsForUnit(unit.getId()).isEmpty()
@@ -216,7 +219,7 @@ public class MemoryClusterDao implements IClusterDao {
 
     // Delete the cluster itself
     try {
-      deleteClusterStmt.setString(1, clusterName);
+      deleteClusterStmt.setString(1, normalizedName);
       deleteClusterStmt.executeUpdate();
       return cluster;
     } catch (SQLException e) {
