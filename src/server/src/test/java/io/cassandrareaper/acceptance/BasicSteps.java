@@ -29,6 +29,7 @@ import io.cassandrareaper.resources.view.RepairRunStatus;
 import io.cassandrareaper.resources.view.RepairScheduleStatus;
 import io.cassandrareaper.service.RepairRunService;
 import io.cassandrareaper.storage.DiagEventSubscriptionMapper;
+import io.cassandrareaper.storage.MemoryStorageFacade;
 import io.cassandrareaper.storage.cassandra.CassandraStorageFacade;
 
 import java.net.InetSocketAddress;
@@ -77,6 +78,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import cucumber.api.java.Before;
 import cucumber.api.java.en.And;
 import cucumber.api.java.en.Given;
 import cucumber.api.java.en.Then;
@@ -122,6 +124,24 @@ public final class BasicSteps {
   private Optional<String> reaperVersion = Optional.empty();
   private Response lastResponse;
   private TestContext testContext;
+
+  @Before
+  public void clearDatabaseBeforeScenario() {
+    // Clear the database before each Cucumber scenario for test isolation
+    synchronized (BasicSteps.class) {
+      RUNNERS.forEach(
+          runner -> {
+            try {
+              if (runner.getContext().storage instanceof MemoryStorageFacade) {
+                ((MemoryStorageFacade) runner.getContext().storage).clearDatabase();
+                LOG.debug("Cleared database for runner before scenario");
+              }
+            } catch (Exception e) {
+              LOG.warn("Failed to clear database before scenario", e);
+            }
+          });
+    }
+  }
 
   public static synchronized void addReaperRunner(ReaperTestJettyRunner runner) {
     if (!CLIENTS.isEmpty()) {

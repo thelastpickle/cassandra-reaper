@@ -218,18 +218,27 @@ public final class MemoryStorageFacade implements IStorageDao {
    * while preserving schema.
    */
   public void clearDatabase() {
-    try {
-      // Delete in order to respect foreign key constraints
-      sqliteConnection.createStatement().execute("DELETE FROM repair_segment");
-      sqliteConnection.createStatement().execute("DELETE FROM repair_run");
-      sqliteConnection.createStatement().execute("DELETE FROM repair_schedule");
-      sqliteConnection.createStatement().execute("DELETE FROM repair_unit");
-      sqliteConnection.createStatement().execute("DELETE FROM diag_event_subscription");
-      sqliteConnection.createStatement().execute("DELETE FROM cluster");
-      LOG.debug("Database cleared successfully");
-    } catch (SQLException e) {
-      LOG.error("Failed to clear database", e);
-      throw new RuntimeException("Failed to clear database", e);
+    synchronized (sqliteConnection) {
+      try {
+        // Temporarily disable foreign keys for cleanup
+        sqliteConnection.createStatement().execute("PRAGMA foreign_keys = OFF");
+
+        // Delete all data
+        sqliteConnection.createStatement().execute("DELETE FROM repair_segment");
+        sqliteConnection.createStatement().execute("DELETE FROM repair_run");
+        sqliteConnection.createStatement().execute("DELETE FROM repair_schedule");
+        sqliteConnection.createStatement().execute("DELETE FROM repair_unit");
+        sqliteConnection.createStatement().execute("DELETE FROM diag_event_subscription");
+        sqliteConnection.createStatement().execute("DELETE FROM cluster");
+
+        // Re-enable foreign keys
+        sqliteConnection.createStatement().execute("PRAGMA foreign_keys = ON");
+
+        LOG.info("Database cleared successfully for test isolation");
+      } catch (SQLException e) {
+        LOG.error("Failed to clear database", e);
+        throw new RuntimeException("Failed to clear database", e);
+      }
     }
   }
 
