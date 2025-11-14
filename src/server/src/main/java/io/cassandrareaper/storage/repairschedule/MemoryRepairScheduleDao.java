@@ -104,18 +104,20 @@ public class MemoryRepairScheduleDao implements IRepairScheduleDao {
 
   @Override
   public Optional<RepairSchedule> getRepairSchedule(UUID id) {
-    try {
-      getScheduleByIdStmt.setBytes(1, UuidUtil.toBytes(id));
-      try (ResultSet rs = getScheduleByIdStmt.executeQuery()) {
-        if (rs.next()) {
-          return Optional.of(mapRowToRepairSchedule(rs));
+    synchronized (connection) {
+      try {
+        getScheduleByIdStmt.setBytes(1, UuidUtil.toBytes(id));
+        try (ResultSet rs = getScheduleByIdStmt.executeQuery()) {
+          if (rs.next()) {
+            return Optional.of(mapRowToRepairSchedule(rs));
+          }
         }
+      } catch (SQLException e) {
+        LOG.error("Failed to get repair schedule {}", id, e);
+        throw new RuntimeException(e);
       }
-    } catch (SQLException e) {
-      LOG.error("Failed to get repair schedule {}", id, e);
-      throw new RuntimeException(e);
+      return Optional.empty();
     }
-    return Optional.empty();
   }
 
   @Override
@@ -220,15 +222,17 @@ public class MemoryRepairScheduleDao implements IRepairScheduleDao {
 
   @Override
   public Collection<RepairSchedule> getAllRepairSchedules() {
-    try (ResultSet rs = getAllSchedulesStmt.executeQuery()) {
-      List<RepairSchedule> schedules = new ArrayList<>();
-      while (rs.next()) {
-        schedules.add(mapRowToRepairSchedule(rs));
+    synchronized (connection) {
+      try (ResultSet rs = getAllSchedulesStmt.executeQuery()) {
+        List<RepairSchedule> schedules = new ArrayList<>();
+        while (rs.next()) {
+          schedules.add(mapRowToRepairSchedule(rs));
+        }
+        return schedules;
+      } catch (SQLException e) {
+        LOG.error("Failed to get all repair schedules", e);
+        throw new RuntimeException(e);
       }
-      return schedules;
-    } catch (SQLException e) {
-      LOG.error("Failed to get all repair schedules", e);
-      throw new RuntimeException(e);
     }
   }
 
@@ -260,23 +264,25 @@ public class MemoryRepairScheduleDao implements IRepairScheduleDao {
 
   @Override
   public Optional<RepairSchedule> deleteRepairSchedule(UUID id) {
-    try {
-      Optional<RepairSchedule> scheduleOpt = getRepairSchedule(id);
-      if (!scheduleOpt.isPresent()) {
-        return Optional.empty();
+    synchronized (connection) {
+      try {
+        Optional<RepairSchedule> scheduleOpt = getRepairSchedule(id);
+        if (!scheduleOpt.isPresent()) {
+          return Optional.empty();
+        }
+
+        RepairSchedule schedule = scheduleOpt.get();
+        deleteScheduleStmt.setBytes(1, UuidUtil.toBytes(id));
+        deleteScheduleStmt.executeUpdate();
+
+        // Return the schedule with state set to DELETED
+        RepairSchedule deletedSchedule =
+            schedule.with().state(RepairSchedule.State.DELETED).build(id);
+        return Optional.of(deletedSchedule);
+      } catch (SQLException e) {
+        LOG.error("Failed to delete repair schedule {}", id, e);
+        throw new RuntimeException(e);
       }
-
-      RepairSchedule schedule = scheduleOpt.get();
-      deleteScheduleStmt.setBytes(1, UuidUtil.toBytes(id));
-      deleteScheduleStmt.executeUpdate();
-
-      // Return the schedule with state set to DELETED
-      RepairSchedule deletedSchedule =
-          schedule.with().state(RepairSchedule.State.DELETED).build(id);
-      return Optional.of(deletedSchedule);
-    } catch (SQLException e) {
-      LOG.error("Failed to delete repair schedule {}", id, e);
-      throw new RuntimeException(e);
     }
   }
 
