@@ -136,8 +136,11 @@ public final class BasicSteps {
                 ((MemoryStorageFacade) runner.getContext().storage).clearDatabase();
                 LOG.debug("Cleared database for runner before scenario");
               }
+              // Clear ClusterFacade caches that persist across test scenarios
+              io.cassandrareaper.management.ClusterFacade.clearCaches();
+              LOG.debug("Cleared ClusterFacade caches");
             } catch (Exception e) {
-              LOG.warn("Failed to clear database before scenario", e);
+              LOG.warn("Failed to clear database or caches before scenario", e);
             }
           });
     }

@@ -119,6 +119,16 @@ public final class ClusterFacade {
   }
 
   /**
+   * Clears all static caches. Useful for test isolation to ensure that cached data from previous
+   * test scenarios doesn't interfere with subsequent tests.
+   */
+  public static void clearCaches() {
+    CLUSTER_VERSIONS.invalidateAll();
+    TABLES_IN_KEYSPACE.invalidateAll();
+    TOKEN_RANGES_IN_KEYSPACE.invalidateAll();
+  }
+
+  /**
    * The method makes the Scylla endpoint map compatible with the Cassandra ones
    *
    * @param endpointMap map of endpoint returned by jmx/http client
