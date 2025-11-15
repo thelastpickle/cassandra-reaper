@@ -315,7 +315,7 @@ public final class BasicSteps {
               LOG.warn("Failed to clear database or caches", e);
             }
           });
-      
+
       RUNNERS.parallelStream()
           .forEach(
               runner -> {
