@@ -281,6 +281,23 @@ public final class BasicSteps {
   @Given("^that reaper ([^\"]*) is running$")
   public void start_reaper(String version) throws Throwable {
     synchronized (BasicSteps.class) {
+      // Clear database and caches at the start of each scenario to ensure clean state
+      // This is critical for Surefire retries where @Before hooks may not re-run
+      LOG.info("Clearing database and caches at start of scenario (Reaper {} is running)", version);
+      RUNNERS.forEach(
+          runner -> {
+            try {
+              if (runner.getContext().storage instanceof MemoryStorageFacade) {
+                ((MemoryStorageFacade) runner.getContext().storage).clearDatabase();
+                LOG.info("Cleared database for runner at scenario start");
+              }
+              io.cassandrareaper.management.ClusterFacade.clearCaches();
+              LOG.info("Cleared ClusterFacade caches at scenario start");
+            } catch (Exception e) {
+              LOG.warn("Failed to clear database or caches at scenario start", e);
+            }
+          });
+      
       testContext = new TestContext();
     }
   }
