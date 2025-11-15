@@ -92,14 +92,16 @@ public class MemoryRepairScheduleDao implements IRepairScheduleDao {
 
   @Override
   public RepairSchedule addRepairSchedule(RepairSchedule.Builder repairSchedule) {
-    RepairSchedule newRepairSchedule = repairSchedule.build(Uuids.timeBased());
-    try {
-      insertSchedule(newRepairSchedule);
-    } catch (SQLException e) {
-      LOG.error("Failed to add repair schedule {}", newRepairSchedule.getId(), e);
-      throw new RuntimeException(e);
+    synchronized (connection) {
+      RepairSchedule newRepairSchedule = repairSchedule.build(Uuids.timeBased());
+      try {
+        insertSchedule(newRepairSchedule);
+      } catch (SQLException e) {
+        LOG.error("Failed to add repair schedule {}", newRepairSchedule.getId(), e);
+        throw new RuntimeException(e);
+      }
+      return newRepairSchedule;
     }
-    return newRepairSchedule;
   }
 
   @Override
@@ -122,101 +124,109 @@ public class MemoryRepairScheduleDao implements IRepairScheduleDao {
 
   @Override
   public Collection<RepairSchedule> getRepairSchedulesForCluster(String clusterName) {
-    // JOIN with repair_unit to filter by cluster_name
-    String sql =
-        "SELECT s.* FROM repair_schedule s "
-            + "INNER JOIN repair_unit u ON s.repair_unit_id = u.id "
-            + "WHERE u.cluster_name = ?";
-    try (PreparedStatement stmt = connection.prepareStatement(sql)) {
-      stmt.setString(1, clusterName);
-      try (ResultSet rs = stmt.executeQuery()) {
-        List<RepairSchedule> schedules = new ArrayList<>();
-        while (rs.next()) {
-          schedules.add(mapRowToRepairSchedule(rs));
+    synchronized (connection) {
+      // JOIN with repair_unit to filter by cluster_name
+      String sql =
+          "SELECT s.* FROM repair_schedule s "
+              + "INNER JOIN repair_unit u ON s.repair_unit_id = u.id "
+              + "WHERE u.cluster_name = ?";
+      try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+        stmt.setString(1, clusterName);
+        try (ResultSet rs = stmt.executeQuery()) {
+          List<RepairSchedule> schedules = new ArrayList<>();
+          while (rs.next()) {
+            schedules.add(mapRowToRepairSchedule(rs));
+          }
+          return schedules;
         }
-        return schedules;
+      } catch (SQLException e) {
+        LOG.error("Failed to get repair schedules for cluster {}", clusterName, e);
+        throw new RuntimeException(e);
       }
-    } catch (SQLException e) {
-      LOG.error("Failed to get repair schedules for cluster {}", clusterName, e);
-      throw new RuntimeException(e);
     }
   }
 
   @Override
   public Collection<RepairSchedule> getRepairSchedulesForCluster(
       String clusterName, boolean incremental) {
-    // JOIN with repair_unit to filter by cluster_name and incremental_repair
-    String sql =
-        "SELECT s.* FROM repair_schedule s "
-            + "INNER JOIN repair_unit u ON s.repair_unit_id = u.id "
-            + "WHERE u.cluster_name = ? AND u.incremental_repair = ?";
-    try (PreparedStatement stmt = connection.prepareStatement(sql)) {
-      stmt.setString(1, clusterName);
-      stmt.setInt(2, incremental ? 1 : 0);
-      try (ResultSet rs = stmt.executeQuery()) {
-        List<RepairSchedule> schedules = new ArrayList<>();
-        while (rs.next()) {
-          schedules.add(mapRowToRepairSchedule(rs));
+    synchronized (connection) {
+      // JOIN with repair_unit to filter by cluster_name and incremental_repair
+      String sql =
+          "SELECT s.* FROM repair_schedule s "
+              + "INNER JOIN repair_unit u ON s.repair_unit_id = u.id "
+              + "WHERE u.cluster_name = ? AND u.incremental_repair = ?";
+      try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+        stmt.setString(1, clusterName);
+        stmt.setInt(2, incremental ? 1 : 0);
+        try (ResultSet rs = stmt.executeQuery()) {
+          List<RepairSchedule> schedules = new ArrayList<>();
+          while (rs.next()) {
+            schedules.add(mapRowToRepairSchedule(rs));
+          }
+          return schedules;
         }
-        return schedules;
+      } catch (SQLException e) {
+        LOG.error(
+            "Failed to get repair schedules for cluster {} with incremental={}",
+            clusterName,
+            incremental,
+            e);
+        throw new RuntimeException(e);
       }
-    } catch (SQLException e) {
-      LOG.error(
-          "Failed to get repair schedules for cluster {} with incremental={}",
-          clusterName,
-          incremental,
-          e);
-      throw new RuntimeException(e);
     }
   }
 
   @Override
   public Collection<RepairSchedule> getRepairSchedulesForKeyspace(String keyspaceName) {
-    // JOIN with repair_unit to filter by keyspace_name
-    String sql =
-        "SELECT s.* FROM repair_schedule s "
-            + "INNER JOIN repair_unit u ON s.repair_unit_id = u.id "
-            + "WHERE u.keyspace_name = ?";
-    try (PreparedStatement stmt = connection.prepareStatement(sql)) {
-      stmt.setString(1, keyspaceName);
-      try (ResultSet rs = stmt.executeQuery()) {
-        List<RepairSchedule> schedules = new ArrayList<>();
-        while (rs.next()) {
-          schedules.add(mapRowToRepairSchedule(rs));
+    synchronized (connection) {
+      // JOIN with repair_unit to filter by keyspace_name
+      String sql =
+          "SELECT s.* FROM repair_schedule s "
+              + "INNER JOIN repair_unit u ON s.repair_unit_id = u.id "
+              + "WHERE u.keyspace_name = ?";
+      try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+        stmt.setString(1, keyspaceName);
+        try (ResultSet rs = stmt.executeQuery()) {
+          List<RepairSchedule> schedules = new ArrayList<>();
+          while (rs.next()) {
+            schedules.add(mapRowToRepairSchedule(rs));
+          }
+          return schedules;
         }
-        return schedules;
+      } catch (SQLException e) {
+        LOG.error("Failed to get repair schedules for keyspace {}", keyspaceName, e);
+        throw new RuntimeException(e);
       }
-    } catch (SQLException e) {
-      LOG.error("Failed to get repair schedules for keyspace {}", keyspaceName, e);
-      throw new RuntimeException(e);
     }
   }
 
   @Override
   public Collection<RepairSchedule> getRepairSchedulesForClusterAndKeyspace(
       String clusterName, String keyspaceName) {
-    // JOIN with repair_unit to filter by both cluster_name and keyspace_name
-    String sql =
-        "SELECT s.* FROM repair_schedule s "
-            + "INNER JOIN repair_unit u ON s.repair_unit_id = u.id "
-            + "WHERE u.cluster_name = ? AND u.keyspace_name = ?";
-    try (PreparedStatement stmt = connection.prepareStatement(sql)) {
-      stmt.setString(1, clusterName);
-      stmt.setString(2, keyspaceName);
-      try (ResultSet rs = stmt.executeQuery()) {
-        List<RepairSchedule> schedules = new ArrayList<>();
-        while (rs.next()) {
-          schedules.add(mapRowToRepairSchedule(rs));
+    synchronized (connection) {
+      // JOIN with repair_unit to filter by both cluster_name and keyspace_name
+      String sql =
+          "SELECT s.* FROM repair_schedule s "
+              + "INNER JOIN repair_unit u ON s.repair_unit_id = u.id "
+              + "WHERE u.cluster_name = ? AND u.keyspace_name = ?";
+      try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+        stmt.setString(1, clusterName);
+        stmt.setString(2, keyspaceName);
+        try (ResultSet rs = stmt.executeQuery()) {
+          List<RepairSchedule> schedules = new ArrayList<>();
+          while (rs.next()) {
+            schedules.add(mapRowToRepairSchedule(rs));
+          }
+          return schedules;
         }
-        return schedules;
+      } catch (SQLException e) {
+        LOG.error(
+            "Failed to get repair schedules for cluster {} and keyspace {}",
+            clusterName,
+            keyspaceName,
+            e);
+        throw new RuntimeException(e);
       }
-    } catch (SQLException e) {
-      LOG.error(
-          "Failed to get repair schedules for cluster {} and keyspace {}",
-          clusterName,
-          keyspaceName,
-          e);
-      throw new RuntimeException(e);
     }
   }
 
@@ -238,16 +248,18 @@ public class MemoryRepairScheduleDao implements IRepairScheduleDao {
 
   @Override
   public boolean updateRepairSchedule(RepairSchedule newRepairSchedule) {
-    try {
-      // Check if the schedule exists
-      if (!getRepairSchedule(newRepairSchedule.getId()).isPresent()) {
-        return false;
+    synchronized (connection) {
+      try {
+        // Check if the schedule exists
+        if (!getRepairSchedule(newRepairSchedule.getId()).isPresent()) {
+          return false;
+        }
+        updateScheduleInDb(newRepairSchedule);
+        return true;
+      } catch (SQLException e) {
+        LOG.error("Failed to update repair schedule {}", newRepairSchedule.getId(), e);
+        throw new RuntimeException(e);
       }
-      updateScheduleInDb(newRepairSchedule);
-      return true;
-    } catch (SQLException e) {
-      LOG.error("Failed to update repair schedule {}", newRepairSchedule.getId(), e);
-      throw new RuntimeException(e);
     }
   }
 
