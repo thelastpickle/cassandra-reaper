@@ -216,6 +216,9 @@ public final class MemoryStorageFacade implements IStorageDao {
   /**
    * Clear all data from the database (for testing purposes). This deletes all rows from all tables
    * while preserving schema.
+   * 
+   * <p>NOTE: This method only clears database state. For integration tests, you should also clear
+   * in-memory state such as running RepairRunner threads and ClusterFacade caches separately.
    */
   public void clearDatabase() {
     synchronized (sqliteConnection) {
@@ -223,7 +226,7 @@ public final class MemoryStorageFacade implements IStorageDao {
         // Temporarily disable foreign keys for cleanup
         sqliteConnection.createStatement().execute("PRAGMA foreign_keys = OFF");
 
-        // Delete all data
+        // Delete all data (order matters due to foreign keys)
         sqliteConnection.createStatement().execute("DELETE FROM repair_segment");
         sqliteConnection.createStatement().execute("DELETE FROM repair_run");
         sqliteConnection.createStatement().execute("DELETE FROM repair_schedule");

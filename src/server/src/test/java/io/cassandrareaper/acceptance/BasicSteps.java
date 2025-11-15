@@ -281,16 +281,26 @@ public final class BasicSteps {
   @Given("^that reaper ([^\"]*) is running$")
   public void start_reaper(String version) throws Throwable {
     synchronized (BasicSteps.class) {
-      // Clear database and caches at the start of each scenario to ensure clean state
+      // Clear database, caches, and stop running repairs at the start of each scenario
       // This is critical for Surefire retries where @Before hooks may not re-run
-      LOG.info("Clearing database and caches at start of scenario (Reaper {} is running)", version);
+      LOG.info("Clearing all state at start of scenario (Reaper {} is running)", version);
       RUNNERS.forEach(
           runner -> {
             try {
+              // CRITICAL: Stop all running RepairRunners before clearing database
+              // RepairRunners are in-memory threads that persist even after database is cleared
+              if (runner.getContext().repairManager != null) {
+                runner.getContext().repairManager.repairRunners.clear();
+                LOG.info("Cleared active RepairRunners from memory at scenario start");
+              }
+              
+              // Clear database
               if (runner.getContext().storage instanceof MemoryStorageFacade) {
                 ((MemoryStorageFacade) runner.getContext().storage).clearDatabase();
                 LOG.info("Cleared database for runner at scenario start");
               }
+              
+              // Clear caches
               io.cassandrareaper.management.ClusterFacade.clearCaches();
               LOG.info("Cleared ClusterFacade caches at scenario start");
             } catch (Exception e) {
@@ -317,15 +327,25 @@ public final class BasicSteps {
   @And("^reaper has no cluster in storage$")
   public void reaper_has_no_cluster_in_storage() throws Throwable {
     synchronized (BasicSteps.class) {
-      // Clear database and caches before checking - this ensures clean state for each example
-      LOG.info("Clearing database and caches before 'reaper has no cluster in storage' check");
+      // Clear database, caches, and stop running repairs - this ensures clean state for each example
+      LOG.info("Clearing all state before 'reaper has no cluster in storage' check");
       RUNNERS.forEach(
           runner -> {
             try {
+              // CRITICAL: Stop all running RepairRunners before clearing database
+              // RepairRunners are in-memory threads that persist even after database is cleared
+              if (runner.getContext().repairManager != null) {
+                runner.getContext().repairManager.repairRunners.clear();
+                LOG.info("Cleared active RepairRunners from memory");
+              }
+              
+              // Clear database
               if (runner.getContext().storage instanceof MemoryStorageFacade) {
                 ((MemoryStorageFacade) runner.getContext().storage).clearDatabase();
                 LOG.info("Cleared database for runner");
               }
+              
+              // Clear caches
               io.cassandrareaper.management.ClusterFacade.clearCaches();
               LOG.info("Cleared ClusterFacade caches");
             } catch (Exception e) {
