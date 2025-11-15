@@ -290,16 +290,16 @@ public final class BasicSteps {
               // CRITICAL: Stop all running RepairRunners before clearing database
               // RepairRunners are in-memory threads that persist even after database is cleared
               if (runner.getContext().repairManager != null) {
-                runner.getContext().repairManager.repairRunners.clear();
+                runner.getContext().repairManager.clearAllRepairRunners();
                 LOG.info("Cleared active RepairRunners from memory at scenario start");
               }
-              
+
               // Clear database
               if (runner.getContext().storage instanceof MemoryStorageFacade) {
                 ((MemoryStorageFacade) runner.getContext().storage).clearDatabase();
                 LOG.info("Cleared database for runner at scenario start");
               }
-              
+
               // Clear caches
               io.cassandrareaper.management.ClusterFacade.clearCaches();
               LOG.info("Cleared ClusterFacade caches at scenario start");
@@ -327,7 +327,8 @@ public final class BasicSteps {
   @And("^reaper has no cluster in storage$")
   public void reaper_has_no_cluster_in_storage() throws Throwable {
     synchronized (BasicSteps.class) {
-      // Clear database, caches, and stop running repairs - this ensures clean state for each example
+      // Clear database, caches, and stop running repairs - this ensures clean state for each
+      // example
       LOG.info("Clearing all state before 'reaper has no cluster in storage' check");
       RUNNERS.forEach(
           runner -> {
@@ -335,16 +336,16 @@ public final class BasicSteps {
               // CRITICAL: Stop all running RepairRunners before clearing database
               // RepairRunners are in-memory threads that persist even after database is cleared
               if (runner.getContext().repairManager != null) {
-                runner.getContext().repairManager.repairRunners.clear();
+                runner.getContext().repairManager.clearAllRepairRunners();
                 LOG.info("Cleared active RepairRunners from memory");
               }
-              
+
               // Clear database
               if (runner.getContext().storage instanceof MemoryStorageFacade) {
                 ((MemoryStorageFacade) runner.getContext().storage).clearDatabase();
                 LOG.info("Cleared database for runner");
               }
-              
+
               // Clear caches
               io.cassandrareaper.management.ClusterFacade.clearCaches();
               LOG.info("Cleared ClusterFacade caches");

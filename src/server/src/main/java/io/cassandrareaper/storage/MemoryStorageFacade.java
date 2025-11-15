@@ -216,7 +216,7 @@ public final class MemoryStorageFacade implements IStorageDao {
   /**
    * Clear all data from the database (for testing purposes). This deletes all rows from all tables
    * while preserving schema.
-   * 
+   *
    * <p>NOTE: This method only clears database state. For integration tests, you should also clear
    * in-memory state such as running RepairRunner threads and ClusterFacade caches separately.
    */
