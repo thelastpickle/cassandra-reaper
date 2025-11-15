@@ -297,7 +297,7 @@ public final class BasicSteps {
               LOG.warn("Failed to clear database or caches at scenario start", e);
             }
           });
-      
+
       testContext = new TestContext();
     }
   }
