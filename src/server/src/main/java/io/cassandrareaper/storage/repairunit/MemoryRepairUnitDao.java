@@ -101,40 +101,56 @@ public class MemoryRepairUnitDao implements IRepairUnitDao {
 
   @Override
   public RepairUnit getRepairUnit(UUID id) {
-    try {
-      getRepairUnitByIdStmt.setBytes(1, UuidUtil.toBytes(id));
-      ResultSet rs = getRepairUnitByIdStmt.executeQuery();
-
-      if (rs.next()) {
-        return mapRowToRepairUnit(rs);
-      } else {
-        throw new IllegalArgumentException("No repair unit found with id: " + id);
+    synchronized (connection) {
+      try {
+        getRepairUnitByIdStmt.setBytes(1, UuidUtil.toBytes(id));
+        try (ResultSet rs = getRepairUnitByIdStmt.executeQuery()) {
+          if (rs.next()) {
+            return mapRowToRepairUnit(rs);
+          } else {
+            throw new IllegalArgumentException("No repair unit found with id: " + id);
+          }
+        }
+      } catch (SQLException e) {
+        LOG.error("Failed to get repair unit by id: {}", id, e);
+        throw new RuntimeException("Failed to get repair unit", e);
+      } finally {
+        try {
+          getRepairUnitByIdStmt.clearParameters();
+        } catch (SQLException e) {
+          LOG.warn("Failed to clear parameters", e);
+        }
       }
-    } catch (SQLException e) {
-      LOG.error("Failed to get repair unit by id: {}", id, e);
-      throw new RuntimeException("Failed to get repair unit", e);
     }
   }
 
   @Override
   public Optional<RepairUnit> getRepairUnit(RepairUnit.Builder repairUnitBuilder) {
-    try {
-      getRepairUnitByKeyStmt.setString(1, repairUnitBuilder.clusterName);
-      getRepairUnitByKeyStmt.setString(2, repairUnitBuilder.keyspaceName);
-      getRepairUnitByKeyStmt.setString(3, SqliteHelper.toJson(repairUnitBuilder.columnFamilies));
-      getRepairUnitByKeyStmt.setString(4, SqliteHelper.toJson(repairUnitBuilder.nodes));
-      getRepairUnitByKeyStmt.setString(5, SqliteHelper.toJson(repairUnitBuilder.datacenters));
+    synchronized (connection) {
+      try {
+        getRepairUnitByKeyStmt.setString(1, repairUnitBuilder.clusterName);
+        getRepairUnitByKeyStmt.setString(2, repairUnitBuilder.keyspaceName);
+        getRepairUnitByKeyStmt.setString(3, SqliteHelper.toJson(repairUnitBuilder.columnFamilies));
+        getRepairUnitByKeyStmt.setString(4, SqliteHelper.toJson(repairUnitBuilder.nodes));
+        getRepairUnitByKeyStmt.setString(5, SqliteHelper.toJson(repairUnitBuilder.datacenters));
 
-      ResultSet rs = getRepairUnitByKeyStmt.executeQuery();
-
-      if (rs.next()) {
-        return Optional.of(mapRowToRepairUnit(rs));
-      } else {
+        try (ResultSet rs = getRepairUnitByKeyStmt.executeQuery()) {
+          if (rs.next()) {
+            return Optional.of(mapRowToRepairUnit(rs));
+          } else {
+            return Optional.empty();
+          }
+        }
+      } catch (SQLException e) {
+        LOG.error("Failed to get repair unit by key", e);
         return Optional.empty();
+      } finally {
+        try {
+          getRepairUnitByKeyStmt.clearParameters();
+        } catch (SQLException e) {
+          LOG.warn("Failed to clear parameters", e);
+        }
       }
-    } catch (SQLException e) {
-      LOG.error("Failed to get repair unit by key", e);
-      return Optional.empty();
     }
   }
 
@@ -145,18 +161,26 @@ public class MemoryRepairUnitDao implements IRepairUnitDao {
    * @return Collection of repair units
    */
   public Collection<RepairUnit> getRepairUnitsForCluster(String clusterName) {
-    try {
-      getRepairUnitsForClusterStmt.setString(1, clusterName);
-      ResultSet rs = getRepairUnitsForClusterStmt.executeQuery();
-
-      Collection<RepairUnit> units = new ArrayList<>();
-      while (rs.next()) {
-        units.add(mapRowToRepairUnit(rs));
+    synchronized (connection) {
+      try {
+        getRepairUnitsForClusterStmt.setString(1, clusterName);
+        try (ResultSet rs = getRepairUnitsForClusterStmt.executeQuery()) {
+          Collection<RepairUnit> units = new ArrayList<>();
+          while (rs.next()) {
+            units.add(mapRowToRepairUnit(rs));
+          }
+          return units;
+        }
+      } catch (SQLException e) {
+        LOG.error("Failed to get repair units for cluster: {}", clusterName, e);
+        throw new RuntimeException("Failed to get repair units", e);
+      } finally {
+        try {
+          getRepairUnitsForClusterStmt.clearParameters();
+        } catch (SQLException e) {
+          LOG.warn("Failed to clear parameters", e);
+        }
       }
-      return units;
-    } catch (SQLException e) {
-      LOG.error("Failed to get repair units for cluster: {}", clusterName, e);
-      throw new RuntimeException("Failed to get repair units", e);
     }
   }
 
@@ -166,12 +190,20 @@ public class MemoryRepairUnitDao implements IRepairUnitDao {
    * @param id The repair unit ID
    */
   public void deleteRepairUnit(UUID id) {
-    try {
-      deleteRepairUnitStmt.setBytes(1, UuidUtil.toBytes(id));
-      deleteRepairUnitStmt.executeUpdate();
-    } catch (SQLException e) {
-      LOG.error("Failed to delete repair unit: {}", id, e);
-      throw new RuntimeException("Failed to delete repair unit", e);
+    synchronized (connection) {
+      try {
+        deleteRepairUnitStmt.setBytes(1, UuidUtil.toBytes(id));
+        deleteRepairUnitStmt.executeUpdate();
+      } catch (SQLException e) {
+        LOG.error("Failed to delete repair unit: {}", id, e);
+        throw new RuntimeException("Failed to delete repair unit", e);
+      } finally {
+        try {
+          deleteRepairUnitStmt.clearParameters();
+        } catch (SQLException e) {
+          LOG.warn("Failed to clear parameters", e);
+        }
+      }
     }
   }
 
@@ -181,23 +213,31 @@ public class MemoryRepairUnitDao implements IRepairUnitDao {
    * @param repairUnit The repair unit to insert
    */
   private void insertRepairUnit(RepairUnit repairUnit) {
-    try {
-      insertRepairUnitStmt.setBytes(1, UuidUtil.toBytes(repairUnit.getId()));
-      insertRepairUnitStmt.setString(2, repairUnit.getClusterName());
-      insertRepairUnitStmt.setString(3, repairUnit.getKeyspaceName());
-      insertRepairUnitStmt.setString(4, SqliteHelper.toJson(repairUnit.getColumnFamilies()));
-      insertRepairUnitStmt.setInt(5, repairUnit.getIncrementalRepair() ? 1 : 0);
-      insertRepairUnitStmt.setInt(6, repairUnit.getSubrangeIncrementalRepair() ? 1 : 0);
-      insertRepairUnitStmt.setString(7, SqliteHelper.toJson(repairUnit.getNodes()));
-      insertRepairUnitStmt.setString(8, SqliteHelper.toJson(repairUnit.getDatacenters()));
-      insertRepairUnitStmt.setString(9, SqliteHelper.toJson(repairUnit.getBlacklistedTables()));
-      insertRepairUnitStmt.setInt(10, repairUnit.getRepairThreadCount());
-      insertRepairUnitStmt.setInt(11, repairUnit.getTimeout());
+    synchronized (connection) {
+      try {
+        insertRepairUnitStmt.setBytes(1, UuidUtil.toBytes(repairUnit.getId()));
+        insertRepairUnitStmt.setString(2, repairUnit.getClusterName());
+        insertRepairUnitStmt.setString(3, repairUnit.getKeyspaceName());
+        insertRepairUnitStmt.setString(4, SqliteHelper.toJson(repairUnit.getColumnFamilies()));
+        insertRepairUnitStmt.setInt(5, repairUnit.getIncrementalRepair() ? 1 : 0);
+        insertRepairUnitStmt.setInt(6, repairUnit.getSubrangeIncrementalRepair() ? 1 : 0);
+        insertRepairUnitStmt.setString(7, SqliteHelper.toJson(repairUnit.getNodes()));
+        insertRepairUnitStmt.setString(8, SqliteHelper.toJson(repairUnit.getDatacenters()));
+        insertRepairUnitStmt.setString(9, SqliteHelper.toJson(repairUnit.getBlacklistedTables()));
+        insertRepairUnitStmt.setInt(10, repairUnit.getRepairThreadCount());
+        insertRepairUnitStmt.setInt(11, repairUnit.getTimeout());
 
-      insertRepairUnitStmt.executeUpdate();
-    } catch (SQLException e) {
-      LOG.error("Failed to insert repair unit: {}", repairUnit.getId(), e);
-      throw new RuntimeException("Failed to insert repair unit", e);
+        insertRepairUnitStmt.executeUpdate();
+      } catch (SQLException e) {
+        LOG.error("Failed to insert repair unit: {}", repairUnit.getId(), e);
+        throw new RuntimeException("Failed to insert repair unit", e);
+      } finally {
+        try {
+          insertRepairUnitStmt.clearParameters();
+        } catch (SQLException e) {
+          LOG.warn("Failed to clear parameters", e);
+        }
+      }
     }
   }
 
