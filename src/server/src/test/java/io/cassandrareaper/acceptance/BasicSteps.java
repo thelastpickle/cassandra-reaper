@@ -300,6 +300,22 @@ public final class BasicSteps {
   @And("^reaper has no cluster in storage$")
   public void reaper_has_no_cluster_in_storage() throws Throwable {
     synchronized (BasicSteps.class) {
+      // Clear database and caches before checking - this ensures clean state for each example
+      LOG.info("Clearing database and caches before 'reaper has no cluster in storage' check");
+      RUNNERS.forEach(
+          runner -> {
+            try {
+              if (runner.getContext().storage instanceof MemoryStorageFacade) {
+                ((MemoryStorageFacade) runner.getContext().storage).clearDatabase();
+                LOG.info("Cleared database for runner");
+              }
+              io.cassandrareaper.management.ClusterFacade.clearCaches();
+              LOG.info("Cleared ClusterFacade caches");
+            } catch (Exception e) {
+              LOG.warn("Failed to clear database or caches", e);
+            }
+          });
+      
       RUNNERS.parallelStream()
           .forEach(
               runner -> {
