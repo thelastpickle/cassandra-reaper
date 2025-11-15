@@ -129,16 +129,17 @@ public final class BasicSteps {
   public void clearDatabaseBeforeScenario() {
     // Clear the database before each Cucumber scenario for test isolation
     synchronized (BasicSteps.class) {
+      LOG.info("@Before hook called - clearing database and caches for all runners");
       RUNNERS.forEach(
           runner -> {
             try {
               if (runner.getContext().storage instanceof MemoryStorageFacade) {
                 ((MemoryStorageFacade) runner.getContext().storage).clearDatabase();
-                LOG.debug("Cleared database for runner before scenario");
+                LOG.info("Cleared database for runner before scenario");
               }
               // Clear ClusterFacade caches that persist across test scenarios
               io.cassandrareaper.management.ClusterFacade.clearCaches();
-              LOG.debug("Cleared ClusterFacade caches");
+              LOG.info("Cleared ClusterFacade caches");
             } catch (Exception e) {
               LOG.warn("Failed to clear database or caches before scenario", e);
             }
