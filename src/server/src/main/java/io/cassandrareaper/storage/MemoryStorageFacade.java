@@ -47,6 +47,7 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -224,20 +225,46 @@ public final class MemoryStorageFacade implements IStorageDao {
     synchronized (sqliteConnection) {
       try {
         // Temporarily disable foreign keys for cleanup
-        sqliteConnection.createStatement().execute("PRAGMA foreign_keys = OFF");
+        try (Statement stmt = sqliteConnection.createStatement()) {
+          stmt.execute("PRAGMA foreign_keys = OFF");
+        }
 
         // Delete all data (order matters due to foreign keys)
-        sqliteConnection.createStatement().execute("DELETE FROM repair_segment");
-        sqliteConnection.createStatement().execute("DELETE FROM repair_run");
-        sqliteConnection.createStatement().execute("DELETE FROM repair_schedule");
-        sqliteConnection.createStatement().execute("DELETE FROM repair_unit");
-        sqliteConnection.createStatement().execute("DELETE FROM diag_event_subscription");
-        sqliteConnection.createStatement().execute("DELETE FROM cluster");
+        try (Statement stmt = sqliteConnection.createStatement()) {
+          stmt.execute("DELETE FROM repair_segment");
+          stmt.execute("DELETE FROM repair_run");
+          stmt.execute("DELETE FROM repair_schedule");
+          stmt.execute("DELETE FROM repair_unit");
+          stmt.execute("DELETE FROM diag_event_subscription");
+          stmt.execute("DELETE FROM cluster");
+        }
 
         // Re-enable foreign keys
-        sqliteConnection.createStatement().execute("PRAGMA foreign_keys = ON");
+        try (Statement stmt = sqliteConnection.createStatement()) {
+          stmt.execute("PRAGMA foreign_keys = ON");
+        }
 
-        LOG.info("Database cleared successfully for test isolation");
+        // Verify the clear worked
+        try (Statement stmt = sqliteConnection.createStatement();
+            ResultSet rs =
+                stmt.executeQuery(
+                    "SELECT "
+                        + "(SELECT COUNT(*) FROM cluster) + "
+                        + "(SELECT COUNT(*) FROM repair_unit) + "
+                        + "(SELECT COUNT(*) FROM repair_run) + "
+                        + "(SELECT COUNT(*) FROM repair_schedule) + "
+                        + "(SELECT COUNT(*) FROM repair_segment) + "
+                        + "(SELECT COUNT(*) FROM diag_event_subscription) as total")) {
+          if (rs.next()) {
+            int totalRows = rs.getInt(1);
+            if (totalRows > 0) {
+              LOG.error("Database clear FAILED - {} rows still remain after DELETE!", totalRows);
+            } else {
+              LOG.info("Database cleared and verified - 0 rows remaining");
+            }
+          }
+        }
+
       } catch (SQLException e) {
         LOG.error("Failed to clear database", e);
         throw new RuntimeException("Failed to clear database", e);

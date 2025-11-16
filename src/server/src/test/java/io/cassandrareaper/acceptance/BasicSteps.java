@@ -34,6 +34,7 @@ import io.cassandrareaper.storage.cassandra.CassandraStorageFacade;
 
 import java.net.InetSocketAddress;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -1567,13 +1568,44 @@ public final class BasicSteps {
       throws Throwable {
     synchronized (BasicSteps.class) {
       ReaperTestJettyRunner runner = RUNNERS.get(RAND.nextInt(RUNNERS.size()));
+
+      // Query existing repairs for this keyspace to match their incremental settings
+      Response listResponse =
+          runner.callReaper(
+              "GET", "/repair_run/cluster/" + TestContext.TEST_CLUSTER, Optional.empty());
+      String listResponseData = listResponse.readEntity(String.class);
+
+      boolean incrementalRepair = false;
+      boolean subrangeIncrementalRepair = false;
+
+      if (listResponse.getStatus() == Response.Status.OK.getStatusCode()
+          && listResponseData != null
+          && !listResponseData.isEmpty()) {
+        Collection<RepairRunStatus> existingRuns =
+            SimpleReaperClient.parseRepairRunStatusListJSON(listResponseData);
+
+        // Find a repair for the same keyspace and match its incremental settings
+        for (RepairRunStatus existingRun : existingRuns) {
+          if (existingRun.getKeyspaceName().equals(keyspace)) {
+            incrementalRepair = existingRun.getIncrementalRepair();
+            subrangeIncrementalRepair = existingRun.getSubrangeIncrementalRepair();
+            LOG.info(
+                "Matching existing repair settings: incrementalRepair={}, subrangeIncrementalRepair={}",
+                incrementalRepair,
+                subrangeIncrementalRepair);
+            break;
+          }
+        }
+      }
+
       Map<String, String> params = Maps.newHashMap();
       params.put("clusterName", TestContext.TEST_CLUSTER);
       params.put("keyspace", keyspace);
       params.put("owner", TestContext.TEST_USER);
       params.put("force", "true");
-      // Do NOT set incremental repair settings - let the API reuse the existing repair unit
-      // or create a new one based on the force flag and conflict resolution logic
+      params.put("incrementalRepair", Boolean.toString(incrementalRepair));
+      params.put("subrangeIncrementalRepair", Boolean.toString(subrangeIncrementalRepair));
+
       Response response = runner.callReaper("POST", "/repair_run", Optional.of(params));
       assertEquals(Response.Status.CREATED.getStatusCode(), response.getStatus());
       String responseData = response.readEntity(String.class);
