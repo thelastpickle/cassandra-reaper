@@ -1572,10 +1572,8 @@ public final class BasicSteps {
       params.put("keyspace", keyspace);
       params.put("owner", TestContext.TEST_USER);
       params.put("force", "true");
-      // If this scenario previously created a subrange incremental repair, we need to match that
-      // to avoid 409 conflicts from mismatched incremental settings
-      params.put("incrementalRepair", Boolean.FALSE.toString());
-      params.put("subrangeIncrementalRepair", Boolean.TRUE.toString());
+      // Do NOT set incremental repair settings - let the API reuse the existing repair unit
+      // or create a new one based on the force flag and conflict resolution logic
       Response response = runner.callReaper("POST", "/repair_run", Optional.of(params));
       assertEquals(Response.Status.CREATED.getStatusCode(), response.getStatus());
       String responseData = response.readEntity(String.class);
@@ -3494,6 +3492,7 @@ public final class BasicSteps {
                                 "/repair_run/" + id,
                                 Optional.empty(),
                                 Optional.empty(),
+                                Response.Status.CONFLICT,
                                 Response.Status.BAD_REQUEST);
                           } catch (AssertionError ex) {
                             LOG.warn(
