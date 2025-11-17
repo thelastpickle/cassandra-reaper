@@ -77,85 +77,95 @@ public class MemoryEventsDao implements IEventsDao {
 
   @Override
   public Collection<DiagEventSubscription> getEventSubscriptions() {
-    try (ResultSet rs = getAllSubscriptionsStmt.executeQuery()) {
-      Collection<DiagEventSubscription> subscriptions = new ArrayList<>();
-      while (rs.next()) {
-        subscriptions.add(mapRowToSubscription(rs));
+    synchronized (connection) {
+      try (ResultSet rs = getAllSubscriptionsStmt.executeQuery()) {
+        Collection<DiagEventSubscription> subscriptions = new ArrayList<>();
+        while (rs.next()) {
+          subscriptions.add(mapRowToSubscription(rs));
+        }
+        return subscriptions;
+      } catch (SQLException e) {
+        LOG.error("Failed to get all event subscriptions", e);
+        throw new RuntimeException(e);
       }
-      return subscriptions;
-    } catch (SQLException e) {
-      LOG.error("Failed to get all event subscriptions", e);
-      throw new RuntimeException(e);
     }
   }
 
   @Override
   public Collection<DiagEventSubscription> getEventSubscriptions(String clusterName) {
     Preconditions.checkNotNull(clusterName);
-    try {
-      getSubscriptionsByClusterStmt.setString(1, clusterName);
-      try (ResultSet rs = getSubscriptionsByClusterStmt.executeQuery()) {
-        Collection<DiagEventSubscription> subscriptions = new ArrayList<>();
-        while (rs.next()) {
-          subscriptions.add(mapRowToSubscription(rs));
+    synchronized (connection) {
+      try {
+        getSubscriptionsByClusterStmt.setString(1, clusterName);
+        try (ResultSet rs = getSubscriptionsByClusterStmt.executeQuery()) {
+          Collection<DiagEventSubscription> subscriptions = new ArrayList<>();
+          while (rs.next()) {
+            subscriptions.add(mapRowToSubscription(rs));
+          }
+          return subscriptions;
         }
-        return subscriptions;
+      } catch (SQLException e) {
+        LOG.error("Failed to get event subscriptions for cluster {}", clusterName, e);
+        throw new RuntimeException(e);
       }
-    } catch (SQLException e) {
-      LOG.error("Failed to get event subscriptions for cluster {}", clusterName, e);
-      throw new RuntimeException(e);
     }
   }
 
   @Override
   public DiagEventSubscription getEventSubscription(UUID id) {
-    try {
-      getSubscriptionByIdStmt.setBytes(1, UuidUtil.toBytes(id));
-      try (ResultSet rs = getSubscriptionByIdStmt.executeQuery()) {
-        if (rs.next()) {
-          return mapRowToSubscription(rs);
+    synchronized (connection) {
+      try {
+        getSubscriptionByIdStmt.setBytes(1, UuidUtil.toBytes(id));
+        try (ResultSet rs = getSubscriptionByIdStmt.executeQuery()) {
+          if (rs.next()) {
+            return mapRowToSubscription(rs);
+          }
         }
+      } catch (SQLException e) {
+        LOG.error("Failed to get event subscription {}", id, e);
+        throw new RuntimeException(e);
       }
-    } catch (SQLException e) {
-      LOG.error("Failed to get event subscription {}", id, e);
-      throw new RuntimeException(e);
+      return null;
     }
-    return null;
   }
 
   @Override
   public DiagEventSubscription addEventSubscription(DiagEventSubscription subscription) {
-    // Generate ID if not present
-    if (!subscription.getId().isPresent()) {
-      subscription =
-          new DiagEventSubscription(
-              Optional.of(Uuids.timeBased()),
-              subscription.getCluster(),
-              Optional.ofNullable(subscription.getDescription()),
-              subscription.getNodes(),
-              subscription.getEvents(),
-              subscription.getExportSse(),
-              subscription.getExportFileLogger(),
-              subscription.getExportHttpEndpoint());
-    }
-    try {
-      insertSubscription(subscription);
-      return subscription;
-    } catch (SQLException e) {
-      LOG.error("Failed to add event subscription {}", subscription.getId().get(), e);
-      throw new RuntimeException(e);
+    synchronized (connection) {
+      // Generate ID if not present
+      if (!subscription.getId().isPresent()) {
+        subscription =
+            new DiagEventSubscription(
+                Optional.of(Uuids.timeBased()),
+                subscription.getCluster(),
+                Optional.ofNullable(subscription.getDescription()),
+                subscription.getNodes(),
+                subscription.getEvents(),
+                subscription.getExportSse(),
+                subscription.getExportFileLogger(),
+                subscription.getExportHttpEndpoint());
+      }
+      try {
+        insertSubscription(subscription);
+        return subscription;
+      } catch (SQLException e) {
+        LOG.error("Failed to add event subscription {}", subscription.getId().get(), e);
+        throw new RuntimeException(e);
+      }
     }
   }
 
   @Override
   public boolean deleteEventSubscription(UUID id) {
-    try {
-      deleteSubscriptionStmt.setBytes(1, UuidUtil.toBytes(id));
-      int deleted = deleteSubscriptionStmt.executeUpdate();
-      return deleted > 0;
-    } catch (SQLException e) {
-      LOG.error("Failed to delete event subscription {}", id, e);
-      throw new RuntimeException(e);
+    synchronized (connection) {
+      try {
+        deleteSubscriptionStmt.setBytes(1, UuidUtil.toBytes(id));
+        int deleted = deleteSubscriptionStmt.executeUpdate();
+        return deleted > 0;
+      } catch (SQLException e) {
+        LOG.error("Failed to delete event subscription {}", id, e);
+        throw new RuntimeException(e);
+      }
     }
   }
 
