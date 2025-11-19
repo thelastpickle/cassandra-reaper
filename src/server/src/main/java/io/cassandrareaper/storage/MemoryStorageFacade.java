@@ -108,21 +108,24 @@ public final class MemoryStorageFacade implements IStorageDao {
         LOG.info("Using persistent SQLite mode: {}", dbPath);
         this.sqliteConnection = DriverManager.getConnection("jdbc:sqlite:" + dbPath);
         this.isPersistent = true;
-
-        // Check for EclipseStore data and migrate if needed
-        boolean migrated =
-            EclipseStoreToSqliteMigration.migrateIfNeeded(storageDir, sqliteConnection);
-        if (migrated) {
-          LOG.info("Successfully migrated from EclipseStore to SQLite");
-        }
       }
 
       // Enable autocommit mode for immediate visibility of writes
       sqliteConnection.setAutoCommit(true);
       LOG.info("SQLite autocommit enabled: {}", sqliteConnection.getAutoCommit());
 
-      // Initialize schema
+      // Initialize schema FIRST (before migration)
       SqliteMigrationManager.initializeSchema(sqliteConnection);
+
+      // Now check for EclipseStore data and migrate if needed
+      if (isPersistent) {
+        File storageDir = new File(persistenceStoragePath);
+        boolean migrated =
+            EclipseStoreToSqliteMigration.migrateIfNeeded(storageDir, sqliteConnection);
+        if (migrated) {
+          LOG.info("Successfully migrated from EclipseStore to SQLite");
+        }
+      }
 
     } catch (SQLException e) {
       LOG.error("Failed to initialize SQLite connection", e);

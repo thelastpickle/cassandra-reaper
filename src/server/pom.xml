@@ -41,6 +41,7 @@
         <timestamp>${maven.build.timestamp}</timestamp>
         <maven.build.timestamp.format>yyyy-MM-dd HH:mm:ss</maven.build.timestamp.format>
         <management.api.version>0.1.104</management.api.version>
+        <eclipsestore.version>2.1.3</eclipsestore.version>
 
         <!-- Cucumber Scenario Outline Examples listing released versions to test db migration against -->
         <!-- anything added here must first be added as a artifact in build/plugins/plugins@maven-dependency-plugin -->
@@ -225,6 +226,11 @@
                     <artifactId>kotlin-stdlib</artifactId>
                 </exclusion>
             </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.store</groupId>
+            <artifactId>storage-embedded</artifactId>
+            <version>${eclipsestore.version}</version>
         </dependency>
         <dependency>
             <groupId>org.xerial</groupId>
