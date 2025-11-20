@@ -151,7 +151,7 @@ public final class EclipseStoreToSqliteMigration {
     LOG.info("Migrating {} clusters...", clusters.size());
     String sql =
         "INSERT INTO cluster (name, partitioner, seed_hosts, properties, state, "
-            + "last_contact, namespace) VALUES (?, ?, ?, ?, ?, ?, ?)";
+            + "last_contact, namespace, jmx_username, jmx_password) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
     try (PreparedStatement stmt = conn.prepareStatement(sql)) {
       for (Cluster cluster : clusters) {
@@ -167,6 +167,17 @@ public final class EclipseStoreToSqliteMigration {
                 ? cluster.getLastContact().toEpochDay() * 86400000L
                 : 0);
         stmt.setString(7, null); // namespace not used
+
+        // Extract JMX credentials from cluster properties
+        String jmxUsername = null;
+        String jmxPassword = null;
+        if (cluster.getJmxCredentials().isPresent()) {
+          jmxUsername = cluster.getJmxCredentials().get().getUsername();
+          jmxPassword = cluster.getJmxCredentials().get().getPassword();
+        }
+        stmt.setString(8, jmxUsername);
+        stmt.setString(9, jmxPassword);
+
         stmt.executeUpdate();
       }
     }
@@ -449,6 +460,57 @@ public final class EclipseStoreToSqliteMigration {
           obj = recovered;
         } catch (Exception reflectionEx) {
           LOG.error("Failed to reconstruct corrupted Set via reflection", reflectionEx);
+          obj = recovered; // Use whatever we managed to recover
+        }
+      }
+    }
+
+    // Handle corrupted Guava ImmutableList (RegularImmutableList)
+    if (obj instanceof java.util.List) {
+      try {
+        java.util.List<?> list = (java.util.List<?>) obj;
+        // Try to access the list - this will throw NPE if corrupted
+        int size = list.size();
+        // If we get here, the list is fine, continue normally
+      } catch (NullPointerException e) {
+        // Corrupted list! Try to recover the data
+        LOG.warn(
+            "Detected corrupted List (likely RegularImmutableList from Guava version change), reconstructing...");
+        java.util.List<Object> recovered = new java.util.ArrayList<>();
+
+        try {
+          // Try different field names (Guava version compatibility)
+          String[] fieldNames = {"array", "elements"};
+          boolean success = false;
+
+          for (String fieldName : fieldNames) {
+            try {
+              java.lang.reflect.Field field = obj.getClass().getDeclaredField(fieldName);
+              field.setAccessible(true);
+              Object[] array = (Object[]) field.get(obj);
+
+              if (array != null) {
+                for (Object item : array) {
+                  if (item != null) {
+                    recovered.add(item);
+                  }
+                }
+                LOG.info("Recovered {} elements from '{}' field", recovered.size(), fieldName);
+                success = true;
+                break;
+              }
+            } catch (NoSuchFieldException nsf) {
+              // Try next field name
+            }
+          }
+
+          if (!success) {
+            LOG.warn("Could not find elements in corrupted List - all fields were null or missing");
+          }
+
+          obj = recovered;
+        } catch (Exception reflectionEx) {
+          LOG.error("Failed to reconstruct corrupted List via reflection", reflectionEx);
           obj = recovered; // Use whatever we managed to recover
         }
       }
