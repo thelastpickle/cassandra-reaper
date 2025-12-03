@@ -38,6 +38,7 @@ import java.util.Set;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Preconditions;
+import org.eclipse.serializer.persistence.types.PersistenceFieldEvaluator;
 import org.eclipse.store.storage.embedded.types.EmbeddedStorage;
 import org.eclipse.store.storage.embedded.types.EmbeddedStorageManager;
 import org.slf4j.Logger;
@@ -49,6 +50,14 @@ public final class EclipseStoreToSqliteMigration {
   private static final Logger LOG = LoggerFactory.getLogger(EclipseStoreToSqliteMigration.class);
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
   private static final String MIGRATION_BANNER = "========================================";
+
+  /**
+   * Field evaluator to handle Guava collections that use transient fields. This is critical for
+   * reading EclipseStore data that contains Guava ImmutableSet/ImmutableList. Without this, Guava
+   * collections get corrupted during deserialization.
+   */
+  private static final PersistenceFieldEvaluator TRANSIENT_FIELD_EVALUATOR =
+      (clazz, field) -> !field.getName().startsWith("_");
 
   private EclipseStoreToSqliteMigration() {
     throw new UnsupportedOperationException("Utility class");
@@ -111,9 +120,15 @@ public final class EclipseStoreToSqliteMigration {
     EmbeddedStorageManager eclipseStore = null;
 
     try {
-      // Load EclipseStore data
+      // Load EclipseStore data with the same configuration as production
       LOG.info("Loading EclipseStore data from: {}", storageDir);
-      eclipseStore = EmbeddedStorage.Foundation(storageDir.toPath()).createEmbeddedStorageManager();
+      eclipseStore =
+          EmbeddedStorage.Foundation(storageDir.toPath())
+              .onConnectionFoundation(
+                  c -> {
+                    c.setFieldEvaluatorPersistable(TRANSIENT_FIELD_EVALUATOR);
+                  })
+              .createEmbeddedStorageManager();
       eclipseStore.start();
 
       Object root = eclipseStore.root();
