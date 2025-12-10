@@ -690,7 +690,7 @@ public final class ReaperApplicationConfiguration extends Configuration {
 
     @JsonProperty private Integer managementApiPort;
 
-    @JsonProperty private Boolean metricsTLSEnabled;
+    @JsonProperty private Boolean metricsTLSEnabled = false;
 
     public Boolean isEnabled() {
       return enabled;
@@ -747,7 +747,7 @@ public final class ReaperApplicationConfiguration extends Configuration {
       this.mgmtApiMetricsPort = mgmtApiMetricsPort;
     }
 
-    public Boolean getMetricsTLSEnabled() {
+    public Boolean isMetricsTLSEnabled() {
       return metricsTLSEnabled;
     }
 
