@@ -38,6 +38,8 @@ import java.util.Comparator;
 import java.util.Set;
 import java.util.UUID;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.datastax.driver.core.utils.UUIDs;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
@@ -50,14 +52,10 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 /**
- * Real-world migration test that simulates the actual user upgrade path:
- * 1. Create EclipseStore data with ImmutableSet (Reaper 4.0)
- * 2. Run migration (Reaper 4.1.0)
- * 3. Verify all data migrated correctly (especially seed hosts)
- * 4. Test idempotency (retry migration)
+ * Real-world migration test that simulates the actual user upgrade path: 1. Create EclipseStore
+ * data with ImmutableSet (Reaper 4.0) 2. Run migration (Reaper 4.1.0) 3. Verify all data migrated
+ * correctly (especially seed hosts) 4. Test idempotency (retry migration)
  */
 public class RealWorldMigrationTest {
 
@@ -105,7 +103,8 @@ public class RealWorldMigrationTest {
 
     // PHASE 2: Run migration (Reaper 4.1.0)
     System.out.println("\n--- PHASE 2: Running Migration (Reaper 4.1.0) ---");
-    boolean migrated = EclipseStoreToSqliteMigration.migrateIfNeeded(tempStorageDir, sqliteConnection);
+    boolean migrated =
+        EclipseStoreToSqliteMigration.migrateIfNeeded(tempStorageDir, sqliteConnection);
     assertThat(migrated).isTrue();
     System.out.println("✓ Migration completed");
 
@@ -117,7 +116,8 @@ public class RealWorldMigrationTest {
     // PHASE 4: Test idempotency (retry migration)
     System.out.println("\n--- PHASE 4: Testing Idempotency (Retry) ---");
     restoreEclipseStoreForRetry();
-    boolean migrated2 = EclipseStoreToSqliteMigration.migrateIfNeeded(tempStorageDir, sqliteConnection);
+    boolean migrated2 =
+        EclipseStoreToSqliteMigration.migrateIfNeeded(tempStorageDir, sqliteConnection);
     assertThat(migrated2).isTrue();
     System.out.println("✓ Retry migration succeeded (no PRIMARY KEY errors!)");
 
@@ -137,89 +137,94 @@ public class RealWorldMigrationTest {
 
     // Create cluster with ImmutableSet seed hosts (the problematic case!)
     System.out.println("  Creating cluster with ImmutableSet seed hosts...");
-    Set<String> seedHosts = ImmutableSet.of(
-        "cassandra-node1.example.com",
-        "cassandra-node2.example.com",
-        "cassandra-node3.example.com"
-    );
+    Set<String> seedHosts =
+        ImmutableSet.of(
+            "cassandra-node1.example.com",
+            "cassandra-node2.example.com",
+            "cassandra-node3.example.com");
 
-    Cluster cluster = Cluster.builder()
-        .withName("test-cluster")
-        .withSeedHosts(seedHosts)
-        .withPartitioner("org.apache.cassandra.dht.Murmur3Partitioner")
-        .withState(Cluster.State.ACTIVE)
-        .build();
+    Cluster cluster =
+        Cluster.builder()
+            .withName("test-cluster")
+            .withSeedHosts(seedHosts)
+            .withPartitioner("org.apache.cassandra.dht.Murmur3Partitioner")
+            .withState(Cluster.State.ACTIVE)
+            .build();
     root.getClusters().put(cluster.getName(), cluster);
     System.out.println("    Seed hosts (ImmutableSet): " + seedHosts);
 
     // Create repair unit
     System.out.println("  Creating repair unit...");
     UUID repairUnitId = UUIDs.timeBased();
-    RepairUnit repairUnit = RepairUnit.builder()
-        .clusterName("test-cluster")
-        .keyspaceName("test_keyspace")
-        .columnFamilies(Sets.newHashSet("test_table1", "test_table2"))
-        .incrementalRepair(false)
-        .subrangeIncrementalRepair(false)
-        .nodes(Sets.newHashSet())
-        .datacenters(Sets.newHashSet())
-        .blacklistedTables(Sets.newHashSet())
-        .repairThreadCount(4)
-        .timeout(60)
-        .build(repairUnitId);
+    RepairUnit repairUnit =
+        RepairUnit.builder()
+            .clusterName("test-cluster")
+            .keyspaceName("test_keyspace")
+            .columnFamilies(Sets.newHashSet("test_table1", "test_table2"))
+            .incrementalRepair(false)
+            .subrangeIncrementalRepair(false)
+            .nodes(Sets.newHashSet())
+            .datacenters(Sets.newHashSet())
+            .blacklistedTables(Sets.newHashSet())
+            .repairThreadCount(4)
+            .timeout(60)
+            .build(repairUnitId);
     root.getRepairUnits().put(repairUnitId, repairUnit);
     root.getRepairUnitsByKey().put(repairUnit.with(), repairUnit);
 
     // Create repair schedule
     System.out.println("  Creating repair schedule...");
     UUID scheduleId = UUIDs.timeBased();
-    RepairSchedule schedule = RepairSchedule.builder(repairUnitId)
-        .daysBetween(7)
-        .owner("admin")
-        .repairParallelism(RepairParallelism.DATACENTER_AWARE)
-        .intensity(0.9)
-        .segmentCountPerNode(64)
-        .state(RepairSchedule.State.ACTIVE)
-        .creationTime(DateTime.now())
-        .nextActivation(DateTime.now().plusDays(1))
-        .build(scheduleId);
+    RepairSchedule schedule =
+        RepairSchedule.builder(repairUnitId)
+            .daysBetween(7)
+            .owner("admin")
+            .repairParallelism(RepairParallelism.DATACENTER_AWARE)
+            .intensity(0.9)
+            .segmentCountPerNode(64)
+            .state(RepairSchedule.State.ACTIVE)
+            .creationTime(DateTime.now())
+            .nextActivation(DateTime.now().plusDays(1))
+            .build(scheduleId);
     root.getRepairSchedules().put(scheduleId, schedule);
 
     // Create repair run
     System.out.println("  Creating repair run...");
     UUID repairRunId = UUIDs.timeBased();
-    RepairRun repairRun = RepairRun.builder("test-cluster", repairUnitId)
-        .intensity(0.9)
-        .segmentCount(10)
-        .repairParallelism(RepairParallelism.DATACENTER_AWARE)
-        .tables(Sets.newHashSet("test_table1", "test_table2"))
-        .runState(RepairRun.RunState.DONE)
-        .startTime(DateTime.now().minusHours(2))
-        .endTime(DateTime.now().minusHours(1))
-        .cause("Scheduled repair")
-        .owner("admin")
-        .build(repairRunId);
+    RepairRun repairRun =
+        RepairRun.builder("test-cluster", repairUnitId)
+            .intensity(0.9)
+            .segmentCount(10)
+            .repairParallelism(RepairParallelism.DATACENTER_AWARE)
+            .tables(Sets.newHashSet("test_table1", "test_table2"))
+            .runState(RepairRun.RunState.DONE)
+            .startTime(DateTime.now().minusHours(2))
+            .endTime(DateTime.now().minusHours(1))
+            .cause("Scheduled repair")
+            .owner("admin")
+            .build(repairRunId);
     root.getRepairRuns().put(repairRunId, repairRun);
 
     // Create repair segments
     System.out.println("  Creating repair segments...");
     for (int i = 0; i < 5; i++) {
       UUID segmentId = UUIDs.timeBased();
-      io.cassandrareaper.core.Segment tokenRange = io.cassandrareaper.core.Segment.builder()
-              .withTokenRange(new RingRange(
-                  BigInteger.valueOf(i * 1000L),
-                  BigInteger.valueOf((i + 1) * 1000L)))
+      io.cassandrareaper.core.Segment tokenRange =
+          io.cassandrareaper.core.Segment.builder()
+              .withTokenRange(
+                  new RingRange(BigInteger.valueOf(i * 1000L), BigInteger.valueOf((i + 1) * 1000L)))
               .withReplicas(new java.util.HashMap<>())
               .build();
-      
-      RepairSegment segment = RepairSegment.builder(tokenRange, repairUnitId)
-          .withRunId(repairRunId)
-          .withState(RepairSegment.State.DONE)
-          .withStartTime(DateTime.now().minusHours(2))
-          .withEndTime(DateTime.now().minusHours(1))
-          .withCoordinatorHost("cassandra-node1.example.com")
-          .withId(segmentId)
-          .build();
+
+      RepairSegment segment =
+          RepairSegment.builder(tokenRange, repairUnitId)
+              .withRunId(repairRunId)
+              .withState(RepairSegment.State.DONE)
+              .withStartTime(DateTime.now().minusHours(2))
+              .withEndTime(DateTime.now().minusHours(1))
+              .withCoordinatorHost("cassandra-node1.example.com")
+              .withId(segmentId)
+              .build();
       root.getRepairSegments().put(segmentId, segment);
     }
 
@@ -233,9 +238,10 @@ public class RealWorldMigrationTest {
     // Write to EclipseStore WITH TRANSIENT_FIELD_EVALUATOR
     // This simulates how production Reaper 4.0 would have written data
     System.out.println("  Writing to EclipseStore with TRANSIENT_FIELD_EVALUATOR...");
-    EmbeddedStorageManager storage = EmbeddedStorage.Foundation(tempStorageDir.toPath())
-        .onConnectionFoundation(c -> c.setFieldEvaluatorPersistable(TRANSIENT_FIELD_EVALUATOR))
-        .start();
+    EmbeddedStorageManager storage =
+        EmbeddedStorage.Foundation(tempStorageDir.toPath())
+            .onConnectionFoundation(c -> c.setFieldEvaluatorPersistable(TRANSIENT_FIELD_EVALUATOR))
+            .start();
     storage.setRoot(root);
     storage.storeRoot();
     storage.shutdown();
@@ -257,7 +263,7 @@ public class RealWorldMigrationTest {
       assertThat(rs.next()).isTrue();
       assertThat(rs.getString("name")).isEqualTo("test-cluster");
       assertThat(rs.getString("state")).isEqualTo("ACTIVE");
-      
+
       // CRITICAL: Check for MIGRATION_PLACEHOLDER
       String seedHostsJson = rs.getString("seed_hosts");
       System.out.println("    Seed hosts JSON: " + seedHostsJson);
@@ -327,7 +333,9 @@ public class RealWorldMigrationTest {
     assertThat(backupFiles).isNotNull();
     for (File file : backupFiles) {
       if (file.isFile()) {
-        Files.copy(file.toPath(), new File(tempStorageDir, file.getName()).toPath(),
+        Files.copy(
+            file.toPath(),
+            new File(tempStorageDir, file.getName()).toPath(),
             java.nio.file.StandardCopyOption.REPLACE_EXISTING);
       } else if (file.isDirectory()) {
         copyDirectory(file, new File(tempStorageDir, file.getName()));
@@ -350,8 +358,8 @@ public class RealWorldMigrationTest {
         if (file.isDirectory()) {
           copyDirectory(file, newFile);
         } else {
-          Files.copy(file.toPath(), newFile.toPath(),
-              java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+          Files.copy(
+              file.toPath(), newFile.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
         }
       }
     }
@@ -361,14 +369,14 @@ public class RealWorldMigrationTest {
     if (Files.exists(path)) {
       Files.walk(path)
           .sorted(Comparator.reverseOrder())
-          .forEach(p -> {
-            try {
-              Files.delete(p);
-            } catch (IOException e) {
-              // Ignore cleanup errors
-            }
-          });
+          .forEach(
+              p -> {
+                try {
+                  Files.delete(p);
+                } catch (IOException e) {
+                  // Ignore cleanup errors
+                }
+              });
     }
   }
 }
-
