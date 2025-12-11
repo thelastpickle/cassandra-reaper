@@ -165,7 +165,7 @@ public final class EclipseStoreToSqliteMigration {
 
     LOG.info("Migrating {} clusters...", clusters.size());
     String sql =
-        "INSERT INTO cluster (name, partitioner, seed_hosts, properties, state, "
+        "INSERT OR REPLACE INTO cluster (name, partitioner, seed_hosts, properties, state, "
             + "last_contact, namespace, jmx_username, jmx_password) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
     try (PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -208,7 +208,7 @@ public final class EclipseStoreToSqliteMigration {
 
     LOG.info("Migrating {} repair units...", units.size());
     String sql =
-        "INSERT INTO repair_unit (id, cluster_name, keyspace_name, column_families, "
+        "INSERT OR REPLACE INTO repair_unit (id, cluster_name, keyspace_name, column_families, "
             + "incremental_repair, subrange_incremental, nodes, datacenters, blacklisted_tables, "
             + "repair_thread_count, timeout) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
@@ -240,7 +240,7 @@ public final class EclipseStoreToSqliteMigration {
 
     LOG.info("Migrating {} repair schedules...", schedules.size());
     String sql =
-        "INSERT INTO repair_schedule (id, repair_unit_id, owner, state, days_between, "
+        "INSERT OR REPLACE INTO repair_schedule (id, repair_unit_id, owner, state, days_between, "
             + "next_activation, creation_time, pause_time, intensity, segment_count, "
             + "segment_count_per_node, repair_parallelism, adaptive, percent_unrepaired_threshold, "
             + "run_history, last_run) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
@@ -282,7 +282,7 @@ public final class EclipseStoreToSqliteMigration {
 
     LOG.info("Migrating {} repair runs...", runs.size());
     String sql =
-        "INSERT INTO repair_run (id, cluster_name, repair_unit_id, cause, owner, state, "
+        "INSERT OR REPLACE INTO repair_run (id, cluster_name, repair_unit_id, cause, owner, state, "
             + "creation_time, start_time, end_time, pause_time, intensity, last_event, "
             + "segment_count, repair_parallelism, tables, adaptive_schedule) "
             + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
@@ -320,7 +320,7 @@ public final class EclipseStoreToSqliteMigration {
 
     LOG.info("Migrating {} repair segments (this may take a while)...", segments.size());
     String sql =
-        "INSERT INTO repair_segment (id, run_id, repair_unit_id, start_token, end_token, "
+        "INSERT OR REPLACE INTO repair_segment (id, run_id, repair_unit_id, start_token, end_token, "
             + "token_ranges, state, coordinator_host, start_time, end_time, fail_count, replicas, "
             + "host_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
@@ -361,22 +361,27 @@ public final class EclipseStoreToSqliteMigration {
 
     LOG.info("Migrating {} diagnostic event subscriptions...", subscriptions.size());
     String sql =
-        "INSERT INTO diag_event_subscription (id, cluster, description, nodes, events, "
+        "INSERT OR REPLACE INTO diag_event_subscription (id, cluster, description, nodes, events, "
             + "export_sse, export_file_logger, export_http_endpoint) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
 
     try (PreparedStatement stmt = conn.prepareStatement(sql)) {
       for (DiagEventSubscription sub : subscriptions) {
-        if (sub.getId().isPresent()) {
-          stmt.setBytes(1, UuidUtil.toBytes(sub.getId().get()));
-          stmt.setString(2, sub.getCluster());
-          stmt.setString(3, sub.getDescription());
-          stmt.setString(4, toJson(sub.getNodes()));
-          stmt.setString(5, toJson(sub.getEvents()));
-          stmt.setInt(6, sub.getExportSse() ? 1 : 0);
-          stmt.setString(7, sub.getExportFileLogger());
-          stmt.setString(8, sub.getExportHttpEndpoint());
-          stmt.executeUpdate();
+        if (!sub.getId().isPresent()) {
+          LOG.warn(
+              "Skipping diagnostic event subscription without ID: cluster={}, description={}",
+              sub.getCluster(),
+              sub.getDescription());
+          continue;
         }
+        stmt.setBytes(1, UuidUtil.toBytes(sub.getId().get()));
+        stmt.setString(2, sub.getCluster());
+        stmt.setString(3, sub.getDescription());
+        stmt.setString(4, toJson(sub.getNodes()));
+        stmt.setString(5, toJson(sub.getEvents()));
+        stmt.setInt(6, sub.getExportSse() ? 1 : 0);
+        stmt.setString(7, sub.getExportFileLogger());
+        stmt.setString(8, sub.getExportHttpEndpoint());
+        stmt.executeUpdate();
       }
     }
     LOG.info("Migrated {} diagnostic event subscriptions", subscriptions.size());
@@ -534,8 +539,8 @@ public final class EclipseStoreToSqliteMigration {
     try {
       return OBJECT_MAPPER.writeValueAsString(obj);
     } catch (JsonProcessingException e) {
-      LOG.warn("Failed to serialize object to JSON: {}", obj, e);
-      return obj.toString();
+      LOG.error("CRITICAL: Cannot serialize object to JSON: {}", obj.getClass().getName(), e);
+      throw new RuntimeException("JSON serialization failed for: " + obj.getClass().getName(), e);
     }
   }
 }
