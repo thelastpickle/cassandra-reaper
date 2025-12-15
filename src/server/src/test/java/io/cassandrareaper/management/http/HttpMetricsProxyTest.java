@@ -287,6 +287,9 @@ public class HttpMetricsProxyTest {
             + "rack=\"default\",pod_name=\"test-dc1-default-sts-0\",node_name=\"mc-0-worker3\",le=\"3379391\",} 0.0\n";
 
     OkHttpClient httpClient = Mockito.mock(OkHttpClient.class);
+    OkHttpClient.Builder clientBuilder = Mockito.mock(OkHttpClient.Builder.class);
+    when(clientBuilder.build()).thenReturn(httpClient);
+
     Call call = Mockito.mock(Call.class);
     Response response = Mockito.mock(Response.class);
 
@@ -302,6 +305,7 @@ public class HttpMetricsProxyTest {
         Mockito.mock(HttpCassandraManagementProxy.class);
     when(httpManagementProxy.getMetricsPort()).thenReturn(9000);
     when(httpManagementProxy.getHost()).thenReturn("172.18.0.3");
+    when(httpManagementProxy.getMetricsClientBuilder()).thenReturn(clientBuilder);
 
     Node node =
         Node.builder()
@@ -310,8 +314,7 @@ public class HttpMetricsProxyTest {
                 Cluster.builder().withName("test").withSeedHosts(Sets.newSet("127.0.0.1")).build())
             .build();
 
-    HttpMetricsProxy httpMetricsProxy =
-        HttpMetricsProxy.create(httpManagementProxy, node, () -> httpClient);
+    HttpMetricsProxy httpMetricsProxy = HttpMetricsProxy.create(httpManagementProxy, node);
     List<GenericMetric> tpStats = httpMetricsProxy.collectTpStats();
     assertEquals(5, tpStats.size());
     assertEquals("org.apache.cassandra.metrics", tpStats.get(0).getMetricDomain());
@@ -354,6 +357,9 @@ public class HttpMetricsProxyTest {
             + "le=\"3379391\",} 0.0\n";
 
     OkHttpClient httpClient = Mockito.mock(OkHttpClient.class);
+    OkHttpClient.Builder clientBuilder = Mockito.mock(OkHttpClient.Builder.class);
+    when(clientBuilder.build()).thenReturn(httpClient);
+
     Call call = Mockito.mock(Call.class);
     Response response = Mockito.mock(Response.class);
 
@@ -369,6 +375,7 @@ public class HttpMetricsProxyTest {
         Mockito.mock(HttpCassandraManagementProxy.class);
     when(httpManagementProxy.getHost()).thenReturn("172.18.0.3");
     when(httpManagementProxy.getMetricsPort()).thenReturn(9000);
+    when(httpManagementProxy.getMetricsClientBuilder()).thenReturn(clientBuilder);
 
     Node node =
         Node.builder()
@@ -377,8 +384,7 @@ public class HttpMetricsProxyTest {
                 Cluster.builder().withName("test").withSeedHosts(Sets.newSet("127.0.0.1")).build())
             .build();
 
-    HttpMetricsProxy httpMetricsProxy =
-        HttpMetricsProxy.create(httpManagementProxy, node, () -> httpClient);
+    HttpMetricsProxy httpMetricsProxy = HttpMetricsProxy.create(httpManagementProxy, node);
 
     List<GenericMetric> pendingTasks = httpMetricsProxy.collectTpPendingTasks();
     assertEquals(1, pendingTasks.size()); // there's only 1 that is a CompactionExecutor metric

@@ -66,6 +66,7 @@ import com.datastax.mgmtapi.client.model.TokenRangeToEndpoints;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Maps;
 import jakarta.validation.constraints.NotNull;
+import okhttp3.OkHttpClient;
 import org.apache.cassandra.repair.RepairParallelism;
 import org.apache.cassandra.utils.progress.ProgressEventType;
 import org.slf4j.Logger;
@@ -83,6 +84,7 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
   final int metricsPort;
   final Node node;
   final HttpMetricsProxy metricsProxy;
+  OkHttpClient.Builder metricsClientBuilder;
 
   final ConcurrentMap<Integer, RepairStatusHandler> repairStatusHandlers = Maps.newConcurrentMap();
   final ConcurrentMap<String, JobStatusTracker> jobTracker = Maps.newConcurrentMap();
@@ -97,7 +99,8 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
       ScheduledExecutorService executor,
       DefaultApi apiClient,
       int metricsPort,
-      Node node) {
+      Node node,
+      OkHttpClient.Builder metricsClientBuilder) {
     this.host = endpoint.getHostString();
     this.metricRegistry = metricRegistry;
     this.rootPath = rootPath;
@@ -106,6 +109,7 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
     this.metricsPort = metricsPort;
     this.statusTracker = executor;
     this.node = node;
+    this.metricsClientBuilder = metricsClientBuilder;
     this.metricsProxy = HttpMetricsProxy.create(this, node);
 
     // TODO Perhaps the poll interval should be configurable through context.config ?
@@ -142,6 +146,10 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
 
   public int getMetricsPort() {
     return metricsPort;
+  }
+
+  public OkHttpClient.Builder getMetricsClientBuilder() {
+    return metricsClientBuilder;
   }
 
   @Override
