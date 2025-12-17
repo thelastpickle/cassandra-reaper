@@ -165,6 +165,12 @@ public final class RepairRunResource {
       Cluster cluster =
           context.storage.getClusterDao().getCluster(Cluster.toSymbolicName(clusterName.get()));
 
+      if (cluster == null) {
+        return Response.status(Response.Status.NOT_FOUND)
+            .entity("Cluster \"" + clusterName.get() + "\" not found")
+            .build();
+      }
+
       if (!datacentersStr.orElse("").isEmpty() && !nodesStr.orElse("").isEmpty()) {
         return Response.status(Response.Status.BAD_REQUEST)
             .entity("Parameters \"datacenters\" and \"nodes\" are mutually exclusive.")
@@ -380,6 +386,12 @@ public final class RepairRunResource {
 
       final Cluster cluster =
           context.storage.getClusterDao().getCluster(Cluster.toSymbolicName(clusterName.get()));
+
+      if (cluster == null) {
+        return Response.status(Response.Status.NOT_FOUND)
+            .entity("Cluster \"" + clusterName.get() + "\" not found")
+            .build();
+      }
 
       Set<String> tableNames;
       try {
@@ -837,10 +849,18 @@ public final class RepairRunResource {
         return Response.status(Response.Status.BAD_REQUEST).build();
       }
 
-      Collection<Cluster> clusters =
-          cluster.isPresent() && !cluster.get().equals("all")
-              ? Collections.singleton(context.storage.getClusterDao().getCluster(cluster.get()))
-              : context.storage.getClusterDao().getClusters();
+      Collection<Cluster> clusters;
+      if (cluster.isPresent() && !cluster.get().equals("all")) {
+        Cluster foundCluster = context.storage.getClusterDao().getCluster(cluster.get());
+        if (foundCluster == null) {
+          return Response.status(Response.Status.NOT_FOUND)
+              .entity("Cluster \"" + cluster.get() + "\" not found")
+              .build();
+        }
+        clusters = Collections.singleton(foundCluster);
+      } else {
+        clusters = context.storage.getClusterDao().getClusters();
+      }
 
       List<RepairRun> repairRuns = Lists.newArrayList();
       clusters.forEach(
