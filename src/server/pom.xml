@@ -29,7 +29,7 @@
     <packaging>jar</packaging>
 
     <properties>
-        <dropwizard.version>4.0.15</dropwizard.version>
+        <dropwizard.version>5.0.0</dropwizard.version>
         <jersey.version>3.1.10</jersey.version>
         <logback.version>1.5.19</logback.version>
         <cxf.version>3.4.5</cxf.version>
