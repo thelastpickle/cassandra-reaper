@@ -118,6 +118,7 @@ RUN addgroup -g 1001 -S reaper && adduser -G reaper -S -u 1001 reaper && \
         /usr/local/bin/configure-metrics.sh \
         /usr/local/bin/configure-jmx-credentials.sh \
         /usr/local/bin/configure-authentication.sh \
+        /usr/local/bin/configure-server.sh \
         ${REAPER_TMP_DIRECTORY} && \
     chown -R reaper:reaper \
         /var/lib/cassandra-reaper \
@@ -129,7 +130,8 @@ RUN addgroup -g 1001 -S reaper && adduser -G reaper -S -u 1001 reaper && \
         /usr/local/bin/configure-persistence.sh \
         /usr/local/bin/configure-metrics.sh \
         /usr/local/bin/configure-jmx-credentials.sh \
-        /usr/local/bin/configure-authentication.sh
+        /usr/local/bin/configure-authentication.sh \
+        /usr/local/bin/configure-server.sh
 
 VOLUME /var/lib/cassandra-reaper
 VOLUME /etc/cassandra-reaper/shiro
