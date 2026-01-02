@@ -101,6 +101,7 @@ ADD src/server/src/main/docker/configure-persistence.sh /usr/local/bin/configure
 ADD src/server/src/main/docker/configure-metrics.sh /usr/local/bin/configure-metrics.sh
 ADD src/server/src/main/docker/configure-jmx-credentials.sh /usr/local/bin/configure-jmx-credentials.sh
 ADD src/server/src/main/docker/configure-authentication.sh /usr/local/bin/configure-authentication.sh
+ADD src/server/src/main/docker/configure-server.sh /usr/local/bin/configure-server.sh
 ADD ${SHADED_JAR} /usr/local/lib/cassandra-reaper.jar
 
 
