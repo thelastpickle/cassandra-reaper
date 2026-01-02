@@ -66,19 +66,6 @@ logging:
       logFormat: ${REAPER_LOGGING_APPENDERS_CONSOLE_LOG_FORMAT}
       threshold: ${REAPER_LOGGING_APPENDERS_CONSOLE_THRESHOLD}
 
-server:
-  type: default
-  applicationConnectors:
-    - type: http
-      port: ${REAPER_SERVER_APP_PORT}
-      bindHost: ${REAPER_SERVER_APP_BIND_HOST}
-  adminConnectors:
-    - type: http
-      port: ${REAPER_SERVER_ADMIN_PORT}
-      bindHost: ${REAPER_SERVER_ADMIN_BIND_HOST}
-  requestLog:
-    appenders: []
-
 httpManagement:
   enabled: ${REAPER_HTTP_MANAGEMENT_ENABLE}
   mgmtApiMetricsPort: ${REAPER_MGMT_API_METRICS_PORT}
