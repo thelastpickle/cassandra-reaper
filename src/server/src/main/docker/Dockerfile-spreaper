@@ -92,6 +92,7 @@ RUN apk add --update \
     python3 \
     py3-pip \
     bash \
+    curl \
     py3-requests \
   && rm -rf /var/cache/apk/*
 
