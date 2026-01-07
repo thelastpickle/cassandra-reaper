@@ -92,6 +92,7 @@ RUN apk add --update \
     python3 \
     py3-pip \
     bash \
+    curl \
     py3-requests \
   && rm -rf /var/cache/apk/*
 
@@ -101,6 +102,7 @@ ADD src/server/src/main/docker/entrypoint.sh /usr/local/bin/entrypoint.sh
 ADD src/server/src/main/docker/configure-persistence.sh /usr/local/bin/configure-persistence.sh
 ADD src/server/src/main/docker/configure-metrics.sh /usr/local/bin/configure-metrics.sh
 ADD src/server/src/main/docker/configure-jmx-credentials.sh /usr/local/bin/configure-jmx-credentials.sh
+ADD src/server/src/main/docker/configure-server.sh /usr/local/bin/configure-server.sh
 ADD ${SHADED_JAR} /usr/local/lib/cassandra-reaper.jar
 ADD src/packaging/bin/spreaper /usr/local/bin/spreaper
 
@@ -118,6 +120,7 @@ RUN addgroup -g 1001 -S reaper && adduser -G reaper -S -u 1001 reaper && \
         /usr/local/bin/configure-persistence.sh \
         /usr/local/bin/configure-metrics.sh \
         /usr/local/bin/configure-jmx-credentials.sh \
+        /usr/local/bin/configure-server.sh \
         /usr/local/bin/spreaper \
         ${REAPER_TMP_DIRECTORY} && \
     chown -R reaper:reaper \
@@ -130,6 +133,7 @@ RUN addgroup -g 1001 -S reaper && adduser -G reaper -S -u 1001 reaper && \
         /usr/local/bin/configure-persistence.sh \
         /usr/local/bin/configure-metrics.sh \
         /usr/local/bin/configure-jmx-credentials.sh \
+        /usr/local/bin/configure-server.sh \
         /usr/local/bin/spreaper
 
 VOLUME /var/lib/cassandra-reaper

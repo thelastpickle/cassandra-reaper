@@ -43,6 +43,7 @@ if [ "$1" = 'cassandra-reaper' ]; then
     /usr/local/bin/configure-persistence.sh
     /usr/local/bin/configure-metrics.sh
     /usr/local/bin/configure-jmx-credentials.sh
+    /usr/local/bin/configure-server.sh
     exec java \
             ${JAVA_OPTS} \
             -Xms${REAPER_HEAP_SIZE} \
