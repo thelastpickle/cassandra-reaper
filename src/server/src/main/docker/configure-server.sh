@@ -44,15 +44,9 @@ server:
       needClientAuth: ${REAPER_SERVER_TLS_CLIENT_AUTH}
       disableSniHostCheck: ${REAPER_SERVER_TLS_DISABLE_SNI}
   adminConnectors:
-    - type: https
+    - type: http
       port: ${REAPER_SERVER_ADMIN_PORT}
       bindHost: ${REAPER_SERVER_ADMIN_BIND_HOST}
-      keyStorePath: ${REAPER_SERVER_TLS_KEYSTORE_PATH}
-      keyStorePassword: changeit
-      trustStorePath: ${REAPER_SERVER_TLS_TRUSTSTORE_PATH}
-      trustStorePassword: changeit
-      needClientAuth: ${REAPER_SERVER_TLS_CLIENT_AUTH}
-      disableSniHostCheck: ${REAPER_SERVER_TLS_DISABLE_SNI}
   requestLog:
     appenders: []
 EOT
