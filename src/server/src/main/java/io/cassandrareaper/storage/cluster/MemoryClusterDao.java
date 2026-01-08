@@ -19,7 +19,6 @@ package io.cassandrareaper.storage.cluster;
 
 import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.storage.MemoryStorageFacade;
-import io.cassandrareaper.storage.events.MemoryEventsDao;
 import io.cassandrareaper.storage.repairrun.MemoryRepairRunDao;
 import io.cassandrareaper.storage.repairschedule.MemoryRepairScheduleDao;
 import io.cassandrareaper.storage.repairunit.MemoryRepairUnitDao;
@@ -38,17 +37,13 @@ public class MemoryClusterDao implements IClusterDao {
   private final MemoryRepairScheduleDao memRepairScheduleDao;
   private final MemoryStorageFacade storage;
 
-  private final MemoryEventsDao memEventsDao;
-
   public MemoryClusterDao(
       MemoryStorageFacade storage,
       MemoryRepairUnitDao memoryRepairUnitDao,
       MemoryRepairRunDao memoryRepairRunDao,
-      MemoryRepairScheduleDao memRepairScheduleDao,
-      MemoryEventsDao memEventsDao) {
+      MemoryRepairScheduleDao memRepairScheduleDao) {
     this.memoryRepairRunDao = memoryRepairRunDao;
     this.memRepairScheduleDao = memRepairScheduleDao;
-    this.memEventsDao = memEventsDao;
     this.storage = storage;
   }
 
@@ -114,10 +109,6 @@ public class MemoryClusterDao implements IClusterDao {
     memoryRepairRunDao
         .getRepairRunIdsForCluster(clusterName, Optional.empty())
         .forEach(runId -> memoryRepairRunDao.deleteRepairRun(runId));
-
-    memEventsDao.getEventSubscriptions(clusterName).stream()
-        .filter(subscription -> subscription.getId().isPresent())
-        .forEach(subscription -> memEventsDao.deleteEventSubscription(subscription.getId().get()));
 
     storage.getRepairUnits().stream()
         .filter((unit) -> unit.getClusterName().equals(clusterName))

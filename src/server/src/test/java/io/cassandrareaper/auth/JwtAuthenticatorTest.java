@@ -1,6 +1,5 @@
 /*
- * Copyright 2014-2017 Spotify AB
- * Copyright 2016-2019 The Last Pickle Ltd
+ * Copyright 2025-2025 DataStax, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,11 +16,11 @@
 
 package io.cassandrareaper.auth;
 
-import java.util.Collections;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.Date;
 import java.util.Optional;
 import java.util.Set;
-
-import javax.crypto.SecretKey;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
@@ -36,114 +35,184 @@ import org.mockito.MockitoAnnotations;
 
 public class JwtAuthenticatorTest {
 
-  private static final String JWT_SECRET =
-      "MySecretKeyForJWTWhichMustBeLongEnoughForHS256Algorithm";
+  private static final String JWT_SECRET = "test-secret-key-that-is-long-enough-for-hmac-256";
+  private static final String USERNAME = "testuser";
 
-  @Mock private UserStore mockUserStore;
-  private JwtAuthenticator jwtAuthenticator;
-  private SecretKey jwtKey;
+  @Mock private UserStore userStore;
+
+  private JwtAuthenticator authenticator;
 
   @Before
   public void setUp() {
     MockitoAnnotations.initMocks(this);
-    jwtKey = Keys.hmacShaKeyFor(JWT_SECRET.getBytes());
-    jwtAuthenticator = new JwtAuthenticator(JWT_SECRET, mockUserStore);
+    authenticator = new JwtAuthenticator(JWT_SECRET, userStore);
   }
 
   @Test
-  public void testAuthenticateValidToken() throws AuthenticationException {
+  public void testAuthenticate_validToken() throws AuthenticationException {
     // Given
-    String username = "test-user";
-    Set<String> roles = Collections.singleton("user");
-
-    String token =
-        Jwts.builder().subject(username).claim("roles", roles).signWith(jwtKey).compact();
+    String validToken = createValidToken();
+    User user = new User(USERNAME, Set.of("user"));
+    when(userStore.getUser(USERNAME)).thenReturn(Optional.of(user));
 
     // When
-    when(mockUserStore.getUser(username)).thenReturn(Optional.of(new User(username, roles)));
-    Optional<User> result = jwtAuthenticator.authenticate(token);
+    Optional<User> result = authenticator.authenticate(validToken);
 
     // Then
     assertThat(result).isPresent();
-    assertThat(result.get().getName()).isEqualTo(username);
-    assertThat(result.get().hasRole("user")).isTrue();
+    assertThat(result.get().getName()).isEqualTo(USERNAME);
+    assertThat(result.get().getRoles()).containsExactly("user");
   }
 
   @Test
-  public void testAuthenticateTokenWithMultipleRoles() throws AuthenticationException {
-    // Given
-    String username = "admin-user";
-    Set<String> roles = Set.of("user", "operator");
-
-    String token =
-        Jwts.builder().subject(username).claim("roles", roles).signWith(jwtKey).compact();
-
-    // When
-    when(mockUserStore.getUser(username)).thenReturn(Optional.of(new User(username, roles)));
-    Optional<User> result = jwtAuthenticator.authenticate(token);
+  public void testAuthenticate_nullToken() throws AuthenticationException {
+    // Given/When
+    Optional<User> result = authenticator.authenticate(null);
 
     // Then
-    assertThat(result).isPresent();
-    assertThat(result.get().getName()).isEqualTo(username);
-    assertThat(result.get().hasRole("user")).isTrue();
-    assertThat(result.get().hasRole("operator")).isTrue();
+    assertThat(result).isEmpty();
   }
 
   @Test
-  public void testAuthenticateTokenWithoutRoles() throws AuthenticationException {
-    // Given
-    String username = "test-user";
-
-    String token = Jwts.builder().subject(username).signWith(jwtKey).compact();
-
-    // When
-    when(mockUserStore.getUser(username))
-        .thenReturn(Optional.of(new User(username, Collections.emptySet())));
-    Optional<User> result = jwtAuthenticator.authenticate(token);
+  public void testAuthenticate_emptyToken() throws AuthenticationException {
+    // Given/When
+    Optional<User> result = authenticator.authenticate("");
 
     // Then
-    assertThat(result).isPresent();
-    assertThat(result.get().getName()).isEqualTo(username);
-    assertThat(result.get().getRoles()).isEmpty();
+    assertThat(result).isEmpty();
   }
 
   @Test
-  public void testAuthenticateInvalidToken() throws AuthenticationException {
+  public void testAuthenticate_whitespaceToken() throws AuthenticationException {
+    // Given/When
+    Optional<User> result = authenticator.authenticate("   ");
+
+    // Then
+    assertThat(result).isEmpty();
+  }
+
+  @Test
+  public void testAuthenticate_invalidToken() throws AuthenticationException {
     // Given
     String invalidToken = "invalid.jwt.token";
 
     // When
-    Optional<User> result = jwtAuthenticator.authenticate(invalidToken);
+    Optional<User> result = authenticator.authenticate(invalidToken);
 
     // Then
     assertThat(result).isEmpty();
   }
 
   @Test
-  public void testAuthenticateTokenWithoutSubject() throws AuthenticationException {
+  public void testAuthenticate_expiredToken() throws AuthenticationException {
     // Given
-    String token = Jwts.builder().claim("someOtherClaim", "value").signWith(jwtKey).compact();
+    String expiredToken = createExpiredToken();
 
     // When
-    Optional<User> result = jwtAuthenticator.authenticate(token);
+    Optional<User> result = authenticator.authenticate(expiredToken);
 
     // Then
     assertThat(result).isEmpty();
   }
 
   @Test
-  public void testAuthenticateWrongSignature() throws AuthenticationException {
+  public void testAuthenticate_tokenWithoutSubject() throws AuthenticationException {
     // Given
-    String username = "test-user";
-    SecretKey wrongKey =
-        Keys.hmacShaKeyFor("WrongSecretKeyForJWTWhichMustBeLongEnoughForHS256Algorithm".getBytes());
-
-    String token = Jwts.builder().subject(username).signWith(wrongKey).compact();
+    String tokenWithoutSubject = createTokenWithoutSubject();
 
     // When
-    Optional<User> result = jwtAuthenticator.authenticate(token);
+    Optional<User> result = authenticator.authenticate(tokenWithoutSubject);
 
     // Then
     assertThat(result).isEmpty();
+  }
+
+  @Test
+  public void testAuthenticate_userNotFoundInStore() throws AuthenticationException {
+    // Given
+    String validToken = createValidToken();
+    when(userStore.getUser(USERNAME)).thenReturn(Optional.empty());
+
+    // When
+    Optional<User> result = authenticator.authenticate(validToken);
+
+    // Then
+    assertThat(result).isEmpty();
+  }
+
+  @Test
+  public void testAuthenticate_multipleRoles() throws AuthenticationException {
+    // Given
+    String validToken = createValidToken();
+    Set<String> roles = Set.of("user", "admin", "operator");
+    User user = new User(USERNAME, roles);
+    when(userStore.getUser(USERNAME)).thenReturn(Optional.of(user));
+
+    // When
+    Optional<User> result = authenticator.authenticate(validToken);
+
+    // Then
+    assertThat(result).isPresent();
+    assertThat(result.get().getRoles()).containsExactlyInAnyOrderElementsOf(roles);
+  }
+
+  @Test
+  public void testAuthenticate_malformedToken() throws AuthenticationException {
+    // Given
+    String malformedToken = "not-a-jwt-token-at-all";
+
+    // When
+    Optional<User> result = authenticator.authenticate(malformedToken);
+
+    // Then
+    assertThat(result).isEmpty();
+  }
+
+  @Test
+  public void testAuthenticate_tokenWithWrongSignature() throws AuthenticationException {
+    // Given
+    String tokenWithWrongSignature = createTokenWithWrongSignature();
+
+    // When
+    Optional<User> result = authenticator.authenticate(tokenWithWrongSignature);
+
+    // Then
+    assertThat(result).isEmpty();
+  }
+
+  private String createValidToken() {
+    return Jwts.builder()
+        .setSubject(USERNAME)
+        .setIssuedAt(new Date())
+        .setExpiration(Date.from(Instant.now().plus(1, ChronoUnit.HOURS)))
+        .signWith(Keys.hmacShaKeyFor(JWT_SECRET.getBytes()))
+        .compact();
+  }
+
+  private String createExpiredToken() {
+    return Jwts.builder()
+        .setSubject(USERNAME)
+        .setIssuedAt(Date.from(Instant.now().minus(2, ChronoUnit.HOURS)))
+        .setExpiration(Date.from(Instant.now().minus(1, ChronoUnit.HOURS)))
+        .signWith(Keys.hmacShaKeyFor(JWT_SECRET.getBytes()))
+        .compact();
+  }
+
+  private String createTokenWithoutSubject() {
+    return Jwts.builder()
+        .setIssuedAt(new Date())
+        .setExpiration(Date.from(Instant.now().plus(1, ChronoUnit.HOURS)))
+        .signWith(Keys.hmacShaKeyFor(JWT_SECRET.getBytes()))
+        .compact();
+  }
+
+  private String createTokenWithWrongSignature() {
+    String wrongSecret = "wrong-secret-key-that-is-long-enough-for-hmac-256";
+    return Jwts.builder()
+        .setSubject(USERNAME)
+        .setIssuedAt(new Date())
+        .setExpiration(Date.from(Instant.now().plus(1, ChronoUnit.HOURS)))
+        .signWith(Keys.hmacShaKeyFor(wrongSecret.getBytes()))
+        .compact();
   }
 }

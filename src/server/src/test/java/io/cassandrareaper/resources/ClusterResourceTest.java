@@ -77,10 +77,7 @@ public final class ClusterResourceTest {
 
     ClusterResource clusterResource =
         ClusterResource.create(
-            mocks.context,
-            mocks.cryptograph,
-            mocks.context.storage.getEventsDao(),
-            mocks.context.storage.getRepairRunDao());
+            mocks.context, mocks.cryptograph, mocks.context.storage.getRepairRunDao());
 
     Response response =
         clusterResource.addOrUpdateCluster(
@@ -128,10 +125,7 @@ public final class ClusterResourceTest {
 
     ClusterResource clusterResource =
         ClusterResource.create(
-            mocks.context,
-            mocks.cryptograph,
-            mocks.context.storage.getEventsDao(),
-            mocks.context.storage.getRepairRunDao());
+            mocks.context, mocks.cryptograph, mocks.context.storage.getRepairRunDao());
 
     Response response =
         clusterResource.addOrUpdateCluster(
@@ -177,10 +171,7 @@ public final class ClusterResourceTest {
 
     ClusterResource clusterResource =
         ClusterResource.create(
-            mocks.context,
-            mocks.cryptograph,
-            mocks.context.storage.getEventsDao(),
-            mocks.context.storage.getRepairRunDao());
+            mocks.context, mocks.cryptograph, mocks.context.storage.getRepairRunDao());
 
     Response response =
         clusterResource.addOrUpdateCluster(
@@ -220,7 +211,6 @@ public final class ClusterResourceTest {
             mocks.context,
             new NoopCrypotograph(),
             () -> clusterFacade,
-            mocks.context.storage.getEventsDao(),
             mocks.context.storage.getRepairRunDao());
 
     Response response =
@@ -244,7 +234,6 @@ public final class ClusterResourceTest {
             mocks.context,
             new NoopCrypotograph(),
             () -> mocks.clusterFacade,
-            mocks.context.storage.getEventsDao(),
             mocks.context.storage.getRepairRunDao());
     Response response = clusterResource.getCluster(I_DONT_EXIST, Optional.<Integer>empty());
     Assertions.assertThat(response.getStatus()).isEqualTo(HttpStatus.NOT_FOUND_404);
@@ -270,7 +259,6 @@ public final class ClusterResourceTest {
             mocks.context,
             new NoopCrypotograph(),
             () -> mocks.clusterFacade,
-            mocks.context.storage.getEventsDao(),
             mocks.context.storage.getRepairRunDao());
     Response response = clusterResource.getCluster(I_DO_EXIST, Optional.<Integer>empty());
     Assertions.assertThat(response.getStatus()).isEqualTo(HttpStatus.OK_200);
@@ -294,7 +282,6 @@ public final class ClusterResourceTest {
             mocks.context,
             new NoopCrypotograph(),
             () -> mocks.clusterFacade,
-            mocks.context.storage.getEventsDao(),
             mocks.context.storage.getRepairRunDao());
     Response response = clusterResource.getClusterList(Optional.empty());
     Assertions.assertThat(response.getStatus()).isEqualTo(HttpStatus.OK_200);
@@ -321,7 +308,6 @@ public final class ClusterResourceTest {
             mocks.context,
             new NoopCrypotograph(),
             () -> mocks.clusterFacade,
-            mocks.context.storage.getEventsDao(),
             mocks.context.storage.getRepairRunDao());
     Response response = clusterResource.getClusterList(Optional.of(SEED_HOST));
     Assertions.assertThat(response.getStatus()).isEqualTo(HttpStatus.OK_200);
@@ -357,7 +343,6 @@ public final class ClusterResourceTest {
             mocks.context,
             new NoopCrypotograph(),
             () -> mocks.clusterFacade,
-            mocks.context.storage.getEventsDao(),
             mocks.context.storage.getRepairRunDao());
     Response response = clusterResource.getClusterList(Optional.of(SEED_HOST));
     Assertions.assertThat(response.getStatus()).isEqualTo(HttpStatus.OK_200);
@@ -393,7 +378,6 @@ public final class ClusterResourceTest {
             mocks.context,
             new NoopCrypotograph(),
             () -> mocks.clusterFacade,
-            mocks.context.storage.getEventsDao(),
             mocks.context.storage.getRepairRunDao());
     Response response = clusterResource.getClusterList(Optional.of("host2"));
     Assertions.assertThat(response.getStatus()).isEqualTo(HttpStatus.OK_200);
@@ -429,7 +413,6 @@ public final class ClusterResourceTest {
             mocks.context,
             new NoopCrypotograph(),
             () -> mocks.clusterFacade,
-            mocks.context.storage.getEventsDao(),
             mocks.context.storage.getRepairRunDao());
     Response response = clusterResource.getClusterList(Optional.empty());
     Assertions.assertThat(response.getStatus()).isEqualTo(HttpStatus.OK_200);
@@ -465,7 +448,6 @@ public final class ClusterResourceTest {
             mocks.context,
             new NoopCrypotograph(),
             () -> mocks.clusterFacade,
-            mocks.context.storage.getEventsDao(),
             mocks.context.storage.getRepairRunDao());
     Response response = clusterResource.getClusterList(Optional.empty());
     Assertions.assertThat(response.getStatus()).isEqualTo(HttpStatus.OK_200);
@@ -501,7 +483,6 @@ public final class ClusterResourceTest {
             mocks.context,
             new NoopCrypotograph(),
             () -> mocks.clusterFacade,
-            mocks.context.storage.getEventsDao(),
             mocks.context.storage.getRepairRunDao());
     Response response = clusterResource.getClusterList(Optional.empty());
     Assertions.assertThat(response.getStatus()).isEqualTo(HttpStatus.OK_200);
@@ -549,10 +530,7 @@ public final class ClusterResourceTest {
 
     ClusterResource clusterResource =
         ClusterResource.create(
-            mocks.context,
-            mocks.cryptograph,
-            mocks.context.storage.getEventsDao(),
-            mocks.context.storage.getRepairRunDao());
+            mocks.context, mocks.cryptograph, mocks.context.storage.getRepairRunDao());
 
     clusterResource.addOrUpdateCluster(
         mocks.uriInfo,
@@ -600,10 +578,7 @@ public final class ClusterResourceTest {
 
     ClusterResource clusterResource =
         ClusterResource.create(
-            mocks.context,
-            mocks.cryptograph,
-            mocks.context.storage.getEventsDao(),
-            mocks.context.storage.getRepairRunDao());
+            mocks.context, mocks.cryptograph, mocks.context.storage.getRepairRunDao());
     ;
     clusterResource.addOrUpdateCluster(
         mocks.uriInfo,
@@ -668,10 +643,7 @@ public final class ClusterResourceTest {
 
     ClusterResource clusterResource =
         ClusterResource.create(
-            mocks.context,
-            mocks.cryptograph,
-            mocks.context.storage.getEventsDao(),
-            mocks.context.storage.getRepairRunDao());
+            mocks.context, mocks.cryptograph, mocks.context.storage.getRepairRunDao());
     ;
 
     Response response =
@@ -716,10 +688,7 @@ public final class ClusterResourceTest {
 
     ClusterResource clusterResource =
         ClusterResource.create(
-            mocks.context,
-            mocks.cryptograph,
-            mocks.context.storage.getEventsDao(),
-            mocks.context.storage.getRepairRunDao());
+            mocks.context, mocks.cryptograph, mocks.context.storage.getRepairRunDao());
     ;
 
     Response response =
