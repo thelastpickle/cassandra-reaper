@@ -1,5 +1,12 @@
 ## Change Log
 
+### 4.1.0 (2026/01/07 16:25 +00:00)
+- [#1639](https://github.com/thelastpickle/cassandra-reaper/pull/1639) Fix adminConnector to be http instead of https (missing commit from PR 1637) (#1639) (@burmanm)
+- [#1637](https://github.com/thelastpickle/cassandra-reaper/pull/1637) Add TLS configuration abilities to the server for Docker container (#1637) (@burmanm)
+- [#1631](https://github.com/thelastpickle/cassandra-reaper/pull/1631) Fix vulnerability GHSA-25qh-j22f-pwp8 logback version was bumped (#1631) (@tengu-alt)
+- [#1634](https://github.com/thelastpickle/cassandra-reaper/pull/1634) Use mTLS client for metrics endpoint also if configured (#1634) (@burmanm)
+- [#1626](https://github.com/thelastpickle/cassandra-reaper/pull/1626) Unregister Cassandra healthchecks on the schema migration sessions  (#1626) (@a-pashchenko)
+
 ### 4.0.1 (2025/10/09 15:00 +00:00)
 - [#1619](https://github.com/thelastpickle/cassandra-reaper/pull/1619) Unregister CqlSession from HealthCheckRegistry after close (#1619) (@a-pashchenko)
 - [#1612](https://github.com/thelastpickle/cassandra-reaper/pull/1612) Fix the intensity rule which wasn't properly applied (#1612) (@adejanovski)
