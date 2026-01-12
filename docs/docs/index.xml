@@ -4,51 +4,36 @@
     <title>Documentation on Reaper: Easy Repair Management for Apache Cassandra</title>
     <link>http://cassandra-reaper.io/docs/</link>
     <description>Recent content in Documentation on Reaper: Easy Repair Management for Apache Cassandra</description>
-    <generator>Hugo -- gohugo.io</generator>
-    <language>en-us</language><atom:link href="http://cassandra-reaper.io/docs/index.xml" rel="self" type="application/rss+xml" />
+    <generator>Hugo</generator>
+    <language>en-us</language>
+    <atom:link href="http://cassandra-reaper.io/docs/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>Core Concepts</title>
       <link>http://cassandra-reaper.io/docs/concepts/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>http://cassandra-reaper.io/docs/concepts/</guid>
-      <description>Segments Reaper splits repair runs in segments. A segment is a subrange of tokens that fits entirely in one of the cluster token ranges. The minimum number of segments for a repair run is the number of token ranges in the cluster. With a 3 nodes cluster using 256 vnodes per node, a repair run will have at least 768 segments. If necessary, each repair can define a higher number of segments than the number of token ranges.</description>
+      <description>&lt;h2 id=&#34;segments&#34;&gt;Segments&lt;/h2&gt;&#xA;&lt;p&gt;Reaper splits repair runs in segments. A segment is a subrange of tokens that fits entirely in one of the cluster token ranges. The minimum number of segments for a repair run is the number of token ranges in the cluster. With a 3 nodes cluster using 256 vnodes per node, a repair run will have at least 768 segments. If necessary, each repair can define a higher number of segments than the number of token ranges.&lt;/p&gt;</description>
     </item>
-    
     <item>
       <title>Rest API</title>
       <link>http://cassandra-reaper.io/docs/api/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>http://cassandra-reaper.io/docs/api/</guid>
-      <description>Source code for all the REST resources can be found from package io.cassandrareaper.resources.
-Login Resource POST /login Expected form parameters:
-* username : User to login with as defined in authentication settings (default user is admin)
-* password : Password to authenticate with (default password of user admin is: admin)
-* rememberMe : Boolean to have the Web UI remember the username (Optional) Endpoint for logging in to Reaper. Returns a JWT token in the response that must be passed in the Authorization HTTP header for authenticated requests: Authorization: Bearer [JWT value] Ping Resource GET /ping</description>
+      <description>&lt;p&gt;Source code for all the REST resources can be found from package io.cassandrareaper.resources.&lt;/p&gt;&#xA;&lt;h2 id=&#34;login-resource&#34;&gt;Login Resource&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;strong&gt;POST     /login&lt;/strong&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;Expected form parameters:&lt;br&gt;&#xA;* &lt;strong&gt;username&lt;/strong&gt; : User to login with as defined in authentication settings (default user is &lt;strong&gt;admin&lt;/strong&gt;)&lt;br&gt;&#xA;* &lt;strong&gt;password&lt;/strong&gt; : Password to authenticate with (default password of user &lt;em&gt;admin&lt;/em&gt; is: &lt;strong&gt;admin&lt;/strong&gt;)&lt;br&gt;&#xA;* &lt;strong&gt;rememberMe&lt;/strong&gt; : Boolean to have the Web UI remember the username (Optional)&lt;/li&gt;&#xA;&lt;li&gt;Endpoint for logging in to Reaper. Returns a JWT token in the response that must be passed in the &lt;code&gt;Authorization&lt;/code&gt; HTTP header for authenticated requests:&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;Authorization: Bearer [JWT value]&#xA;&lt;/code&gt;&lt;/pre&gt;&lt;h2 id=&#34;ping-resource&#34;&gt;Ping Resource&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&#xA;&lt;p&gt;&lt;strong&gt;GET     /ping&lt;/strong&gt;&lt;/p&gt;</description>
     </item>
-    
     <item>
       <title>Community</title>
       <link>http://cassandra-reaper.io/docs/community/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>http://cassandra-reaper.io/docs/community/</guid>
-      <description>Join the Apache Software Foundation Slack and then reach out on the #cassandra-reaper channel.</description>
+      <description>&lt;p&gt;Join the &lt;a href=&#34;https://s.apache.org/slack-invite&#34;&gt;Apache Software Foundation Slack&lt;/a&gt; and then reach out on the #cassandra-reaper channel.&lt;/p&gt;</description>
     </item>
-    
     <item>
       <title>Development</title>
       <link>http://cassandra-reaper.io/docs/development/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>http://cassandra-reaper.io/docs/development/</guid>
-      <description>Cutting Releases Cutting a release involves the following steps.
-Consult with the community to confirm the codebase is ready for release by reviewing outstanding issues and pull requests.
-For major releases, create a release branch from master following the naming convention: 1.0, 1.1, 1.2, 1.3, etc.
-Generate the changelog by running:
-github-changes -o thelastpickle -r cassandra-reaper --use-commit-body -a -f changelog.tmp -b &amp;lt;sha-of-release&amp;gt; -v Review and edit the generated changelog to include only relevant commits, then update CHANGELOG.</description>
+      <description>&lt;h2 id=&#34;cutting-releases&#34;&gt;Cutting Releases&lt;/h2&gt;&#xA;&lt;p&gt;Cutting a release involves the following steps.&lt;/p&gt;&#xA;&lt;ol&gt;&#xA;&lt;li&gt;&#xA;&lt;p&gt;Consult with the community to confirm the codebase is ready for release by reviewing outstanding issues and pull requests.&lt;/p&gt;&#xA;&lt;/li&gt;&#xA;&lt;li&gt;&#xA;&lt;p&gt;For major releases, create a release branch from master following the naming convention: &lt;code&gt;1.0&lt;/code&gt;, &lt;code&gt;1.1&lt;/code&gt;, &lt;code&gt;1.2&lt;/code&gt;, &lt;code&gt;1.3&lt;/code&gt;, etc.&lt;/p&gt;&#xA;&lt;/li&gt;&#xA;&lt;li&gt;&#xA;&lt;p&gt;Generate the changelog by running:&lt;/p&gt;&#xA;&lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;github-changes -o thelastpickle -r cassandra-reaper --use-commit-body -a -f changelog.tmp -b &amp;lt;sha-of-release&amp;gt; -v&#xA;&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;Review and edit the generated changelog to include only relevant commits, then update &lt;code&gt;CHANGELOG.md&lt;/code&gt;.&lt;/p&gt;</description>
     </item>
-    
   </channel>
 </rss>
