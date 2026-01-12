@@ -4,40 +4,29 @@
     <title>Metrics on Reaper: Easy Repair Management for Apache Cassandra</title>
     <link>http://cassandra-reaper.io/docs/metrics/</link>
     <description>Recent content in Metrics on Reaper: Easy Repair Management for Apache Cassandra</description>
-    <generator>Hugo -- gohugo.io</generator>
-    <language>en-us</language><atom:link href="http://cassandra-reaper.io/docs/metrics/index.xml" rel="self" type="application/rss+xml" />
+    <generator>Hugo</generator>
+    <language>en-us</language>
+    <atom:link href="http://cassandra-reaper.io/docs/metrics/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>Dashboards</title>
       <link>http://cassandra-reaper.io/docs/metrics/dashboards/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>http://cassandra-reaper.io/docs/metrics/dashboards/</guid>
-      <description>Dashboards There are many ways of visualising the metrics Reaper exposes. Here is just a few examples to get you started.
-We are going to use Grafana to visualize metrics fetched from a Prometheus backed. We will also assume the metrics were relabeled.
-Repair progress One of the simplest things to visualize is repair progress. We can do that using a simple Gauge, where we use use the following query:</description>
+      <description>&lt;h2 id=&#34;dashboards&#34;&gt;Dashboards&lt;/h2&gt;&#xA;&lt;p&gt;There are many ways of visualising the metrics Reaper exposes. Here is just a few examples to get you started.&lt;/p&gt;&#xA;&lt;p&gt;We are going to use Grafana to visualize metrics fetched from a Prometheus backed. We will also assume the metrics were &lt;a href=&#34;../prometheus&#34;&gt;relabeled&lt;/a&gt;.&lt;/p&gt;&#xA;&lt;h3 id=&#34;repair-progress&#34;&gt;Repair progress&lt;/h3&gt;&#xA;&lt;p&gt;One of the simplest things to visualize is repair progress. We can do that using a simple &lt;code&gt;Gauge&lt;/code&gt;, where we use use the following query:&lt;/p&gt;&#xA;&lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;io_cassandrareaper_service_RepairRunner_repairProgress&#xA;&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;To make the panel more pretty, we can enter the following in the &lt;code&gt;Legend&lt;/code&gt; field:&lt;/p&gt;</description>
     </item>
-    
     <item>
       <title>Graphite Reporter</title>
       <link>http://cassandra-reaper.io/docs/metrics/graphite/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>http://cassandra-reaper.io/docs/metrics/graphite/</guid>
-      <description>Graphite Reporter Reaper can be configured to periodically report metrics to a Graphite host. This can be done using the following properties in the Reaper configuration YAML file.
-Metrics: frequency: 1 minute reporters: - type: graphite host: &amp;lt;host_address&amp;gt; port: &amp;lt;port_number&amp;gt; prefix: &amp;lt;prefix&amp;gt; Where:
-host_address is hostname of the Graphite server to report to. port_number is port of the Graphite server to report to. prefix is prefix for Metric key names that are reported to the Graphite server.</description>
+      <description>&lt;h2 id=&#34;graphite-reporter&#34;&gt;Graphite Reporter&lt;/h2&gt;&#xA;&lt;p&gt;Reaper can be configured to periodically report metrics to a Graphite host. This can be done using the following properties in the Reaper configuration YAML file.&lt;/p&gt;&#xA;&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-yaml&#34; data-lang=&#34;yaml&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;Metrics&lt;/span&gt;:&#xA;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;  &lt;span style=&#34;color:#f92672&#34;&gt;frequency&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;1&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;minute&lt;/span&gt;&#xA;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;  &lt;span style=&#34;color:#f92672&#34;&gt;reporters&lt;/span&gt;:&#xA;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    - &lt;span style=&#34;color:#f92672&#34;&gt;type&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;graphite&lt;/span&gt;&#xA;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;      &lt;span style=&#34;color:#f92672&#34;&gt;host&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;&amp;lt;host_address&amp;gt;&lt;/span&gt;&#xA;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;      &lt;span style=&#34;color:#f92672&#34;&gt;port&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;&amp;lt;port_number&amp;gt;&lt;/span&gt;&#xA;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;      &lt;span style=&#34;color:#f92672&#34;&gt;prefix&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;&amp;lt;prefix&amp;gt;&lt;/span&gt;&#xA;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;Where:&lt;/p&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;host_address&lt;/code&gt; is hostname of the Graphite server to report to.&lt;/li&gt;&#xA;&lt;li&gt;&lt;code&gt;port_number&lt;/code&gt; is port of the Graphite server to report to.&lt;/li&gt;&#xA;&lt;li&gt;&lt;code&gt;prefix&lt;/code&gt; is prefix for Metric key names that are reported to the Graphite server. Typically this will be the hostname sending the metrics to the Graphite server.&lt;/li&gt;&#xA;&lt;/ul&gt;</description>
     </item>
-    
     <item>
       <title>Prometheus</title>
       <link>http://cassandra-reaper.io/docs/metrics/prometheus/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>http://cassandra-reaper.io/docs/metrics/prometheus/</guid>
-      <description>Prometheus Reaper exposes all its metrics in a Prometheus-ready format under the /prometheusMetrics endpoint on the admin port.
-It&amp;rsquo;s fairly straightforward to configure Prometheus to grab them. The config can look something like:
-scrape_configs: - job_name: &amp;#39;reaper&amp;#39; metrics_path: &amp;#39;/prometheusMetrics&amp;#39; scrape_interval: 5s static_configs: - targets: [&amp;#39;host.docker.internal:8081&amp;#39;] The host.docker.internal tells a Prometheus instance running inside a docker container to connect to the host&amp;rsquo;s 8081 port where Raper runs from a JAR. </description>
+      <description>&lt;h2 id=&#34;prometheus&#34;&gt;Prometheus&lt;/h2&gt;&#xA;&lt;p&gt;Reaper exposes all its metrics in a Prometheus-ready format under the &lt;code&gt;/prometheusMetrics&lt;/code&gt; endpoint on the admin port.&lt;/p&gt;&#xA;&lt;p&gt;It&amp;rsquo;s fairly straightforward to configure Prometheus to grab them. The config can look something like:&lt;/p&gt;&#xA;&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-yaml&#34; data-lang=&#34;yaml&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;scrape_configs&lt;/span&gt;:&#xA;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;  - &lt;span style=&#34;color:#f92672&#34;&gt;job_name&lt;/span&gt;: &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;reaper&amp;#39;&lt;/span&gt;&#xA;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    &lt;span style=&#34;color:#f92672&#34;&gt;metrics_path&lt;/span&gt;: &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;/prometheusMetrics&amp;#39;&lt;/span&gt;&#xA;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    &lt;span style=&#34;color:#f92672&#34;&gt;scrape_interval&lt;/span&gt;: &lt;span style=&#34;color:#ae81ff&#34;&gt;5s&lt;/span&gt;&#xA;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    &lt;span style=&#34;color:#f92672&#34;&gt;static_configs&lt;/span&gt;:&#xA;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;      - &lt;span style=&#34;color:#f92672&#34;&gt;targets&lt;/span&gt;: [&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;host.docker.internal:8081&amp;#39;&lt;/span&gt;]&#xA;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;ul&gt;&#xA;&lt;li&gt;The &lt;code&gt;host.docker.internal&lt;/code&gt; tells a Prometheus instance running inside a docker container to connect to the host&amp;rsquo;s &lt;code&gt;8081&lt;/code&gt; port where Raper runs from a JAR.&lt;/li&gt;&#xA;&lt;/ul&gt;</description>
     </item>
-    
   </channel>
 </rss>

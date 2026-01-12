@@ -51,6 +51,11 @@ The Docker environment variables listed in this section map directly to Reaper s
 | `REAPER_SERVER_ADMIN_PORT` | [port]({{< relref "reaper_specific.md#port" >}}) | 8081 |
 | `REAPER_SERVER_APP_BIND_HOST` | [bindHost]({{< relref "reaper_specific.md#bindhost" >}}) | 0.0.0.0 |
 | `REAPER_SERVER_APP_PORT` | [port]({{< relref "reaper_specific.md#port" >}}) | 8080 |
+| `REAPER_SERVER_TLS_ENABLE` | [server/applicationConnectors/type]({{< relref "reaper_specific.md#server" >}}) | |
+| `REAPER_SERVER_TLS_KEYSTORE_PATH` | [server/applicationConnectors/keyStorePath]({{< relref "reaper_specific.md#server" >}}) | |
+| `REAPER_SERVER_TLS_TRUSTSTORE_PATH` | [server/applicationConnectors/trustStorePath]({{< relref "reaper_specific.md#server" >}}) | |
+| `REAPER_SERVER_TLS_CLIENT_AUTH` | [server/applicationConnectors/needClientAuth]({{< relref "reaper_specific.md#server" >}}) | |
+| `REAPER_SERVER_TLS_DISABLE_SNI` | [server/applicationConnectors/disableSniHostCheck]({{< relref "reaper_specific.md#server" >}}) | |
 | `REAPER_STORAGE_TYPE` | [storageType]({{< relref "reaper_specific.md#storagetype" >}}) | memory |
 | `REAPER_USE_ADDRESS_TRANSLATOR` | [useAddressTranslator]({{< relref "reaper_specific.md#useaddresstranslator" >}}) | false |
 | `REAPER_MAX_PARALLEL_REPAIRS` | [maxParallelRepairs]({{< relref "reaper_specific.md#maxParallelRepairs" >}}) | 2 |
