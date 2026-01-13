@@ -253,7 +253,7 @@ public final class RepairScheduleService {
   }
 
   @VisibleForTesting
-  Gauge<Long> getUnfulfilledRepairSchedule(UUID repairSchedule) {
+  Gauge<Integer> getUnfulfilledRepairSchedule(UUID repairSchedule) {
     return () -> {
       Optional<RepairSchedule> schedule =
           context.storage.getRepairScheduleDao().getRepairSchedule(repairSchedule);
@@ -268,13 +268,16 @@ public final class RepairScheduleService {
       if (schedule.get().getDaysBetween() == 0
           || schedule.get().getState() == RepairSchedule.State.PAUSED
           || schedule.get().getState() == RepairSchedule.State.DELETED) {
-        return 0l;
+        return 0;
       }
 
+      long intervalInMillis = schedule.get().getDaysBetween() * 24 * 60 * 60 * 1000;
       // Fail fast if we're past the next activation time by 10% of the cycle time
-      if (DateTime.now().getMillis() - schedule.get().getNextActivation().getMillis()
-          > schedule.get().getDaysBetween() * 24 * 60 * 60 * 1000 * 0.1) {
-        return 1l;
+      DateTime nextActivation = schedule.get().getNextActivation();
+      if (nextActivation != null) {
+        if (DateTime.now().getMillis() - nextActivation.getMillis() > intervalInMillis * 0.1) {
+          return 1;
+        }
       }
 
       Optional<Long> millisSinceLastRepair =
@@ -289,16 +292,16 @@ public final class RepairScheduleService {
 
       if (millisSinceLastRepair.isPresent()) {
         // we have a last repair that has finished successfully
-        if (millisSinceLastRepair.get() > schedule.get().getDaysBetween() * 24 * 60 * 60 * 1000) {
+        if (millisSinceLastRepair.get() > intervalInMillis) {
           // Return 1 if the last completed repair was not within the repair schedule interval
-          return 1l;
+          return 1;
         }
-        return 0l;
+        return 0;
       }
 
       // Repair is still running or never started but the next activation time is still in the
       // future
-      return 0l;
+      return 0;
     };
   }
 

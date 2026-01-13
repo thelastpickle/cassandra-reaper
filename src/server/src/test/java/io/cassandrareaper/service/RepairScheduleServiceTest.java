@@ -81,7 +81,7 @@ public final class RepairScheduleServiceTest {
     when(repairScheduleDao.getRepairSchedule(scheduleId)).thenReturn(Optional.empty());
 
     RepairScheduleService service = RepairScheduleService.create(context, repairRunDao);
-    Gauge<Long> gauge = service.getUnfulfilledRepairSchedule(scheduleId);
+    Gauge<Integer> gauge = service.getUnfulfilledRepairSchedule(scheduleId);
 
     // This should throw IllegalArgumentException
     gauge.getValue();
@@ -99,9 +99,10 @@ public final class RepairScheduleServiceTest {
     when(repairScheduleDao.getRepairSchedule(scheduleId)).thenReturn(Optional.of(schedule));
 
     RepairScheduleService service = RepairScheduleService.create(context, repairRunDao);
-    Gauge<Long> gauge = service.getUnfulfilledRepairSchedule(scheduleId);
+    Gauge<Integer> gauge = service.getUnfulfilledRepairSchedule(scheduleId);
 
-    assertEquals("Schedule with daysBetween=0 should return 0", Long.valueOf(0L), gauge.getValue());
+    assertEquals(
+        "Schedule with daysBetween=0 should return 0", Integer.valueOf(0), gauge.getValue());
   }
 
   /** Test scenario: Schedule in PAUSED state Expected: Returns 0 (not unfulfilled) */
@@ -117,9 +118,9 @@ public final class RepairScheduleServiceTest {
     when(repairScheduleDao.getRepairSchedule(scheduleId)).thenReturn(Optional.of(schedule));
 
     RepairScheduleService service = RepairScheduleService.create(context, repairRunDao);
-    Gauge<Long> gauge = service.getUnfulfilledRepairSchedule(scheduleId);
+    Gauge<Integer> gauge = service.getUnfulfilledRepairSchedule(scheduleId);
 
-    assertEquals("Paused schedule should return 0", Long.valueOf(0L), gauge.getValue());
+    assertEquals("Paused schedule should return 0", Integer.valueOf(0), gauge.getValue());
   }
 
   /** Test scenario: Schedule in DELETED state Expected: Returns 0 (not unfulfilled) */
@@ -135,9 +136,9 @@ public final class RepairScheduleServiceTest {
     when(repairScheduleDao.getRepairSchedule(scheduleId)).thenReturn(Optional.of(schedule));
 
     RepairScheduleService service = RepairScheduleService.create(context, repairRunDao);
-    Gauge<Long> gauge = service.getUnfulfilledRepairSchedule(scheduleId);
+    Gauge<Integer> gauge = service.getUnfulfilledRepairSchedule(scheduleId);
 
-    assertEquals("Deleted schedule should return 0", Long.valueOf(0L), gauge.getValue());
+    assertEquals("Deleted schedule should return 0", Integer.valueOf(0), gauge.getValue());
   }
 
   /**
@@ -162,9 +163,9 @@ public final class RepairScheduleServiceTest {
     when(repairScheduleDao.getRepairSchedule(scheduleId)).thenReturn(Optional.of(schedule));
 
     RepairScheduleService service = RepairScheduleService.create(context, repairRunDao);
-    Gauge<Long> gauge = service.getUnfulfilledRepairSchedule(scheduleId);
+    Gauge<Integer> gauge = service.getUnfulfilledRepairSchedule(scheduleId);
 
-    assertEquals("Within 10% threshold should return 0", Long.valueOf(0L), gauge.getValue());
+    assertEquals("Within 10% threshold should return 0", Integer.valueOf(0), gauge.getValue());
   }
 
   /**
@@ -189,9 +190,9 @@ public final class RepairScheduleServiceTest {
     when(repairScheduleDao.getRepairSchedule(scheduleId)).thenReturn(Optional.of(schedule));
 
     RepairScheduleService service = RepairScheduleService.create(context, repairRunDao);
-    Gauge<Long> gauge = service.getUnfulfilledRepairSchedule(scheduleId);
+    Gauge<Integer> gauge = service.getUnfulfilledRepairSchedule(scheduleId);
 
-    assertEquals("Past 10% threshold should return 1", Long.valueOf(1L), gauge.getValue());
+    assertEquals("Past 10% threshold should return 1", Integer.valueOf(1), gauge.getValue());
   }
 
   /**
@@ -211,9 +212,9 @@ public final class RepairScheduleServiceTest {
     when(repairScheduleDao.getRepairSchedule(scheduleId)).thenReturn(Optional.of(schedule));
 
     RepairScheduleService service = RepairScheduleService.create(context, repairRunDao);
-    Gauge<Long> gauge = service.getUnfulfilledRepairSchedule(scheduleId);
+    Gauge<Integer> gauge = service.getUnfulfilledRepairSchedule(scheduleId);
 
-    assertEquals("No last run should return 0", Long.valueOf(0L), gauge.getValue());
+    assertEquals("No last run should return 0", Integer.valueOf(0), gauge.getValue());
   }
 
   /**
@@ -234,9 +235,9 @@ public final class RepairScheduleServiceTest {
     when(repairRunDao.getRepairRun(repairRunId)).thenReturn(Optional.empty());
 
     RepairScheduleService service = RepairScheduleService.create(context, repairRunDao);
-    Gauge<Long> gauge = service.getUnfulfilledRepairSchedule(scheduleId);
+    Gauge<Integer> gauge = service.getUnfulfilledRepairSchedule(scheduleId);
 
-    assertEquals("Last run not found should return 0", Long.valueOf(0L), gauge.getValue());
+    assertEquals("Last run not found should return 0", Integer.valueOf(0), gauge.getValue());
   }
 
   /**
@@ -263,9 +264,9 @@ public final class RepairScheduleServiceTest {
     when(repairRunDao.getRepairRun(repairRunId)).thenReturn(Optional.of(repairRun));
 
     RepairScheduleService service = RepairScheduleService.create(context, repairRunDao);
-    Gauge<Long> gauge = service.getUnfulfilledRepairSchedule(scheduleId);
+    Gauge<Integer> gauge = service.getUnfulfilledRepairSchedule(scheduleId);
 
-    assertEquals("Running repair should return 0", Long.valueOf(0L), gauge.getValue());
+    assertEquals("Running repair should return 0", Integer.valueOf(0), gauge.getValue());
   }
 
   /**
@@ -293,9 +294,9 @@ public final class RepairScheduleServiceTest {
     when(repairRunDao.getRepairRun(repairRunId)).thenReturn(Optional.of(repairRun));
 
     RepairScheduleService service = RepairScheduleService.create(context, repairRunDao);
-    Gauge<Long> gauge = service.getUnfulfilledRepairSchedule(scheduleId);
+    Gauge<Integer> gauge = service.getUnfulfilledRepairSchedule(scheduleId);
 
-    assertEquals("Error repair should return 0", Long.valueOf(0L), gauge.getValue());
+    assertEquals("Error repair should return 0", Integer.valueOf(0), gauge.getValue());
   }
 
   /**
@@ -323,9 +324,9 @@ public final class RepairScheduleServiceTest {
     when(repairRunDao.getRepairRun(repairRunId)).thenReturn(Optional.of(repairRun));
 
     RepairScheduleService service = RepairScheduleService.create(context, repairRunDao);
-    Gauge<Long> gauge = service.getUnfulfilledRepairSchedule(scheduleId);
+    Gauge<Integer> gauge = service.getUnfulfilledRepairSchedule(scheduleId);
 
-    assertEquals("Running repair should return 0", Long.valueOf(0L), gauge.getValue());
+    assertEquals("Running repair should return 0", Integer.valueOf(0), gauge.getValue());
   }
 
   /**
@@ -356,9 +357,9 @@ public final class RepairScheduleServiceTest {
     when(repairRunDao.getRepairRun(repairRunId)).thenReturn(Optional.of(repairRun));
 
     RepairScheduleService service = RepairScheduleService.create(context, repairRunDao);
-    Gauge<Long> gauge = service.getUnfulfilledRepairSchedule(scheduleId);
+    Gauge<Integer> gauge = service.getUnfulfilledRepairSchedule(scheduleId);
 
-    assertEquals("Repair within interval should return 0", Long.valueOf(0L), gauge.getValue());
+    assertEquals("Repair within interval should return 0", Integer.valueOf(0), gauge.getValue());
   }
 
   /**
@@ -390,9 +391,10 @@ public final class RepairScheduleServiceTest {
     when(repairRunDao.getRepairRun(repairRunId)).thenReturn(Optional.of(repairRun));
 
     RepairScheduleService service = RepairScheduleService.create(context, repairRunDao);
-    Gauge<Long> gauge = service.getUnfulfilledRepairSchedule(scheduleId);
+    Gauge<Integer> gauge = service.getUnfulfilledRepairSchedule(scheduleId);
 
-    assertEquals("Repair just within interval should return 0", Long.valueOf(0L), gauge.getValue());
+    assertEquals(
+        "Repair just within interval should return 0", Integer.valueOf(0), gauge.getValue());
   }
 
   /**
@@ -423,9 +425,9 @@ public final class RepairScheduleServiceTest {
     when(repairRunDao.getRepairRun(repairRunId)).thenReturn(Optional.of(repairRun));
 
     RepairScheduleService service = RepairScheduleService.create(context, repairRunDao);
-    Gauge<Long> gauge = service.getUnfulfilledRepairSchedule(scheduleId);
+    Gauge<Integer> gauge = service.getUnfulfilledRepairSchedule(scheduleId);
 
-    assertEquals("Repair beyond interval should return 1", Long.valueOf(1L), gauge.getValue());
+    assertEquals("Repair beyond interval should return 1", Integer.valueOf(1), gauge.getValue());
   }
 
   /**
@@ -456,10 +458,12 @@ public final class RepairScheduleServiceTest {
     when(repairRunDao.getRepairRun(repairRunId)).thenReturn(Optional.of(repairRun));
 
     RepairScheduleService service = RepairScheduleService.create(context, repairRunDao);
-    Gauge<Long> gauge = service.getUnfulfilledRepairSchedule(scheduleId);
+    Gauge<Integer> gauge = service.getUnfulfilledRepairSchedule(scheduleId);
 
     assertEquals(
-        "Repair significantly beyond interval should return 1", Long.valueOf(1L), gauge.getValue());
+        "Repair significantly beyond interval should return 1",
+        Integer.valueOf(1),
+        gauge.getValue());
   }
 
   /**
@@ -479,11 +483,11 @@ public final class RepairScheduleServiceTest {
     when(repairScheduleDao.getRepairSchedule(scheduleId)).thenReturn(Optional.of(schedule));
 
     RepairScheduleService service = RepairScheduleService.create(context, repairRunDao);
-    Gauge<Long> gauge = service.getUnfulfilledRepairSchedule(scheduleId);
+    Gauge<Integer> gauge = service.getUnfulfilledRepairSchedule(scheduleId);
 
     assertEquals(
         "Active schedule with future activation should return 0",
-        Long.valueOf(0L),
+        Integer.valueOf(0),
         gauge.getValue());
   }
 
@@ -512,9 +516,9 @@ public final class RepairScheduleServiceTest {
     when(repairRunDao.getRepairRun(repairRunId)).thenReturn(Optional.of(repairRun));
 
     RepairScheduleService service = RepairScheduleService.create(context, repairRunDao);
-    Gauge<Long> gauge = service.getUnfulfilledRepairSchedule(scheduleId);
+    Gauge<Integer> gauge = service.getUnfulfilledRepairSchedule(scheduleId);
 
-    assertEquals("Paused repair should return 0", Long.valueOf(0L), gauge.getValue());
+    assertEquals("Paused repair should return 0", Integer.valueOf(0), gauge.getValue());
   }
 
   /**
@@ -538,9 +542,9 @@ public final class RepairScheduleServiceTest {
     when(repairRunDao.getRepairRun(repairRunId)).thenReturn(Optional.of(repairRun));
 
     RepairScheduleService service = RepairScheduleService.create(context, repairRunDao);
-    Gauge<Long> gauge = service.getUnfulfilledRepairSchedule(scheduleId);
+    Gauge<Integer> gauge = service.getUnfulfilledRepairSchedule(scheduleId);
 
-    assertEquals("Not started repair should return 0", Long.valueOf(0L), gauge.getValue());
+    assertEquals("Not started repair should return 0", Integer.valueOf(0), gauge.getValue());
   }
 
   /**
@@ -568,9 +572,9 @@ public final class RepairScheduleServiceTest {
     when(repairRunDao.getRepairRun(repairRunId)).thenReturn(Optional.of(repairRun));
 
     RepairScheduleService service = RepairScheduleService.create(context, repairRunDao);
-    Gauge<Long> gauge = service.getUnfulfilledRepairSchedule(scheduleId);
+    Gauge<Integer> gauge = service.getUnfulfilledRepairSchedule(scheduleId);
 
-    assertEquals("Aborted repair should return 0", Long.valueOf(0L), gauge.getValue());
+    assertEquals("Aborted repair should return 0", Integer.valueOf(0), gauge.getValue());
   }
 
   /**
@@ -603,11 +607,11 @@ public final class RepairScheduleServiceTest {
     when(repairRunDao.getRepairRun(repairRunId)).thenReturn(Optional.of(repairRun));
 
     RepairScheduleService service = RepairScheduleService.create(context, repairRunDao);
-    Gauge<Long> gauge = service.getUnfulfilledRepairSchedule(scheduleId);
+    Gauge<Integer> gauge = service.getUnfulfilledRepairSchedule(scheduleId);
 
     assertEquals(
         "Old repair should return 1 even if activation time within threshold",
-        Long.valueOf(1L),
+        Integer.valueOf(1),
         gauge.getValue());
   }
 
@@ -639,10 +643,10 @@ public final class RepairScheduleServiceTest {
     when(repairRunDao.getRepairRun(repairRunId)).thenReturn(Optional.of(repairRun));
 
     RepairScheduleService service = RepairScheduleService.create(context, repairRunDao);
-    Gauge<Long> gauge = service.getUnfulfilledRepairSchedule(scheduleId);
+    Gauge<Integer> gauge = service.getUnfulfilledRepairSchedule(scheduleId);
 
     assertEquals(
-        "Short interval with old repair should return 1", Long.valueOf(1L), gauge.getValue());
+        "Short interval with old repair should return 1", Integer.valueOf(1), gauge.getValue());
   }
 
   // Helper methods
