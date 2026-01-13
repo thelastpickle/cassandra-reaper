@@ -57,7 +57,7 @@ public class MemoryRepairSegmentDaoTest {
             .withSeedHosts(Sets.newHashSet("127.0.0.1"))
             .withState(Cluster.State.ACTIVE)
             .build();
-    memoryStorageFacade.addCluster(cluster);
+    memoryStorageFacade.getClusterDao().addCluster(cluster);
 
     // Set up a repair unit
     RepairUnit.Builder repairUnitBuilder =
@@ -71,9 +71,7 @@ public class MemoryRepairSegmentDaoTest {
             .repairThreadCount(1)
             .timeout(30);
 
-    RepairUnit repairUnit =
-        memoryStorageFacade.addRepairUnit(
-            java.util.Optional.of(repairUnitBuilder), repairUnitBuilder.build(Uuids.timeBased()));
+    RepairUnit repairUnit = memoryStorageFacade.getRepairUnitDao().addRepairUnit(repairUnitBuilder);
     repairUnitId = repairUnit.getId();
 
     // Set up a repair run
@@ -85,7 +83,9 @@ public class MemoryRepairSegmentDaoTest {
             .tables(Sets.newHashSet("testTable"));
 
     RepairRun repairRun =
-        memoryStorageFacade.addRepairRun(repairRunBuilder.build(Uuids.timeBased()));
+        memoryStorageFacade
+            .getRepairRunDao()
+            .addRepairRun(repairRunBuilder, java.util.Collections.emptyList());
     repairRunId = repairRun.getId();
   }
 
@@ -186,7 +186,7 @@ public class MemoryRepairSegmentDaoTest {
 
     // Verify that RUNNING and DONE segments are not returned
     Collection<RepairSegment> allSegments =
-        memoryStorageFacade.getRepairSegmentsByRunId(repairRunId);
+        memoryStorageFacade.getRepairSegmentDao().getRepairSegmentsForRun(repairRunId);
     assertEquals(4, allSegments.size()); // Total segments created
   }
 
@@ -206,7 +206,8 @@ public class MemoryRepairSegmentDaoTest {
             .withId(Uuids.timeBased())
             .withState(RepairSegment.State.NOT_STARTED)
             .build();
-    memoryStorageFacade.addRepairSegment(segment1);
+    ((MemoryRepairSegmentDao) memoryStorageFacade.getRepairSegmentDao())
+        .addRepairSegmentWithId(segment1);
 
     // Segment 2: NOT_STARTED with node2 and node3 as replicas
     Map<String, String> replicas2 = new HashMap<>();
@@ -223,7 +224,8 @@ public class MemoryRepairSegmentDaoTest {
             .withId(Uuids.timeBased())
             .withState(RepairSegment.State.NOT_STARTED)
             .build();
-    memoryStorageFacade.addRepairSegment(segment2);
+    ((MemoryRepairSegmentDao) memoryStorageFacade.getRepairSegmentDao())
+        .addRepairSegmentWithId(segment2);
 
     // Segment 3: RUNNING (should be filtered out by state) - needs startTime
     Map<String, String> replicas3 = new HashMap<>();
@@ -241,7 +243,8 @@ public class MemoryRepairSegmentDaoTest {
             .withState(RepairSegment.State.RUNNING)
             .withStartTime(org.joda.time.DateTime.now())
             .build();
-    memoryStorageFacade.addRepairSegment(segment3);
+    ((MemoryRepairSegmentDao) memoryStorageFacade.getRepairSegmentDao())
+        .addRepairSegmentWithId(segment3);
 
     // Segment 4: DONE (should be filtered out by state) - needs startTime and endTime
     Map<String, String> replicas4 = new HashMap<>();
@@ -260,6 +263,7 @@ public class MemoryRepairSegmentDaoTest {
             .withStartTime(org.joda.time.DateTime.now().minusMinutes(10))
             .withEndTime(org.joda.time.DateTime.now())
             .build();
-    memoryStorageFacade.addRepairSegment(segment4);
+    ((MemoryRepairSegmentDao) memoryStorageFacade.getRepairSegmentDao())
+        .addRepairSegmentWithId(segment4);
   }
 }

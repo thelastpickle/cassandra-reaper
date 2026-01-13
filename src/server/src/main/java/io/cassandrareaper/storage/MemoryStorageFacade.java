@@ -15,12 +15,7 @@
 package io.cassandrareaper.storage;
 
 import io.cassandrareaper.core.Cluster;
-import io.cassandrareaper.core.DiagEventSubscription;
 import io.cassandrareaper.core.PercentRepairedMetric;
-import io.cassandrareaper.core.RepairRun;
-import io.cassandrareaper.core.RepairSchedule;
-import io.cassandrareaper.core.RepairSegment;
-import io.cassandrareaper.core.RepairUnit;
 import io.cassandrareaper.storage.cluster.IClusterDao;
 import io.cassandrareaper.storage.cluster.MemoryClusterDao;
 import io.cassandrareaper.storage.events.IEventsDao;
@@ -39,24 +34,16 @@ import io.cassandrareaper.storage.snapshot.ISnapshotDao;
 import io.cassandrareaper.storage.snapshot.MemorySnapshotDao;
 import io.cassandrareaper.storage.sqlite.EclipseStoreToSqliteMigration;
 import io.cassandrareaper.storage.sqlite.SqliteMigrationManager;
-import io.cassandrareaper.storage.sqlite.UuidUtil;
 
 import java.io.File;
 import java.sql.Connection;
 import java.sql.DriverManager;
-import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

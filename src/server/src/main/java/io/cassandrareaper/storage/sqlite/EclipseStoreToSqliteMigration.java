@@ -227,7 +227,7 @@ public final class EclipseStoreToSqliteMigration {
         stmt.setInt(10, unit.getRepairThreadCount());
         stmt.setInt(11, unit.getTimeout());
         stmt.addBatch();
-        
+
         count++;
         if (count % 1000 == 0) {
           stmt.executeBatch();
@@ -278,7 +278,7 @@ public final class EclipseStoreToSqliteMigration {
         stmt.setBytes(
             16, schedule.getLastRun() != null ? UuidUtil.toBytes(schedule.getLastRun()) : null);
         stmt.addBatch();
-        
+
         count++;
         if (count % 1000 == 0) {
           stmt.executeBatch();
@@ -325,7 +325,7 @@ public final class EclipseStoreToSqliteMigration {
         stmt.setString(15, toJson(run.getTables()));
         stmt.setInt(16, run.getAdaptiveSchedule() ? 1 : 0);
         stmt.addBatch();
-        
+
         count++;
         if (count % 1000 == 0) {
           stmt.executeBatch();

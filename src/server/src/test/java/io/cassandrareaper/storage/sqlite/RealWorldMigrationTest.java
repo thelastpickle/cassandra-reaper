@@ -318,14 +318,14 @@ public class RealWorldMigrationTest {
     }
 
     // Verify backup was created
-    File backupDir = new File(tempStorageDir, ".eclipsestore.backup");
+    File backupDir = new File(tempStorageDir, "eclipsestore.backup");
     assertThat(backupDir.exists()).isTrue();
     System.out.println("    ✓ Backup directory verified");
   }
 
   private void restoreEclipseStoreForRetry() throws IOException {
     System.out.println("  Restoring EclipseStore files from backup...");
-    File backupDir = new File(tempStorageDir, ".eclipsestore.backup");
+    File backupDir = new File(tempStorageDir, "eclipsestore.backup");
     assertThat(backupDir.exists()).isTrue();
 
     // Copy backup files back

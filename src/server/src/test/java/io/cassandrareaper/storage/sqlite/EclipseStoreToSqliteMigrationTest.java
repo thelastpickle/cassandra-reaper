@@ -338,7 +338,7 @@ public class EclipseStoreToSqliteMigrationTest {
     EclipseStoreToSqliteMigration.migrateIfNeeded(tempStorageDir, sqliteConnection);
 
     // Verify backup exists
-    File backupDir = new File(tempStorageDir, ".eclipsestore.backup");
+    File backupDir = new File(tempStorageDir, "eclipsestore.backup");
     assertThat(backupDir.exists()).isTrue();
     assertThat(backupDir.isDirectory()).isTrue();
 
