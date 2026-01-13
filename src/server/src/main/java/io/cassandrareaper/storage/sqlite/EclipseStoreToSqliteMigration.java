@@ -213,6 +213,7 @@ public final class EclipseStoreToSqliteMigration {
             + "repair_thread_count, timeout) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
     try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+      int count = 0;
       for (RepairUnit unit : units) {
         stmt.setBytes(1, UuidUtil.toBytes(unit.getId()));
         stmt.setString(2, unit.getClusterName());
@@ -225,8 +226,16 @@ public final class EclipseStoreToSqliteMigration {
         stmt.setString(9, toJson(unit.getBlacklistedTables()));
         stmt.setInt(10, unit.getRepairThreadCount());
         stmt.setInt(11, unit.getTimeout());
-        stmt.executeUpdate();
+        stmt.addBatch();
+        
+        count++;
+        if (count % 1000 == 0) {
+          stmt.executeBatch();
+          LOG.info("Migrated {}/{} repair units...", count, units.size());
+        }
       }
+      // Execute remaining batch
+      stmt.executeBatch();
     }
     LOG.info("Migrated {} repair units", units.size());
   }
@@ -246,6 +255,7 @@ public final class EclipseStoreToSqliteMigration {
             + "run_history, last_run) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
     try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+      int count = 0;
       for (RepairSchedule schedule : schedules) {
         stmt.setBytes(1, UuidUtil.toBytes(schedule.getId()));
         stmt.setBytes(2, UuidUtil.toBytes(schedule.getRepairUnitId()));
@@ -267,8 +277,16 @@ public final class EclipseStoreToSqliteMigration {
         stmt.setString(15, toJson(schedule.getRunHistory()));
         stmt.setBytes(
             16, schedule.getLastRun() != null ? UuidUtil.toBytes(schedule.getLastRun()) : null);
-        stmt.executeUpdate();
+        stmt.addBatch();
+        
+        count++;
+        if (count % 1000 == 0) {
+          stmt.executeBatch();
+          LOG.info("Migrated {}/{} repair schedules...", count, schedules.size());
+        }
       }
+      // Execute remaining batch
+      stmt.executeBatch();
     }
     LOG.info("Migrated {} repair schedules", schedules.size());
   }
@@ -288,6 +306,7 @@ public final class EclipseStoreToSqliteMigration {
             + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
     try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+      int count = 0;
       for (RepairRun run : runs) {
         stmt.setBytes(1, UuidUtil.toBytes(run.getId()));
         stmt.setString(2, run.getClusterName());
@@ -305,8 +324,16 @@ public final class EclipseStoreToSqliteMigration {
         stmt.setString(14, run.getRepairParallelism().name());
         stmt.setString(15, toJson(run.getTables()));
         stmt.setInt(16, run.getAdaptiveSchedule() ? 1 : 0);
-        stmt.executeUpdate();
+        stmt.addBatch();
+        
+        count++;
+        if (count % 1000 == 0) {
+          stmt.executeBatch();
+          LOG.info("Migrated {}/{} repair runs...", count, runs.size());
+        }
       }
+      // Execute remaining batch
+      stmt.executeBatch();
     }
     LOG.info("Migrated {} repair runs", runs.size());
   }
@@ -341,13 +368,16 @@ public final class EclipseStoreToSqliteMigration {
         stmt.setString(12, toJson(segment.getReplicas()));
         stmt.setBytes(
             13, segment.getHostID() != null ? UuidUtil.toBytes(segment.getHostID()) : null);
-        stmt.executeUpdate();
+        stmt.addBatch();
 
         count++;
         if (count % 1000 == 0) {
+          stmt.executeBatch();
           LOG.info("Migrated {}/{} repair segments...", count, segments.size());
         }
       }
+      // Execute remaining batch
+      stmt.executeBatch();
     }
     LOG.info("Migrated {} repair segments", segments.size());
   }
@@ -388,12 +418,12 @@ public final class EclipseStoreToSqliteMigration {
   }
 
   /**
-   * Backup EclipseStore files to a .backup subdirectory.
+   * Backup EclipseStore files to a backup subdirectory.
    *
    * @param storageDir The directory containing EclipseStore files
    */
   private static void backupEclipseStoreFiles(File storageDir) throws IOException {
-    File backupDir = new File(storageDir, ".eclipsestore.backup");
+    File backupDir = new File(storageDir, "eclipsestore.backup");
     backupDir.mkdirs();
 
     LOG.info("Backing up EclipseStore files to: {}", backupDir.getAbsolutePath());

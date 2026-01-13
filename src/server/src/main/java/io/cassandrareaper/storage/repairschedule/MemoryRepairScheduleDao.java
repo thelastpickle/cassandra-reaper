@@ -53,7 +53,6 @@ public class MemoryRepairScheduleDao implements IRepairScheduleDao {
   private final Connection connection;
 
   private final PreparedStatement insertScheduleStmt;
-  private final PreparedStatement updateScheduleStmt;
   private final PreparedStatement getScheduleByIdStmt;
   private final PreparedStatement getAllSchedulesStmt;
   private final PreparedStatement deleteScheduleStmt;
@@ -72,13 +71,6 @@ public class MemoryRepairScheduleDao implements IRepairScheduleDao {
                   + "segment_count_per_node, repair_parallelism, adaptive, "
                   + "percent_unrepaired_threshold, run_history, last_run) "
                   + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-      this.updateScheduleStmt =
-          connection.prepareStatement(
-              "UPDATE repair_schedule SET repair_unit_id = ?, owner = ?, state = ?, "
-                  + "days_between = ?, next_activation = ?, creation_time = ?, pause_time = ?, "
-                  + "intensity = ?, segment_count_per_node = ?, repair_parallelism = ?, "
-                  + "adaptive = ?, percent_unrepaired_threshold = ?, run_history = ?, "
-                  + "last_run = ? WHERE id = ?");
       this.getScheduleByIdStmt =
           connection.prepareStatement("SELECT * FROM repair_schedule WHERE id = ?");
       this.getAllSchedulesStmt = connection.prepareStatement("SELECT * FROM repair_schedule");
@@ -254,7 +246,8 @@ public class MemoryRepairScheduleDao implements IRepairScheduleDao {
         if (!getRepairSchedule(newRepairSchedule.getId()).isPresent()) {
           return false;
         }
-        updateScheduleInDb(newRepairSchedule);
+        // Use INSERT OR REPLACE (upsert) instead of UPDATE
+        insertSchedule(newRepairSchedule);
         return true;
       } catch (SQLException e) {
         LOG.error("Failed to update repair schedule {}", newRepairSchedule.getId(), e);
@@ -320,30 +313,6 @@ public class MemoryRepairScheduleDao implements IRepairScheduleDao {
     insertScheduleStmt.setBytes(
         15, schedule.getLastRun() != null ? UuidUtil.toBytes(schedule.getLastRun()) : null);
     insertScheduleStmt.executeUpdate();
-  }
-
-  private void updateScheduleInDb(RepairSchedule schedule) throws SQLException {
-    updateScheduleStmt.setBytes(1, UuidUtil.toBytes(schedule.getRepairUnitId()));
-    updateScheduleStmt.setString(2, schedule.getOwner());
-    updateScheduleStmt.setString(3, schedule.getState().name());
-    updateScheduleStmt.setInt(4, schedule.getDaysBetween());
-    updateScheduleStmt.setObject(5, SqliteHelper.toEpochMilli(schedule.getNextActivation()));
-    updateScheduleStmt.setObject(6, SqliteHelper.toEpochMilli(schedule.getCreationTime()));
-    updateScheduleStmt.setObject(7, SqliteHelper.toEpochMilli(schedule.getPauseTime()));
-    updateScheduleStmt.setDouble(8, schedule.getIntensity());
-    updateScheduleStmt.setInt(9, schedule.getSegmentCountPerNode());
-    updateScheduleStmt.setString(10, schedule.getRepairParallelism().name());
-    updateScheduleStmt.setInt(11, schedule.getAdaptive() ? 1 : 0);
-    updateScheduleStmt.setObject(
-        12,
-        schedule.getPercentUnrepairedThreshold() != -1
-            ? schedule.getPercentUnrepairedThreshold()
-            : null);
-    updateScheduleStmt.setString(13, SqliteHelper.toJson(schedule.getRunHistory()));
-    updateScheduleStmt.setBytes(
-        14, schedule.getLastRun() != null ? UuidUtil.toBytes(schedule.getLastRun()) : null);
-    updateScheduleStmt.setBytes(15, UuidUtil.toBytes(schedule.getId()));
-    updateScheduleStmt.executeUpdate();
   }
 
   private RepairSchedule mapRowToRepairSchedule(ResultSet rs) throws SQLException {
