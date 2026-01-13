@@ -61,6 +61,7 @@ public class MemoryRepairRunDao implements IRepairRunDao {
   private final Connection connection;
 
   private final PreparedStatement insertRepairRunStmt;
+  private final PreparedStatement updateRepairRunStmt;
   private final PreparedStatement getRepairRunByIdStmt;
   private final PreparedStatement getRepairRunsForClusterStmt;
   private final PreparedStatement getRepairRunsForUnitStmt;
@@ -80,10 +81,16 @@ public class MemoryRepairRunDao implements IRepairRunDao {
     try {
       this.insertRepairRunStmt =
           connection.prepareStatement(
-              "INSERT OR REPLACE INTO repair_run (id, cluster_name, repair_unit_id, cause, owner, state, "
+              "INSERT INTO repair_run (id, cluster_name, repair_unit_id, cause, owner, state, "
                   + "creation_time, start_time, end_time, pause_time, intensity, last_event, segment_count, "
                   + "repair_parallelism, tables, adaptive_schedule) "
                   + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+      this.updateRepairRunStmt =
+          connection.prepareStatement(
+              "UPDATE repair_run SET cluster_name = ?, repair_unit_id = ?, cause = ?, owner = ?, state = ?, "
+                  + "creation_time = ?, start_time = ?, end_time = ?, pause_time = ?, intensity = ?, "
+                  + "last_event = ?, segment_count = ?, repair_parallelism = ?, tables = ?, adaptive_schedule = ? "
+                  + "WHERE id = ?");
       this.getRepairRunByIdStmt =
           connection.prepareStatement("SELECT * FROM repair_run WHERE id = ?");
       this.getRepairRunsForClusterStmt =
@@ -186,25 +193,24 @@ public class MemoryRepairRunDao implements IRepairRunDao {
         return false;
       }
       try {
-        // Use INSERT OR REPLACE (upsert) instead of UPDATE
-        insertRepairRunStmt.clearParameters();
-        insertRepairRunStmt.setBytes(1, UuidUtil.toBytes(repairRun.getId()));
-        insertRepairRunStmt.setString(2, repairRun.getClusterName());
-        insertRepairRunStmt.setBytes(3, UuidUtil.toBytes(repairRun.getRepairUnitId()));
-        insertRepairRunStmt.setString(4, repairRun.getCause());
-        insertRepairRunStmt.setString(5, repairRun.getOwner());
-        insertRepairRunStmt.setString(6, repairRun.getRunState().name());
-        insertRepairRunStmt.setObject(7, SqliteHelper.toEpochMilli(repairRun.getCreationTime()));
-        insertRepairRunStmt.setObject(8, SqliteHelper.toEpochMilli(repairRun.getStartTime()));
-        insertRepairRunStmt.setObject(9, SqliteHelper.toEpochMilli(repairRun.getEndTime()));
-        insertRepairRunStmt.setObject(10, SqliteHelper.toEpochMilli(repairRun.getPauseTime()));
-        insertRepairRunStmt.setDouble(11, repairRun.getIntensity());
-        insertRepairRunStmt.setString(12, repairRun.getLastEvent());
-        insertRepairRunStmt.setInt(13, repairRun.getSegmentCount());
-        insertRepairRunStmt.setString(14, repairRun.getRepairParallelism().name());
-        insertRepairRunStmt.setString(15, SqliteHelper.toJson(repairRun.getTables()));
-        insertRepairRunStmt.setInt(16, repairRun.getAdaptiveSchedule() ? 1 : 0);
-        int affectedRows = insertRepairRunStmt.executeUpdate();
+        updateRepairRunStmt.clearParameters();
+        updateRepairRunStmt.setString(1, repairRun.getClusterName());
+        updateRepairRunStmt.setBytes(2, UuidUtil.toBytes(repairRun.getRepairUnitId()));
+        updateRepairRunStmt.setString(3, repairRun.getCause());
+        updateRepairRunStmt.setString(4, repairRun.getOwner());
+        updateRepairRunStmt.setString(5, repairRun.getRunState().name());
+        updateRepairRunStmt.setObject(6, SqliteHelper.toEpochMilli(repairRun.getCreationTime()));
+        updateRepairRunStmt.setObject(7, SqliteHelper.toEpochMilli(repairRun.getStartTime()));
+        updateRepairRunStmt.setObject(8, SqliteHelper.toEpochMilli(repairRun.getEndTime()));
+        updateRepairRunStmt.setObject(9, SqliteHelper.toEpochMilli(repairRun.getPauseTime()));
+        updateRepairRunStmt.setDouble(10, repairRun.getIntensity());
+        updateRepairRunStmt.setString(11, repairRun.getLastEvent());
+        updateRepairRunStmt.setInt(12, repairRun.getSegmentCount());
+        updateRepairRunStmt.setString(13, repairRun.getRepairParallelism().name());
+        updateRepairRunStmt.setString(14, SqliteHelper.toJson(repairRun.getTables()));
+        updateRepairRunStmt.setInt(15, repairRun.getAdaptiveSchedule() ? 1 : 0);
+        updateRepairRunStmt.setBytes(16, UuidUtil.toBytes(repairRun.getId()));
+        int affectedRows = updateRepairRunStmt.executeUpdate();
         return affectedRows > 0;
       } catch (SQLException e) {
         LOG.error("Failed to update repair run {}", repairRun.getId(), e);
