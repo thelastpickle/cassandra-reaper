@@ -29,10 +29,12 @@ import io.cassandrareaper.resources.view.RepairRunStatus;
 import io.cassandrareaper.resources.view.RepairScheduleStatus;
 import io.cassandrareaper.service.RepairRunService;
 import io.cassandrareaper.storage.DiagEventSubscriptionMapper;
+import io.cassandrareaper.storage.MemoryStorageFacade;
 import io.cassandrareaper.storage.cassandra.CassandraStorageFacade;
 
 import java.net.InetSocketAddress;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -77,6 +79,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import cucumber.api.java.Before;
 import cucumber.api.java.en.And;
 import cucumber.api.java.en.Given;
 import cucumber.api.java.en.Then;
@@ -122,6 +125,28 @@ public final class BasicSteps {
   private Optional<String> reaperVersion = Optional.empty();
   private Response lastResponse;
   private TestContext testContext;
+
+  @Before
+  public void clearDatabaseBeforeScenario() {
+    // Clear the database before each Cucumber scenario for test isolation
+    synchronized (BasicSteps.class) {
+      LOG.info("@Before hook called - clearing database and caches for all runners");
+      RUNNERS.forEach(
+          runner -> {
+            try {
+              if (runner.getContext().storage instanceof MemoryStorageFacade) {
+                ((MemoryStorageFacade) runner.getContext().storage).clearDatabase();
+                LOG.info("Cleared database for runner before scenario");
+              }
+              // Clear ClusterFacade caches that persist across test scenarios
+              io.cassandrareaper.management.ClusterFacade.clearCaches();
+              LOG.info("Cleared ClusterFacade caches");
+            } catch (Exception e) {
+              LOG.warn("Failed to clear database or caches before scenario", e);
+            }
+          });
+    }
+  }
 
   public static synchronized void addReaperRunner(ReaperTestJettyRunner runner) {
     if (!CLIENTS.isEmpty()) {
@@ -257,6 +282,33 @@ public final class BasicSteps {
   @Given("^that reaper ([^\"]*) is running$")
   public void start_reaper(String version) throws Throwable {
     synchronized (BasicSteps.class) {
+      // Clear database, caches, and stop running repairs at the start of each scenario
+      // This is critical for Surefire retries where @Before hooks may not re-run
+      LOG.info("Clearing all state at start of scenario (Reaper {} is running)", version);
+      RUNNERS.forEach(
+          runner -> {
+            try {
+              // CRITICAL: Stop all running RepairRunners before clearing database
+              // RepairRunners are in-memory threads that persist even after database is cleared
+              if (runner.getContext().repairManager != null) {
+                runner.getContext().repairManager.clearAllRepairRunners();
+                LOG.info("Cleared active RepairRunners from memory at scenario start");
+              }
+
+              // Clear database
+              if (runner.getContext().storage instanceof MemoryStorageFacade) {
+                ((MemoryStorageFacade) runner.getContext().storage).clearDatabase();
+                LOG.info("Cleared database for runner at scenario start");
+              }
+
+              // Clear caches
+              io.cassandrareaper.management.ClusterFacade.clearCaches();
+              LOG.info("Cleared ClusterFacade caches at scenario start");
+            } catch (Exception e) {
+              LOG.warn("Failed to clear database or caches at scenario start", e);
+            }
+          });
+
       testContext = new TestContext();
     }
   }
@@ -276,6 +328,33 @@ public final class BasicSteps {
   @And("^reaper has no cluster in storage$")
   public void reaper_has_no_cluster_in_storage() throws Throwable {
     synchronized (BasicSteps.class) {
+      // Clear database, caches, and stop running repairs - this ensures clean state for each
+      // example
+      LOG.info("Clearing all state before 'reaper has no cluster in storage' check");
+      RUNNERS.forEach(
+          runner -> {
+            try {
+              // CRITICAL: Stop all running RepairRunners before clearing database
+              // RepairRunners are in-memory threads that persist even after database is cleared
+              if (runner.getContext().repairManager != null) {
+                runner.getContext().repairManager.clearAllRepairRunners();
+                LOG.info("Cleared active RepairRunners from memory");
+              }
+
+              // Clear database
+              if (runner.getContext().storage instanceof MemoryStorageFacade) {
+                ((MemoryStorageFacade) runner.getContext().storage).clearDatabase();
+                LOG.info("Cleared database for runner");
+              }
+
+              // Clear caches
+              io.cassandrareaper.management.ClusterFacade.clearCaches();
+              LOG.info("Cleared ClusterFacade caches");
+            } catch (Exception e) {
+              LOG.warn("Failed to clear database or caches", e);
+            }
+          });
+
       RUNNERS.parallelStream()
           .forEach(
               runner -> {
@@ -1489,11 +1568,44 @@ public final class BasicSteps {
       throws Throwable {
     synchronized (BasicSteps.class) {
       ReaperTestJettyRunner runner = RUNNERS.get(RAND.nextInt(RUNNERS.size()));
+
+      // Query existing repairs for this keyspace to match their incremental settings
+      Response listResponse =
+          runner.callReaper(
+              "GET", "/repair_run/cluster/" + TestContext.TEST_CLUSTER, Optional.empty());
+      String listResponseData = listResponse.readEntity(String.class);
+
+      boolean incrementalRepair = false;
+      boolean subrangeIncrementalRepair = false;
+
+      if (listResponse.getStatus() == Response.Status.OK.getStatusCode()
+          && listResponseData != null
+          && !listResponseData.isEmpty()) {
+        Collection<RepairRunStatus> existingRuns =
+            SimpleReaperClient.parseRepairRunStatusListJSON(listResponseData);
+
+        // Find a repair for the same keyspace and match its incremental settings
+        for (RepairRunStatus existingRun : existingRuns) {
+          if (existingRun.getKeyspaceName().equals(keyspace)) {
+            incrementalRepair = existingRun.getIncrementalRepair();
+            subrangeIncrementalRepair = existingRun.getSubrangeIncrementalRepair();
+            LOG.info(
+                "Matching existing repair settings: incrementalRepair={}, subrangeIncrementalRepair={}",
+                incrementalRepair,
+                subrangeIncrementalRepair);
+            break;
+          }
+        }
+      }
+
       Map<String, String> params = Maps.newHashMap();
       params.put("clusterName", TestContext.TEST_CLUSTER);
       params.put("keyspace", keyspace);
       params.put("owner", TestContext.TEST_USER);
       params.put("force", "true");
+      params.put("incrementalRepair", Boolean.toString(incrementalRepair));
+      params.put("subrangeIncrementalRepair", Boolean.toString(subrangeIncrementalRepair));
+
       Response response = runner.callReaper("POST", "/repair_run", Optional.of(params));
       assertEquals(Response.Status.CREATED.getStatusCode(), response.getStatus());
       String responseData = response.readEntity(String.class);
@@ -3412,6 +3524,7 @@ public final class BasicSteps {
                                 "/repair_run/" + id,
                                 Optional.empty(),
                                 Optional.empty(),
+                                Response.Status.CONFLICT,
                                 Response.Status.BAD_REQUEST);
                           } catch (AssertionError ex) {
                             LOG.warn(

@@ -220,8 +220,9 @@ public final class SchedulingManagerTest {
             .timeout(30)
             .build(Uuids.timeBased());
 
-    DateTime startTime = DateTime.now().minusMinutes(10);
-    DateTime endTime = DateTime.now().minusMinutes(5);
+    // Last repair ended 25 minutes ago (needs to be > 2 * percentRepairedCheckIntervalMinutes)
+    DateTime startTime = DateTime.now().minusMinutes(30);
+    DateTime endTime = DateTime.now().minusMinutes(25);
     RepairRun repairRun =
         RepairRun.builder("test", repairUnit.getId())
             .repairParallelism(RepairParallelism.PARALLEL)

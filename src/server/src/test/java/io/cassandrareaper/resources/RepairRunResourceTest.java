@@ -203,6 +203,9 @@ public final class RepairRunResourceTest {
   @After
   public void tearDown() {
     DateTimeUtils.setCurrentMillisSystem();
+    if (context != null && context.storage instanceof MemoryStorageFacade) {
+      ((MemoryStorageFacade) context.storage).clearDatabase();
+    }
   }
 
   private Response addDefaultRepairRun(RepairRunResource resource) {

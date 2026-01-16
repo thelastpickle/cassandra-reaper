@@ -55,10 +55,20 @@ import jakarta.ws.rs.core.UriInfo;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.assertj.core.api.Assertions;
 import org.eclipse.jetty.http.HttpStatus;
+import org.junit.After;
 import org.junit.Test;
 import org.mockito.Mockito;
 
 public final class ClusterResourceTest {
+
+  private MemoryStorageFacade storage;
+
+  @After
+  public void tearDown() {
+    if (storage != null) {
+      storage.clearDatabase();
+    }
+  }
 
   static final String CLUSTER_NAME = "testcluster";
   static final String PARTITIONER = "org.apache.cassandra.dht.RandomPartitioner";
@@ -783,7 +793,8 @@ public final class ClusterResourceTest {
 
   private MockObjects initMocks() throws ReaperException {
     AppContext context = new AppContext();
-    context.storage = new MemoryStorageFacade();
+    storage = new MemoryStorageFacade();
+    context.storage = storage;
     context.config = TestRepairConfiguration.defaultConfig();
 
     UriInfo uriInfo = mock(UriInfo.class);

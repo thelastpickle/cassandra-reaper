@@ -114,4 +114,5 @@ cryptograph:
   type: symmetric
   systemPropertySecret: REAPER_ENCRYPTION_KEY
 
-persistenceStoragePath: /tmp/reaper/storage/
+# Use empty path for in-memory SQLite (non-persistent for tests)
+persistenceStoragePath: ""

@@ -15,17 +15,11 @@
 package io.cassandrareaper.storage;
 
 import io.cassandrareaper.core.Cluster;
-import io.cassandrareaper.core.DiagEventSubscription;
 import io.cassandrareaper.core.PercentRepairedMetric;
-import io.cassandrareaper.core.RepairRun;
-import io.cassandrareaper.core.RepairSchedule;
-import io.cassandrareaper.core.RepairSegment;
-import io.cassandrareaper.core.RepairUnit;
 import io.cassandrareaper.storage.cluster.IClusterDao;
 import io.cassandrareaper.storage.cluster.MemoryClusterDao;
 import io.cassandrareaper.storage.events.IEventsDao;
 import io.cassandrareaper.storage.events.MemoryEventsDao;
-import io.cassandrareaper.storage.memory.MemoryStorageRoot;
 import io.cassandrareaper.storage.memory.ReplicaLockManagerWithTtl;
 import io.cassandrareaper.storage.metrics.MemoryMetricsDao;
 import io.cassandrareaper.storage.repairrun.IRepairRunDao;
@@ -38,19 +32,19 @@ import io.cassandrareaper.storage.repairunit.IRepairUnitDao;
 import io.cassandrareaper.storage.repairunit.MemoryRepairUnitDao;
 import io.cassandrareaper.storage.snapshot.ISnapshotDao;
 import io.cassandrareaper.storage.snapshot.MemorySnapshotDao;
+import io.cassandrareaper.storage.sqlite.EclipseStoreToSqliteMigration;
+import io.cassandrareaper.storage.sqlite.SqliteMigrationManager;
 
-import java.nio.file.Paths;
-import java.util.Collection;
+import java.io.File;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
-import org.eclipse.serializer.persistence.types.PersistenceFieldEvaluator;
-import org.eclipse.store.storage.embedded.types.EmbeddedStorage;
-import org.eclipse.store.storage.embedded.types.EmbeddedStorageManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -61,60 +55,80 @@ public final class MemoryStorageFacade implements IStorageDao {
   private static final long DEFAULT_LEAD_TTL = 90_000;
   private static final Logger LOG = LoggerFactory.getLogger(MemoryStorageFacade.class);
 
-  /**
-   * Field evaluator to find transient attributes. This is needed to deal with persisting Guava
-   * collections objects that sometimes use the transient keyword for some of their implementation's
-   * backing stores
-   */
-  private static final PersistenceFieldEvaluator TRANSIENT_FIELD_EVALUATOR =
-      (clazz, field) -> !field.getName().startsWith("_");
-
-  private final EmbeddedStorageManager embeddedStorage;
-  private final MemoryStorageRoot memoryStorageRoot;
-  private final MemoryRepairSegmentDao memRepairSegment = new MemoryRepairSegmentDao(this);
-  private final MemoryRepairUnitDao memoryRepairUnitDao = new MemoryRepairUnitDao(this);
-  private final MemoryRepairRunDao memoryRepairRunDao =
-      new MemoryRepairRunDao(this, memRepairSegment, memoryRepairUnitDao);
-  private final MemoryRepairScheduleDao memRepairScheduleDao =
-      new MemoryRepairScheduleDao(this, memoryRepairUnitDao);
-  private final MemoryEventsDao memEventsDao = new MemoryEventsDao(this);
-  private final MemoryClusterDao memClusterDao =
-      new MemoryClusterDao(
-          this, memoryRepairUnitDao, memoryRepairRunDao, memRepairScheduleDao, memEventsDao);
+  private final Connection sqliteConnection;
+  private final boolean isPersistent;
+  private final MemoryRepairSegmentDao memRepairSegment;
+  private final MemoryRepairUnitDao memoryRepairUnitDao;
+  private final MemoryRepairRunDao memoryRepairRunDao;
+  private final MemoryRepairScheduleDao memRepairScheduleDao;
+  private final MemoryEventsDao memEventsDao;
+  private final MemoryClusterDao memClusterDao;
   private final MemorySnapshotDao memSnapshotDao = new MemorySnapshotDao();
   private final MemoryMetricsDao memMetricsDao = new MemoryMetricsDao();
   private final ReplicaLockManagerWithTtl replicaLockManagerWithTtl;
   private final String persistenceStoragePath;
 
   public MemoryStorageFacade(String persistenceStoragePath, long leadTime) {
-    LOG.info("Using memory storage backend. Persistence storage path: {}", persistenceStoragePath);
+    LOG.info(
+        "Using memory storage backend with SQLite. Persistence storage path: {}",
+        persistenceStoragePath);
     this.persistenceStoragePath = persistenceStoragePath;
-    EmbeddedStorageManager storage = null;
-    MemoryStorageRoot root = null;
-    if (persistenceStoragePath != null && !persistenceStoragePath.isEmpty()) {
-      // If persistence storage path is provided, create a new embedded storage manager
-      storage =
-          EmbeddedStorage.Foundation(Paths.get(this.persistenceStoragePath))
-              .onConnectionFoundation(
-                  c -> {
-                    c.setFieldEvaluatorPersistable(TRANSIENT_FIELD_EVALUATOR);
-                  })
-              .createEmbeddedStorageManager();
-      storage.start();
-      if (storage.root() == null) {
-        LOG.info("Creating new data storage");
-        root = new MemoryStorageRoot();
-        storage.setRoot(root);
+
+    // Initialize SQLite connection
+    try {
+      if (persistenceStoragePath == null || persistenceStoragePath.isEmpty()) {
+        // In-memory mode (volatile) with shared cache disabled for test isolation
+        // Using file::memory:?cache=private creates a unique in-memory database per connection
+        LOG.info("Using in-memory SQLite mode (volatile - data lost on restart)");
+        this.sqliteConnection =
+            DriverManager.getConnection("jdbc:sqlite:file::memory:?cache=private");
+        this.isPersistent = false;
       } else {
-        LOG.info("Loading existing data from persistence storage");
-        root = (MemoryStorageRoot) storage.root();
+        // Persistent mode: persistenceStoragePath is a DIRECTORY
+        File storageDir = new File(persistenceStoragePath);
+        if (!storageDir.exists()) {
+          storageDir.mkdirs();
+          LOG.info("Created storage directory: {}", storageDir.getAbsolutePath());
+        }
+
+        String dbPath = new File(storageDir, "reaper.db").getAbsolutePath();
+        LOG.info("Using persistent SQLite mode: {}", dbPath);
+        this.sqliteConnection = DriverManager.getConnection("jdbc:sqlite:" + dbPath);
+        this.isPersistent = true;
       }
-    } else {
-      // If persistence storage path is not provided, create a new in-memory storage root
-      root = new MemoryStorageRoot();
+
+      // Enable autocommit mode for immediate visibility of writes
+      sqliteConnection.setAutoCommit(true);
+      LOG.info("SQLite autocommit enabled: {}", sqliteConnection.getAutoCommit());
+
+      // Initialize schema FIRST (before migration)
+      SqliteMigrationManager.initializeSchema(sqliteConnection);
+
+      // Now check for EclipseStore data and migrate if needed
+      if (isPersistent) {
+        File storageDir = new File(persistenceStoragePath);
+        boolean migrated =
+            EclipseStoreToSqliteMigration.migrateIfNeeded(storageDir, sqliteConnection);
+        if (migrated) {
+          LOG.info("Successfully migrated from EclipseStore to SQLite");
+        }
+      }
+
+    } catch (SQLException e) {
+      LOG.error("Failed to initialize SQLite connection", e);
+      throw new RuntimeException("Failed to initialize SQLite storage", e);
     }
-    this.embeddedStorage = storage;
-    this.memoryStorageRoot = root;
+
+    // Initialize DAOs (must be done after SQLite connection is established)
+    this.memRepairSegment = new MemoryRepairSegmentDao(this);
+    this.memoryRepairUnitDao = new MemoryRepairUnitDao(this);
+    this.memoryRepairRunDao = new MemoryRepairRunDao(this, memRepairSegment, memoryRepairUnitDao);
+    this.memRepairScheduleDao = new MemoryRepairScheduleDao(this, memoryRepairUnitDao);
+    this.memEventsDao = new MemoryEventsDao(this);
+    this.memClusterDao =
+        new MemoryClusterDao(
+            this, memoryRepairUnitDao, memoryRepairRunDao, memRepairScheduleDao, memEventsDao);
+
     this.replicaLockManagerWithTtl = new ReplicaLockManagerWithTtl(leadTime);
   }
 
@@ -132,8 +146,12 @@ public final class MemoryStorageFacade implements IStorageDao {
 
   @Override
   public boolean isStorageConnected() {
-    // Just assuming the MemoryStorage is always functional when instantiated.
-    return true;
+    try {
+      return this.sqliteConnection != null && !this.sqliteConnection.isClosed();
+    } catch (SQLException e) {
+      LOG.error("Failed to check SQLite connection status", e);
+      return false;
+    }
   }
 
   private boolean addClusterAssertions(Cluster cluster) {
@@ -158,8 +176,89 @@ public final class MemoryStorageFacade implements IStorageDao {
 
   @Override
   public void stop() {
-    if (this.embeddedStorage != null) {
-      this.embeddedStorage.shutdown();
+    if (this.sqliteConnection != null) {
+      try {
+        this.sqliteConnection.close();
+        LOG.info("SQLite connection closed");
+      } catch (SQLException e) {
+        LOG.error("Error closing SQLite connection", e);
+      }
+    }
+  }
+
+  /**
+   * Get the SQLite database connection for use by DAOs.
+   *
+   * @return The SQLite connection
+   */
+  public Connection getSqliteConnection() {
+    return this.sqliteConnection;
+  }
+
+  /**
+   * Check if storage is in persistent mode (backed by disk file).
+   *
+   * @return true if persistent, false if in-memory
+   */
+  public boolean isPersistent() {
+    return this.isPersistent;
+  }
+
+  /**
+   * Clear all data from the database (for testing purposes). This deletes all rows from all tables
+   * while preserving schema.
+   *
+   * <p>NOTE: This method only clears database state. For integration tests, you should also clear
+   * in-memory state such as running RepairRunner threads and ClusterFacade caches separately.
+   */
+  public void clearDatabase() {
+    synchronized (sqliteConnection) {
+      try {
+        // Temporarily disable foreign keys for cleanup
+        try (Statement stmt = sqliteConnection.createStatement()) {
+          stmt.execute("PRAGMA foreign_keys = OFF");
+        }
+
+        // Delete all data (order matters due to foreign keys)
+        try (Statement stmt = sqliteConnection.createStatement()) {
+          stmt.execute("DELETE FROM repair_segment");
+          stmt.execute("DELETE FROM repair_run");
+          stmt.execute("DELETE FROM repair_schedule");
+          stmt.execute("DELETE FROM repair_unit");
+          stmt.execute("DELETE FROM diag_event_subscription");
+          stmt.execute("DELETE FROM cluster");
+        }
+
+        // Re-enable foreign keys
+        try (Statement stmt = sqliteConnection.createStatement()) {
+          stmt.execute("PRAGMA foreign_keys = ON");
+        }
+
+        // Verify the clear worked
+        try (Statement stmt = sqliteConnection.createStatement();
+            ResultSet rs =
+                stmt.executeQuery(
+                    "SELECT "
+                        + "(SELECT COUNT(*) FROM cluster) + "
+                        + "(SELECT COUNT(*) FROM repair_unit) + "
+                        + "(SELECT COUNT(*) FROM repair_run) + "
+                        + "(SELECT COUNT(*) FROM repair_schedule) + "
+                        + "(SELECT COUNT(*) FROM repair_segment) + "
+                        + "(SELECT COUNT(*) FROM diag_event_subscription) as total")) {
+          if (rs.next()) {
+            int totalRows = rs.getInt(1);
+            if (totalRows > 0) {
+              LOG.error("Database clear FAILED - {} rows still remain after DELETE!", totalRows);
+            } else {
+              LOG.info("Database cleared and verified - 0 rows remaining");
+            }
+          }
+        }
+
+      } catch (SQLException e) {
+        LOG.error("Failed to clear database", e);
+        throw new RuntimeException("Failed to clear database", e);
+      }
     }
   }
 
@@ -196,134 +295,6 @@ public final class MemoryStorageFacade implements IStorageDao {
   @Override
   public IClusterDao getClusterDao() {
     return this.memClusterDao;
-  }
-
-  private void persist(Object... objects) {
-    synchronized (memoryStorageRoot) {
-      try {
-        if (this.embeddedStorage != null) {
-          this.embeddedStorage.storeAll(objects);
-          this.embeddedStorage.storeRoot();
-        }
-      } catch (RuntimeException ex) {
-        LOG.error("Failed persisting Reaper state to disk", ex);
-        throw ex;
-      }
-    }
-  }
-
-  // Cluster operations
-  public Map<String, Cluster> getClusters() {
-    return this.memoryStorageRoot.getClusters();
-  }
-
-  public Cluster addCluster(Cluster cluster) {
-    Cluster newCluster = this.memoryStorageRoot.addCluster(cluster);
-    this.persist(memoryStorageRoot.getClusters());
-    return newCluster;
-  }
-
-  public Cluster removeCluster(String clusterName) {
-    Cluster cluster = this.memoryStorageRoot.removeCluster(clusterName);
-    this.persist(memoryStorageRoot.getClusters());
-    return cluster;
-  }
-
-  // RepairSchedule operations
-  public RepairSchedule addRepairSchedule(RepairSchedule schedule) {
-    RepairSchedule newSchedule = this.memoryStorageRoot.addRepairSchedule(schedule);
-    this.persist(this.memoryStorageRoot.getRepairSchedules());
-    return newSchedule;
-  }
-
-  public RepairSchedule removeRepairSchedule(UUID id) {
-    RepairSchedule schedule = this.memoryStorageRoot.removeRepairSchedule(id);
-    this.persist(this.memoryStorageRoot.getRepairSchedules());
-    return schedule;
-  }
-
-  public Optional<RepairSchedule> getRepairScheduleById(UUID id) {
-    return Optional.ofNullable(this.memoryStorageRoot.getRepairScheduleById(id));
-  }
-
-  public Collection<RepairSchedule> getRepairSchedules() {
-    return this.memoryStorageRoot.getRepairSchedules().values();
-  }
-
-  // RepairRun operations
-  public Collection<RepairRun> getRepairRuns() {
-    return this.memoryStorageRoot.getRepairRuns().values();
-  }
-
-  public RepairRun addRepairRun(RepairRun run) {
-    RepairRun newRun = this.memoryStorageRoot.addRepairRun(run);
-    this.persist(this.memoryStorageRoot.getRepairRuns());
-    return newRun;
-  }
-
-  public RepairRun removeRepairRun(UUID id) {
-    RepairRun run = this.memoryStorageRoot.removeRepairRun(id);
-    this.persist(this.memoryStorageRoot.getRepairRuns());
-    return run;
-  }
-
-  public Optional<RepairRun> getRepairRunById(UUID id) {
-    return Optional.ofNullable(this.memoryStorageRoot.getRepairRunById(id));
-  }
-
-  // RepairUnit operations
-  public Collection<RepairUnit> getRepairUnits() {
-    return this.memoryStorageRoot.getRepairUnits().values();
-  }
-
-  public RepairUnit addRepairUnit(Optional<RepairUnit.Builder> key, RepairUnit unit) {
-    RepairUnit newUnit = this.memoryStorageRoot.addRepairUnit(key.get(), unit);
-    this.persist(
-        this.memoryStorageRoot.getRepairUnits(), this.memoryStorageRoot.getRepairUnitsByKey());
-    return newUnit;
-  }
-
-  public RepairUnit removeRepairUnit(Optional<RepairUnit.Builder> key, UUID id) {
-    RepairUnit unit = this.memoryStorageRoot.removeRepairUnit(key.get(), id);
-    this.persist(
-        this.memoryStorageRoot.getRepairUnits(), this.memoryStorageRoot.getRepairUnitsByKey());
-    return unit;
-  }
-
-  public RepairUnit getRepairUnitById(UUID id) {
-    return this.memoryStorageRoot.getrRepairUnitById(id);
-  }
-
-  public RepairUnit getRepairUnitByKey(RepairUnit.Builder key) {
-    return this.memoryStorageRoot.getRepairUnitByKey(key);
-  }
-
-  // RepairSegment operations
-  public RepairSegment addRepairSegment(RepairSegment segment) {
-    final RepairSegment newSegment = this.memoryStorageRoot.addRepairSegment(segment);
-    this.persist(this.memoryStorageRoot.getRepairSegments());
-    return newSegment;
-  }
-
-  public RepairSegment removeRepairSegment(UUID id) {
-    RepairSegment segment = this.memoryStorageRoot.removeRepairSegment(id);
-    this.persist(this.memoryStorageRoot.getRepairSegments());
-    return segment;
-  }
-
-  public RepairSegment getRepairSegmentById(UUID id) {
-    return this.memoryStorageRoot.getRepairSegmentById(id);
-  }
-
-  public Collection<RepairSegment> getRepairSegmentsByRunId(UUID runId) {
-    return this.memoryStorageRoot.getRepairSegments().values().stream()
-        .filter(segment -> segment.getRunId().equals(runId))
-        .collect(Collectors.toSet());
-  }
-
-  // RepairSubscription operations
-  public Map<UUID, DiagEventSubscription> getSubscriptionsById() {
-    return this.memoryStorageRoot.getSubscriptionsById();
   }
 
   @Override
