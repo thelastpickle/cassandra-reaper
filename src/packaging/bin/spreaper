@@ -493,14 +493,10 @@ class ReaperCLI(object):
         payload = {'username':args.username, 'password':password, 'rememberMe':False}
         reply = reaper.postFormData("login", 
                             payload=payload)
-        # Use shiro's session id to request a JWT
-        COOKIES["JSESSIONID"] = reply.cookies["JSESSIONID"]
-        jwt = reaper.get("jwt")
+        auth_content = json.loads(reply.content)
+        jwt = auth_content['token']
         printq("You are now authenticated to Reaper.")
         ReaperCLI.save_jwt(jwt)
-
-        # remove the session id and set the auth header with the JWT
-        COOKIES.pop("JSESSIONID", None)
 
     def ping(self):
         reaper, args = ReaperCLI.prepare_reaper(
