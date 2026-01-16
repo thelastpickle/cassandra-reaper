@@ -4,80 +4,57 @@
     <title>Using Reaper on Reaper: Easy Repair Management for Apache Cassandra</title>
     <link>http://cassandra-reaper.io/docs/usage/</link>
     <description>Recent content in Using Reaper on Reaper: Easy Repair Management for Apache Cassandra</description>
-    <generator>Hugo -- gohugo.io</generator>
-    <language>en-us</language><atom:link href="http://cassandra-reaper.io/docs/usage/index.xml" rel="self" type="application/rss+xml" />
+    <generator>Hugo</generator>
+    <language>en-us</language>
+    <atom:link href="http://cassandra-reaper.io/docs/usage/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>Adding a Cluster</title>
       <link>http://cassandra-reaper.io/docs/usage/add_cluster/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>http://cassandra-reaper.io/docs/usage/add_cluster/</guid>
-      <description>Enter an address of one of the nodes in the cluster, then click Add Cluster Reaper will contact that node and find the rest of the nodes in the cluster automatically.
-Once successfully completed, the Cluster&amp;rsquo;s health will be displayed.
-If JMX authentication is required and all clusters share the same credentials, they have to be filled in the Reaper YAML file, under jmxAuth (see the configuration reference).
-Specific JMX credentials per cluster Since 1.</description>
+      <description>&lt;p&gt;Enter an address of one of the nodes in the cluster, then click &lt;em&gt;Add Cluster&lt;/em&gt; Reaper will contact that node and find the rest of the nodes in the cluster automatically.&lt;/p&gt;&#xA;&lt;div class = &#34;row&#34;&gt;&#xA;    &lt;div class = &#34;col-md-6&#34;&gt;&#xA;        &lt;a data-fancybox=&#34;gallery&#34; href=&#34;http://cassandra-reaper.io/img/add_cluster.png&#34;&gt;&#xA;        &lt;img src=&#34;http://cassandra-reaper.io/img/add_cluster.png&#34; class=&#34;img-responsive&#34;&gt;&#xA;        &lt;/a&gt;&#xA;    &lt;/div&gt;&#xA;    &lt;div&gt;&#xA;        &lt;h4&gt;&lt;/h4&gt;&#xA;&#xA;        &#xA;    &lt;/div&gt;&#xA;&#xA;&lt;/div&gt;&#xA;&#xA;&#xA;&#xA;&#xA;&#xA;&#xA;&#xA;&lt;br/&gt;&#xA;&lt;p&gt;Once successfully completed, the Cluster&amp;rsquo;s &lt;a href=&#34;../health&#34;&gt;health&lt;/a&gt; will be displayed.&lt;/p&gt;&#xA;&lt;br/&gt;&#xA;&lt;p&gt;If JMX authentication is required and all clusters share the same credentials, they have to be filled in the Reaper YAML file, under &lt;code&gt;jmxAuth&lt;/code&gt; (see the &lt;a href=&#34;../../configuration/reaper_specific&#34;&gt;configuration reference&lt;/a&gt;).&lt;/p&gt;</description>
     </item>
-    
     <item>
       <title>Checking a Cluster&#39;s Health</title>
       <link>http://cassandra-reaper.io/docs/usage/health/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>http://cassandra-reaper.io/docs/usage/health/</guid>
-      <description>Dashboard When a cluster has been added to Reaper it will be displayed in the dashboard.
-Node View Clicking on one of the nodes will open a dialog box containing details of the node&amp;rsquo;s state.</description>
+      <description>&lt;h2 id=&#34;dashboard&#34;&gt;Dashboard&lt;/h2&gt;&#xA;&lt;p&gt;When a cluster has been added to Reaper it will be displayed in the dashboard.&lt;/p&gt;&#xA;&lt;div class = &#34;row&#34;&gt;&#xA;    &lt;div class = &#34;col-md-6&#34;&gt;&#xA;        &lt;a data-fancybox=&#34;gallery&#34; href=&#34;http://cassandra-reaper.io/img/cluster_view.png&#34;&gt;&#xA;        &lt;img src=&#34;http://cassandra-reaper.io/img/cluster_view.png&#34; class=&#34;img-responsive&#34;&gt;&#xA;        &lt;/a&gt;&#xA;    &lt;/div&gt;&#xA;    &lt;div&gt;&#xA;        &lt;h4&gt;&lt;/h4&gt;&#xA;&#xA;        &#xA;    &lt;/div&gt;&#xA;&#xA;&lt;/div&gt;&#xA;&#xA;&#xA;&#xA;&#xA;&#xA;&#xA;&#xA;&lt;br/&gt;&#xA;&lt;h2 id=&#34;node-view&#34;&gt;Node View&lt;/h2&gt;&#xA;&lt;p&gt;Clicking on one of the nodes will open a dialog box containing details of the node&amp;rsquo;s state.&lt;/p&gt;&#xA;&lt;div class = &#34;row&#34;&gt;&#xA;    &lt;div class = &#34;col-md-6&#34;&gt;&#xA;        &lt;a data-fancybox=&#34;gallery&#34; href=&#34;http://cassandra-reaper.io/img/node.png&#34;&gt;&#xA;        &lt;img src=&#34;http://cassandra-reaper.io/img/node.png&#34; class=&#34;img-responsive&#34;&gt;&#xA;        &lt;/a&gt;&#xA;    &lt;/div&gt;&#xA;    &lt;div&gt;&#xA;        &lt;h4&gt;&lt;/h4&gt;&#xA;&#xA;        &#xA;    &lt;/div&gt;&#xA;&#xA;&lt;/div&gt;</description>
     </item>
-    
     <item>
       <title>Running a Cluster Repair</title>
       <link>http://cassandra-reaper.io/docs/usage/single/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>http://cassandra-reaper.io/docs/usage/single/</guid>
-      <description>Reaper has the ability to launch a once-off repair on a cluster. This can be done in the following way.
-Start a New Repair Click the repair menu item on the left side to navigate to the Repair page. Click Start a new repair to open the repair details form.
-Fill in the Details Enter values for the keyspace, tables, owner and other fields and click the Repair button. See the table below for further information on the details for each field.</description>
+      <description>&lt;p&gt;Reaper has the ability to launch a once-off repair on a cluster. This can be done in the following way.&lt;/p&gt;&#xA;&lt;h2 id=&#34;start-a-new-repair&#34;&gt;Start a New Repair&lt;/h2&gt;&#xA;&lt;p&gt;Click the &lt;em&gt;repair&lt;/em&gt; menu item on the left side to navigate to the Repair page. Click &lt;em&gt;Start a new repair&lt;/em&gt; to open the repair details form.&lt;/p&gt;&#xA;&lt;div class = &#34;row&#34;&gt;&#xA;    &lt;div class = &#34;col-md-6&#34;&gt;&#xA;        &lt;a data-fancybox=&#34;gallery&#34; href=&#34;http://cassandra-reaper.io/img/repair_page.png&#34;&gt;&#xA;        &lt;img src=&#34;http://cassandra-reaper.io/img/repair_page.png&#34; class=&#34;img-responsive&#34;&gt;&#xA;        &lt;/a&gt;&#xA;    &lt;/div&gt;&#xA;    &lt;div&gt;&#xA;        &lt;h4&gt;&lt;/h4&gt;&#xA;&#xA;        &#xA;    &lt;/div&gt;&#xA;&#xA;&lt;/div&gt;&#xA;&#xA;&#xA;&#xA;&#xA;&#xA;&#xA;&#xA;&lt;br/&gt;&#xA;&lt;h2 id=&#34;fill-in-the-details&#34;&gt;Fill in the Details&lt;/h2&gt;&#xA;&lt;p&gt;Enter values for the keyspace, tables, owner and other fields and click the &lt;em&gt;Repair&lt;/em&gt; button. See the table below for further information on the details for each field.&lt;/p&gt;</description>
     </item>
-    
     <item>
       <title>Scheduling a Cluster Repair</title>
       <link>http://cassandra-reaper.io/docs/usage/schedule/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>http://cassandra-reaper.io/docs/usage/schedule/</guid>
-      <description>Reaper has the ability to create and manage repair schedules for a cluster. This can be done in the following way.
-Setup a Repair Schedule Click the schedule menu item on the left side to navigate to the Schedules page. Click Add schedule to open the schedule details form.
-Fill in the Details Enter values for the keyspace, tables, owner and other fields and click Add Schedule button. The details for adding a schedule are similar to the details for Repair form except the &amp;ldquo;Cause&amp;rdquo; field is replaced with three fields; &amp;ldquo;Start time&amp;rdquo;, &amp;ldquo;Interval in days&amp;rdquo; and &amp;ldquo;Percent unrepaired threshold&amp;rdquo;.</description>
+      <description>&lt;p&gt;Reaper has the ability to create and manage repair schedules for a cluster. This can be done in the following way.&lt;/p&gt;&#xA;&lt;h2 id=&#34;setup-a-repair-schedule&#34;&gt;Setup a Repair Schedule&lt;/h2&gt;&#xA;&lt;p&gt;Click the &lt;em&gt;schedule&lt;/em&gt; menu item on the left side to navigate to the Schedules page. Click &lt;em&gt;Add schedule&lt;/em&gt; to open the schedule details form.&lt;/p&gt;&#xA;&lt;div class = &#34;row&#34;&gt;&#xA;    &lt;div class = &#34;col-md-6&#34;&gt;&#xA;        &lt;a data-fancybox=&#34;gallery&#34; href=&#34;http://cassandra-reaper.io/img/schedule.png&#34;&gt;&#xA;        &lt;img src=&#34;http://cassandra-reaper.io/img/schedule.png&#34; class=&#34;img-responsive&#34;&gt;&#xA;        &lt;/a&gt;&#xA;    &lt;/div&gt;&#xA;    &lt;div&gt;&#xA;        &lt;h4&gt;&lt;/h4&gt;&#xA;&#xA;        &#xA;    &lt;/div&gt;&#xA;&#xA;&lt;/div&gt;&#xA;&#xA;&#xA;&#xA;&#xA;&#xA;&#xA;&#xA;&lt;br/&gt;&#xA;&lt;h2 id=&#34;fill-in-the-details&#34;&gt;Fill in the Details&lt;/h2&gt;&#xA;&lt;p&gt;Enter values for the keyspace, tables, owner and other fields and click &lt;em&gt;Add Schedule&lt;/em&gt; button. The details for adding a schedule are similar to the details for &lt;a href=&#34;../single&#34;&gt;Repair&lt;/a&gt; form except the &amp;ldquo;Cause&amp;rdquo; field is replaced with three fields; &amp;ldquo;Start time&amp;rdquo;, &amp;ldquo;Interval in days&amp;rdquo; and &amp;ldquo;Percent unrepaired threshold&amp;rdquo;. See the table below for further information the two fields.&lt;/p&gt;</description>
     </item>
-    
     <item>
       <title>Multi DCs with One Reaper</title>
       <link>http://cassandra-reaper.io/docs/usage/multi_dc_non-distributed/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>http://cassandra-reaper.io/docs/usage/multi_dc_non-distributed/</guid>
-      <description>Reaper can operate clusters which has a multi datacenter deployment. The datacenterAvailability setting in the Reaper YAML file indicates to Reaper its deployment in relation to cluster data center network locality.
-Single Reaper instance with JMX accessible for all DCs In the case where the JMX port is accessible (with or without authentication) from the running Reaper instance for all nodes in all DCs, it is possible to have a single instance of Reaper handle one or multiple clusters by using the following setting in the configuration yaml file :</description>
+      <description>&lt;p&gt;Reaper can operate clusters which has a multi datacenter deployment. The &lt;code&gt;datacenterAvailability&lt;/code&gt; setting in the Reaper YAML file indicates to Reaper its deployment in relation to cluster data center network locality.&lt;/p&gt;&#xA;&lt;h2 id=&#34;single-reaper-instance-with-jmx-accessible-for-all-dcs&#34;&gt;Single Reaper instance with JMX accessible for all DCs&lt;/h2&gt;&#xA;&lt;p&gt;In the case where the JMX port is accessible (with or without authentication) from the running Reaper instance for all nodes in all DCs, it is possible to have a single instance of Reaper handle one or multiple clusters by using the following setting in the configuration yaml file :&lt;/p&gt;</description>
     </item>
-    
     <item>
       <title>Multi DCs with Multi Reapers</title>
       <link>http://cassandra-reaper.io/docs/usage/multi_dc_distributed/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>http://cassandra-reaper.io/docs/usage/multi_dc_distributed/</guid>
-      <description>Multiple Reaper instances can operate clusters which have multi datacenter deployment. Multiple Reaper instances, also known as Distributed mode, can only be used when using the Apache Cassandra backend. Using multiple Reaper instances allows improved availability and fault tolerance. It is more likely that a Reaper UI is available via one of the Reaper instances, and that scheduled repairs are executed by one of the running Reaper instances.
-The datacenterAvailability setting in the Reaper YAML file indicates to Reaper its deployment in relation to cluster data center network locality.</description>
+      <description>&lt;p&gt;Multiple Reaper instances can operate clusters which have multi datacenter deployment. Multiple Reaper instances, also known as Distributed mode, can only be used when using the Apache Cassandra backend. Using multiple Reaper instances allows improved availability and fault tolerance. It is more likely that a Reaper UI is available via one of the Reaper instances, and that scheduled repairs are executed by one of the running Reaper instances.&lt;/p&gt;&#xA;&lt;p&gt;The &lt;code&gt;datacenterAvailability&lt;/code&gt; setting in the Reaper YAML file indicates to Reaper its deployment in relation to cluster data center network locality.&lt;/p&gt;</description>
     </item>
-    
     <item>
       <title>Sidecar Mode</title>
       <link>http://cassandra-reaper.io/docs/usage/sidecar_mode/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>http://cassandra-reaper.io/docs/usage/sidecar_mode/</guid>
-      <description>Sidecar Mode is a way of deploying Reaper for Apache Cassandra with one reaper instance for each node in the cluster. The name &amp;ldquo;Sidecar&amp;rdquo; comes from the Sidecar Pattern which describes a mechanism for co-locating an auxiliary service with its supported application. See also Design Patterns for Container-based Distributed Systems. It is a pattern that is often used in Kubernetes, where the main application and the sidecar application are deployed as separate containers in the same pod.</description>
+      <description>&lt;p&gt;Sidecar Mode is a way of deploying Reaper for Apache Cassandra with one reaper instance for each node in the cluster.&#xA;The name &amp;ldquo;Sidecar&amp;rdquo; comes from &lt;a href=&#34;https://github.com/microsoftdocs/architecture-center/blob/master/docs/patterns/sidecar.md&#34;&gt;the Sidecar Pattern&lt;/a&gt; which describes a mechanism for co-locating an auxiliary service with its supported application.&#xA;See also  &lt;a href=&#34;https://www.usenix.org/conference/hotcloud16/workshop-program/presentation/burns&#34;&gt;Design Patterns for Container-based Distributed Systems&lt;/a&gt;.&#xA;It is a pattern that is often used in Kubernetes, where the main application and the sidecar application are deployed as separate containers in the same pod.&lt;/p&gt;</description>
     </item>
-    
   </channel>
 </rss>
