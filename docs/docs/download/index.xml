@@ -4,39 +4,29 @@
     <title>Downloads on Reaper: Easy Repair Management for Apache Cassandra</title>
     <link>http://cassandra-reaper.io/docs/download/</link>
     <description>Recent content in Downloads on Reaper: Easy Repair Management for Apache Cassandra</description>
-    <generator>Hugo -- gohugo.io</generator>
-    <language>en-us</language><atom:link href="http://cassandra-reaper.io/docs/download/index.xml" rel="self" type="application/rss+xml" />
+    <generator>Hugo</generator>
+    <language>en-us</language>
+    <atom:link href="http://cassandra-reaper.io/docs/download/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>Install and Run</title>
       <link>http://cassandra-reaper.io/docs/download/install/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>http://cassandra-reaper.io/docs/download/install/</guid>
-      <description>Requirements Since Reaper v4, Java 11 is required to compile and run it. More recent versions of the JDK should also be able to run the compiled version of Reaper.
-Running Reaper using the jar After modifying the resource/cassandra-reaper.yaml config file, Reaper can be started using the following command line :
-java -jar target/cassandra-reaper-X.X.X.jar server resource/cassandra-reaper.yaml Once started, the UI can be accessed through : http://127.0.0.1:8080/webui/
-Reaper can also be accessed using the REST API exposed on port 8080, or using the command line tool bin/spreaper</description>
+      <description>&lt;h2 id=&#34;requirements&#34;&gt;Requirements&lt;/h2&gt;&#xA;&lt;p&gt;Since Reaper v4, Java 11 is required to compile and run it. More recent versions of the JDK should also be able to run the compiled version of Reaper.&lt;/p&gt;&#xA;&lt;h2 id=&#34;running-reaper-using-the-jar&#34;&gt;Running Reaper using the jar&lt;/h2&gt;&#xA;&lt;p&gt;After modifying the &lt;code&gt;resource/cassandra-reaper.yaml&lt;/code&gt; config file, Reaper can be started using the following command line :&lt;/p&gt;&#xA;&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-bash&#34; data-lang=&#34;bash&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;java -jar target/cassandra-reaper-X.X.X.jar server resource/cassandra-reaper.yaml&#xA;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;Once started, the UI can be accessed through : http://127.0.0.1:8080/webui/&lt;/p&gt;&#xA;&lt;p&gt;Reaper can also be accessed using the REST API exposed on port 8080, or using the command line tool &lt;code&gt;bin/spreaper&lt;/code&gt;&lt;/p&gt;</description>
     </item>
-    
     <item>
       <title>Building from Source</title>
       <link>http://cassandra-reaper.io/docs/download/building/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>http://cassandra-reaper.io/docs/download/building/</guid>
-      <description>Building Install Packages Debian packages and RPMs can be built from this project using Make, for example:
-make deb make rpm Building JARs from source Since Reaper v4, Java 11 is required to compile and run it. More recent versions of the JDK should also be able to run the compiled version of Reaper. Node JS v10 is still required to build the UI as part of the maven build, with npm v9.</description>
+      <description>&lt;h2 id=&#34;building-install-packages&#34;&gt;Building Install Packages&lt;/h2&gt;&#xA;&lt;p&gt;Debian packages and RPMs can be built from this project using Make, for example:&lt;/p&gt;&#xA;&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-bash&#34; data-lang=&#34;bash&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;make deb&#xA;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;make rpm&#xA;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h2 id=&#34;building-jars-from-source&#34;&gt;Building JARs from source&lt;/h2&gt;&#xA;&lt;p&gt;Since Reaper v4, Java 11 is required to compile and run it. More recent versions of the JDK should also be able to run the compiled version of Reaper.&#xA;Node JS v10 is still required to build the UI as part of the maven build, with npm v9.&lt;/p&gt;</description>
     </item>
-    
     <item>
       <title>Docker</title>
       <link>http://cassandra-reaper.io/docs/download/docker/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>http://cassandra-reaper.io/docs/download/docker/</guid>
-      <description>Docker and Docker Compose will need to be installed in order to use the commands in this section.
-Building Reaper Docker Image Prerequisite The generation of the Docker image requires that the JAR file be built and placed in the src/packages directory. If the JAR package is missing from the directory then it can built using either the steps in the Docker package build section (above), or in the Building from Source section.</description>
+      <description>&lt;p&gt;&lt;a href=&#34;https://docs.docker.com/engine/installation/&#34;&gt;Docker&lt;/a&gt; and &lt;a href=&#34;https://docs.docker.com/compose/install/&#34;&gt;Docker Compose&lt;/a&gt; will need to be installed in order to use the commands in this section.&lt;/p&gt;&#xA;&lt;h2 id=&#34;building-reaper-docker-image&#34;&gt;Building Reaper Docker Image&lt;/h2&gt;&#xA;&lt;h3 id=&#34;prerequisite&#34;&gt;Prerequisite&lt;/h3&gt;&#xA;&lt;p&gt;The generation of the Docker image requires that the JAR file be built and placed in the &lt;em&gt;src/packages&lt;/em&gt; directory. If the JAR package is missing from the directory then it can built using either the steps in the &lt;a href=&#34;building-reaper-packages-with-docker&#34;&gt;Docker package build&lt;/a&gt; section (above), or in the &lt;a href=&#34;http://cassandra-reaper.io/docs/download/building/#building-jars-from-source&#34;&gt;Building from Source&lt;/a&gt; section.&lt;/p&gt;</description>
     </item>
-    
   </channel>
 </rss>

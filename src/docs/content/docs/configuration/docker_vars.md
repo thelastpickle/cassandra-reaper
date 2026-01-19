@@ -60,6 +60,7 @@ The Docker environment variables listed in this section map directly to Reaper s
 | `REAPER_HTTP_MANAGEMENT_TRUSTSTORE_PATH` | [httpManagement/truststorePath]({{< relref "reaper_specific.md#httpManagement" >}}) | |
 | `REAPER_HTTP_MANAGEMENT_TRUSTSTORES_DIR` | [httpManagement/truststoresDir]({{< relref "reaper_specific.md#httpManagement" >}}) | |
 | `REAPER_MGMT_API_METRICS_PORT` | [mgmtApiMetricsPort]({{< relref "reaper_specific.md#mgmtapimetricsport" >}}) | 9000 |
+| `REAPER_MGMT_API_METRICS_TLS`  | [metricsTLSEnabled]({{< relref "reaper_specific.md#mgmtapimetricsport" >}}) | false |
 | `REAPER_PURGE_RECORDS_AFTER_IN_DAYS` | [purgeRecordsAfterInDays]({{< relref "reaper_specific.md#purgeRecordsAfterInDays" >}}) | 30 |
 
 ## Runtime Configuration Variables

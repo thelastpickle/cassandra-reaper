@@ -4,53 +4,36 @@
     <title>Configuration Reference on Reaper: Easy Repair Management for Apache Cassandra</title>
     <link>http://cassandra-reaper.io/docs/configuration/</link>
     <description>Recent content in Configuration Reference on Reaper: Easy Repair Management for Apache Cassandra</description>
-    <generator>Hugo -- gohugo.io</generator>
-    <language>en-us</language><atom:link href="http://cassandra-reaper.io/docs/configuration/index.xml" rel="self" type="application/rss+xml" />
+    <generator>Hugo</generator>
+    <language>en-us</language>
+    <atom:link href="http://cassandra-reaper.io/docs/configuration/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>Reaper Specific Settings</title>
       <link>http://cassandra-reaper.io/docs/configuration/reaper_specific/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>http://cassandra-reaper.io/docs/configuration/reaper_specific/</guid>
-      <description>Configuration settings in the cassandra-reaper.yaml that are specific to Reaper
-autoScheduling Optional setting to automatically setup repair schedules for all non-system keyspaces in a cluster. If enabled, adding a new cluster will automatically setup a schedule repair for each keyspace. Cluster keyspaces are monitored based on a configurable frequency, so that adding or removing a keyspace will result in adding / removing the corresponding scheduled repairs.
-autoScheduling: enabled: true initialDelayPeriod: PT15S periodBetweenPolls: PT10M timeBeforeFirstSchedule: PT5M scheduleSpreadPeriod: PT6H adaptive: true incremental: false percentUnrepairedThreshold: 10 excludedKeyspaces: [myTTLKeyspace, .</description>
+      <description>&lt;p&gt;Configuration settings in the &lt;em&gt;cassandra-reaper.yaml&lt;/em&gt; that are specific to Reaper&lt;/p&gt;&#xA;&lt;br/&gt;&#xA;&lt;h3 id=&#34;autoscheduling&#34;&gt;&lt;code&gt;autoScheduling&lt;/code&gt;&lt;/h3&gt;&#xA;&lt;p&gt;Optional setting to automatically setup repair schedules for all non-system keyspaces in a cluster. If enabled, adding a new cluster will automatically setup a schedule repair  for each keyspace. Cluster keyspaces are monitored based on a configurable frequency, so that adding or removing a keyspace will result in adding / removing the corresponding scheduled repairs.&lt;/p&gt;&#xA;&lt;pre&gt;&lt;code&gt;autoScheduling:&#xA;  enabled: true&#xA;  initialDelayPeriod: PT15S&#xA;  periodBetweenPolls: PT10M&#xA;  timeBeforeFirstSchedule: PT5M&#xA;  scheduleSpreadPeriod: PT6H&#xA;  adaptive: true&#xA;  incremental: false&#xA;  percentUnrepairedThreshold: 10&#xA;  excludedKeyspaces: [myTTLKeyspace, ...]&#xA;  excludedClusters: [myCluster, ...]&#xA;&lt;/code&gt;&lt;/pre&gt;&#xA;&lt;p&gt;Definitions for the above sub-settings are as follows.&lt;/p&gt;</description>
     </item>
-    
     <item>
       <title>Backend Specific Settings</title>
       <link>http://cassandra-reaper.io/docs/configuration/backend_specific/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>http://cassandra-reaper.io/docs/configuration/backend_specific/</guid>
-      <description>Backend Specific Settings Configuration settings in the cassandra-reaper.yaml that are specific to a particular backend.
-Cassandra Settings The following settings are specific to a Reaper deployment that is backed by an Apache Cassandra database. Note that Cassandra backend configuration relies on the Dropwizard-Cassandra module.
-activateQueryLogger Type: Boolean
-Default: false
-Records the CQL calls made to the Cassandra backend in the log output.
-cassandra Settings to configure Reaper to use Cassandra for storage of its control data.</description>
+      <description>&lt;h2 id=&#34;backend-specific-settings&#34;&gt;Backend Specific Settings&lt;/h2&gt;&#xA;&lt;p&gt;Configuration settings in the &lt;em&gt;cassandra-reaper.yaml&lt;/em&gt; that are specific to a particular backend.&lt;/p&gt;&#xA;&lt;h3 id=&#34;cassandra-settings&#34;&gt;Cassandra Settings&lt;/h3&gt;&#xA;&lt;p&gt;The following settings are specific to a Reaper deployment that is backed by an Apache Cassandra database.&#xA;Note that Cassandra backend configuration relies on the &lt;a href=&#34;https://github.com/composable-systems/dropwizard-cassandra&#34;&gt;Dropwizard-Cassandra&lt;/a&gt; module.&lt;/p&gt;&#xA;&lt;/br&gt;&#xA;&lt;h4 id=&#34;activatequerylogger&#34;&gt;&lt;code&gt;activateQueryLogger&lt;/code&gt;&lt;/h4&gt;&#xA;&lt;p&gt;Type: &lt;em&gt;Boolean&lt;/em&gt;&lt;/p&gt;&#xA;&lt;p&gt;Default: &lt;em&gt;false&lt;/em&gt;&lt;/p&gt;&#xA;&lt;p&gt;Records the CQL calls made to the Cassandra backend in the log output.&lt;/p&gt;&#xA;&lt;/br&gt;&#xA;&lt;h4 id=&#34;cassandra&#34;&gt;&lt;code&gt;cassandra&lt;/code&gt;&lt;/h4&gt;&#xA;&lt;p&gt;Settings to configure Reaper to use Cassandra for storage of its control data. Reaper uses the Cassandra Java driver version &lt;a href=&#34;http://docs.datastax.com/en/developer/java-driver/4.17/&#34;&gt;4.17.0&lt;/a&gt; to perform operations on the cluster. An example of the configuration settings for the driver are as follows.&lt;/p&gt;</description>
     </item>
-    
     <item>
       <title>Docker Variables</title>
       <link>http://cassandra-reaper.io/docs/configuration/docker_vars/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>http://cassandra-reaper.io/docs/configuration/docker_vars/</guid>
-      <description>The Reaper Docker container has been designed to be highly configurable. Many of the environment variables map directly or indirectly to a settings in the cassandra-reaper.yaml configuration file.
-Direct Mapping to Reaper Specific Configuration Settings The Docker environment variables listed in this section map directly to Reaper specific settings in the cassandra-reaper.yaml configuration file. The following table below lists the Docker environment variables, their associated Reaper specific setting in the cassandra-reaper.</description>
+      <description>&lt;p&gt;The Reaper Docker container has been designed to be highly configurable. Many of the environment variables map directly or indirectly to a settings in the &lt;em&gt;cassandra-reaper.yaml&lt;/em&gt; configuration file.&lt;/p&gt;&#xA;&lt;h2 id=&#34;direct-mapping-to-reaper-specific-configuration-settings&#34;&gt;Direct Mapping to Reaper Specific Configuration Settings&lt;/h2&gt;&#xA;&lt;p&gt;The Docker environment variables listed in this section map directly to Reaper specific settings in the &lt;em&gt;cassandra-reaper.yaml&lt;/em&gt; configuration file. The following table below lists the Docker environment variables, their associated Reaper specific setting in the &lt;em&gt;cassandra-reaper.yaml&lt;/em&gt; configuration file, and the default value assigned by the Docker container (if any). Definitions for each Docker environment variable can be found via the link to the associated setting.&lt;/p&gt;</description>
     </item>
-    
     <item>
       <title>Authentication</title>
       <link>http://cassandra-reaper.io/docs/configuration/authentication/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>http://cassandra-reaper.io/docs/configuration/authentication/</guid>
-      <description>Authentication in Reaper is powered by Dropwizard Authentication with JWT (JSON Web Token) support. This provides a modern, stateless authentication system suitable for both web UI and REST API access.
-Overview Reaper implements a dual authentication strategy:
-JWT Authentication: Used for REST API endpoints and modern web applications Basic Authentication: Available as a fallback for simple integrations WebUI Protection: Custom servlet filter that protects the web interface Authentication is enabled by default but requires explicit user configuration.</description>
+      <description>&lt;p&gt;Authentication in Reaper is powered by &lt;a href=&#34;https://www.dropwizard.io/en/latest/manual/auth.html&#34;&gt;Dropwizard Authentication&lt;/a&gt; with JWT (JSON Web Token) support. This provides a modern, stateless authentication system suitable for both web UI and REST API access.&lt;/p&gt;&#xA;&lt;h2 id=&#34;overview&#34;&gt;Overview&lt;/h2&gt;&#xA;&lt;p&gt;Reaper implements a dual authentication strategy:&lt;/p&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;strong&gt;JWT Authentication&lt;/strong&gt;: Used for REST API endpoints and modern web applications&lt;/li&gt;&#xA;&lt;li&gt;&lt;strong&gt;Basic Authentication&lt;/strong&gt;: Available as a fallback for simple integrations&lt;/li&gt;&#xA;&lt;li&gt;&lt;strong&gt;WebUI Protection&lt;/strong&gt;: Custom servlet filter that protects the web interface&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;p&gt;Authentication is &lt;strong&gt;enabled by default&lt;/strong&gt; but &lt;strong&gt;requires explicit user configuration&lt;/strong&gt;. No default users are provided for security reasons - you must configure at least one user or authentication will fail to start.&lt;/p&gt;</description>
     </item>
-    
   </channel>
 </rss>

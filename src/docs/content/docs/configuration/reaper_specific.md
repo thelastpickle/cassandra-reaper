@@ -176,6 +176,7 @@ Settings to configure HTTP management interface for integration with management 
       keystore: /path/to/keystore.jks
       truststore: /path/to/truststore.jks
       truststoresDir: /path/to/truststores
+      metricsTLSEnabled: true
 
 #### `enabled`
 
