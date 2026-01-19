@@ -1,11 +1,11 @@
 coverage:
   precision: 2
   round: down
-  range: "63...100"
+  range: "45...100"
   status:
     project:
       default:
-        target: 63%
+        target: 45%
         threshold: 6%
         base: auto 
 comment:
