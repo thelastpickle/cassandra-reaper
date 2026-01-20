@@ -1,5 +1,11 @@
 ## Change Log
 
+### 4.1.1 (2026/01/20 16:50 +00:00)
+- [#1621](https://github.com/thelastpickle/cassandra-reaper/pull/1621) fix: upgrade org.jetbrains.kotlin:kotlin-stdlib from 2.2.10 to 2.2.20 (#1621) (@adejanovski)
+- [#1622](https://github.com/thelastpickle/cassandra-reaper/pull/1622) fix: upgrade com.fasterxml.jackson.datatype:jackson-datatype-joda from 2.19.0 to 2.20.0 (#1622) (@adejanovski)
+- [#1642](https://github.com/thelastpickle/cassandra-reaper/pull/1642) Add missing REAPER_MGMT_API_METRICS_TLS var (#1642) (@burmanm)
+- [#1640](https://github.com/thelastpickle/cassandra-reaper/pull/1640) Switch spreaper CLI to dropwizard jwt-based authentication (#1640) (@Skunnyk)
+
 ### 4.1.0 (2026/01/07 16:25 +00:00)
 - [#1639](https://github.com/thelastpickle/cassandra-reaper/pull/1639) Fix adminConnector to be http instead of https (missing commit from PR 1637) (#1639) (@burmanm)
 - [#1637](https://github.com/thelastpickle/cassandra-reaper/pull/1637) Add TLS configuration abilities to the server for Docker container (#1637) (@burmanm)
