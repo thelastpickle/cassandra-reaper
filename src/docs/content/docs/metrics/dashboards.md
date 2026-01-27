@@ -84,3 +84,7 @@ Finally, we can also plot the number of segments repaired in the last hour only.
 
 {{< screenshot src="/img/segments_last_hour.png" />}}
 
+### Repair schedule cycle violation
+
+Since different schedules can have different run intervals, detecting cycle violations requires different rules that would be schedule specific.
+The `io_cassandrareaper_service_RepairScheduleService_unfulfilledRepairSchedule` introduced in v4.2.0 provides a 0/1 metric per repair schedule to notify if a schedule hasn't completed a repair within the configured interval, whichever the interval is.
