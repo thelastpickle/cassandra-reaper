@@ -13,6 +13,12 @@
 - [#1634](https://github.com/thelastpickle/cassandra-reaper/pull/1634) Use mTLS client for metrics endpoint also if configured (#1634) (@burmanm)
 - [#1626](https://github.com/thelastpickle/cassandra-reaper/pull/1626) Unregister Cassandra healthchecks on the schema migration sessions  (#1626) (@a-pashchenko)
 
+### 4.0.2 (2026/01/26 09:35 +00:00)
+- [#1621](https://github.com/thelastpickle/cassandra-reaper/pull/1621) fix: upgrade org.jetbrains.kotlin:kotlin-stdlib from 2.2.10 to 2.2.20 (#1621) (@adejanovski)
+- [#1622](https://github.com/thelastpickle/cassandra-reaper/pull/1622) fix: upgrade com.fasterxml.jackson.datatype:jackson-datatype-joda from 2.19.0 to 2.20.0 (#1622) (@adejanovski)
+- [#1640](https://github.com/thelastpickle/cassandra-reaper/pull/1640) Switch spreaper CLI to dropwizard jwt-based authentication (#1640) (@Skunnyk)
+- [#1631](https://github.com/thelastpickle/cassandra-reaper/pull/1631) Fix vulnerability GHSA-25qh-j22f-pwp8 logback version was bumped (#1631) (@tengu-alt)
+
 ### 4.0.1 (2025/10/09 15:00 +00:00)
 - [#1619](https://github.com/thelastpickle/cassandra-reaper/pull/1619) Unregister CqlSession from HealthCheckRegistry after close (#1619) (@a-pashchenko)
 - [#1612](https://github.com/thelastpickle/cassandra-reaper/pull/1612) Fix the intensity rule which wasn't properly applied (#1612) (@adejanovski)
