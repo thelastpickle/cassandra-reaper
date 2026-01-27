@@ -10,6 +10,8 @@ storageType: memory
 persistenceStoragePath: /var/lib/cassandra-reaper/storage
 ```
 
-In-memory storage is volatile and as such all registered cluster, column families and repair information will be lost upon service restart. This storage setting is intended for testing purposes only.
+In-memory storage is volatile unless a persistence storage path is provided. This is required for production use to avoid data loss on restart.
 
 > Starting from 3.6.0, persistenceStoragePath is required for memory storage type. This enable lightweight deployments of Reaper, without requiring the use of a Cassandra database. It will store the data locally and reload them consistently upon startup.
+
+> Starting from 4.2.0, this storage backend uses SQLite, and a migration from the EclipseStore (which was the previous persistence layer) is performed automatically on upgrade.
