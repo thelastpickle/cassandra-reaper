@@ -51,6 +51,11 @@ The Docker environment variables listed in this section map directly to Reaper s
 | `REAPER_SERVER_ADMIN_PORT` | [port]({{< relref "reaper_specific.md#port" >}}) | 8081 |
 | `REAPER_SERVER_APP_BIND_HOST` | [bindHost]({{< relref "reaper_specific.md#bindhost" >}}) | 0.0.0.0 |
 | `REAPER_SERVER_APP_PORT` | [port]({{< relref "reaper_specific.md#port" >}}) | 8080 |
+| `REAPER_SERVER_TLS_ENABLE` | [server/applicationConnectors/type]({{< relref "reaper_specific.md#server" >}}) | |
+| `REAPER_SERVER_TLS_KEYSTORE_PATH` | [server/applicationConnectors/keyStorePath]({{< relref "reaper_specific.md#server" >}}) | |
+| `REAPER_SERVER_TLS_TRUSTSTORE_PATH` | [server/applicationConnectors/trustStorePath]({{< relref "reaper_specific.md#server" >}}) | |
+| `REAPER_SERVER_TLS_CLIENT_AUTH` | [server/applicationConnectors/needClientAuth]({{< relref "reaper_specific.md#server" >}}) | |
+| `REAPER_SERVER_TLS_DISABLE_SNI` | [server/applicationConnectors/disableSniHostCheck]({{< relref "reaper_specific.md#server" >}}) | |
 | `REAPER_STORAGE_TYPE` | [storageType]({{< relref "reaper_specific.md#storagetype" >}}) | memory |
 | `REAPER_USE_ADDRESS_TRANSLATOR` | [useAddressTranslator]({{< relref "reaper_specific.md#useaddresstranslator" >}}) | false |
 | `REAPER_MAX_PARALLEL_REPAIRS` | [maxParallelRepairs]({{< relref "reaper_specific.md#maxParallelRepairs" >}}) | 2 |
@@ -60,6 +65,7 @@ The Docker environment variables listed in this section map directly to Reaper s
 | `REAPER_HTTP_MANAGEMENT_TRUSTSTORE_PATH` | [httpManagement/truststorePath]({{< relref "reaper_specific.md#httpManagement" >}}) | |
 | `REAPER_HTTP_MANAGEMENT_TRUSTSTORES_DIR` | [httpManagement/truststoresDir]({{< relref "reaper_specific.md#httpManagement" >}}) | |
 | `REAPER_MGMT_API_METRICS_PORT` | [mgmtApiMetricsPort]({{< relref "reaper_specific.md#mgmtapimetricsport" >}}) | 9000 |
+| `REAPER_MGMT_API_METRICS_TLS`  | [metricsTLSEnabled]({{< relref "reaper_specific.md#mgmtapimetricsport" >}}) | false |
 | `REAPER_PURGE_RECORDS_AFTER_IN_DAYS` | [purgeRecordsAfterInDays]({{< relref "reaper_specific.md#purgeRecordsAfterInDays" >}}) | 30 |
 
 ## Runtime Configuration Variables

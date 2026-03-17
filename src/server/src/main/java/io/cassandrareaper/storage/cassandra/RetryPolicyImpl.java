@@ -49,7 +49,7 @@ public final class RetryPolicyImpl implements RetryPolicy {
       return RetryDecision.RETHROW;
     }
 
-    if (request.isIdempotent()) {
+    if (Boolean.TRUE.equals(request.isIdempotent())) {
       try {
         Thread.sleep(calculateBackoffDelay(retry));
       } catch (InterruptedException e) {
@@ -79,7 +79,7 @@ public final class RetryPolicyImpl implements RetryPolicy {
       return RetryDecision.RETHROW;
     }
 
-    if (request.isIdempotent()) {
+    if (Boolean.TRUE.equals(request.isIdempotent())) {
       try {
         Thread.sleep(calculateBackoffDelay(retry));
       } catch (InterruptedException e) {
@@ -108,7 +108,7 @@ public final class RetryPolicyImpl implements RetryPolicy {
       return RetryDecision.RETHROW;
     }
 
-    if (request.isIdempotent()) {
+    if (Boolean.TRUE.equals(request.isIdempotent())) {
       try {
         Thread.sleep(calculateBackoffDelay(retry));
       } catch (InterruptedException e) {
@@ -133,7 +133,7 @@ public final class RetryPolicyImpl implements RetryPolicy {
       return RetryDecision.RETHROW;
     }
 
-    if (request.isIdempotent()) {
+    if (Boolean.TRUE.equals(request.isIdempotent())) {
       try {
         Thread.sleep(calculateBackoffDelay(retry));
       } catch (InterruptedException e) {

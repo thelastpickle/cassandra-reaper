@@ -14,6 +14,7 @@
 
 package io.cassandrareaper.storage.repairsegment;
 
+import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairSegment;
 import io.cassandrareaper.core.RepairUnit;
@@ -49,8 +50,17 @@ public class MemoryRepairSegmentDaoTest {
     memoryStorageFacade = new MemoryStorageFacade();
     memoryRepairSegmentDao = new MemoryRepairSegmentDao(memoryStorageFacade);
 
+    // Set up a cluster (required for foreign key constraints)
+    Cluster cluster =
+        Cluster.builder()
+            .withName("testCluster")
+            .withSeedHosts(Sets.newHashSet("127.0.0.1"))
+            .withState(Cluster.State.ACTIVE)
+            .build();
+    memoryStorageFacade.getClusterDao().addCluster(cluster);
+
     // Set up a repair unit
-    RepairUnit repairUnit =
+    RepairUnit.Builder repairUnitBuilder =
         RepairUnit.builder()
             .clusterName("testCluster")
             .keyspaceName("testKeyspace")
@@ -59,22 +69,23 @@ public class MemoryRepairSegmentDaoTest {
             .subrangeIncrementalRepair(false)
             .nodes(Sets.newHashSet("node1", "node2", "node3"))
             .repairThreadCount(1)
-            .timeout(30)
-            .build(Uuids.timeBased());
+            .timeout(30);
 
-    memoryStorageFacade.addRepairUnit(java.util.Optional.of(repairUnit.with()), repairUnit);
+    RepairUnit repairUnit = memoryStorageFacade.getRepairUnitDao().addRepairUnit(repairUnitBuilder);
     repairUnitId = repairUnit.getId();
 
     // Set up a repair run
-    RepairRun repairRun =
+    RepairRun.Builder repairRunBuilder =
         RepairRun.builder("testCluster", repairUnitId)
             .intensity(0.5)
             .segmentCount(3)
             .repairParallelism(org.apache.cassandra.repair.RepairParallelism.PARALLEL)
-            .tables(Sets.newHashSet("testTable"))
-            .build(Uuids.timeBased());
+            .tables(Sets.newHashSet("testTable"));
 
-    memoryStorageFacade.addRepairRun(repairRun);
+    RepairRun repairRun =
+        memoryStorageFacade
+            .getRepairRunDao()
+            .addRepairRun(repairRunBuilder, java.util.Collections.emptyList());
     repairRunId = repairRun.getId();
   }
 
@@ -175,7 +186,7 @@ public class MemoryRepairSegmentDaoTest {
 
     // Verify that RUNNING and DONE segments are not returned
     Collection<RepairSegment> allSegments =
-        memoryStorageFacade.getRepairSegmentsByRunId(repairRunId);
+        memoryStorageFacade.getRepairSegmentDao().getRepairSegmentsForRun(repairRunId);
     assertEquals(4, allSegments.size()); // Total segments created
   }
 
@@ -195,7 +206,8 @@ public class MemoryRepairSegmentDaoTest {
             .withId(Uuids.timeBased())
             .withState(RepairSegment.State.NOT_STARTED)
             .build();
-    memoryStorageFacade.addRepairSegment(segment1);
+    ((MemoryRepairSegmentDao) memoryStorageFacade.getRepairSegmentDao())
+        .addRepairSegmentWithId(segment1);
 
     // Segment 2: NOT_STARTED with node2 and node3 as replicas
     Map<String, String> replicas2 = new HashMap<>();
@@ -212,7 +224,8 @@ public class MemoryRepairSegmentDaoTest {
             .withId(Uuids.timeBased())
             .withState(RepairSegment.State.NOT_STARTED)
             .build();
-    memoryStorageFacade.addRepairSegment(segment2);
+    ((MemoryRepairSegmentDao) memoryStorageFacade.getRepairSegmentDao())
+        .addRepairSegmentWithId(segment2);
 
     // Segment 3: RUNNING (should be filtered out by state) - needs startTime
     Map<String, String> replicas3 = new HashMap<>();
@@ -230,7 +243,8 @@ public class MemoryRepairSegmentDaoTest {
             .withState(RepairSegment.State.RUNNING)
             .withStartTime(org.joda.time.DateTime.now())
             .build();
-    memoryStorageFacade.addRepairSegment(segment3);
+    ((MemoryRepairSegmentDao) memoryStorageFacade.getRepairSegmentDao())
+        .addRepairSegmentWithId(segment3);
 
     // Segment 4: DONE (should be filtered out by state) - needs startTime and endTime
     Map<String, String> replicas4 = new HashMap<>();
@@ -249,6 +263,7 @@ public class MemoryRepairSegmentDaoTest {
             .withStartTime(org.joda.time.DateTime.now().minusMinutes(10))
             .withEndTime(org.joda.time.DateTime.now())
             .build();
-    memoryStorageFacade.addRepairSegment(segment4);
+    ((MemoryRepairSegmentDao) memoryStorageFacade.getRepairSegmentDao())
+        .addRepairSegmentWithId(segment4);
   }
 }

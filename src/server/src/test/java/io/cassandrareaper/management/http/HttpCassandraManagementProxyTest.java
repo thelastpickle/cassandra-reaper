@@ -81,6 +81,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.MoreExecutors;
+import okhttp3.OkHttpClient;
 import org.apache.cassandra.repair.RepairParallelism;
 import org.apache.commons.lang3.concurrent.ConcurrentUtils;
 import org.junit.Test;
@@ -510,6 +511,10 @@ public class HttpCassandraManagementProxyTest {
               return ConcurrentUtils.constantFuture(null);
             });
 
+    OkHttpClient httpClient = Mockito.mock(OkHttpClient.class);
+    OkHttpClient.Builder clientBuilder = Mockito.mock(OkHttpClient.Builder.class);
+    when(clientBuilder.build()).thenReturn(httpClient);
+
     return new HttpCassandraManagementProxy(
         null,
         "/",
@@ -517,7 +522,8 @@ public class HttpCassandraManagementProxyTest {
         executorService,
         mockClient,
         ReaperApplicationConfiguration.DEFAULT_MGMT_API_METRICS_PORT,
-        Mockito.mock(Node.class));
+        Mockito.mock(Node.class),
+        clientBuilder);
   }
 
   @Test

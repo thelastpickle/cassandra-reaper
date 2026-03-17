@@ -176,6 +176,12 @@ public final class ClusterResource {
     try {
       Cluster cluster = context.storage.getClusterDao().getCluster(clusterName);
 
+      if (cluster == null) {
+        return Response.status(Response.Status.NOT_FOUND)
+            .entity("Cluster with name \"" + clusterName + "\" not found")
+            .build();
+      }
+
       String jmxUsername = "";
       boolean jmxPasswordIsSet = false;
       Optional<JmxCredentials> jmxCredentials = Optional.empty();

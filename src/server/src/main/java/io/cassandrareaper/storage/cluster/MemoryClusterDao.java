@@ -18,27 +18,45 @@
 package io.cassandrareaper.storage.cluster;
 
 import io.cassandrareaper.core.Cluster;
+import io.cassandrareaper.core.ClusterProperties;
 import io.cassandrareaper.storage.MemoryStorageFacade;
 import io.cassandrareaper.storage.events.MemoryEventsDao;
 import io.cassandrareaper.storage.repairrun.MemoryRepairRunDao;
 import io.cassandrareaper.storage.repairschedule.MemoryRepairScheduleDao;
 import io.cassandrareaper.storage.repairunit.MemoryRepairUnitDao;
+import io.cassandrareaper.storage.sqlite.SqliteHelper;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Optional;
 import java.util.Set;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.base.Preconditions;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class MemoryClusterDao implements IClusterDao {
 
+  private static final Logger LOG = LoggerFactory.getLogger(MemoryClusterDao.class);
+
+  private final Connection connection;
   private final MemoryRepairRunDao memoryRepairRunDao;
   private final MemoryRepairScheduleDao memRepairScheduleDao;
-  private final MemoryStorageFacade storage;
-
+  private final MemoryRepairUnitDao memoryRepairUnitDao;
   private final MemoryEventsDao memEventsDao;
+
+  private final PreparedStatement insertClusterStmt;
+  private final PreparedStatement getClusterStmt;
+  private final PreparedStatement getAllClustersStmt;
+  private final PreparedStatement deleteClusterStmt;
 
   public MemoryClusterDao(
       MemoryStorageFacade storage,
@@ -46,28 +64,78 @@ public class MemoryClusterDao implements IClusterDao {
       MemoryRepairRunDao memoryRepairRunDao,
       MemoryRepairScheduleDao memRepairScheduleDao,
       MemoryEventsDao memEventsDao) {
+    this.connection = storage.getSqliteConnection();
     this.memoryRepairRunDao = memoryRepairRunDao;
     this.memRepairScheduleDao = memRepairScheduleDao;
+    this.memoryRepairUnitDao = memoryRepairUnitDao;
     this.memEventsDao = memEventsDao;
-    this.storage = storage;
+
+    try {
+      // Prepare statements
+      this.insertClusterStmt =
+          connection.prepareStatement(
+              "INSERT OR REPLACE INTO cluster (name, partitioner, seed_hosts, properties, state, "
+                  + "last_contact, namespace, jmx_username, jmx_password) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+      this.getClusterStmt = connection.prepareStatement("SELECT * FROM cluster WHERE name = ?");
+      this.getAllClustersStmt = connection.prepareStatement("SELECT * FROM cluster");
+      this.deleteClusterStmt = connection.prepareStatement("DELETE FROM cluster WHERE name = ?");
+    } catch (SQLException e) {
+      LOG.error("Failed to prepare statements for MemoryClusterDao", e);
+      throw new RuntimeException("Failed to initialize MemoryClusterDao", e);
+    }
   }
 
   @Override
   public Collection<Cluster> getClusters() {
-    return storage.getClusters().values();
+    synchronized (connection) {
+      try {
+        ResultSet rs = getAllClustersStmt.executeQuery();
+        Collection<Cluster> clusters = new ArrayList<>();
+        while (rs.next()) {
+          clusters.add(mapRowToCluster(rs));
+        }
+        return clusters;
+      } catch (SQLException e) {
+        LOG.error("Failed to get all clusters", e);
+        throw new RuntimeException("Failed to get clusters", e);
+      }
+    }
   }
 
   @Override
   public boolean addCluster(Cluster cluster) {
-    assert addClusterAssertions(cluster);
-    Cluster existing = storage.addCluster(cluster);
-    return existing == null;
+    synchronized (connection) {
+      assert addClusterAssertions(cluster);
+
+      try {
+        insertClusterStmt.setString(1, cluster.getName());
+        insertClusterStmt.setString(2, cluster.getPartitioner().orElse(null));
+        insertClusterStmt.setString(3, SqliteHelper.toJson(cluster.getSeedHosts()));
+        insertClusterStmt.setString(4, SqliteHelper.toJson(cluster.getProperties()));
+        insertClusterStmt.setString(5, cluster.getState().name());
+        insertClusterStmt.setLong(
+            6,
+            cluster.getLastContact() != null
+                ? cluster.getLastContact().toEpochDay() * 86400000L
+                : 0);
+        insertClusterStmt.setString(7, null); // namespace not currently used
+        insertClusterStmt.setString(
+            8, cluster.getJmxCredentials().map(c -> c.getUsername()).orElse(null));
+        insertClusterStmt.setString(
+            9, cluster.getJmxCredentials().map(c -> c.getPassword()).orElse(null));
+
+        int updated = insertClusterStmt.executeUpdate();
+        return updated > 0;
+      } catch (SQLException e) {
+        LOG.error("Failed to add cluster: {}", cluster.getName(), e);
+        throw new RuntimeException("Failed to add cluster", e);
+      }
+    }
   }
 
   @Override
   public boolean updateCluster(Cluster newCluster) {
-    addCluster(newCluster);
-    return true;
+    return addCluster(newCluster); // INSERT OR REPLACE handles updates
   }
 
   public boolean addClusterAssertions(Cluster cluster) {
@@ -75,15 +143,12 @@ public class MemoryClusterDao implements IClusterDao {
         Cluster.State.UNKNOWN != cluster.getState(),
         "Cluster should not be persisted with UNKNOWN state");
 
-    // TODO – unit tests need to also always set the paritioner
-    // Preconditions.checkState(cluster.getPartitioner().isPresent(), "Cannot store cluster with no
-    // partitioner.");
-
     // assert we're not overwriting a cluster with the same name but different node list
     Set<String> previousNodes;
-    try {
-      previousNodes = getCluster(cluster.getName()).getSeedHosts();
-    } catch (IllegalArgumentException ignore) {
+    Cluster existingCluster = getCluster(cluster.getName());
+    if (existingCluster != null) {
+      previousNodes = existingCluster.getSeedHosts();
+    } else {
       // there is no previous cluster with same name
       previousNodes = cluster.getSeedHosts();
     }
@@ -101,34 +166,109 @@ public class MemoryClusterDao implements IClusterDao {
 
   @Override
   public Cluster getCluster(String clusterName) {
-    Preconditions.checkArgument(
-        storage.getClusters().containsKey(clusterName), "no such cluster: %s", clusterName);
-    return storage.getClusters().get(clusterName);
+    synchronized (connection) {
+      try {
+        // Normalize cluster name to lowercase for case-insensitive lookup
+        String normalizedName = Cluster.toSymbolicName(clusterName);
+        getClusterStmt.setString(1, normalizedName);
+        ResultSet rs = getClusterStmt.executeQuery();
+
+        if (rs.next()) {
+          return mapRowToCluster(rs);
+        } else {
+          return null;
+        }
+      } catch (SQLException e) {
+        LOG.error("Failed to get cluster: {}", clusterName, e);
+        throw new RuntimeException("Failed to get cluster", e);
+      }
+    }
   }
 
   @Override
   public Cluster deleteCluster(String clusterName) {
+    // Normalize cluster name for case-insensitive operations
+    String normalizedName = Cluster.toSymbolicName(clusterName);
+
+    // Get the cluster before deleting
+    Cluster cluster = getCluster(normalizedName);
+
+    // Delete related schedules
     memRepairScheduleDao
-        .getRepairSchedulesForCluster(clusterName)
+        .getRepairSchedulesForCluster(normalizedName)
         .forEach(schedule -> memRepairScheduleDao.deleteRepairSchedule(schedule.getId()));
+
+    // Delete related repair runs
     memoryRepairRunDao
-        .getRepairRunIdsForCluster(clusterName, Optional.empty())
+        .getRepairRunIdsForCluster(normalizedName, Optional.empty())
         .forEach(runId -> memoryRepairRunDao.deleteRepairRun(runId));
 
-    memEventsDao.getEventSubscriptions(clusterName).stream()
+    // Delete related event subscriptions
+    memEventsDao.getEventSubscriptions(normalizedName).stream()
         .filter(subscription -> subscription.getId().isPresent())
         .forEach(subscription -> memEventsDao.deleteEventSubscription(subscription.getId().get()));
 
-    storage.getRepairUnits().stream()
-        .filter((unit) -> unit.getClusterName().equals(clusterName))
+    // Delete related repair units
+    memoryRepairUnitDao.getRepairUnitsForCluster(normalizedName).stream()
         .forEach(
             (unit) -> {
               assert memoryRepairRunDao.getRepairRunsForUnit(unit.getId()).isEmpty()
                   : StringUtils.join(memoryRepairRunDao.getRepairRunsForUnit(unit.getId()));
-              storage.removeRepairUnit(Optional.ofNullable(unit.with()), unit.getId());
+              memoryRepairUnitDao.deleteRepairUnit(unit.getId());
             });
 
-    Cluster removed = storage.removeCluster(clusterName);
-    return removed;
+    // Delete the cluster itself
+    try {
+      deleteClusterStmt.setString(1, normalizedName);
+      deleteClusterStmt.executeUpdate();
+      return cluster;
+    } catch (SQLException e) {
+      LOG.error("Failed to delete cluster: {}", clusterName, e);
+      throw new RuntimeException("Failed to delete cluster", e);
+    }
+  }
+
+  /**
+   * Map a SQL ResultSet row to a Cluster object.
+   *
+   * @param rs The ResultSet positioned at a row
+   * @return The Cluster object
+   */
+  private Cluster mapRowToCluster(ResultSet rs) throws SQLException {
+    String name = rs.getString("name");
+    String partitioner = rs.getString("partitioner");
+    String seedHostsJson = rs.getString("seed_hosts");
+    String propertiesJson = rs.getString("properties");
+    String state = rs.getString("state");
+    long lastContactMillis = rs.getLong("last_contact");
+    String jmxUsername = rs.getString("jmx_username");
+    String jmxPassword = rs.getString("jmx_password");
+
+    Set<String> seedHosts =
+        SqliteHelper.fromJson(seedHostsJson, new TypeReference<Set<String>>() {});
+    ClusterProperties properties = SqliteHelper.fromJson(propertiesJson, ClusterProperties.class);
+
+    LocalDate lastContact =
+        lastContactMillis > 0 ? LocalDate.ofEpochDay(lastContactMillis / 86400000L) : LocalDate.MIN;
+
+    Cluster.Builder builder =
+        Cluster.builder()
+            .withName(name)
+            .withPartitioner(partitioner)
+            .withSeedHosts(seedHosts != null ? seedHosts : Collections.emptySet())
+            .withState(Cluster.State.valueOf(state))
+            .withLastContact(lastContact)
+            .withJmxPort(properties != null ? properties.getJmxPort() : Cluster.DEFAULT_JMX_PORT);
+
+    // Add JMX credentials if present
+    if (jmxUsername != null && jmxPassword != null) {
+      builder.withJmxCredentials(
+          io.cassandrareaper.core.JmxCredentials.builder()
+              .withUsername(jmxUsername)
+              .withPassword(jmxPassword)
+              .build());
+    }
+
+    return builder.build();
   }
 }

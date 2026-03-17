@@ -68,6 +68,16 @@ public final class PrometheusMetricsConfiguration {
             "io.cassandrareaper.service.RepairScheduleService.millisSinceLastRepairForSchedule",
             millisSinceLastScheduleRepairMetricLabels));
 
+    final Map<String, String> unfulfilledRepairScheduleMetricLabels = new HashMap<>();
+    unfulfilledRepairScheduleMetricLabels.put("cluster", "${0}");
+    unfulfilledRepairScheduleMetricLabels.put("keyspace", "${1}");
+    unfulfilledRepairScheduleMetricLabels.put("scheduleid", "${2}");
+    mapperConfigs.add(
+        new MapperConfig(
+            "io.cassandrareaper.service.RepairScheduleService.unfulfilledRepairSchedule.*.*.*",
+            "io.cassandrareaper.service.RepairScheduleService.unfulfilledRepairSchedule",
+            unfulfilledRepairScheduleMetricLabels));
+
     final Map<String, String> repairProgressMetricLabels = new HashMap<>();
     repairProgressMetricLabels.put("cluster", "${0}");
     repairProgressMetricLabels.put("keyspace", "${1}");

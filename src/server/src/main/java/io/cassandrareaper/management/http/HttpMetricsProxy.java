@@ -27,7 +27,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -61,21 +60,14 @@ public final class HttpMetricsProxy implements MetricsProxy {
   private final OkHttpClient httpClient;
   private final Node node;
 
-  private HttpMetricsProxy(
-      HttpCassandraManagementProxy proxy, Node node, Supplier<OkHttpClient> httpClientSupplier) {
+  private HttpMetricsProxy(HttpCassandraManagementProxy proxy, Node node) {
     this.proxy = proxy;
     this.node = node;
-    this.httpClient = httpClientSupplier.get();
+    this.httpClient = proxy.getMetricsClientBuilder().build();
   }
 
   public static HttpMetricsProxy create(HttpCassandraManagementProxy proxy, Node node) {
-    return new HttpMetricsProxy(proxy, node, () -> new OkHttpClient.Builder().build());
-  }
-
-  @VisibleForTesting
-  static HttpMetricsProxy create(
-      HttpCassandraManagementProxy proxy, Node node, Supplier<OkHttpClient> httpClientSupplier) {
-    return new HttpMetricsProxy(proxy, node, httpClientSupplier);
+    return new HttpMetricsProxy(proxy, node);
   }
 
   @Override

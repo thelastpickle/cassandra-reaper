@@ -556,6 +556,24 @@ public final class RepairManager implements AutoCloseable {
     }
   }
 
+  /**
+   * Clears all active repair runners. This is intended for test isolation purposes only.
+   *
+   * <p>WARNING: This forcefully clears the in-memory map of active RepairRunner threads without
+   * properly stopping them. Only use this in test scenarios where you need to reset state between
+   * test examples.
+   */
+  @VisibleForTesting
+  public void clearAllRepairRunners() {
+    try {
+      repairRunnersLock.lock();
+      LOG.info("Clearing all {} active repair runners for test isolation", repairRunners.size());
+      repairRunners.clear();
+    } finally {
+      repairRunnersLock.unlock();
+    }
+  }
+
   @Override
   public void close() {
     executor.shutdownNow();

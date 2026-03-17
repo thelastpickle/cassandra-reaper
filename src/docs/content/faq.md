@@ -13,12 +13,13 @@ While it's possible to set up crontab to call nodetool, it requires staggering t
 
 ### Do I need to do repairs if I'm not deleting data?
 
-Yes!  Repair is a necessary anti-entropy mechanism that keeps your cluster consistent.  Without repair, queries at LOCAL_ONE could return incorrect results.  
+Yes! Repair is a necessary anti-entropy mechanism that keeps your cluster consistent.  Without repair, queries at LOCAL_ONE could return incorrect results.  
 
 
 ### Which backend is used to store Reaper's data?
 
-When we (The Last Pickle) took over development of Reaper, we found it cumbersome to require a PostGres database in addition to the Cassandra database.  We also knew Reaper would need to be fault tolerant and work across datacenters.  The most straightforward way to do this would be to leverage Cassandra's fault tolerance.  
+When The Last Pickle took over development of Reaper, we found it cumbersome to require a PostGres database in addition to the Cassandra database.  We also knew Reaper would need to be fault tolerant and work across datacenters.  The most straightforward way to do this would be to leverage Cassandra's fault tolerance.  
 
 Postgres and H2 were removed starting with v3.0.0 in order to simplify the codebase and feature addition.
-The memory backend is still available for testing purposes.
+
+Later on, we wanted a more lightweight option to accommodate setups that didn't require multiple Reaper instances to run concurrently against the same clusters. EclipseStore was used between v3.6.0 and v4.1.x, but replaced with SQLite in v4.2.0 because of memory consumption of the backend when running Reaper instances on longer term.
