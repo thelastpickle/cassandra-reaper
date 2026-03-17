@@ -29,6 +29,10 @@ public final class RetryPolicyImpl implements RetryPolicy {
     this.logPrefix = logPrefix;
   }
 
+  private boolean isIdempotent(Request request) {
+    return Boolean.TRUE.equals(request.isIdempotent());
+  }
+
   private int calculateBackoffDelay(int retryCount) {
     int delay = BASE_DELAY_MS * (1 << retryCount);
     return Math.min(delay, MAX_DELAY_MS);
@@ -49,7 +53,7 @@ public final class RetryPolicyImpl implements RetryPolicy {
       return RetryDecision.RETHROW;
     }
 
-    if (request.isIdempotent()) {
+    if (isIdempotent(request)) {
       try {
         Thread.sleep(calculateBackoffDelay(retry));
       } catch (InterruptedException e) {
@@ -79,7 +83,7 @@ public final class RetryPolicyImpl implements RetryPolicy {
       return RetryDecision.RETHROW;
     }
 
-    if (request.isIdempotent()) {
+    if (isIdempotent(request)) {
       try {
         Thread.sleep(calculateBackoffDelay(retry));
       } catch (InterruptedException e) {
@@ -108,7 +112,7 @@ public final class RetryPolicyImpl implements RetryPolicy {
       return RetryDecision.RETHROW;
     }
 
-    if (request.isIdempotent()) {
+    if (isIdempotent(request)) {
       try {
         Thread.sleep(calculateBackoffDelay(retry));
       } catch (InterruptedException e) {
@@ -133,7 +137,7 @@ public final class RetryPolicyImpl implements RetryPolicy {
       return RetryDecision.RETHROW;
     }
 
-    if (request.isIdempotent()) {
+    if (isIdempotent(request)) {
       try {
         Thread.sleep(calculateBackoffDelay(retry));
       } catch (InterruptedException e) {
@@ -158,7 +162,7 @@ public final class RetryPolicyImpl implements RetryPolicy {
       return RetryDecision.RETHROW;
     }
 
-    if (request.isIdempotent()) {
+    if (isIdempotent(request)) {
       try {
         Thread.sleep(calculateBackoffDelay(retry));
       } catch (InterruptedException e) {
