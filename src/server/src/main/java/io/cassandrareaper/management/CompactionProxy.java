@@ -47,7 +47,8 @@ public final class CompactionProxy {
 
   private CompactionProxy(ICassandraManagementProxy proxy, MetricRegistry metrics) {
     this.proxy = proxy;
-    EXECUTOR.compareAndExchange(null,
+    EXECUTOR.compareAndSet(
+        null,
         new InstrumentedExecutorService(
             Executors.newCachedThreadPool(), metrics, "CompactionProxy"));
   }
