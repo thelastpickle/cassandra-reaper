@@ -49,7 +49,7 @@ public final class CompactionProxy {
     this.proxy = proxy;
     if (EXECUTOR.get() == null) {
       synchronized (EXECUTOR) {
-        if (EXECUTOR.get() != null) {
+        if (EXECUTOR.get() == null) {
           EXECUTOR.set(
               new InstrumentedExecutorService(
                   Executors.newCachedThreadPool(), metrics, "CompactionProxy"));
