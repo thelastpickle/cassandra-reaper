@@ -26,8 +26,7 @@ import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.atomic.AtomicReference;
 
 import javax.management.MalformedObjectNameException;
 import javax.management.ReflectionException;
@@ -41,24 +40,20 @@ import org.slf4j.LoggerFactory;
 
 public final class CompactionProxy {
 
-  private static volatile ExecutorService EXECUTOR = null;
-  private static final Lock lock = new ReentrantLock();
+  private static final AtomicReference<ExecutorService> EXECUTOR = new AtomicReference();
   private static final Logger LOG = LoggerFactory.getLogger(CompactionProxy.class);
 
   private final ICassandraManagementProxy proxy;
 
   private CompactionProxy(ICassandraManagementProxy proxy, MetricRegistry metrics) {
     this.proxy = proxy;
-    if (EXECUTOR != null) {
-      lock.lock();
-      try {
-        if (EXECUTOR != null) {
-          EXECUTOR =
+    if (EXECUTOR.get() != null) {
+      synchronized (EXECUTOR) {
+        if (EXECUTOR.get() != null) {
+          EXECUTOR.set(
               new InstrumentedExecutorService(
-                  Executors.newCachedThreadPool(), metrics, "CompactionProxy");
+                  Executors.newCachedThreadPool(), metrics, "CompactionProxy"));
         }
-      } finally {
-        lock.unlock();
       }
     }
   }
@@ -69,22 +64,24 @@ public final class CompactionProxy {
   }
 
   public void forceCompaction(String keyspaceName, String... tableNames) {
-    EXECUTOR.submit(
-        () -> {
-          try {
-            // major compactions abort all currently running compactions on the specified table,
-            // parallel major compactions are therefore not possile,
-            // calling this multiple times on the same table is ok,
-            // but comes at the cost of time spent unnecessary compactions
-            // reference: ColumnFamilyStore.runWithCompactionsDisabled(..)
-            proxy.forceKeyspaceCompaction(false, keyspaceName, tableNames);
-          } catch (IOException | ExecutionException | InterruptedException ex) {
-            LOG.warn(
-                String.format(
-                    "failed compaction on %s (%s)", keyspaceName, StringUtils.join(tableNames)),
-                ex);
-          }
-        });
+    EXECUTOR
+        .get()
+        .submit(
+            () -> {
+              try {
+                // major compactions abort all currently running compactions on the specified table,
+                // parallel major compactions are therefore not possile,
+                // calling this multiple times on the same table is ok,
+                // but comes at the cost of time spent unnecessary compactions
+                // reference: ColumnFamilyStore.runWithCompactionsDisabled(..)
+                proxy.forceKeyspaceCompaction(false, keyspaceName, tableNames);
+              } catch (IOException | ExecutionException | InterruptedException ex) {
+                LOG.warn(
+                    String.format(
+                        "failed compaction on %s (%s)", keyspaceName, StringUtils.join(tableNames)),
+                    ex);
+              }
+            });
   }
 
   public List<Compaction> listActiveCompactions()
