@@ -47,7 +47,7 @@ public final class CompactionProxy {
 
   private CompactionProxy(ICassandraManagementProxy proxy, MetricRegistry metrics) {
     this.proxy = proxy;
-    if (EXECUTOR.get() != null) {
+    if (EXECUTOR.get() == null) {
       synchronized (EXECUTOR) {
         if (EXECUTOR.get() != null) {
           EXECUTOR.set(
