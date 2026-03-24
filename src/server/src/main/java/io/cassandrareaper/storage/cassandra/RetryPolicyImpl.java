@@ -34,22 +34,26 @@ public final class RetryPolicyImpl implements RetryPolicy {
     return Math.min(delay, MAX_DELAY_MS);
   }
 
-  @Override
-  public RetryDecision onReadTimeout(
-      @NotNull Request request,
-      @NotNull ConsistencyLevel cl,
-      int required,
-      int received,
-      boolean retrieved,
-      int retry) {
+  private boolean isIdempotent(Request request) {
+    return Boolean.TRUE.equals(request.isIdempotent());
+  }
 
-    if (retry >= MAX_READ_RETRIES) {
-      LOG.warn(
-          "{} Max read retries ({}) exceeded for request {}", logPrefix, MAX_READ_RETRIES, request);
+  private RetryDecision retryIfIdempotent(
+      Request request, int retry, int maxRetries, String methodName) {
+    if (request == null) {
+      LOG.warn("{} Received null request in {}, rethrowing", logPrefix, methodName);
       return RetryDecision.RETHROW;
     }
-
-    if (request.isIdempotent()) {
+    if (retry >= maxRetries) {
+      LOG.warn(
+          "{} Max retries ({}) exceeded in {} for request {}",
+          logPrefix,
+          maxRetries,
+          methodName,
+          request);
+      return RetryDecision.RETHROW;
+    }
+    if (isIdempotent(request)) {
       try {
         Thread.sleep(calculateBackoffDelay(retry));
       } catch (InterruptedException e) {
@@ -59,6 +63,17 @@ public final class RetryPolicyImpl implements RetryPolicy {
       return RetryDecision.RETRY_NEXT;
     }
     return RetryDecision.RETHROW;
+  }
+
+  @Override
+  public RetryDecision onReadTimeout(
+      @NotNull Request request,
+      @NotNull ConsistencyLevel cl,
+      int required,
+      int received,
+      boolean retrieved,
+      int retry) {
+    return retryIfIdempotent(request, retry, MAX_READ_RETRIES, "onReadTimeout");
   }
 
   @Override
@@ -69,26 +84,7 @@ public final class RetryPolicyImpl implements RetryPolicy {
       int required,
       int received,
       int retry) {
-
-    if (retry >= MAX_WRITE_RETRIES) {
-      LOG.warn(
-          "{} Max write retries ({}) exceeded for request {}",
-          logPrefix,
-          MAX_WRITE_RETRIES,
-          request);
-      return RetryDecision.RETHROW;
-    }
-
-    if (request.isIdempotent()) {
-      try {
-        Thread.sleep(calculateBackoffDelay(retry));
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
-        return RetryDecision.RETHROW;
-      }
-      return RetryDecision.RETRY_NEXT;
-    }
-    return RetryDecision.RETHROW;
+    return retryIfIdempotent(request, retry, MAX_WRITE_RETRIES, "onWriteTimeout");
   }
 
   @Override
@@ -98,76 +94,19 @@ public final class RetryPolicyImpl implements RetryPolicy {
       int required,
       int received,
       int retry) {
-
-    if (retry >= MAX_READ_RETRIES) {
-      LOG.warn(
-          "{} Max unavailable retries ({}) exceeded for request {}",
-          logPrefix,
-          MAX_READ_RETRIES,
-          request);
-      return RetryDecision.RETHROW;
-    }
-
-    if (request.isIdempotent()) {
-      try {
-        Thread.sleep(calculateBackoffDelay(retry));
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
-        return RetryDecision.RETHROW;
-      }
-      return RetryDecision.RETRY_NEXT;
-    }
-    return RetryDecision.RETHROW;
+    return retryIfIdempotent(request, retry, MAX_READ_RETRIES, "onUnavailable");
   }
 
   @Override
   public RetryDecision onRequestAborted(
       @NotNull Request request, @NotNull Throwable throwable, int retry) {
-
-    if (retry >= MAX_READ_RETRIES) {
-      LOG.warn(
-          "{} Max request abort retries ({}) exceeded for request {}",
-          logPrefix,
-          MAX_READ_RETRIES,
-          request);
-      return RetryDecision.RETHROW;
-    }
-
-    if (request.isIdempotent()) {
-      try {
-        Thread.sleep(calculateBackoffDelay(retry));
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
-        return RetryDecision.RETHROW;
-      }
-      return RetryDecision.RETRY_NEXT;
-    }
-    return RetryDecision.RETHROW;
+    return retryIfIdempotent(request, retry, MAX_READ_RETRIES, "onRequestAborted");
   }
 
   @Override
   public RetryDecision onErrorResponse(
       @NotNull Request request, @NotNull CoordinatorException exception, int retry) {
-
-    if (retry >= MAX_READ_RETRIES) {
-      LOG.warn(
-          "{} Max error response retries ({}) exceeded for request {}",
-          logPrefix,
-          MAX_READ_RETRIES,
-          request);
-      return RetryDecision.RETHROW;
-    }
-
-    if (request.isIdempotent()) {
-      try {
-        Thread.sleep(calculateBackoffDelay(retry));
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
-        return RetryDecision.RETHROW;
-      }
-      return RetryDecision.RETRY_NEXT;
-    }
-    return RetryDecision.RETHROW;
+    return retryIfIdempotent(request, retry, MAX_READ_RETRIES, "onErrorResponse");
   }
 
   @Override
