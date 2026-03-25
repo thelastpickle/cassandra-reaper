@@ -996,6 +996,105 @@ public class EclipseStoreToSqliteMigrationTest {
     }
   }
 
+  /**
+   * Test that migration handles null root gracefully without crashing. This simulates EclipseStore
+   * files existing but never being populated with data.
+   */
+  @Test
+  public void testMigrateNullRootDoesNotCrash() throws Exception {
+    // Create EclipseStore storage but don't set root (simulates crash before data written)
+    EmbeddedStorageManager storage = EmbeddedStorage.Foundation(tempStorageDir.toPath()).start();
+    // Intentionally don't call storage.setRoot() - leave root as null
+    storage.shutdown();
+
+    // Verify EclipseStore files were created
+    assertThat(new File(tempStorageDir, "channel_0").exists()).isTrue();
+    assertThat(new File(tempStorageDir, "PersistenceTypeDictionary.ptd").exists()).isTrue();
+
+    // Attempt migration - should NOT throw exception
+    boolean migrated =
+        EclipseStoreToSqliteMigration.migrateIfNeeded(tempStorageDir, sqliteConnection);
+
+    // Verify migration reported success (files detected and cleaned up)
+    assertThat(migrated).isTrue();
+
+    // Verify SQLite tables are empty (no data migrated)
+    assertThat(countClusters()).isEqualTo(0);
+    assertThat(countRepairUnits()).isEqualTo(0);
+    assertThat(countRows("repair_run")).isEqualTo(0);
+  }
+
+  /**
+   * Test that all EclipseStore artifacts are backed up, including PersistenceTypeDictionary.ptd.
+   * Verifies complete cleanup after null root migration.
+   */
+  @Test
+  public void testBackupIncludesAllArtifactsAfterNullRoot() throws Exception {
+    // Create EclipseStore with null root
+    EmbeddedStorageManager storage = EmbeddedStorage.Foundation(tempStorageDir.toPath()).start();
+    storage.shutdown();
+
+    // Verify artifacts exist before migration
+    File channelDir = new File(tempStorageDir, "channel_0");
+    File ptdFile = new File(tempStorageDir, "PersistenceTypeDictionary.ptd");
+    assertThat(channelDir.exists()).isTrue();
+    assertThat(ptdFile.exists()).isTrue();
+
+    // Migrate
+    EclipseStoreToSqliteMigration.migrateIfNeeded(tempStorageDir, sqliteConnection);
+
+    // Verify backup directory was created
+    File backupDir = new File(tempStorageDir, "eclipsestore.backup");
+    assertThat(backupDir.exists()).isTrue();
+    assertThat(backupDir.isDirectory()).isTrue();
+
+    // Verify all artifacts were moved to backup
+    assertThat(new File(backupDir, "channel_0").exists()).isTrue();
+    assertThat(new File(backupDir, "PersistenceTypeDictionary.ptd").exists()).isTrue();
+
+    // Verify original artifacts were removed
+    assertThat(channelDir.exists()).isFalse();
+    assertThat(ptdFile.exists()).isFalse();
+
+    // Verify SQLite has no data
+    assertThat(countClusters()).isEqualTo(0);
+  }
+
+  /**
+   * Test that migration is idempotent - second startup doesn't re-trigger migration. Simulates
+   * restart after successful null root migration.
+   */
+  @Test
+  public void testNullRootMigrationIsIdempotent() throws Exception {
+    // Create EclipseStore with null root
+    EmbeddedStorageManager storage = EmbeddedStorage.Foundation(tempStorageDir.toPath()).start();
+    storage.shutdown();
+
+    // First migration
+    boolean firstMigration =
+        EclipseStoreToSqliteMigration.migrateIfNeeded(tempStorageDir, sqliteConnection);
+    assertThat(firstMigration).isTrue();
+
+    // Verify artifacts were backed up
+    File backupDir = new File(tempStorageDir, "eclipsestore.backup");
+    assertThat(backupDir.exists()).isTrue();
+    assertThat(new File(backupDir, "channel_0").exists()).isTrue();
+
+    // Verify original artifacts removed
+    assertThat(new File(tempStorageDir, "channel_0").exists()).isFalse();
+
+    // Second migration attempt (simulates restart)
+    boolean secondMigration =
+        EclipseStoreToSqliteMigration.migrateIfNeeded(tempStorageDir, sqliteConnection);
+
+    // Should return false (no EclipseStore files detected)
+    assertThat(secondMigration).isFalse();
+
+    // Verify SQLite still has no data (didn't attempt re-migration)
+    assertThat(countClusters()).isEqualTo(0);
+    assertThat(countRepairUnits()).isEqualTo(0);
+  }
+
   private void deleteDirectory(File dir) {
     if (dir.isDirectory()) {
       File[] files = dir.listFiles();
