@@ -1,5 +1,10 @@
 ## Change Log
 
+### 4.2.1 (2026/03/26 08:00 +00:00)
+- [#1664](https://github.com/thelastpickle/cassandra-reaper/pull/1664) Fix: Handle null root in EclipseStore to SQLite migration (#1664) (@gmanojDS)
+- [#1656](https://github.com/thelastpickle/cassandra-reaper/pull/1656) Bump jackson from 2.20.0 to 2.21.1 to address GHSA-72hv-8253-57qq (#1656) (@tengu-alt)
+- [#1650](https://github.com/thelastpickle/cassandra-reaper/pull/1650) Fix NPE in RetryPolicyImpl from null request and nullable isIdempotent (#1650) (@emptyhammond)
+
 ### 4.2.0 (2026/01/30 08:43 +00:00)
 - [#1644](https://github.com/thelastpickle/cassandra-reaper/pull/1644) Upgrade Logback to 1.5.25 to address CVE-2026-1225 (#1644) (@tengu-alt)
 - [#1623](https://github.com/thelastpickle/cassandra-reaper/pull/1623) Add a new unfulfilledRepairSchedule metric to track efficiently repairs complete in due time (#1623) (@adejanovski)
