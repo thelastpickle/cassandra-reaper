@@ -115,7 +115,8 @@ const EditRowModal = CreateReactClass({
         method: "PATCH",
         body: JSON.stringify(body),
         headers: {
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
+          "Authorization": "Bearer " + sessionStorage.getItem('jwtToken')
         }
       }
     ).then(response => {
