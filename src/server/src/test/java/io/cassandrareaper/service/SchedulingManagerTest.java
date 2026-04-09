@@ -483,4 +483,30 @@ public final class SchedulingManagerTest {
     schedulingManager.cleanupMetricsRegistry(repairSchedules);
     Mockito.verify(context.metricRegistry, Mockito.times(1)).remove(any());
   }
+
+  @Test
+  public void shouldLogErrorAndContinueRunningWhenSchedulingExceptionOccurs() {
+    AppContext contextWithRunningReaper = new AppContext();
+    contextWithRunningReaper.isRunning.set(true);
+    contextWithRunningReaper.storage = mock(CassandraStorageFacade.class);
+
+    IRepairScheduleDao scheduleDaoThatThrowsException = mock(IRepairScheduleDao.class);
+    RuntimeException simulatedDatabaseFailure =
+        new RuntimeException("Simulated quorum failure in DC");
+
+    when(contextWithRunningReaper.storage.getRepairScheduleDao())
+        .thenReturn(scheduleDaoThatThrowsException);
+    when(scheduleDaoThatThrowsException.getAllRepairSchedules())
+        .thenThrow(simulatedDatabaseFailure);
+
+    SchedulingManager schedulingManagerUnderTest =
+        SchedulingManager.create(
+            contextWithRunningReaper, contextWithRunningReaper.storage.getRepairRunDao());
+
+    schedulingManagerUnderTest.run();
+
+    assertTrue(
+        "Reaper context should remain running after scheduling exception",
+        contextWithRunningReaper.isRunning.get());
+  }
 }
