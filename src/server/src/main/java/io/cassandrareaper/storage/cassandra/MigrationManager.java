@@ -45,6 +45,12 @@ final class MigrationManager {
 
   private static final Logger LOG = LoggerFactory.getLogger(MigrationManager.class);
 
+  /** Maximum time to wait for schema agreement after DDL statements. */
+  private static final int SCHEMA_AGREEMENT_WAIT_MS = 60_000;
+
+  /** Poll interval when waiting for schema agreement. */
+  private static final int SCHEMA_AGREEMENT_POLL_MS = 1000;
+
   private MigrationManager() {
     throw new UnsupportedOperationException("This is a utility class and cannot be instantiated");
   }
@@ -78,6 +84,13 @@ final class MigrationManager {
 
     try (Database database =
         new Database(cassandra, config.getCassandraFactory().getSessionKeyspaceName())) {
+
+      // The Database constructor creates schema_migration and schema_migration_leader tables
+      // (via CREATE TABLE IF NOT EXISTS). When multiple Reaper instances start concurrently,
+      // these DDL statements can cause schema disagreements across the cluster, which then
+      // break the LWT-based leader election that follows. Wait for schema agreement before
+      // proceeding.
+      waitForSchemaAgreement(cassandra);
 
       int currentVersion = database.getVersion();
       Preconditions.checkState(
@@ -138,6 +151,37 @@ final class MigrationManager {
     }
   }
 
+  /**
+   * Waits for all Cassandra nodes to agree on the schema. This is critical after DDL statements
+   * (CREATE TABLE IF NOT EXISTS) that the cognitor migration library issues during Database
+   * initialization. Without schema agreement, subsequent LWT operations (used for leader election
+   * in the migration library) can fail or produce incorrect results.
+   *
+   * @throws IllegalStateException if interrupted while waiting
+   */
+  static void waitForSchemaAgreement(CqlSession session) {
+    long deadline = System.currentTimeMillis() + SCHEMA_AGREEMENT_WAIT_MS;
+
+    while (System.currentTimeMillis() < deadline) {
+      if (session.checkSchemaAgreement()) {
+        LOG.info("Schema agreement reached across all nodes.");
+        return;
+      }
+      LOG.debug("Waiting for schema agreement across Cassandra nodes…");
+      try {
+        Thread.sleep(SCHEMA_AGREEMENT_POLL_MS);
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        throw new IllegalStateException("Interrupted while waiting for schema agreement", e);
+      }
+    }
+
+    LOG.warn(
+        "Schema agreement was not reached within {} ms. Proceeding with migration anyway — "
+            + "this may cause issues if multiple Reaper instances are starting concurrently.",
+        SCHEMA_AGREEMENT_WAIT_MS);
+  }
+
   static void migrate(
       int dbVersion,
       MigrationRepository repository,
@@ -174,6 +218,11 @@ final class MigrationManager {
           };
 
       try (Database database = new Database(cassandra, cassandraFactory.getSessionKeyspaceName())) {
+        // Wait for schema agreement after Database constructor creates/checks tables.
+        // This prevents schema disagreements from breaking the LWT leader election
+        // that MigrationTask uses internally when withConsensus=true.
+        waitForSchemaAgreement(cassandra);
+
         MigrationTask migration = new MigrationTask(database, migrationRepo, true);
         migration.migrate();
         // after the script execute any MigrationXXX class that exists with the same version number
