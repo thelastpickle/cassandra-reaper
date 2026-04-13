@@ -154,14 +154,6 @@ public final class SchedulingManager extends TimerTask {
         } else {
           LOG.error("Failed managing repair schedule with id '{}'", lastId, ex);
         }
-        try {
-          assert false : "if assertions are enabled then exit the jvm";
-        } catch (AssertionError ae) {
-          if (context.isRunning.get()) {
-            LOG.error("SchedulingManager failed. Exiting JVM.");
-            System.exit(1);
-          }
-        }
       }
     }
   }
