@@ -154,9 +154,6 @@ public final class SchedulingManager extends TimerTask {
         } else {
           LOG.error("Failed managing repair schedule with id '{}'", lastId, ex);
         }
-        if (context.isRunning.get()) {
-          LOG.error("SchedulingManager encountered an error but will continue running.");
-        }
       }
     }
   }
