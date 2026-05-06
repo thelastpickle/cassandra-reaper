@@ -50,6 +50,7 @@ public class CassandraConcurrencyDao {
   private final Version version;
   private final UUID reaperInstanceId;
   private final CqlSession session;
+  private final ConsistencyLevel serialConsistencyLevel;
   private PreparedStatement takeLeadPrepStmt;
   private PreparedStatement renewLeadPrepStmt;
   private PreparedStatement releaseLeadPrepStmt;
@@ -57,10 +58,15 @@ public class CassandraConcurrencyDao {
   private PreparedStatement setRunningRepairsPrepStmt;
   private PreparedStatement getRunningRepairsPrepStmt;
 
-  public CassandraConcurrencyDao(Version version, UUID reaperInstanceId, CqlSession session) {
+  public CassandraConcurrencyDao(
+      Version version,
+      UUID reaperInstanceId,
+      CqlSession session,
+      ConsistencyLevel serialConsistencyLevel) {
     this.version = version;
     this.reaperInstanceId = reaperInstanceId;
     this.session = session;
+    this.serialConsistencyLevel = serialConsistencyLevel;
     prepareStatements();
   }
 
@@ -72,6 +78,7 @@ public class CassandraConcurrencyDao {
                         + "reaper_instance_host, last_heartbeat)"
                         + "VALUES(?, ?, ?, toTimestamp(now())) IF NOT EXISTS USING TTL ?")
                 .setConsistencyLevel(ConsistencyLevel.QUORUM)
+                .setSerialConsistencyLevel(serialConsistencyLevel)
                 .build());
     renewLeadPrepStmt =
         session.prepare(
@@ -79,12 +86,14 @@ public class CassandraConcurrencyDao {
                     "UPDATE leader USING TTL ? SET reaper_instance_id = ?, reaper_instance_host = ?,"
                         + " last_heartbeat = toTimestamp(now()) WHERE leader_id = ? IF reaper_instance_id = ?")
                 .setConsistencyLevel(ConsistencyLevel.QUORUM)
+                .setSerialConsistencyLevel(serialConsistencyLevel)
                 .build());
     releaseLeadPrepStmt =
         session.prepare(
             SimpleStatement.builder(
                     "DELETE FROM leader WHERE leader_id = ? IF reaper_instance_id = ?")
                 .setConsistencyLevel(ConsistencyLevel.QUORUM)
+                .setSerialConsistencyLevel(serialConsistencyLevel)
                 .build());
 
     getRunningRepairsPrepStmt =
@@ -102,7 +111,7 @@ public class CassandraConcurrencyDao {
                     "UPDATE running_repairs USING TTL ?"
                         + " SET reaper_instance_host = ?, reaper_instance_id = ?, segment_id = ?"
                         + " WHERE repair_id = ? AND node = ? IF reaper_instance_id = ?")
-                .setSerialConsistencyLevel(ConsistencyLevel.SERIAL)
+                .setSerialConsistencyLevel(serialConsistencyLevel)
                 .setConsistencyLevel(ConsistencyLevel.QUORUM)
                 .setIdempotence(false)
                 .build());

@@ -117,6 +117,9 @@ cassandra:
   requestOptionsFactory:
     requestTimeout: 60s
     requestDefaultIdempotence: true
+    # Use LOCAL_SERIAL for multi-DC deployments to restrict LWT Paxos quorum to the local DC.
+    # Resolves WriteTimeoutException at consistency SERIAL in multi-DC setups.
+    # requestSerialConsistency: LOCAL_SERIAL
   authProvider:
     type: plain-text
     username: cassandra
