@@ -173,15 +173,15 @@ public final class RepairScheduleServiceTest {
   }
 
   /**
-   * Test scenario: Past next activation time by more than 10% of cycle time Expected: Returns 1
-   * (unfulfilled - fail fast)
+   * Test scenario: Past next activation time by more than 10% of cycle time but still within the
+   * interval plus grace window Expected: Returns 0
    */
   @Test
   public void testGetUnfulfilledRepairSchedule_pastActivationMoreThan10Percent() {
     int daysBetween = 10;
-    long tenPercentOfCycleMillis = (long) (daysBetween * 24 * 60 * 60 * 1000 * 0.1);
+    long tenPercentOfCycleMillis = (long) (daysBetween * 24L * 60 * 60 * 1000 * 0.1);
     DateTime nextActivation =
-        DateTime.now().minus(tenPercentOfCycleMillis + 1000); // 1 second past threshold
+        DateTime.now().minus(tenPercentOfCycleMillis + 1000); // 1 second past 10% threshold
 
     RepairSchedule schedule =
         createScheduleBuilder()
@@ -196,7 +196,37 @@ public final class RepairScheduleServiceTest {
     RepairScheduleService service = RepairScheduleService.create(context, repairRunDao);
     Gauge<Integer> gauge = service.getUnfulfilledRepairSchedule(scheduleId);
 
-    assertEquals("Past 10% threshold should return 1", Integer.valueOf(1), gauge.getValue());
+    assertEquals(
+        "Past 10% threshold but within interval plus grace should return 0",
+        Integer.valueOf(0), gauge.getValue());
+  }
+
+  /**
+   * Test scenario: Past next activation time by more than the interval plus 10% grace Expected:
+   * Returns 1
+   */
+  @Test
+  public void testGetUnfulfilledRepairSchedule_pastActivationBeyondIntervalAndGrace() {
+    int daysBetween = 10;
+    long intervalMillis = daysBetween * 24L * 60 * 60 * 1000;
+    long graceMillis = intervalMillis / 10;
+    DateTime nextActivation = DateTime.now().minus(intervalMillis + graceMillis + 1000);
+
+    RepairSchedule schedule =
+        createScheduleBuilder()
+            .state(RepairSchedule.State.ACTIVE)
+            .daysBetween(daysBetween)
+            .nextActivation(nextActivation)
+            .lastRun(null)
+            .build(scheduleId);
+
+    when(repairScheduleDao.getRepairSchedule(scheduleId)).thenReturn(Optional.of(schedule));
+
+    RepairScheduleService service = RepairScheduleService.create(context, repairRunDao);
+    Gauge<Integer> gauge = service.getUnfulfilledRepairSchedule(scheduleId);
+
+    assertEquals(
+        "Past interval plus grace threshold should return 1", Integer.valueOf(1), gauge.getValue());
   }
 
   /**
@@ -274,7 +304,7 @@ public final class RepairScheduleServiceTest {
   }
 
   /**
-   * Test scenario: Last run exists in ERROR state (not DONE) Expected: Returns 0 (not unfulfilled -
+   * Test scenario: Last run exists in ERROR state (not DONE) Expected: Returns 1 (Unfulfilled -
    * checking only DONE repairs)
    */
   @Test
@@ -300,7 +330,7 @@ public final class RepairScheduleServiceTest {
     RepairScheduleService service = RepairScheduleService.create(context, repairRunDao);
     Gauge<Integer> gauge = service.getUnfulfilledRepairSchedule(scheduleId);
 
-    assertEquals("Error repair should return 0", Integer.valueOf(0), gauge.getValue());
+    assertEquals("Error repair should return 1", Integer.valueOf(1), gauge.getValue());
   }
 
   /**
@@ -402,13 +432,15 @@ public final class RepairScheduleServiceTest {
   }
 
   /**
-   * Test scenario: Last repair completed beyond schedule interval Expected: Returns 1 (unfulfilled)
+   * Test scenario: Last repair completed beyond schedule interval but still within 10% grace
+   * Expected: Returns 0
    */
   @Test
-  public void testGetUnfulfilledRepairSchedule_lastRepairBeyondInterval() {
+  public void testGetUnfulfilledRepairSchedule_lastRepairBeyondIntervalWithinGracePeriod() {
     int daysBetween = 7;
     long intervalMillis = daysBetween * 24L * 60 * 60 * 1000;
-    DateTime endTime = DateTime.now().minus(intervalMillis + 1000); // 1 second past interval
+    long graceMillis = intervalMillis / 10;
+    DateTime endTime = DateTime.now().minus(intervalMillis + graceMillis - 1000);
 
     RepairSchedule schedule =
         createScheduleBuilder()
@@ -431,7 +463,44 @@ public final class RepairScheduleServiceTest {
     RepairScheduleService service = RepairScheduleService.create(context, repairRunDao);
     Gauge<Integer> gauge = service.getUnfulfilledRepairSchedule(scheduleId);
 
-    assertEquals("Repair beyond interval should return 1", Integer.valueOf(1), gauge.getValue());
+    assertEquals(
+        "Repair within interval plus grace should return 0", Integer.valueOf(0), gauge.getValue());
+  }
+
+  /**
+   * Test scenario: Last repair completed beyond schedule interval plus 10% grace Expected: Returns
+   * 1 (unfulfilled)
+   */
+  @Test
+  public void testGetUnfulfilledRepairSchedule_lastRepairBeyondIntervalAndGracePeriod() {
+    int daysBetween = 7;
+    long intervalMillis = daysBetween * 24L * 60 * 60 * 1000;
+    long graceMillis = intervalMillis / 10;
+    DateTime endTime = DateTime.now().minus(intervalMillis + graceMillis + 1000);
+
+    RepairSchedule schedule =
+        createScheduleBuilder()
+            .state(RepairSchedule.State.ACTIVE)
+            .daysBetween(daysBetween)
+            .nextActivation(DateTime.now().plusDays(1))
+            .lastRun(repairRunId)
+            .build(scheduleId);
+
+    RepairRun repairRun =
+        createRepairRunBuilder()
+            .runState(RepairRun.RunState.DONE)
+            .startTime(endTime.minusHours(2))
+            .endTime(endTime)
+            .build(repairRunId);
+
+    when(repairScheduleDao.getRepairSchedule(scheduleId)).thenReturn(Optional.of(schedule));
+    when(repairRunDao.getRepairRun(repairRunId)).thenReturn(Optional.of(repairRun));
+
+    RepairScheduleService service = RepairScheduleService.create(context, repairRunDao);
+    Gauge<Integer> gauge = service.getUnfulfilledRepairSchedule(scheduleId);
+
+    assertEquals(
+        "Repair beyond interval plus grace should return 1", Integer.valueOf(1), gauge.getValue());
   }
 
   /**
@@ -552,8 +621,8 @@ public final class RepairScheduleServiceTest {
   }
 
   /**
-   * Test scenario: Last run is ABORTED (not DONE) Expected: Returns 0 (not unfulfilled - only
-   * checking DONE repairs)
+   * Test scenario: Last run is ABORTED (not DONE) Expected: Returns 1 (unfulfilled - only DONE
+   * repairs count)
    */
   @Test
   public void testGetUnfulfilledRepairSchedule_lastRunAborted() {
@@ -578,7 +647,7 @@ public final class RepairScheduleServiceTest {
     RepairScheduleService service = RepairScheduleService.create(context, repairRunDao);
     Gauge<Integer> gauge = service.getUnfulfilledRepairSchedule(scheduleId);
 
-    assertEquals("Aborted repair should return 0", Integer.valueOf(0), gauge.getValue());
+    assertEquals("Aborted repair should return 1", Integer.valueOf(1), gauge.getValue());
   }
 
   /**

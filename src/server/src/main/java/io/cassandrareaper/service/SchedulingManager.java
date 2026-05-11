@@ -74,9 +74,7 @@ public final class SchedulingManager extends TimerTask {
   }
 
   private static boolean repairRunComesFromSchedule(RepairRun repairRun, RepairSchedule schedule) {
-    return repairRun.getRunState().isActive()
-        || (RepairRun.RunState.NOT_STARTED == repairRun.getRunState()
-            && repairRun.getCause().equals(getCauseName(schedule)));
+    return repairRun.getCause().equals(getCauseName(schedule));
   }
 
   private static String getCauseName(RepairSchedule schedule) {
