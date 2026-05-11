@@ -23,6 +23,7 @@ import io.cassandrareaper.core.RepairSchedule;
 import io.cassandrareaper.storage.IStorageDao;
 import io.cassandrareaper.storage.repairrun.IRepairRunDao;
 import io.cassandrareaper.storage.repairschedule.IRepairScheduleDao;
+import io.cassandrareaper.storage.repairunit.IRepairUnitDao;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -45,6 +46,7 @@ public final class RepairScheduleServiceTest {
   private AppContext context;
   private IRepairRunDao repairRunDao;
   private IRepairScheduleDao repairScheduleDao;
+  private IRepairUnitDao repairUnitDao;
   private IStorageDao storage;
   private UUID scheduleId;
   private UUID repairUnitId;
@@ -58,9 +60,11 @@ public final class RepairScheduleServiceTest {
     storage = mock(IStorageDao.class);
     repairRunDao = mock(IRepairRunDao.class);
     repairScheduleDao = mock(IRepairScheduleDao.class);
+    repairUnitDao = mock(IRepairUnitDao.class);
 
     when(storage.getRepairRunDao()).thenReturn(repairRunDao);
     when(storage.getRepairScheduleDao()).thenReturn(repairScheduleDao);
+    when(storage.getRepairUnitDao()).thenReturn(repairUnitDao);
 
     context.storage = storage;
 
@@ -647,6 +651,93 @@ public final class RepairScheduleServiceTest {
 
     assertEquals(
         "Short interval with old repair should return 1", Integer.valueOf(1), gauge.getValue());
+  }
+
+  /**
+   * Test scenario: Schedule with null lastRun is initialized from repair history Expected: lastRun
+   * field is populated from most recent completed repair
+   */
+  @Test
+  public void testMetricInitialization_populatesLastRunFromHistory() {
+    UUID completedRepairRunId = UUID.randomUUID();
+    DateTime repairEndTime = DateTime.now().minusDays(2);
+
+    RepairSchedule schedule =
+        createScheduleBuilder()
+            .state(RepairSchedule.State.ACTIVE)
+            .daysBetween(7)
+            .nextActivation(DateTime.now().plusDays(5))
+            .lastRun(null)
+            .build(scheduleId);
+
+    RepairRun completedRepairRun =
+        createRepairRunBuilder()
+            .runState(RepairRun.RunState.DONE)
+            .startTime(repairEndTime.minusHours(2))
+            .endTime(repairEndTime)
+            .build(completedRepairRunId);
+
+    // Mock RepairUnit - use mock instead of builder to avoid complex setup
+    io.cassandrareaper.core.RepairUnit repairUnit = mock(io.cassandrareaper.core.RepairUnit.class);
+    when(repairUnit.getId()).thenReturn(repairUnitId);
+    when(repairUnit.getClusterName()).thenReturn("test-cluster");
+    when(repairUnit.getKeyspaceName()).thenReturn("test-keyspace");
+
+    // Set up mocks BEFORE creating the service (service constructor calls registerScheduleMetrics)
+    when(repairScheduleDao.getRepairSchedule(scheduleId)).thenReturn(Optional.of(schedule));
+    when(repairScheduleDao.getAllRepairSchedules()).thenReturn(Sets.newHashSet(schedule));
+    when(repairUnitDao.getRepairUnit(repairUnitId)).thenReturn(repairUnit);
+    when(repairRunDao.getRepairRunsForUnit(repairUnitId))
+        .thenReturn(Sets.newHashSet(completedRepairRun));
+    when(repairRunDao.getRepairRun(completedRepairRunId))
+        .thenReturn(Optional.of(completedRepairRun));
+    when(repairScheduleDao.updateRepairSchedule(org.mockito.ArgumentMatchers.any()))
+        .thenReturn(true);
+
+    // Create service - this triggers metric registration which should populate lastRun
+    RepairScheduleService.create(context, repairRunDao);
+
+    // Verify that updateRepairSchedule was called with the populated lastRun
+    org.mockito.Mockito.verify(repairScheduleDao, org.mockito.Mockito.times(1))
+        .updateRepairSchedule(
+            org.mockito.ArgumentMatchers.argThat(
+                updatedSchedule ->
+                    updatedSchedule.getLastRun() != null
+                        && updatedSchedule.getLastRun().equals(completedRepairRunId)));
+  }
+
+  /**
+   * Test scenario: Schedule with existing lastRun is not modified Expected: updateRepairSchedule is
+   * not called
+   */
+  @Test
+  public void testMetricInitialization_doesNotOverwriteExistingLastRun() {
+    UUID existingRepairRunId = UUID.randomUUID();
+
+    RepairSchedule schedule =
+        createScheduleBuilder()
+            .state(RepairSchedule.State.ACTIVE)
+            .daysBetween(7)
+            .nextActivation(DateTime.now().plusDays(6))
+            .lastRun(existingRepairRunId)
+            .build(scheduleId);
+
+    // Mock RepairUnit - needed for metric registration
+    io.cassandrareaper.core.RepairUnit repairUnit = mock(io.cassandrareaper.core.RepairUnit.class);
+    when(repairUnit.getId()).thenReturn(repairUnitId);
+    when(repairUnit.getClusterName()).thenReturn("test-cluster");
+    when(repairUnit.getKeyspaceName()).thenReturn("test-keyspace");
+
+    when(repairScheduleDao.getRepairSchedule(scheduleId)).thenReturn(Optional.of(schedule));
+    when(repairScheduleDao.getAllRepairSchedules()).thenReturn(Sets.newHashSet(schedule));
+    when(repairUnitDao.getRepairUnit(repairUnitId)).thenReturn(repairUnit);
+
+    // Create service - should NOT update lastRun since it's already set
+    RepairScheduleService.create(context, repairRunDao);
+
+    // Verify that updateRepairSchedule was never called (lastRun already exists)
+    org.mockito.Mockito.verify(repairScheduleDao, org.mockito.Mockito.never())
+        .updateRepairSchedule(org.mockito.ArgumentMatchers.any());
   }
 
   // Helper methods

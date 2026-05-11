@@ -52,8 +52,8 @@ public final class RepairScheduleService {
   private RepairScheduleService(AppContext context, IRepairRunDao repairRunDao) {
     this.context = context;
     this.repairUnitService = RepairUnitService.create(context);
-    registerRepairScheduleMetrics(context.storage.getRepairScheduleDao().getAllRepairSchedules());
     this.repairRunDao = repairRunDao;
+    registerRepairScheduleMetrics(context.storage.getRepairScheduleDao().getAllRepairSchedules());
   }
 
   public static RepairScheduleService create(AppContext context, IRepairRunDao repairRunDao) {
@@ -167,6 +167,19 @@ public final class RepairScheduleService {
         context.storage.getRepairScheduleDao().getRepairSchedule(repairScheduleId).get();
     RepairUnit repairUnit =
         context.storage.getRepairUnitDao().getRepairUnit(schedule.getRepairUnitId());
+
+    // Initialize lastRun from repair history if not set
+    // This ensures metrics are accurate after restart
+    if (schedule.getLastRun() == null) {
+      Optional<UUID> lastCompletedRun = findLastCompletedRepairRun(repairUnit.getId());
+      if (lastCompletedRun.isPresent()) {
+        RepairSchedule updatedSchedule =
+            schedule.with().lastRun(lastCompletedRun.get()).build(schedule.getId());
+        context.storage.getRepairScheduleDao().updateRepairSchedule(updatedSchedule);
+        schedule = updatedSchedule;
+      }
+    }
+
     String metricName =
         metricName(
             MILLIS_SINCE_LAST_REPAIR_METRIC_NAME,
@@ -303,6 +316,72 @@ public final class RepairScheduleService {
       // future
       return 0;
     };
+  }
+
+  /**
+   * Finds the most recent completed repair run for a given repair unit. This is used to initialize
+   * the lastRun field when it's null, ensuring metrics are accurate after restart.
+   *
+   * @param repairUnitId The repair unit ID to search for completed repairs
+   * @return Optional containing the UUID of the most recent completed repair run, or empty if none
+   *     found
+   */
+  private Optional<UUID> findLastCompletedRepairRun(UUID repairUnitId) {
+    Collection<RepairRun> repairRuns = repairRunDao.getRepairRunsForUnit(repairUnitId);
+
+    return repairRuns.stream()
+        .filter(run -> run.getRunState() == RepairRun.RunState.DONE)
+        .filter(run -> run.getEndTime() != null)
+        .max(RepairRun::compareTo)
+        .map(RepairRun::getId);
+  }
+
+  /**
+   * Updates the schedule metrics after a repair run completes. This re-registers the metrics with
+   * static gauges that capture the completion time, similar to how RepairRunner handles its
+   * metrics. This is more efficient than querying the database on every metric read.
+   *
+   * @param scheduleId The UUID of the repair schedule whose metrics should be updated
+   * @param repairRunCompleted The completion time of the repair run
+   */
+  public void updateScheduleMetricsAfterRepair(UUID scheduleId, DateTime repairRunCompleted) {
+    Optional<RepairSchedule> schedule =
+        context.storage.getRepairScheduleDao().getRepairSchedule(scheduleId);
+
+    if (schedule.isPresent()) {
+      RepairUnit repairUnit =
+          context.storage.getRepairUnitDao().getRepairUnit(schedule.get().getRepairUnitId());
+
+      String metricName =
+          metricName(
+              MILLIS_SINCE_LAST_REPAIR_METRIC_NAME,
+              repairUnit.getClusterName(),
+              repairUnit.getKeyspaceName(),
+              scheduleId);
+
+      // Remove the old dynamic gauge and register a new static one with the completion time
+      if (context.metricRegistry.getMetrics().containsKey(metricName)) {
+        context.metricRegistry.remove(metricName);
+      }
+      context.metricRegistry.register(
+          metricName,
+          (Gauge<Long>)
+              () -> DateTime.now().getMillis() - repairRunCompleted.toInstant().getMillis());
+
+      String unfulfilledRepairScheduleMetricName =
+          metricName(
+              UNFULFILLED_REPAIR_SCHEDULE_METRIC_NAME,
+              repairUnit.getClusterName(),
+              repairUnit.getKeyspaceName(),
+              scheduleId);
+
+      // Re-register the unfulfilled metric as well to reflect the latest state
+      if (context.metricRegistry.getMetrics().containsKey(unfulfilledRepairScheduleMetricName)) {
+        context.metricRegistry.remove(unfulfilledRepairScheduleMetricName);
+      }
+      context.metricRegistry.register(
+          unfulfilledRepairScheduleMetricName, getUnfulfilledRepairSchedule(scheduleId));
+    }
   }
 
   private String metricName(
