@@ -175,14 +175,13 @@ public final class RepairScheduleService {
     // Initialize lastRun from repair history if not set
     // This ensures metrics are accurate after restart
     LOG.debug("Last run for schedule " + schedule.getId() + " is " + schedule.getLastRun());
-    if (schedule.getLastRun() == null) {
-      Optional<UUID> lastCompletedRun = findLastCompletedRepairRun(repairUnit.getId());
-      if (lastCompletedRun.isPresent()) {
-        RepairSchedule updatedSchedule =
-            schedule.with().lastRun(lastCompletedRun.get()).build(schedule.getId());
-        context.storage.getRepairScheduleDao().updateRepairSchedule(updatedSchedule);
-        schedule = updatedSchedule;
-      }
+
+    Optional<UUID> lastCompletedRun = findLastCompletedRepairRun(repairUnit.getId());
+    if (lastCompletedRun.isPresent()) {
+      RepairSchedule updatedSchedule =
+          schedule.with().lastRun(lastCompletedRun.get()).build(schedule.getId());
+      context.storage.getRepairScheduleDao().updateRepairSchedule(updatedSchedule);
+      schedule = updatedSchedule;
     }
 
     String metricName =
