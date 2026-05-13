@@ -396,6 +396,9 @@ final class RepairRunner implements Runnable {
                       RepairManager.class, "repairDone", RepairRun.RunState.DONE.toString()))
               .inc();
 
+          // Update schedule metrics if this repair was triggered by a schedule
+          updateScheduleMetricsIfScheduled(repairRun.get(), repairRunCompleted);
+
           maybeAdaptRepairSchedule();
           context.schedulingManager.maybeRegisterRepairRunCompleted(repairRun.get());
         } finally {
@@ -1010,6 +1013,42 @@ final class RepairRunner implements Runnable {
   void killAndCleanupRunner() {
     context.repairManager.removeRunner(this);
     Thread.currentThread().interrupt();
+  }
+
+  /**
+   * Updates schedule metrics if this repair run was triggered by a schedule. Extracts the schedule
+   * ID from the repair run's cause field and updates the metrics.
+   *
+   * @param repairRun The completed repair run
+   * @param repairRunCompleted The completion time of the repair run
+   */
+  private void updateScheduleMetricsIfScheduled(RepairRun repairRun, DateTime repairRunCompleted) {
+    String cause = repairRun.getCause();
+    if (cause != null && cause.startsWith("scheduled run (schedule id ")) {
+      try {
+        // Extract schedule ID from cause string: "scheduled run (schedule id <UUID>)"
+        int startIdx = cause.indexOf("schedule id ") + "schedule id ".length();
+        int endIdx = cause.indexOf(')', startIdx);
+        if (startIdx > 0 && endIdx > startIdx) {
+          String scheduleIdStr = cause.substring(startIdx, endIdx);
+          UUID scheduleId = UUID.fromString(scheduleIdStr);
+
+          RepairScheduleService scheduleService =
+              RepairScheduleService.create(context, repairRunDao);
+          scheduleService.updateScheduleMetricsAfterRepair(scheduleId, repairRunCompleted);
+
+          LOG.debug(
+              "Updated schedule metrics for schedule {} after repair run {} completed",
+              scheduleId,
+              repairRun.getId());
+        }
+      } catch (Exception e) {
+        LOG.warn(
+            "Failed to update schedule metrics for repair run {}: {}",
+            repairRun.getId(),
+            e.getMessage());
+      }
+    }
   }
 
   private String metricName(
