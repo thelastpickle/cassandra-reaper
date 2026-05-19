@@ -85,6 +85,7 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
   final Node node;
   final HttpMetricsProxy metricsProxy;
   OkHttpClient.Builder metricsClientBuilder;
+  final boolean metricsTlsEnabled;
 
   final ConcurrentMap<Integer, RepairStatusHandler> repairStatusHandlers = Maps.newConcurrentMap();
   final ConcurrentMap<String, JobStatusTracker> jobTracker = Maps.newConcurrentMap();
@@ -100,7 +101,8 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
       DefaultApi apiClient,
       int metricsPort,
       Node node,
-      OkHttpClient.Builder metricsClientBuilder) {
+      OkHttpClient.Builder metricsClientBuilder,
+      boolean metricsTlsEnabled) {
     this.host = endpoint.getHostString();
     this.metricRegistry = metricRegistry;
     this.rootPath = rootPath;
@@ -110,6 +112,7 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
     this.statusTracker = executor;
     this.node = node;
     this.metricsClientBuilder = metricsClientBuilder;
+    this.metricsTlsEnabled = metricsTlsEnabled;
     this.metricsProxy = HttpMetricsProxy.create(this, node);
 
     // TODO Perhaps the poll interval should be configurable through context.config ?
@@ -134,6 +137,7 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
     this.statusTracker = executor;
     this.node = node;
     this.metricsProxy = metricsProxy;
+    this.metricsTlsEnabled = false; // Default to false for test constructor
 
     // TODO Perhaps the poll interval should be configurable through context.config ?
     this.scheduleJobPoller(DEFAULT_POLL_INTERVAL_IN_MILLISECONDS);
@@ -150,6 +154,10 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
 
   public OkHttpClient.Builder getMetricsClientBuilder() {
     return metricsClientBuilder;
+  }
+
+  public boolean isMetricsTlsEnabled() {
+    return metricsTlsEnabled;
   }
 
   @Override
