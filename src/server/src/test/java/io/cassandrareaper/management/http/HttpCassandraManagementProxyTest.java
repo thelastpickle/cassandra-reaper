@@ -523,7 +523,8 @@ public class HttpCassandraManagementProxyTest {
         mockClient,
         ReaperApplicationConfiguration.DEFAULT_MGMT_API_METRICS_PORT,
         Mockito.mock(Node.class),
-        clientBuilder);
+        clientBuilder,
+        false);
   }
 
   @Test

@@ -35,6 +35,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.datastax.mgmtapi.client.api.DefaultApi;
@@ -392,5 +394,197 @@ public class HttpMetricsProxyTest {
     assertEquals("ThreadPools", pendingTasks.get(0).getMetricType());
     assertEquals("CompactionExecutor", pendingTasks.get(0).getMetricScope());
     assertEquals("PendingTasks", pendingTasks.get(0).getMetricName());
+  }
+
+  /**
+   * Test that HTTP scheme is used when TLS is disabled for metrics. Verifies the URL scheme is
+   * "http" when metricsTlsEnabled is false.
+   */
+  @Test
+  public void testCollectMetricsUsesHttpSchemeWhenTlsDisabled() throws IOException, JMException {
+    String responseBodyStr =
+        "org_apache_cassandra_metrics_thread_pools_pending_tasks{pool_name=\"TestPool\"} 0.0\n";
+
+    OkHttpClient httpClient = Mockito.mock(OkHttpClient.class);
+    OkHttpClient.Builder clientBuilder = Mockito.mock(OkHttpClient.Builder.class);
+    when(clientBuilder.build()).thenReturn(httpClient);
+
+    Call call = Mockito.mock(Call.class);
+    Response response = Mockito.mock(Response.class);
+
+    when(httpClient.newCall(any())).thenReturn(call);
+    when(call.execute()).thenReturn(response);
+    when(response.isSuccessful()).thenReturn(true);
+
+    ResponseBody responseBody = Mockito.mock(ResponseBody.class);
+    when(responseBody.string()).thenReturn(responseBodyStr);
+    when(response.body()).thenReturn(responseBody);
+
+    HttpCassandraManagementProxy httpManagementProxy =
+        Mockito.mock(HttpCassandraManagementProxy.class);
+    when(httpManagementProxy.getHost()).thenReturn("172.18.0.3");
+    when(httpManagementProxy.getMetricsPort()).thenReturn(9000);
+    when(httpManagementProxy.getMetricsClientBuilder()).thenReturn(clientBuilder);
+    when(httpManagementProxy.isMetricsTlsEnabled()).thenReturn(false); // TLS disabled
+
+    Node node =
+        Node.builder()
+            .withHostname("172.18.0.3")
+            .withCluster(
+                Cluster.builder().withName("test").withSeedHosts(Sets.newSet("127.0.0.1")).build())
+            .build();
+
+    HttpMetricsProxy httpMetricsProxy = HttpMetricsProxy.create(httpManagementProxy, node);
+    httpMetricsProxy.collectTpStats();
+
+    // Verify that the request was made with HTTP scheme
+    verify(httpClient)
+        .newCall(
+            argThat(
+                request ->
+                    request.url().scheme().equals("http")
+                        && request.url().host().equals("172.18.0.3")
+                        && request.url().port() == 9000));
+  }
+
+  /**
+   * Test that HTTPS scheme is used when TLS is enabled for metrics. Verifies the URL scheme is
+   * "https" when metricsTlsEnabled is true.
+   */
+  @Test
+  public void testCollectMetricsUsesHttpsSchemeWhenTlsEnabled() throws IOException, JMException {
+    String responseBodyStr =
+        "org_apache_cassandra_metrics_thread_pools_pending_tasks{pool_name=\"TestPool\"} 0.0\n";
+
+    OkHttpClient httpClient = Mockito.mock(OkHttpClient.class);
+    OkHttpClient.Builder clientBuilder = Mockito.mock(OkHttpClient.Builder.class);
+    when(clientBuilder.build()).thenReturn(httpClient);
+
+    Call call = Mockito.mock(Call.class);
+    Response response = Mockito.mock(Response.class);
+
+    when(httpClient.newCall(any())).thenReturn(call);
+    when(call.execute()).thenReturn(response);
+    when(response.isSuccessful()).thenReturn(true);
+
+    ResponseBody responseBody = Mockito.mock(ResponseBody.class);
+    when(responseBody.string()).thenReturn(responseBodyStr);
+    when(response.body()).thenReturn(responseBody);
+
+    HttpCassandraManagementProxy httpManagementProxy =
+        Mockito.mock(HttpCassandraManagementProxy.class);
+    when(httpManagementProxy.getHost()).thenReturn("172.18.0.3");
+    when(httpManagementProxy.getMetricsPort()).thenReturn(9000);
+    when(httpManagementProxy.getMetricsClientBuilder()).thenReturn(clientBuilder);
+    when(httpManagementProxy.isMetricsTlsEnabled()).thenReturn(true); // TLS enabled
+
+    Node node =
+        Node.builder()
+            .withHostname("172.18.0.3")
+            .withCluster(
+                Cluster.builder().withName("test").withSeedHosts(Sets.newSet("127.0.0.1")).build())
+            .build();
+
+    HttpMetricsProxy httpMetricsProxy = HttpMetricsProxy.create(httpManagementProxy, node);
+    httpMetricsProxy.collectTpStats();
+
+    // Verify that the request was made with HTTPS scheme
+    verify(httpClient)
+        .newCall(
+            argThat(
+                request ->
+                    request.url().scheme().equals("https")
+                        && request.url().host().equals("172.18.0.3")
+                        && request.url().port() == 9000));
+  }
+
+  /**
+   * Test that dropped messages collection uses HTTP when TLS is disabled. Ensures consistency
+   * across different metric collection methods.
+   */
+  @Test
+  public void testCollectDroppedMessagesUsesHttpWhenTlsDisabled() throws IOException, JMException {
+    String responseBodyStr =
+        "org_apache_cassandra_metrics_dropped_message_dropped_total{message_type=\"READ\"} 5.0\n";
+
+    OkHttpClient httpClient = Mockito.mock(OkHttpClient.class);
+    OkHttpClient.Builder clientBuilder = Mockito.mock(OkHttpClient.Builder.class);
+    when(clientBuilder.build()).thenReturn(httpClient);
+
+    Call call = Mockito.mock(Call.class);
+    Response response = Mockito.mock(Response.class);
+
+    when(httpClient.newCall(any())).thenReturn(call);
+    when(call.execute()).thenReturn(response);
+    when(response.isSuccessful()).thenReturn(true);
+
+    ResponseBody responseBody = Mockito.mock(ResponseBody.class);
+    when(responseBody.string()).thenReturn(responseBodyStr);
+    when(response.body()).thenReturn(responseBody);
+
+    HttpCassandraManagementProxy httpManagementProxy =
+        Mockito.mock(HttpCassandraManagementProxy.class);
+    when(httpManagementProxy.getHost()).thenReturn("172.18.0.3");
+    when(httpManagementProxy.getMetricsPort()).thenReturn(9000);
+    when(httpManagementProxy.getMetricsClientBuilder()).thenReturn(clientBuilder);
+    when(httpManagementProxy.isMetricsTlsEnabled()).thenReturn(false);
+
+    Node node =
+        Node.builder()
+            .withHostname("172.18.0.3")
+            .withCluster(
+                Cluster.builder().withName("test").withSeedHosts(Sets.newSet("127.0.0.1")).build())
+            .build();
+
+    HttpMetricsProxy httpMetricsProxy = HttpMetricsProxy.create(httpManagementProxy, node);
+    httpMetricsProxy.collectDroppedMessages();
+
+    // Verify HTTP scheme is used
+    verify(httpClient).newCall(argThat(request -> request.url().scheme().equals("http")));
+  }
+
+  /**
+   * Test that latency metrics collection uses HTTPS when TLS is enabled. Ensures consistency across
+   * different metric collection methods.
+   */
+  @Test
+  public void testCollectLatencyMetricsUsesHttpsWhenTlsEnabled() throws IOException, JMException {
+    String responseBodyStr =
+        "org_apache_cassandra_metrics_client_request_latency_total{request_type=\"Read\"} 10.0\n";
+
+    OkHttpClient httpClient = Mockito.mock(OkHttpClient.class);
+    OkHttpClient.Builder clientBuilder = Mockito.mock(OkHttpClient.Builder.class);
+    when(clientBuilder.build()).thenReturn(httpClient);
+
+    Call call = Mockito.mock(Call.class);
+    Response response = Mockito.mock(Response.class);
+
+    when(httpClient.newCall(any())).thenReturn(call);
+    when(call.execute()).thenReturn(response);
+    when(response.isSuccessful()).thenReturn(true);
+
+    ResponseBody responseBody = Mockito.mock(ResponseBody.class);
+    when(responseBody.string()).thenReturn(responseBodyStr);
+    when(response.body()).thenReturn(responseBody);
+
+    HttpCassandraManagementProxy httpManagementProxy =
+        Mockito.mock(HttpCassandraManagementProxy.class);
+    when(httpManagementProxy.getHost()).thenReturn("172.18.0.3");
+    when(httpManagementProxy.getMetricsPort()).thenReturn(9000);
+    when(httpManagementProxy.getMetricsClientBuilder()).thenReturn(clientBuilder);
+    when(httpManagementProxy.isMetricsTlsEnabled()).thenReturn(true);
+
+    Node node =
+        Node.builder()
+            .withHostname("172.18.0.3")
+            .withCluster(
+                Cluster.builder().withName("test").withSeedHosts(Sets.newSet("127.0.0.1")).build())
+            .build();
+
+    HttpMetricsProxy httpMetricsProxy = HttpMetricsProxy.create(httpManagementProxy, node);
+    httpMetricsProxy.collectLatencyMetrics();
+
+    // Verify HTTPS scheme is used
+    verify(httpClient).newCall(argThat(request -> request.url().scheme().equals("https")));
   }
 }
