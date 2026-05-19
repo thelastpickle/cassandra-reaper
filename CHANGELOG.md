@@ -1,5 +1,11 @@
 ## Change Log
 
+### 4.2.3 (2026/05/19 12:45 +00:00)
+- [#1679](https://github.com/thelastpickle/cassandra-reaper/pull/1679) Enable metrics collection through https when hitting TLS endpoints (#1679) (@adejanovski)
+- [#1666](https://github.com/thelastpickle/cassandra-reaper/pull/1666) Send jwt token when editing schedules (#1666) (@Skunnyk)
+- [#1669](https://github.com/thelastpickle/cassandra-reaper/pull/1669) build(deps): bump follow-redirects in /src/ui/theming/bootstrap (#1669) (@dependabot[bot])
+- [#1667](https://github.com/thelastpickle/cassandra-reaper/pull/1667) build(deps): bump org.apache.cassandra:cassandra-all in /src/server (#1667) (@dependabot[bot])
+
 ### 4.2.2 (2026/05/13 06:27 +00:00)
 - [#1672](https://github.com/thelastpickle/cassandra-reaper/pull/1672) Populate schedule metrics on startup (#1672) (@adejanovski)
 - [#1668](https://github.com/thelastpickle/cassandra-reaper/pull/1668) fix: remove JVM exit on SchedulingManager errors (#1668) (@artsiom-bukhautsou)
