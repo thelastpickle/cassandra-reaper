@@ -1,5 +1,8 @@
 ## Change Log
 
+### 4.2.4 (2026/06/02 12:00 +00:00)
+- [#1684](https://github.com/thelastpickle/cassandra-reaper/pull/1684) fix: Fix CVEs in cassandra reaper (#1684) (@ShreyashD333)
+
 ### 4.2.3 (2026/05/19 12:45 +00:00)
 - [#1679](https://github.com/thelastpickle/cassandra-reaper/pull/1679) Enable metrics collection through https when hitting TLS endpoints (#1679) (@adejanovski)
 - [#1666](https://github.com/thelastpickle/cassandra-reaper/pull/1666) Send jwt token when editing schedules (#1666) (@Skunnyk)
