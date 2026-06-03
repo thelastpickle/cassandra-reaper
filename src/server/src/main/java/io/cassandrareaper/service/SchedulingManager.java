@@ -77,6 +77,17 @@ public final class SchedulingManager extends TimerTask {
     return repairRun.getCause().equals(getCauseName(schedule));
   }
 
+  /**
+   * Postpone a schedule only while a conflicting run is still in flight: any active run on the
+   * unit, or a not-yet-started run from this schedule. Terminated runs must not block it, else the
+   * schedule stays stuck until the completed run is purged.
+   */
+  private static boolean repairRunBlocksSchedule(RepairRun repairRun, RepairSchedule schedule) {
+    return repairRun.getRunState().isActive()
+        || (RepairRun.RunState.NOT_STARTED == repairRun.getRunState()
+            && repairRunComesFromSchedule(repairRun, schedule));
+  }
+
   private static String getCauseName(RepairSchedule schedule) {
     return "scheduled run (schedule id " + schedule.getId().toString() + ')';
   }
@@ -253,7 +264,7 @@ public final class SchedulingManager extends TimerTask {
     Collection<RepairRun> repairRuns =
         repairRunDao.getRepairRunsForUnit(schedule.getRepairUnitId());
     for (RepairRun repairRun : repairRuns) {
-      if (repairRunComesFromSchedule(repairRun, schedule)) {
+      if (repairRunBlocksSchedule(repairRun, schedule)) {
         LOG.info(
             "there is repair (id {}) in state '{}' for repair unit '{}', "
                 + "postponing current schedule trigger until next scheduling",

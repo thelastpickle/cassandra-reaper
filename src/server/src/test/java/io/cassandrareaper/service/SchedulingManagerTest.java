@@ -438,6 +438,106 @@ public final class SchedulingManagerTest {
     Mockito.verify(context.repairManager, Mockito.times(0)).startRepairRun(any());
   }
 
+  // A terminated run (DONE/ERROR/ABORTED) must not block the schedule from firing again.
+  @Test
+  public void manageScheduleStartsNewRunWhenPreviousRunIsDone() throws ReaperException {
+    RepairUnit unit = testUnit();
+    UUID scheduleId = Uuids.timeBased();
+    RepairSchedule schedule = dueSchedule(unit.getId(), scheduleId);
+    AppContext context =
+        contextWithExistingRuns(unit, scheduledRun(unit.getId(), scheduleId, RunState.DONE));
+    when(context.storage.getClusterDao()).thenReturn(mock(IClusterDao.class));
+
+    RepairRunService repairRunService = mock(RepairRunService.class);
+    when(repairRunService.registerRepairRun(any(), any(), any(), any(), any(), any(), any(), any()))
+        .thenReturn(scheduledRun(unit.getId(), scheduleId, RunState.NOT_STARTED));
+    SchedulingManager schedulingManager =
+        SchedulingManager.create(
+            context, () -> repairRunService, context.storage.getRepairRunDao());
+
+    assertTrue(
+        "A completed previous run must not block the schedule from firing again",
+        schedulingManager.manageSchedule(schedule));
+    Mockito.verify(context.repairManager).startRepairRun(any());
+  }
+
+  // Counterpart to the above: an in-flight run from this schedule must postpone the trigger rather
+  // than start a concurrent run.
+  @Test
+  public void manageScheduleDoesNotStartNewRunWhenPreviousRunIsActive() throws ReaperException {
+    RepairUnit unit = testUnit();
+    UUID scheduleId = Uuids.timeBased();
+    RepairSchedule schedule = dueSchedule(unit.getId(), scheduleId);
+    AppContext context =
+        contextWithExistingRuns(unit, scheduledRun(unit.getId(), scheduleId, RunState.RUNNING));
+    SchedulingManager schedulingManager =
+        SchedulingManager.create(
+            context, () -> mock(RepairRunService.class), context.storage.getRepairRunDao());
+
+    assertFalse(
+        "An in-flight run from the same schedule must postpone the trigger",
+        schedulingManager.manageSchedule(schedule));
+    Mockito.verify(context.repairManager, Mockito.never()).startRepairRun(any());
+  }
+
+  private static RepairUnit testUnit() {
+    return RepairUnit.builder()
+        .clusterName("test")
+        .incrementalRepair(false)
+        .subrangeIncrementalRepair(false)
+        .keyspaceName("test")
+        .repairThreadCount(1)
+        .timeout(30)
+        .build(Uuids.timeBased());
+  }
+
+  private static RepairSchedule dueSchedule(UUID unitId, UUID scheduleId) {
+    return RepairSchedule.builder(unitId)
+        .daysBetween(7)
+        .nextActivation(DateTime.now().minusMinutes(1))
+        .repairParallelism(RepairParallelism.PARALLEL)
+        .intensity(1)
+        .segmentCountPerNode(10)
+        .state(RepairSchedule.State.ACTIVE)
+        .build(scheduleId);
+  }
+
+  private static RepairRun scheduledRun(UUID unitId, UUID scheduleId, RunState state) {
+    RepairRun.Builder builder =
+        RepairRun.builder("test", unitId)
+            .repairParallelism(RepairParallelism.PARALLEL)
+            .intensity(1.0)
+            .segmentCount(10)
+            .tables(Collections.emptySet())
+            .cause("scheduled run (schedule id " + scheduleId + ')')
+            .runState(state);
+    if (state != RunState.NOT_STARTED) {
+      builder.startTime(DateTime.now().minusHours(1));
+    }
+    if (state.isTerminated()) {
+      builder.endTime(DateTime.now().minusMinutes(30));
+    }
+    return builder.build(Uuids.timeBased());
+  }
+
+  private static AppContext contextWithExistingRuns(RepairUnit unit, RepairRun... existingRuns) {
+    AppContext context = new AppContext();
+    context.config = new ReaperApplicationConfiguration();
+    context.repairManager = mock(RepairManager.class);
+    context.storage = mock(CassandraStorageFacade.class);
+
+    IRepairUnitDao repairUnitDao = mock(IRepairUnitDao.class);
+    when(context.storage.getRepairUnitDao()).thenReturn(repairUnitDao);
+    when(repairUnitDao.getRepairUnit(any(UUID.class))).thenReturn(unit);
+
+    IRepairRunDao repairRunDao = mock(IRepairRunDao.class);
+    when(context.storage.getRepairRunDao()).thenReturn(repairRunDao);
+    when(repairRunDao.getRepairRunsForUnit(any())).thenReturn(Lists.newArrayList(existingRuns));
+
+    when(context.storage.getRepairScheduleDao()).thenReturn(mock(IRepairScheduleDao.class));
+    return context;
+  }
+
   @Test
   public void cleanupMetricsRegistryTest() {
     AppContext context = new AppContext();
