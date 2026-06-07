@@ -14,7 +14,7 @@
 # limitations under the License.
 
 echo "Starting Script step..."
-JACOCO_VERSION="0.8.6"
+JACOCO_VERSION="0.8.12"
 REAPER_ENCRYPTION_KEY="SECRET_KEY"
 
 set -xe

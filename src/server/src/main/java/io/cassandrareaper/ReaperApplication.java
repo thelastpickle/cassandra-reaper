@@ -86,10 +86,10 @@ import io.prometheus.client.servlet.jakarta.exporter.MetricsServlet;
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.FilterRegistration;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
+import org.eclipse.jetty.ee10.servlet.SessionHandler;
+import org.eclipse.jetty.ee10.servlets.CrossOriginFilter;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
-import org.eclipse.jetty.server.session.SessionHandler;
-import org.eclipse.jetty.servlets.CrossOriginFilter;
 import org.glassfish.jersey.server.filter.RolesAllowedDynamicFeature;
 import org.joda.time.DateTimeZone;
 import org.slf4j.Logger;
@@ -117,7 +117,7 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
         .lifecycle()
         .addServerLifecycleListener(
             server -> {
-              for (Handler handler : server.getChildHandlersByClass(GzipHandler.class)) {
+              for (Handler handler : server.getDescendants(GzipHandler.class)) {
                 ((GzipHandler) handler).addExcludedMimeTypes("text/event-stream");
               }
             });

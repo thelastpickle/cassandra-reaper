@@ -29,7 +29,7 @@ jobs:
     name: Build Reaper
     runs-on: ubuntu-22.04
     env:
-      JACOCO_VERSION: 0.8.6
+      JACOCO_VERSION: 0.8.12
       REAPER_ENCRYPTION_KEY: SECRET_KEY
     steps:
       - name: Checkout
