@@ -93,7 +93,7 @@ ENV REAPER_SEGMENT_COUNT_PER_NODE=64 \
 
 
 RUN microdnf install -y \
-    java-11-openjdk-headless \
+    java-17-openjdk-headless \
     bash \
     shadow-utils \
   && microdnf clean all

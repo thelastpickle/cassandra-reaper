@@ -29,14 +29,15 @@
     <packaging>jar</packaging>
 
     <properties>
-        <dropwizard.version>4.0.15</dropwizard.version>
+        <dropwizard.version>5.0.2</dropwizard.version>
+        <jetty.version>12.1.9</jetty.version>
         <jersey.version>3.1.10</jersey.version>
         <logback.version>1.5.25</logback.version>
         <cxf.version>3.4.5</cxf.version>
         <prometheus.version>0.16.0</prometheus.version>
-        <maven.compiler.source>11</maven.compiler.source>
-        <maven.compiler.target>11</maven.compiler.target>
-        <maven.compiler.release>11</maven.compiler.release>
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
+        <maven.compiler.release>17</maven.compiler.release>
         <docker.directory>src/main/docker</docker.directory>
         <timestamp>${maven.build.timestamp}</timestamp>
         <maven.build.timestamp.format>yyyy-MM-dd HH:mm:ss</maven.build.timestamp.format>
@@ -86,6 +87,11 @@
             <groupId>io.dropwizard</groupId>
             <artifactId>dropwizard-core</artifactId>
             <version>${dropwizard.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.jetty.ee10</groupId>
+            <artifactId>jetty-ee10-servlets</artifactId>
+            <version>${jetty.version}</version>
         </dependency>
         <dependency>
             <groupId>io.dropwizard</groupId>
