@@ -251,7 +251,7 @@
             </plugin>
             <plugin>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>2.21.0</version>
+                <version>3.2.5</version>
                 <inherited>true</inherited>
                 <configuration>
                   <argLine>${surefireArgLine}</argLine>
@@ -262,14 +262,12 @@
                     <exclude>**/*IT.java</exclude>
                   </excludes>
                   <workingDirectory>${project.build.directory}</workingDirectory>
-                  <!-- work around https://issues.apache.org/jira/browse/SUREFIRE-1588 -->
-                  <useSystemClassLoader>false</useSystemClassLoader>
                 </configuration>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-enforcer-plugin</artifactId>
-                <version>1.4.1</version>
+                <version>3.4.1</version>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -289,7 +287,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.10.0</version>
+                <version>3.13.0</version>
             </plugin>
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
@@ -309,7 +307,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
-                <version>3.2.1</version>
+                <version>3.5.2</version>
             </plugin>
             <plugin>
                 <groupId>com.spotify</groupId>
