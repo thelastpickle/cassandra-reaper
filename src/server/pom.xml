@@ -34,6 +34,7 @@
         <jersey.version>3.1.10</jersey.version>
         <logback.version>1.5.25</logback.version>
         <cxf.version>3.4.5</cxf.version>
+        <!-- Dropwizard 5.x requires Java 17 for both compilation and runtime -->
         <prometheus.version>0.16.0</prometheus.version>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>

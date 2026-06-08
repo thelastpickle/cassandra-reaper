@@ -27,9 +27,9 @@ on:
 jobs:
   build:
     name: Build Reaper
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     env:
-      JACOCO_VERSION: 0.8.6
+      JACOCO_VERSION: 0.8.12
       REAPER_ENCRYPTION_KEY: SECRET_KEY
     steps:
       - name: Checkout
@@ -37,6 +37,14 @@ jobs:
 
       - name: Setup
         uses: ./.github/actions/setup
+
+      - name: Set JAVA_HOME to JDK 17 for build
+        run: |
+          for jdk in /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/17*/*/; do
+            export JAVA_HOME="${jdk%/}"
+            echo "JAVA_HOME=${JAVA_HOME}" >> $GITHUB_ENV
+            echo "JAVA_HOME is set to $JAVA_HOME for building"
+          done
 
       - name: Build Reaper
         run: |
@@ -50,7 +58,7 @@ jobs:
   docker-tests:
     name: Docker Image Tests
     needs: build
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     strategy:
       matrix:
         storage-type: [cassandra]
@@ -89,7 +97,7 @@ jobs:
   its-ccm-local:
     name: Memory backends
     needs: build
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     continue-on-error: ${{ matrix.experimental }}
     strategy:
       matrix:
@@ -105,7 +113,7 @@ jobs:
             jdk-version: '11'
           - cassandra-version: 'binary:5.0.3'
             experimental: false
-            jdk-version: '11'
+            jdk-version: '17'
           #- cassandra-version: 'github:apache/trunk'
           #  experimental: true
           #  jdk-version: '11'
@@ -147,7 +155,7 @@ jobs:
   its-ccm-cass:
     needs: build
     name: Cassandra backend
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     continue-on-error: ${{ matrix.experimental }}
     strategy:
       matrix:
@@ -163,7 +171,7 @@ jobs:
             jdk-version: '11'
           - cassandra-version: 'binary:5.0.3'
             experimental: false
-            jdk-version: '11'
+            jdk-version: '17'
           #- cassandra-version: 'github:apache/trunk'
           #  experimental: true
           #  jdk-version: '11'
@@ -204,7 +212,7 @@ jobs:
   its-sidecar:
     needs: [docker-tests] #, its-ccm-local, its-ccm-cass]
     name: Sidecar
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     continue-on-error: ${{ matrix.experimental }}
     strategy:
       matrix:
@@ -226,7 +234,7 @@ jobs:
           - cassandra-version: 'binary:5.0.3'
             cucumber-options: '--tags @sidecar'
             experimental: true
-            jdk-version: '11'
+            jdk-version: '17'
           #- cassandra-version: 'github:apache/trunk'
           #  cucumber-options: '--tags @sidecar'
           #  experimental: true
@@ -265,7 +273,7 @@ jobs:
   its-http-management:
     needs: [ build ]
     name: HTTP Management
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     continue-on-error: ${{ matrix.experimental }}
     strategy:
       matrix:
@@ -287,7 +295,7 @@ jobs:
           - cassandra-version: 'binary:5.0.3'
             cucumber-options: '--tags @http_management'
             experimental: false
-            jdk-version: '11'
+            jdk-version: '17'
 
     steps:
       - name: Checkout
@@ -345,7 +353,7 @@ jobs:
   its-each:
     needs: [docker-tests] #, its-ccm-local, its-ccm-cass]
     name: Each DC Availability
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     continue-on-error: ${{ matrix.experimental }}
     strategy:
       matrix:
@@ -359,7 +367,7 @@ jobs:
           - cassandra-version: 'binary:5.0.3'
             cucumber-options: '--tags @sidecar'
             experimental: false
-            jdk-version: '11'
+            jdk-version: '17'
           #- cassandra-version: 'github:apache/trunk'
           #  cucumber-options: '--tags @sidecar'
           #  experimental: true
@@ -397,7 +405,7 @@ jobs:
   its-distributed:
     needs: [docker-tests] #, its-ccm-local, its-ccm-cass]
     name: Distributed tests
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     continue-on-error: ${{ matrix.experimental }}
     strategy:
       matrix:
@@ -415,7 +423,7 @@ jobs:
             jdk-version: '11'
           - cassandra-version: 'binary:5.0.3'
             experimental: false
-            jdk-version: '11'
+            jdk-version: '17'
           #- cassandra-version: 'github:apache/trunk'
           #  experimental: true
           #  jdk-version: '11'
@@ -453,7 +461,7 @@ jobs:
   its-flapping:
     needs: [docker-tests] #, its-ccm-local, its-ccm-cass]
     name: Flapping reapers
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     continue-on-error: ${{ matrix.experimental }}
     strategy:
       matrix:
@@ -466,7 +474,7 @@ jobs:
           # all versions but trunk need to exclude trunk tests
           - cassandra-version: 'binary:5.0.3'
             experimental: true
-            jdk-version: '11'
+            jdk-version: '17'
           #- cassandra-version: 'github:apache/trunk'
           #  experimental: true
           #  jdk-version: '11'
@@ -506,13 +514,21 @@ jobs:
     name: Release Reaper
     needs: [its-distributed, its-flapping, its-sidecar, its-each]
     if: startsWith(github.ref, 'refs/heads/master') || startsWith(github.ref, 'refs/tag')
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
       - name: Setup
         uses: ./.github/actions/setup
+
+      - name: Set JAVA_HOME to JDK 17 for build
+        run: |
+          for jdk in /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/17*/*/; do
+            export JAVA_HOME="${jdk%/}"
+            echo "JAVA_HOME=${JAVA_HOME}" >> $GITHUB_ENV
+            echo "JAVA_HOME is set to $JAVA_HOME for building"
+          done
 
       - name: Compute version number
         run: |

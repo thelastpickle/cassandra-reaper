@@ -14,7 +14,7 @@
 # limitations under the License.
 
 echo "Starting Script step..."
-JACOCO_VERSION="0.8.6"
+JACOCO_VERSION="0.8.12"
 REAPER_ENCRYPTION_KEY="SECRET_KEY"
 
 set -xe
@@ -73,14 +73,14 @@ case "${TEST_TYPE}" in
     "ccm"|"elassandra")
         mvn --version -B
         ps uax | grep cass
-        # dependending on the version of cassandra, we may need to use a different jdk
+        # Cassandra may need to use a different JDK version
         set_java_home ${JDK_VERSION}
         ccm start -v --no-wait --skip-wait-other-notice || true
         echo "${TEST_TYPE}" | grep -q ccm && sleep 30 || sleep 120
         ccm status
         ccm node1 nodetool -- -u cassandra -pw cassandrapassword status
-        # Reaper requires JDK11 for compilation
-        set_java_home 11
+        # Reaper requires JDK17
+        set_java_home 17
         case "${STORAGE_TYPE}" in
             "")
                 echo "ERROR: Environment variable STORAGE_TYPE is unspecified."
@@ -106,7 +106,7 @@ case "${TEST_TYPE}" in
     "http-api")
             mvn --version -B
             ps uax | grep cass
-            # dependending on the version of cassandra, we may need to use a different jdk
+            # Cassandra may need to use a different JDK version
             set_java_home ${JDK_VERSION}
             # Add in  Management API agent jarfile
             for i in `seq 1 2` ; do
@@ -137,8 +137,8 @@ case "${TEST_TYPE}" in
                 fi
                 sleep 5
             done
-            # Reaper requires JDK11 for compilation
-            set_java_home 11
+            # Reaper requires JDK17
+            set_java_home 17
             case "${STORAGE_TYPE}" in
                 "")
                     echo "ERROR: Environment variable STORAGE_TYPE is unspecified."
@@ -158,12 +158,12 @@ case "${TEST_TYPE}" in
     "sidecar")
         mvn --version -B
         mvn -B package -DskipTests
-        # dependending on the version of cassandra, we may need to use a different jdk
+        # Cassandra may need to use a different JDK version
         set_java_home ${JDK_VERSION}
         ccm start -v --no-wait --skip-wait-other-notice || true
         sleep 30
         ccm status
-        set_java_home 11
+        set_java_home 17
         case "${STORAGE_TYPE}" in
             "")
                 echo "ERROR: Environment variable STORAGE_TYPE is unspecified."
@@ -182,12 +182,12 @@ case "${TEST_TYPE}" in
     "each")
         mvn --version -B
         mvn -B package -DskipTests
-        # dependending on the version of cassandra, we may need to use a different jdk
+        # Cassandra may need to use a different JDK version
         set_java_home ${JDK_VERSION}
         ccm start -v --no-wait --skip-wait-other-notice || true
         sleep 30
         ccm status
-        set_java_home 11
+        set_java_home 17
         case "${STORAGE_TYPE}" in
             "")
                 echo "ERROR: Environment variable STORAGE_TYPE is unspecified."
@@ -205,13 +205,13 @@ case "${TEST_TYPE}" in
         ;;
     "upgrade")
         mvn --version -B
-        # dependending on the version of cassandra, we may need to use a different jdk
+        # Cassandra may need to use a different JDK version
         set_java_home ${JDK_VERSION}
         ccm start -v --no-wait --skip-wait-other-notice || true
         sleep 30
         ccm status
         ccm node1 cqlsh -e "DROP KEYSPACE reaper_db" || true
-        set_java_home 11
+        set_java_home 17
         mvn package -B -DskipTests -Pintegration-upgrade-tests
         MAVEN_OPTS="-Xmx384m" mvn -B surefire:test -Dtest=ReaperCassandraIT
         ;;
