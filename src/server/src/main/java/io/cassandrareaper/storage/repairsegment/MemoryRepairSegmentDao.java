@@ -351,12 +351,12 @@ public class MemoryRepairSegmentDao implements IRepairSegmentDao {
       RepairSegment.State expectedState,
       RepairSegment currentSegment)
       throws SQLException {
-    
+
     String updateSql = buildUpdateSql(newState);
-    
+
     try (PreparedStatement stmt = connection.prepareStatement(updateSql)) {
       bindUpdateParameters(stmt, segmentId, newState, expectedState, currentSegment);
-      
+
       int rowsUpdated = stmt.executeUpdate();
       boolean success = rowsUpdated > 0;
 
@@ -370,8 +370,7 @@ public class MemoryRepairSegmentDao implements IRepairSegmentDao {
       return "UPDATE repair_segment SET state = ?, start_time = ?, end_time = ? "
           + "WHERE id = ? AND state = ?";
     } else if (newState == RepairSegment.State.RUNNING) {
-      return "UPDATE repair_segment SET state = ?, start_time = ? "
-          + "WHERE id = ? AND state = ?";
+      return "UPDATE repair_segment SET state = ?, start_time = ? " + "WHERE id = ? AND state = ?";
     } else {
       return "UPDATE repair_segment SET state = ? WHERE id = ? AND state = ?";
     }
@@ -384,7 +383,7 @@ public class MemoryRepairSegmentDao implements IRepairSegmentDao {
       RepairSegment.State expectedState,
       RepairSegment currentSegment)
       throws SQLException {
-    
+
     long nowMillis = DateTime.now().getMillis();
     stmt.setString(1, newState.name());
 
@@ -404,7 +403,7 @@ public class MemoryRepairSegmentDao implements IRepairSegmentDao {
       RepairSegment currentSegment,
       long nowMillis)
       throws SQLException {
-    
+
     long startTime =
         currentSegment.getStartTime() != null
             ? currentSegment.getStartTime().getMillis()
@@ -425,7 +424,7 @@ public class MemoryRepairSegmentDao implements IRepairSegmentDao {
       RepairSegment currentSegment,
       long nowMillis)
       throws SQLException {
-    
+
     long startTime =
         currentSegment.getStartTime() != null
             ? currentSegment.getStartTime().getMillis()
