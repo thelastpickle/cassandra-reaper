@@ -368,5 +368,3 @@ public class CassandraRepairSegmentDaoConditionalUpdateTest {
     assertFalse("Update should fail when LWT returns null row", result);
   }
 }
-
-// Made with Bob
