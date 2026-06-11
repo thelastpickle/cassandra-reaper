@@ -25,6 +25,7 @@ import io.cassandrareaper.storage.JsonParseUtils;
 import io.cassandrareaper.storage.cassandra.CassandraConcurrencyDao;
 import io.cassandrareaper.storage.repairunit.CassandraRepairUnitDao;
 
+import java.math.BigInteger;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.Collections;
@@ -46,6 +47,7 @@ import com.datastax.oss.driver.api.core.cql.ResultSet;
 import com.datastax.oss.driver.api.core.cql.Row;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.core.servererrors.InvalidQueryException;
+import com.datastax.oss.driver.api.core.uuid.Uuids;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -366,5 +368,109 @@ public class CassandraRepairSegmentDao implements IRepairSegmentDao {
       }
     }
     return segments;
+  }
+
+  @Override
+  public void addRepairSegments(Collection<RepairSegment.Builder> segments, UUID runId) {
+    for (RepairSegment.Builder segmentBuilder : segments) {
+      RepairSegment segment = segmentBuilder.withRunId(runId).withId(Uuids.timeBased()).build();
+      
+      BoundStatement insertStatement = insertRepairSegmentPrepStmt.bind(
+          segment.getRunId(),
+          segment.getId(),
+          segment.getRepairUnitId(),
+          segment.getStartToken(),
+          segment.getEndToken(),
+          segment.getState().ordinal(),
+          segment.getFailCount(),
+          JsonParseUtils.writeTokenRangesTxt(segment.getTokenRange().getTokenRanges()),
+          segment.getReplicas(),
+          segment.getHostID());
+      
+      session.execute(insertStatement);
+    }
+  }
+
+  @Override
+  public Optional<RepairSegment> getRepairSegmentByTokenRange(
+      UUID runId, UUID repairUnitId, BigInteger startToken, BigInteger endToken) {
+    // Use existing method to get all segments for the run, then filter by token range
+    Collection<RepairSegment> segments = getRepairSegmentsForRun(runId);
+    
+    return segments.stream()
+        .filter(seg -> seg.getRepairUnitId().equals(repairUnitId))
+        .filter(seg -> seg.getStartToken().equals(startToken))
+        .filter(seg -> seg.getEndToken().equals(endToken))
+        .findFirst();
+  }
+
+  @Override
+  public boolean updateRepairSegmentStateConditional(
+      UUID segmentId, RepairSegment.State newState, RepairSegment.State expectedCurrentState) {
+    // For Cassandra backend, we need to use lightweight transactions (LWT) for conditional updates
+    // CQL: UPDATE repair_run SET segment_state = ? WHERE id = ? AND segment_id = ? IF segment_state = ?
+    
+    String conditionalUpdateCql =
+        "UPDATE repair_run SET segment_state = ? WHERE id = ? AND segment_id = ? IF segment_state = ?";
+    
+    PreparedStatement conditionalUpdateStmt = session.prepare(
+        SimpleStatement.builder(conditionalUpdateCql)
+            .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM)
+            .build());
+    
+    // First, we need to find the runId for this segment
+    // Since we only have segmentId, we need to query to find which run it belongs to
+    // This is a limitation of the current schema where segment_id is not the partition key
+    
+    // For now, we'll need to get the segment first to find its runId
+    // This is not ideal but necessary given the current schema
+    // In Phase 2, the caller will have the runId available
+    
+    // Note: This implementation assumes the caller knows the runId
+    // For Phase 1, we'll document this limitation and address it in Phase 2
+    // when we integrate with RepairRunner which has the runId context
+    
+    throw new UnsupportedOperationException(
+        "updateRepairSegmentStateConditional requires runId context. "
+        + "This will be implemented in Phase 2 when integrated with RepairRunner. "
+        + "For now, use the overloaded version that accepts runId.");
+  }
+
+  /**
+   * Conditionally update a repair segment's state only if it currently has the expected state.
+   * This version accepts runId for efficient querying in Cassandra.
+   *
+   * @param runId the repair run ID
+   * @param segmentId the segment ID to update
+   * @param newState the new state to set
+   * @param expectedCurrentState the expected current state (condition)
+   * @return true if the segment was updated (condition matched), false otherwise
+   */
+  public boolean updateRepairSegmentStateConditional(
+      UUID runId, UUID segmentId, RepairSegment.State newState, RepairSegment.State expectedCurrentState) {
+    
+    String conditionalUpdateCql =
+        "UPDATE repair_run SET segment_state = ? WHERE id = ? AND segment_id = ? IF segment_state = ?";
+    
+    PreparedStatement conditionalUpdateStmt = session.prepare(
+        SimpleStatement.builder(conditionalUpdateCql)
+            .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM)
+            .build());
+    
+    BoundStatement boundStatement = conditionalUpdateStmt.bind(
+        newState.ordinal(),
+        runId,
+        segmentId,
+        expectedCurrentState.ordinal());
+    
+    ResultSet resultSet = session.execute(boundStatement);
+    Row row = resultSet.one();
+    
+    // LWT returns a row with [applied] column indicating success
+    if (row != null) {
+      return row.getBoolean("[applied]");
+    }
+    
+    return false;
   }
 }
