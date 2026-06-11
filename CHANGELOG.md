@@ -1,5 +1,8 @@
 ## Change Log
 
+### 4.2.5 (2026/06/11 11:02 +00:00)
+- [#1683](https://github.com/thelastpickle/cassandra-reaper/pull/1683) fix: scheduled repairs never re-fire after a completed run (#1683) (#1686) (@onnos)
+
 ### 4.2.4 (2026/06/02 12:00 +00:00)
 - [#1684](https://github.com/thelastpickle/cassandra-reaper/pull/1684) fix: Fix CVEs in cassandra reaper (#1684) (@ShreyashD333)
 
