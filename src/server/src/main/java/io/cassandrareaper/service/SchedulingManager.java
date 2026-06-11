@@ -78,14 +78,14 @@ public final class SchedulingManager extends TimerTask {
   }
 
   /**
-   * Postpone a schedule only while a conflicting run is still in flight: any active run on the
-   * unit, or a not-yet-started run from this schedule. Terminated runs must not block it, else the
+   * Postpone a schedule only while one of its own runs is still in flight: an active or
+   * not-yet-started run that comes from this schedule. Terminated runs must not block it, else the
    * schedule stays stuck until the completed run is purged.
    */
   private static boolean repairRunBlocksSchedule(RepairRun repairRun, RepairSchedule schedule) {
-    return repairRun.getRunState().isActive()
-        || (RepairRun.RunState.NOT_STARTED == repairRun.getRunState()
-            && repairRunComesFromSchedule(repairRun, schedule));
+    return (repairRun.getRunState().isActive()
+            || RepairRun.RunState.NOT_STARTED == repairRun.getRunState())
+        && repairRunComesFromSchedule(repairRun, schedule);
   }
 
   private static String getCauseName(RepairSchedule schedule) {

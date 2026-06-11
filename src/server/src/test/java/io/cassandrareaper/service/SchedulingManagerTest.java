@@ -461,6 +461,30 @@ public final class SchedulingManagerTest {
     Mockito.verify(context.repairManager).startRepairRun(any());
   }
 
+  // An in-flight run that does not come from this schedule (e.g. a manual run or another schedule
+  // on the same unit) must not postpone this schedule.
+  @Test
+  public void manageScheduleStartsNewRunWhenActiveRunIsFromAnotherCause() throws ReaperException {
+    RepairUnit unit = testUnit();
+    UUID scheduleId = Uuids.timeBased();
+    RepairSchedule schedule = dueSchedule(unit.getId(), scheduleId);
+    RepairRun otherRun = scheduledRun(unit.getId(), Uuids.timeBased(), RunState.RUNNING);
+    AppContext context = contextWithExistingRuns(unit, otherRun);
+    when(context.storage.getClusterDao()).thenReturn(mock(IClusterDao.class));
+
+    RepairRunService repairRunService = mock(RepairRunService.class);
+    when(repairRunService.registerRepairRun(any(), any(), any(), any(), any(), any(), any(), any()))
+        .thenReturn(scheduledRun(unit.getId(), scheduleId, RunState.NOT_STARTED));
+    SchedulingManager schedulingManager =
+        SchedulingManager.create(
+            context, () -> repairRunService, context.storage.getRepairRunDao());
+
+    boolean started = schedulingManager.manageSchedule(schedule);
+
+    assertTrue("A run that does not come from this schedule must not block it", started);
+    Mockito.verify(context.repairManager).startRepairRun(any());
+  }
+
   // Counterpart to the above: an in-flight run from this schedule must postpone the trigger rather
   // than start a concurrent run.
   @Test
