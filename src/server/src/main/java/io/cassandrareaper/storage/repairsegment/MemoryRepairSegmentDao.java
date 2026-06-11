@@ -276,7 +276,7 @@ public class MemoryRepairSegmentDao implements IRepairSegmentDao {
     try {
       // Use existing method to get all segments for the run, then filter by token range
       Collection<RepairSegment> segments = getRepairSegmentsForRun(runId);
-      
+
       return segments.stream()
           .filter(seg -> seg.getRepairUnitId().equals(repairUnitId))
           .filter(seg -> seg.getStartToken().equals(startToken))
@@ -306,9 +306,9 @@ public class MemoryRepairSegmentDao implements IRepairSegmentDao {
             LOG.debug("Segment {} not found for conditional update", segmentId);
             return false;
           }
-          
+
           RepairSegment currentSegment = mapRowToRepairSegment(rs);
-          
+
           // Check if current state matches expected state
           if (!currentSegment.getState().equals(expectedCurrentState)) {
             LOG.debug(
@@ -318,34 +318,76 @@ public class MemoryRepairSegmentDao implements IRepairSegmentDao {
                 currentSegment.getState());
             return false;
           }
-          
+
           // State matches, perform the update
           // Use a direct SQL UPDATE with WHERE clause for atomicity
-          // Also set start_time if transitioning to RUNNING or DONE
+          // Set timestamps based on state transition:
+          // - RUNNING: set start_time if not already set
+          // - DONE: set both start_time and end_time if not already set
           String updateSql;
-          if (newState == RepairSegment.State.RUNNING || newState == RepairSegment.State.DONE) {
+          DateTime now = DateTime.now();
+          long nowMillis = now.getMillis();
+
+          if (newState == RepairSegment.State.DONE) {
+            // DONE requires both start_time AND end_time
+            Long existingStartTime =
+                SqliteHelper.toLong(
+                    currentSegment.getStartTime() != null
+                        ? currentSegment.getStartTime().getMillis()
+                        : null);
+            Long existingEndTime =
+                SqliteHelper.toLong(
+                    currentSegment.getEndTime() != null
+                        ? currentSegment.getEndTime().getMillis()
+                        : null);
+
+            updateSql =
+                "UPDATE repair_segment SET state = ?, start_time = ?, end_time = ? WHERE id = ? AND state = ?";
+          } else if (newState == RepairSegment.State.RUNNING) {
+            // RUNNING requires start_time
             updateSql =
                 "UPDATE repair_segment SET state = ?, start_time = ? WHERE id = ? AND state = ?";
           } else {
-            updateSql =
-                "UPDATE repair_segment SET state = ? WHERE id = ? AND state = ?";
+            updateSql = "UPDATE repair_segment SET state = ? WHERE id = ? AND state = ?";
           }
-          
+
           try (PreparedStatement stmt = connection.prepareStatement(updateSql)) {
             stmt.setString(1, newState.name());
-            
-            if (newState == RepairSegment.State.RUNNING || newState == RepairSegment.State.DONE) {
-              stmt.setLong(2, DateTime.now().getMillis());
+
+            if (newState == RepairSegment.State.DONE) {
+              // Set start_time (use existing or now)
+              Long startTime =
+                  currentSegment.getStartTime() != null
+                      ? currentSegment.getStartTime().getMillis()
+                      : nowMillis;
+              stmt.setLong(2, startTime);
+
+              // Set end_time (use existing or now)
+              Long endTime =
+                  currentSegment.getEndTime() != null
+                      ? currentSegment.getEndTime().getMillis()
+                      : nowMillis;
+              stmt.setLong(3, endTime);
+
+              stmt.setBytes(4, UuidUtil.toBytes(segmentId));
+              stmt.setString(5, expectedCurrentState.name());
+            } else if (newState == RepairSegment.State.RUNNING) {
+              // Set start_time if not already set
+              Long startTime =
+                  currentSegment.getStartTime() != null
+                      ? currentSegment.getStartTime().getMillis()
+                      : nowMillis;
+              stmt.setLong(2, startTime);
               stmt.setBytes(3, UuidUtil.toBytes(segmentId));
               stmt.setString(4, expectedCurrentState.name());
             } else {
               stmt.setBytes(2, UuidUtil.toBytes(segmentId));
               stmt.setString(3, expectedCurrentState.name());
             }
-            
+
             int rowsUpdated = stmt.executeUpdate();
             boolean success = rowsUpdated > 0;
-            
+
             if (success) {
               LOG.debug(
                   "Successfully updated segment {} from {} to {}",
@@ -353,11 +395,9 @@ public class MemoryRepairSegmentDao implements IRepairSegmentDao {
                   expectedCurrentState,
                   newState);
             } else {
-              LOG.debug(
-                  "Failed to update segment {} - state changed concurrently",
-                  segmentId);
+              LOG.debug("Failed to update segment {} - state changed concurrently", segmentId);
             }
-            
+
             return success;
           }
         }

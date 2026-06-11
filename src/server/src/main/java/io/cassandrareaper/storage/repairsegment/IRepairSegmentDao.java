@@ -54,8 +54,8 @@ public interface IRepairSegmentDao {
   int getSegmentAmountForRepairRunWithState(UUID runId, RepairSegment.State state);
 
   /**
-   * Add multiple repair segments to a repair run.
-   * Implementations should generate unique IDs for each segment.
+   * Add multiple repair segments to a repair run. Implementations should generate unique IDs for
+   * each segment.
    *
    * @param segments collection of segment builders to add
    * @param runId the repair run ID
@@ -63,8 +63,8 @@ public interface IRepairSegmentDao {
   void addRepairSegments(Collection<RepairSegment.Builder> segments, UUID runId);
 
   /**
-   * Find a repair segment by its token range within a repair run.
-   * Used for idempotent segment splitting to detect if a replacement segment already exists.
+   * Find a repair segment by its token range within a repair run. Used for idempotent segment
+   * splitting to detect if a replacement segment already exists.
    *
    * @param runId the repair run ID
    * @param repairUnitId the repair unit ID
@@ -76,9 +76,9 @@ public interface IRepairSegmentDao {
       UUID runId, UUID repairUnitId, BigInteger startToken, BigInteger endToken);
 
   /**
-   * Conditionally update a repair segment's state only if it currently has the expected state.
-   * This provides atomic compare-and-swap semantics for segment state transitions.
-   * Used to safely retire original segments after topology-change splitting.
+   * Conditionally update a repair segment's state only if it currently has the expected state. This
+   * provides atomic compare-and-swap semantics for segment state transitions. Used to safely retire
+   * original segments after topology-change splitting.
    *
    * @param segmentId the segment ID to update
    * @param newState the new state to set
@@ -89,8 +89,8 @@ public interface IRepairSegmentDao {
       UUID segmentId, RepairSegment.State newState, RepairSegment.State expectedCurrentState);
 
   /**
-   * Conditionally update a repair segment's state only if it currently has the expected state.
-   * This overload accepts runId for efficient querying in storage backends that partition by runId.
+   * Conditionally update a repair segment's state only if it currently has the expected state. This
+   * overload accepts runId for efficient querying in storage backends that partition by runId.
    *
    * @param runId the repair run ID
    * @param segmentId the segment ID to update
@@ -99,7 +99,10 @@ public interface IRepairSegmentDao {
    * @return true if the segment was updated (condition matched), false otherwise
    */
   default boolean updateRepairSegmentStateConditional(
-      UUID runId, UUID segmentId, RepairSegment.State newState, RepairSegment.State expectedCurrentState) {
+      UUID runId,
+      UUID segmentId,
+      RepairSegment.State newState,
+      RepairSegment.State expectedCurrentState) {
     // Default implementation delegates to the version without runId
     return updateRepairSegmentStateConditional(segmentId, newState, expectedCurrentState);
   }
