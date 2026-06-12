@@ -601,5 +601,3 @@ public final class RepairRunnerSegmentSplittingTest {
     return true;
   }
 }
-
-// Made with Bob

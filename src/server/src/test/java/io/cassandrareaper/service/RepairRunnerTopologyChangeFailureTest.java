@@ -844,5 +844,3 @@ public final class RepairRunnerTopologyChangeFailureTest {
     return (boolean) method.invoke(runner, token, start, end);
   }
 }
-
-// Made with Bob
