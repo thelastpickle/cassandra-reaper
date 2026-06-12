@@ -59,6 +59,7 @@ import org.slf4j.LoggerFactory;
 public class CassandraRepairSegmentDao implements IRepairSegmentDao {
 
   private static final Logger LOG = LoggerFactory.getLogger(CassandraRepairSegmentDao.class);
+  private static final String LWT_APPLIED_COLUMN = "[applied]";
 
   public PreparedStatement insertRepairSegmentPrepStmt;
   public PreparedStatement insertRepairSegmentIncrementalPrepStmt;
@@ -461,7 +462,6 @@ public class CassandraRepairSegmentDao implements IRepairSegmentDao {
       RepairSegment.State newState,
       RepairSegment.State expectedCurrentState) {
 
-    // First, get the current segment to check timestamps
     Optional<RepairSegment> currentSegmentOpt = getRepairSegment(runId, segmentId);
     if (!currentSegmentOpt.isPresent()) {
       LOG.debug("Segment {} not found for conditional update", segmentId);
@@ -469,8 +469,22 @@ public class CassandraRepairSegmentDao implements IRepairSegmentDao {
     }
 
     RepairSegment currentSegment = currentSegmentOpt.get();
+    if (!validateCurrentState(currentSegment, segmentId, expectedCurrentState)) {
+      return false;
+    }
 
-    // Check if current state matches expected state
+    Instant now = Instant.now();
+    if (newState == RepairSegment.State.DONE) {
+      return updateToDoneState(runId, segmentId, currentSegment, expectedCurrentState, now);
+    } else if (newState == RepairSegment.State.RUNNING) {
+      return updateToRunningState(runId, segmentId, currentSegment, expectedCurrentState, now);
+    } else {
+      return updateToOtherState(runId, segmentId, newState, expectedCurrentState);
+    }
+  }
+
+  private boolean validateCurrentState(
+      RepairSegment currentSegment, UUID segmentId, RepairSegment.State expectedCurrentState) {
     if (!currentSegment.getState().equals(expectedCurrentState)) {
       LOG.debug(
           "Segment {} state mismatch: expected {}, found {}",
@@ -479,110 +493,112 @@ public class CassandraRepairSegmentDao implements IRepairSegmentDao {
           currentSegment.getState());
       return false;
     }
+    return true;
+  }
 
-    // Build the conditional update with appropriate timestamps
-    String conditionalUpdateCql;
-    Instant now = Instant.now();
+  private boolean updateToDoneState(
+      UUID runId,
+      UUID segmentId,
+      RepairSegment currentSegment,
+      RepairSegment.State expectedCurrentState,
+      Instant now) {
+    String cql =
+        "UPDATE repair_run SET segment_state = ?, segment_start_time = ?, segment_end_time = ? "
+            + "WHERE id = ? AND segment_id = ? IF segment_state = ?";
 
-    if (newState == RepairSegment.State.DONE) {
-      // DONE requires both start_time AND end_time
-      conditionalUpdateCql =
-          "UPDATE repair_run SET segment_state = ?, segment_start_time = ?, segment_end_time = ? "
-              + "WHERE id = ? AND segment_id = ? IF segment_state = ?";
+    PreparedStatement stmt = prepareConditionalStatement(cql);
 
-      PreparedStatement conditionalUpdateStmt =
-          session.prepare(
-              SimpleStatement.builder(conditionalUpdateCql)
-                  .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM)
-                  .build());
+    Instant startTime = getTimestampOrNow(currentSegment.getStartTime(), now);
+    Instant endTime = getTimestampOrNow(currentSegment.getEndTime(), now);
 
-      // Use existing timestamps or set to now
-      Instant startTime =
-          currentSegment.getStartTime() != null
-              ? Instant.ofEpochMilli(currentSegment.getStartTime().getMillis())
-              : now;
-      Instant endTime =
-          currentSegment.getEndTime() != null
-              ? Instant.ofEpochMilli(currentSegment.getEndTime().getMillis())
-              : now;
+    BoundStatement boundStatement =
+        stmt.bind(
+            RepairSegment.State.DONE.ordinal(),
+            startTime,
+            endTime,
+            runId,
+            segmentId,
+            expectedCurrentState.ordinal());
 
-      BoundStatement boundStatement =
-          conditionalUpdateStmt.bind(
-              newState.ordinal(),
-              startTime,
-              endTime,
-              runId,
-              segmentId,
-              expectedCurrentState.ordinal());
+    return executeLwtUpdate(
+        boundStatement, segmentId, expectedCurrentState, RepairSegment.State.DONE);
+  }
 
-      ResultSet resultSet = session.execute(boundStatement);
-      Row row = resultSet.one();
+  private boolean updateToRunningState(
+      UUID runId,
+      UUID segmentId,
+      RepairSegment currentSegment,
+      RepairSegment.State expectedCurrentState,
+      Instant now) {
+    String cql =
+        "UPDATE repair_run SET segment_state = ?, segment_start_time = ? "
+            + "WHERE id = ? AND segment_id = ? IF segment_state = ?";
 
-      if (row != null) {
-        boolean applied = row.getBoolean("[applied]");
-        if (applied) {
-          LOG.debug(
-              "Successfully updated segment {} from {} to {} with timestamps",
-              segmentId,
-              expectedCurrentState,
-              newState);
-        }
-        return applied;
+    PreparedStatement stmt = prepareConditionalStatement(cql);
+
+    Instant startTime = getTimestampOrNow(currentSegment.getStartTime(), now);
+
+    BoundStatement boundStatement =
+        stmt.bind(
+            RepairSegment.State.RUNNING.ordinal(),
+            startTime,
+            runId,
+            segmentId,
+            expectedCurrentState.ordinal());
+
+    return executeLwtUpdate(boundStatement);
+  }
+
+  private boolean updateToOtherState(
+      UUID runId,
+      UUID segmentId,
+      RepairSegment.State newState,
+      RepairSegment.State expectedCurrentState) {
+    String cql =
+        "UPDATE repair_run SET segment_state = ? WHERE id = ? AND segment_id = ? IF segment_state = ?";
+
+    PreparedStatement stmt = prepareConditionalStatement(cql);
+
+    BoundStatement boundStatement =
+        stmt.bind(newState.ordinal(), runId, segmentId, expectedCurrentState.ordinal());
+
+    return executeLwtUpdate(boundStatement);
+  }
+
+  private PreparedStatement prepareConditionalStatement(String cql) {
+    return session.prepare(
+        SimpleStatement.builder(cql).setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM).build());
+  }
+
+  private Instant getTimestampOrNow(DateTime dateTime, Instant now) {
+    return dateTime != null ? Instant.ofEpochMilli(dateTime.getMillis()) : now;
+  }
+
+  private boolean executeLwtUpdate(BoundStatement boundStatement) {
+    ResultSet resultSet = session.execute(boundStatement);
+    Row row = resultSet.one();
+    return row != null && row.getBoolean(LWT_APPLIED_COLUMN);
+  }
+
+  private boolean executeLwtUpdate(
+      BoundStatement boundStatement,
+      UUID segmentId,
+      RepairSegment.State expectedState,
+      RepairSegment.State newState) {
+    ResultSet resultSet = session.execute(boundStatement);
+    Row row = resultSet.one();
+
+    if (row != null) {
+      boolean applied = row.getBoolean(LWT_APPLIED_COLUMN);
+      if (applied) {
+        LOG.debug(
+            "Successfully updated segment {} from {} to {} with timestamps",
+            segmentId,
+            expectedState,
+            newState);
       }
-      return false;
-
-    } else if (newState == RepairSegment.State.RUNNING) {
-      // RUNNING requires start_time
-      conditionalUpdateCql =
-          "UPDATE repair_run SET segment_state = ?, segment_start_time = ? "
-              + "WHERE id = ? AND segment_id = ? IF segment_state = ?";
-
-      PreparedStatement conditionalUpdateStmt =
-          session.prepare(
-              SimpleStatement.builder(conditionalUpdateCql)
-                  .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM)
-                  .build());
-
-      // Use existing start time or set to now
-      Instant startTime =
-          currentSegment.getStartTime() != null
-              ? Instant.ofEpochMilli(currentSegment.getStartTime().getMillis())
-              : now;
-
-      BoundStatement boundStatement =
-          conditionalUpdateStmt.bind(
-              newState.ordinal(), startTime, runId, segmentId, expectedCurrentState.ordinal());
-
-      ResultSet resultSet = session.execute(boundStatement);
-      Row row = resultSet.one();
-
-      if (row != null) {
-        return row.getBoolean("[applied]");
-      }
-      return false;
-
-    } else {
-      // Other states: just update state
-      conditionalUpdateCql =
-          "UPDATE repair_run SET segment_state = ? WHERE id = ? AND segment_id = ? IF segment_state = ?";
-
-      PreparedStatement conditionalUpdateStmt =
-          session.prepare(
-              SimpleStatement.builder(conditionalUpdateCql)
-                  .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM)
-                  .build());
-
-      BoundStatement boundStatement =
-          conditionalUpdateStmt.bind(
-              newState.ordinal(), runId, segmentId, expectedCurrentState.ordinal());
-
-      ResultSet resultSet = session.execute(boundStatement);
-      Row row = resultSet.one();
-
-      if (row != null) {
-        return row.getBoolean("[applied]");
-      }
-      return false;
+      return applied;
     }
+    return false;
   }
 }
