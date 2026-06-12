@@ -418,27 +418,8 @@ public class CassandraRepairSegmentDao implements IRepairSegmentDao {
     // CQL: UPDATE repair_run SET segment_state = ? WHERE id = ? AND segment_id = ? IF segment_state
     // = ?
 
-    String conditionalUpdateCql =
-        "UPDATE repair_run SET segment_state = ? WHERE id = ? AND segment_id = ? IF segment_state = ?";
-
-    PreparedStatement conditionalUpdateStmt =
-        session.prepare(
-            SimpleStatement.builder(conditionalUpdateCql)
-                .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM)
-                .build());
-
-    // First, we need to find the runId for this segment
-    // Since we only have segmentId, we need to query to find which run it belongs to
-    // This is a limitation of the current schema where segment_id is not the partition key
-
-    // For now, we'll need to get the segment first to find its runId
-    // This is not ideal but necessary given the current schema
-    // In Phase 2, the caller will have the runId available
-
-    // Note: This implementation assumes the caller knows the runId
-    // For Phase 1, we'll document this limitation and address it in Phase 2
-    // when we integrate with RepairRunner which has the runId context
-
+    // This method requires runId context which is not available with just segmentId.
+    // Use the overloaded version that accepts runId parameter.
     throw new UnsupportedOperationException(
         "updateRepairSegmentStateConditional requires runId context. "
             + "This will be implemented in Phase 2 when integrated with RepairRunner. "
