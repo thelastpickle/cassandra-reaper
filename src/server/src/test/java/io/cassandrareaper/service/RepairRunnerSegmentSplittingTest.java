@@ -467,9 +467,6 @@ public final class RepairRunnerSegmentSplittingTest {
 
     storage.getRepairSegmentDao().addRepairSegments(Collections.singletonList(builder), runId);
 
-    // Get initial count
-    int initialCount = storage.getRepairSegmentDao().getSegmentAmountForRepairRun(runId);
-
     // Try to create same segment again
     storage.getRepairSegmentDao().addRepairSegments(Collections.singletonList(builder), runId);
 
