@@ -454,6 +454,7 @@ public class CassandraRepairSegmentDao implements IRepairSegmentDao {
    * @param expectedCurrentState the expected current state (condition)
    * @return true if the segment was updated (condition matched), false otherwise
    */
+  @Override
   public boolean updateRepairSegmentStateConditional(
       UUID runId,
       UUID segmentId,

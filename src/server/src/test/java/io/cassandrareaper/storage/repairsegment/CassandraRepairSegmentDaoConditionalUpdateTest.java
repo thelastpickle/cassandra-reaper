@@ -182,7 +182,6 @@ public class CassandraRepairSegmentDaoConditionalUpdateTest {
   public void testDoneStateWithExistingTimestamps_preservesTimestamps() {
     // Create segment with existing timestamps
     DateTime existingStart = DateTime.now().minusMinutes(10);
-    DateTime existingEnd = DateTime.now().minusMinutes(5);
     RepairSegment segment = createTestSegment(RepairSegment.State.RUNNING, existingStart, null);
     mockGetRepairSegment(segment);
 
