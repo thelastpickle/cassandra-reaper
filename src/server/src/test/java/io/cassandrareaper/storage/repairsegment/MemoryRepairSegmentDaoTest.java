@@ -529,4 +529,133 @@ public class MemoryRepairSegmentDaoTest {
     assertTrue("Start time should be set", updatedSegment.get().hasStartTime());
     assertNotNull("Start time should not be null", updatedSegment.get().getStartTime());
   }
+
+  @Test
+  public void testUpdateRepairSegmentStateConditional_withRunId_success() {
+    // Create a segment in NOT_STARTED state
+    Map<String, String> replicas = new HashMap<>();
+    replicas.put("node1", "dc1");
+
+    RepairSegment segment =
+        RepairSegment.builder(
+                Segment.builder()
+                    .withTokenRange(
+                        new RingRange(BigInteger.valueOf(1000), BigInteger.valueOf(2000)))
+                    .withReplicas(replicas)
+                    .build(),
+                repairUnitId)
+            .withRunId(repairRunId)
+            .withId(Uuids.timeBased())
+            .withState(RepairSegment.State.NOT_STARTED)
+            .build();
+
+    memoryRepairSegmentDao.addRepairSegmentWithId(segment);
+
+    // Update using the 4-parameter overload (with runId)
+    boolean updated =
+        memoryRepairSegmentDao.updateRepairSegmentStateConditional(
+            repairRunId,
+            segment.getId(),
+            RepairSegment.State.RUNNING,
+            RepairSegment.State.NOT_STARTED);
+
+    assertTrue("Conditional update with runId should succeed", updated);
+
+    // Verify the segment was updated
+    java.util.Optional<RepairSegment> updatedSegment =
+        memoryRepairSegmentDao.getRepairSegment(repairRunId, segment.getId());
+
+    assertTrue("Segment should exist", updatedSegment.isPresent());
+    assertEquals(
+        "State should be RUNNING", RepairSegment.State.RUNNING, updatedSegment.get().getState());
+  }
+
+  @Test
+  public void testUpdateRepairSegmentStateConditional_withRunId_stateMismatch() {
+    // Create a segment in RUNNING state
+    Map<String, String> replicas = new HashMap<>();
+    replicas.put("node1", "dc1");
+
+    RepairSegment segment =
+        RepairSegment.builder(
+                Segment.builder()
+                    .withTokenRange(
+                        new RingRange(BigInteger.valueOf(1000), BigInteger.valueOf(2000)))
+                    .withReplicas(replicas)
+                    .build(),
+                repairUnitId)
+            .withRunId(repairRunId)
+            .withId(Uuids.timeBased())
+            .withState(RepairSegment.State.RUNNING)
+            .withStartTime(org.joda.time.DateTime.now())
+            .build();
+
+    memoryRepairSegmentDao.addRepairSegmentWithId(segment);
+
+    // Try to update using the 4-parameter overload, expecting NOT_STARTED (wrong)
+    boolean updated =
+        memoryRepairSegmentDao.updateRepairSegmentStateConditional(
+            repairRunId,
+            segment.getId(),
+            RepairSegment.State.DONE,
+            RepairSegment.State.NOT_STARTED);
+
+    assertTrue("Conditional update with runId should fail on state mismatch", !updated);
+
+    // Verify the segment was NOT updated
+    java.util.Optional<RepairSegment> unchangedSegment =
+        memoryRepairSegmentDao.getRepairSegment(repairRunId, segment.getId());
+
+    assertTrue("Segment should exist", unchangedSegment.isPresent());
+    assertEquals(
+        "State should still be RUNNING",
+        RepairSegment.State.RUNNING,
+        unchangedSegment.get().getState());
+  }
+
+  @Test
+  public void testUpdateRepairSegmentStateConditional_withRunId_segmentNotFound() {
+    // Use a non-existent segment ID
+    UUID nonExistentSegmentId = UUID.randomUUID();
+
+    // Try to update using the 4-parameter overload
+    boolean updated =
+        memoryRepairSegmentDao.updateRepairSegmentStateConditional(
+            repairRunId,
+            nonExistentSegmentId,
+            RepairSegment.State.DONE,
+            RepairSegment.State.NOT_STARTED);
+
+    assertTrue("Conditional update with runId should fail for non-existent segment", !updated);
+  }
+
+  @Test
+  public void testGetRepairSegmentByTokenRange_exceptionHandling() {
+    // This test covers the exception handling path in getRepairSegmentByTokenRange
+    // Create a segment first
+    Map<String, String> replicas = new HashMap<>();
+    replicas.put("node1", "dc1");
+
+    RepairSegment segment =
+        RepairSegment.builder(
+                Segment.builder()
+                    .withTokenRange(
+                        new RingRange(BigInteger.valueOf(1000), BigInteger.valueOf(2000)))
+                    .withReplicas(replicas)
+                    .build(),
+                repairUnitId)
+            .withRunId(repairRunId)
+            .withId(Uuids.timeBased())
+            .withState(RepairSegment.State.NOT_STARTED)
+            .build();
+
+    memoryRepairSegmentDao.addRepairSegmentWithId(segment);
+
+    // Query with valid parameters should work
+    java.util.Optional<RepairSegment> found =
+        memoryRepairSegmentDao.getRepairSegmentByTokenRange(
+            repairRunId, repairUnitId, BigInteger.valueOf(1000), BigInteger.valueOf(2000));
+
+    assertTrue("Segment should be found", found.isPresent());
+  }
 }
