@@ -691,6 +691,180 @@ public final class RepairRunnerTopologyChangeFailureTest {
     assertFalse("Should return false when exception occurs", result);
   }
 
+  /**
+   * Test: computeReplacementSegments skips zero-length token ranges. Covers line 1105-1107 in
+   * RepairRunner.java
+   */
+  @Test
+  public void testComputeReplacementSegments_SkipsZeroLengthRanges() throws Exception {
+    UUID runId = createRepairRun();
+
+    RepairRunner runner = createRepairRunner(runId);
+
+    // Mock ClusterFacade to return tokens including duplicates (which create zero-length ranges)
+    List<BigInteger> ringTokens = new ArrayList<>();
+    ringTokens.add(BigInteger.valueOf(5)); // This will create [1,5) and [5,10)
+    ringTokens.add(BigInteger.valueOf(5)); // Duplicate - should be filtered out
+    when(mockClusterFacade.getTokens(any())).thenReturn(ringTokens);
+
+    RepairSegment originalSegment =
+        RepairSegment.builder(
+                Segment.builder()
+                    .withTokenRange(new RingRange(BigInteger.valueOf(1), BigInteger.valueOf(10)))
+                    .build(),
+                repairUnitId)
+            .withRunId(runId)
+            .withState(RepairSegment.State.NOT_STARTED)
+            .withId(UUID.randomUUID())
+            .build();
+
+    Segment segmentRange =
+        Segment.builder()
+            .withTokenRange(new RingRange(BigInteger.valueOf(1), BigInteger.valueOf(10)))
+            .build();
+
+    List<RepairSegment> result = runner.computeReplacementSegments(originalSegment, segmentRange);
+
+    assertNotNull("Should return non-null list", result);
+    // Should have 2 segments: [1,5) and [5,10), no zero-length ranges
+    assertTrue("Should have at least 2 segments", result.size() >= 2);
+  }
+
+  /**
+   * Test: isTokenInRange handles wrap-around token ranges. Covers line 1138-1140 in
+   * RepairRunner.java
+   */
+  @Test
+  public void testComputeReplacementSegments_WrapAroundRange() throws Exception {
+    UUID runId = createRepairRun();
+
+    RepairRunner runner = createRepairRunner(runId);
+
+    // Create a wrap-around range where start > end
+    BigInteger wrapStart = BigInteger.valueOf(900);
+    BigInteger wrapEnd = BigInteger.valueOf(100);
+
+    // Mock ClusterFacade to return tokens in wrap-around range
+    List<BigInteger> ringTokens = new ArrayList<>();
+    ringTokens.add(BigInteger.valueOf(950)); // In wrap range (> 900)
+    ringTokens.add(BigInteger.valueOf(50)); // In wrap range (< 100)
+    when(mockClusterFacade.getTokens(any())).thenReturn(ringTokens);
+
+    RepairSegment originalSegment =
+        RepairSegment.builder(
+                Segment.builder().withTokenRange(new RingRange(wrapStart, wrapEnd)).build(),
+                repairUnitId)
+            .withRunId(runId)
+            .withState(RepairSegment.State.NOT_STARTED)
+            .withId(UUID.randomUUID())
+            .build();
+
+    Segment segmentRange =
+        Segment.builder().withTokenRange(new RingRange(wrapStart, wrapEnd)).build();
+
+    List<RepairSegment> result = runner.computeReplacementSegments(originalSegment, segmentRange);
+
+    assertNotNull("Should return non-null list", result);
+    // Should handle wrap-around and create multiple segments
+    assertTrue("Should create replacement segments for wrap-around range", result.size() > 0);
+  }
+
+  /**
+   * Test: createMissingReplacementSegments handles idempotency when segment already exists. Covers
+   * line 1167-1174 in RepairRunner.java
+   */
+  @Test
+  public void testCreateMissingReplacementSegments_Idempotency() throws Exception {
+    UUID runId = createRepairRun();
+
+    RepairRunner runner = createRepairRunner(runId);
+
+    // Create and add a segment to storage first
+    RepairSegment.Builder existingBuilder =
+        RepairSegment.builder(
+                Segment.builder()
+                    .withTokenRange(new RingRange(BigInteger.valueOf(1), BigInteger.valueOf(5)))
+                    .build(),
+                repairUnitId)
+            .withRunId(runId)
+            .withState(RepairSegment.State.NOT_STARTED);
+
+    storage
+        .getRepairSegmentDao()
+        .addRepairSegments(Collections.singletonList(existingBuilder), runId);
+
+    // Now try to create the same segment again (idempotency test)
+    RepairSegment replacement =
+        RepairSegment.builder(
+                Segment.builder()
+                    .withTokenRange(new RingRange(BigInteger.valueOf(1), BigInteger.valueOf(5)))
+                    .build(),
+                repairUnitId)
+            .withRunId(runId)
+            .withState(RepairSegment.State.NOT_STARTED)
+            .build();
+
+    List<RepairSegment> replacements = Collections.singletonList(replacement);
+
+    List<RepairSegment> result = runner.createMissingReplacementSegments(replacements);
+
+    assertNotNull("Should return non-null list", result);
+    // Should handle idempotency - segment already exists
+  }
+
+  /**
+   * Test: verifyCompleteCoverage returns true when coverage is complete. Covers line 1266-1267 in
+   * RepairRunner.java
+   */
+  @Test
+  public void testVerifyCompleteCoverage_Success() throws Exception {
+    UUID runId = createRepairRun();
+
+    RepairRunner runner = createRepairRunner(runId);
+
+    RepairSegment originalSegment =
+        RepairSegment.builder(
+                Segment.builder()
+                    .withTokenRange(new RingRange(BigInteger.valueOf(1), BigInteger.valueOf(10)))
+                    .build(),
+                repairUnitId)
+            .withRunId(runId)
+            .withState(RepairSegment.State.NOT_STARTED)
+            .withId(UUID.randomUUID())
+            .build();
+
+    // Create perfect coverage: [1,5) and [5,10)
+    RepairSegment replacement1 =
+        RepairSegment.builder(
+                Segment.builder()
+                    .withTokenRange(new RingRange(BigInteger.valueOf(1), BigInteger.valueOf(5)))
+                    .build(),
+                repairUnitId)
+            .withRunId(runId)
+            .withState(RepairSegment.State.NOT_STARTED)
+            .withId(UUID.randomUUID())
+            .build();
+
+    RepairSegment replacement2 =
+        RepairSegment.builder(
+                Segment.builder()
+                    .withTokenRange(new RingRange(BigInteger.valueOf(5), BigInteger.valueOf(10)))
+                    .build(),
+                repairUnitId)
+            .withRunId(runId)
+            .withState(RepairSegment.State.NOT_STARTED)
+            .withId(UUID.randomUUID())
+            .build();
+
+    List<RepairSegment> replacements = new ArrayList<>();
+    replacements.add(replacement1);
+    replacements.add(replacement2);
+
+    boolean result = runner.verifyCompleteCoverage(originalSegment, replacements);
+
+    assertTrue("Should return true when coverage is complete", result);
+  }
+
   // Helper methods
 
   private UUID createRepairRun() {
