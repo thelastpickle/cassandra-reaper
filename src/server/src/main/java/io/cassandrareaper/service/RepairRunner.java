@@ -950,7 +950,7 @@ final class RepairRunner implements Runnable {
    * @param segmentTokenRange the token range of the failed segment
    * @return true if topology change was detected and handled successfully, false otherwise
    */
-  boolean detectAndHandleTopologyChange(UUID segmentId, Segment segmentTokenRange) {
+  private boolean detectAndHandleTopologyChange(UUID segmentId, Segment segmentTokenRange) {
     LOG.info(
         "Detecting topology change for segment #{} with range {}", segmentId, segmentTokenRange);
 
@@ -1049,13 +1049,11 @@ final class RepairRunner implements Runnable {
    * Computes replacement segments for an original segment based on current topology. This is a
    * simplified implementation that splits the segment into smaller ranges.
    *
-   * <p>Package-private for targeted testing of topology-change recovery behavior.
-   *
    * @param originalSegment the original segment to replace
    * @param segmentTokenRange the token range of the segment
    * @return list of replacement segments
    */
-  List<RepairSegment> computeReplacementSegments(
+  private List<RepairSegment> computeReplacementSegments(
       RepairSegment originalSegment, Segment segmentTokenRange) {
 
     LOG.info("Computing replacement segments for original segment #{}", originalSegment.getId());
@@ -1143,12 +1141,11 @@ final class RepairRunner implements Runnable {
   /**
    * Creates missing replacement segments, checking for existing segments to ensure idempotency.
    *
-   * <p>Package-private for targeted testing of topology-change recovery behavior.
-   *
    * @param replacementSegments the list of replacement segments to create
    * @return list of actually created segments (may be fewer if some already exist)
    */
-  List<RepairSegment> createMissingReplacementSegments(List<RepairSegment> replacementSegments) {
+  private List<RepairSegment> createMissingReplacementSegments(
+      List<RepairSegment> replacementSegments) {
 
     List<RepairSegment> createdSegments = new ArrayList<>();
 
@@ -1217,13 +1214,11 @@ final class RepairRunner implements Runnable {
   /**
    * Verifies that replacement segments fully cover the original segment's token range.
    *
-   * <p>Package-private for targeted testing of topology-change recovery behavior.
-   *
    * @param originalSegment the original segment
    * @param replacementSegments the replacement segments
    * @return true if coverage is complete, false otherwise
    */
-  boolean verifyCompleteCoverage(
+  private boolean verifyCompleteCoverage(
       RepairSegment originalSegment, List<RepairSegment> replacementSegments) {
 
     if (replacementSegments.isEmpty()) {
@@ -1270,12 +1265,10 @@ final class RepairRunner implements Runnable {
   /**
    * Retires the original segment by conditionally updating its state to DONE.
    *
-   * <p>Package-private for targeted testing of topology-change recovery behavior.
-   *
    * @param originalSegment the segment to retire
    * @return true if retirement succeeded, false otherwise
    */
-  boolean retireOriginalSegment(RepairSegment originalSegment) {
+  private boolean retireOriginalSegment(RepairSegment originalSegment) {
     LOG.info("Retiring original segment #{}", originalSegment.getId());
 
     try {
