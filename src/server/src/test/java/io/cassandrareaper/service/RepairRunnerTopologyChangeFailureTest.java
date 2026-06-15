@@ -128,7 +128,8 @@ public final class RepairRunnerTopologyChangeFailureTest {
             .withTokenRange(new RingRange(BigInteger.valueOf(1), BigInteger.valueOf(10)))
             .build();
 
-    boolean result = runner.detectAndHandleTopologyChange(nonExistentSegmentId, segmentRange);
+    boolean result =
+        invokeDetectAndHandleTopologyChange(runner, nonExistentSegmentId, segmentRange);
 
     assertFalse("Should return false when segment not found", result);
   }
@@ -171,7 +172,8 @@ public final class RepairRunnerTopologyChangeFailureTest {
             .withTokenRange(new RingRange(BigInteger.valueOf(1), BigInteger.valueOf(10)))
             .build();
 
-    boolean result = runner.detectAndHandleTopologyChange(segment.get().getId(), segmentRange);
+    boolean result =
+        invokeDetectAndHandleTopologyChange(runner, segment.get().getId(), segmentRange);
 
     assertFalse("Should return false when no replacement segments computed", result);
   }
@@ -218,7 +220,8 @@ public final class RepairRunnerTopologyChangeFailureTest {
             .withTokenRange(new RingRange(BigInteger.valueOf(1), BigInteger.valueOf(10)))
             .build();
 
-    boolean result = runner.detectAndHandleTopologyChange(segment.get().getId(), segmentRange);
+    boolean result =
+        invokeDetectAndHandleTopologyChange(runner, segment.get().getId(), segmentRange);
 
     assertFalse("Should return false when topology unchanged", result);
   }
@@ -267,7 +270,8 @@ public final class RepairRunnerTopologyChangeFailureTest {
             .withTokenRange(new RingRange(BigInteger.valueOf(1), BigInteger.valueOf(10)))
             .build();
 
-    boolean result = runner.detectAndHandleTopologyChange(segment.get().getId(), segmentRange);
+    boolean result =
+        invokeDetectAndHandleTopologyChange(runner, segment.get().getId(), segmentRange);
 
     assertFalse("Should return false when replacement has no coordinators", result);
   }
@@ -341,7 +345,8 @@ public final class RepairRunnerTopologyChangeFailureTest {
             .withTokenRange(new RingRange(BigInteger.valueOf(1), BigInteger.valueOf(10)))
             .build();
 
-    boolean result = runner.detectAndHandleTopologyChange(segment.get().getId(), segmentRange);
+    boolean result =
+        invokeDetectAndHandleTopologyChange(runner, segment.get().getId(), segmentRange);
 
     assertFalse("Should return false when coverage verification fails", result);
   }
@@ -394,7 +399,8 @@ public final class RepairRunnerTopologyChangeFailureTest {
             .withTokenRange(new RingRange(BigInteger.valueOf(1), BigInteger.valueOf(10)))
             .build();
 
-    boolean result = runner.detectAndHandleTopologyChange(segment.get().getId(), segmentRange);
+    boolean result =
+        invokeDetectAndHandleTopologyChange(runner, segment.get().getId(), segmentRange);
 
     assertFalse("Should return false when retirement fails", result);
   }
@@ -437,7 +443,8 @@ public final class RepairRunnerTopologyChangeFailureTest {
             .withTokenRange(new RingRange(BigInteger.valueOf(1), BigInteger.valueOf(10)))
             .build();
 
-    boolean result = runner.detectAndHandleTopologyChange(segment.get().getId(), segmentRange);
+    boolean result =
+        invokeDetectAndHandleTopologyChange(runner, segment.get().getId(), segmentRange);
 
     assertFalse("Should return false when exception occurs", result);
   }
@@ -471,7 +478,8 @@ public final class RepairRunnerTopologyChangeFailureTest {
             .withTokenRange(new RingRange(BigInteger.valueOf(1), BigInteger.valueOf(10)))
             .build();
 
-    List<RepairSegment> result = runner.computeReplacementSegments(originalSegment, segmentRange);
+    List<RepairSegment> result =
+        invokeComputeReplacementSegments(runner, originalSegment, segmentRange);
 
     assertNotNull("Should return non-null list", result);
     assertTrue("Should return empty list on exception", result.isEmpty());
@@ -501,7 +509,7 @@ public final class RepairRunnerTopologyChangeFailureTest {
     List<RepairSegment> replacements = Collections.singletonList(replacement);
 
     // The method should handle exceptions gracefully and continue
-    List<RepairSegment> result = runner.createMissingReplacementSegments(replacements);
+    List<RepairSegment> result = invokeCreateMissingReplacementSegments(runner, replacements);
 
     assertNotNull("Should return non-null list", result);
     // Result may be empty or contain created segments depending on exception timing
@@ -528,7 +536,7 @@ public final class RepairRunnerTopologyChangeFailureTest {
             .withId(UUID.randomUUID())
             .build();
 
-    boolean result = runner.verifyCompleteCoverage(originalSegment, Collections.emptyList());
+    boolean result = invokeVerifyCompleteCoverage(runner, originalSegment, Collections.emptyList());
 
     assertFalse("Should return false for empty replacement list", result);
   }
@@ -567,7 +575,8 @@ public final class RepairRunnerTopologyChangeFailureTest {
             .build();
 
     boolean result =
-        runner.verifyCompleteCoverage(originalSegment, Collections.singletonList(replacement));
+        invokeVerifyCompleteCoverage(
+            runner, originalSegment, Collections.singletonList(replacement));
 
     assertFalse("Should return false when first segment doesn't match start", result);
   }
@@ -606,7 +615,8 @@ public final class RepairRunnerTopologyChangeFailureTest {
             .build();
 
     boolean result =
-        runner.verifyCompleteCoverage(originalSegment, Collections.singletonList(replacement));
+        invokeVerifyCompleteCoverage(
+            runner, originalSegment, Collections.singletonList(replacement));
 
     assertFalse("Should return false when last segment doesn't match end", result);
   }
@@ -659,7 +669,7 @@ public final class RepairRunnerTopologyChangeFailureTest {
     replacements.add(replacement1);
     replacements.add(replacement2);
 
-    boolean result = runner.verifyCompleteCoverage(originalSegment, replacements);
+    boolean result = invokeVerifyCompleteCoverage(runner, originalSegment, replacements);
 
     assertFalse("Should return false when gap exists", result);
   }
@@ -686,9 +696,60 @@ public final class RepairRunnerTopologyChangeFailureTest {
             .withId(UUID.randomUUID())
             .build();
 
-    boolean result = runner.retireOriginalSegment(originalSegment);
+    boolean result = invokeRetireOriginalSegment(runner, originalSegment);
 
     assertFalse("Should return false when exception occurs", result);
+  }
+
+  /**
+   * Test: isTokenInRange handles wrap-around range correctly. Covers line 1136-1138 in
+   * RepairRunner.java
+   */
+  @Test
+  public void testIsTokenInRange_WrapAround() throws Exception {
+    UUID runId = createRepairRun();
+    RepairRunner runner = createRepairRunner(runId);
+
+    // Wrap-around range: start > end
+    BigInteger start = BigInteger.valueOf(90);
+    BigInteger end = BigInteger.valueOf(10);
+
+    // Token 95 should be in range (after start)
+    boolean result1 = invokeIsTokenInRange(runner, BigInteger.valueOf(95), start, end);
+    assertTrue("Token 95 should be in wrap-around range [90, 10)", result1);
+
+    // Token 5 should be in range (before end)
+    boolean result2 = invokeIsTokenInRange(runner, BigInteger.valueOf(5), start, end);
+    assertTrue("Token 5 should be in wrap-around range [90, 10)", result2);
+
+    // Token 50 should NOT be in range
+    boolean result3 = invokeIsTokenInRange(runner, BigInteger.valueOf(50), start, end);
+    assertFalse("Token 50 should NOT be in wrap-around range [90, 10)", result3);
+  }
+
+  /**
+   * Test: isTokenInRange handles normal range correctly. Covers line 1132-1134 in RepairRunner.java
+   */
+  @Test
+  public void testIsTokenInRange_NormalRange() throws Exception {
+    UUID runId = createRepairRun();
+    RepairRunner runner = createRepairRunner(runId);
+
+    // Normal range: start < end
+    BigInteger start = BigInteger.valueOf(10);
+    BigInteger end = BigInteger.valueOf(90);
+
+    // Token 50 should be in range
+    boolean result1 = invokeIsTokenInRange(runner, BigInteger.valueOf(50), start, end);
+    assertTrue("Token 50 should be in range [10, 90)", result1);
+
+    // Token 5 should NOT be in range (before start)
+    boolean result2 = invokeIsTokenInRange(runner, BigInteger.valueOf(5), start, end);
+    assertFalse("Token 5 should NOT be in range [10, 90)", result2);
+
+    // Token 95 should NOT be in range (after end)
+    boolean result3 = invokeIsTokenInRange(runner, BigInteger.valueOf(95), start, end);
+    assertFalse("Token 95 should NOT be in range [10, 90)", result3);
   }
 
   // Helper methods
@@ -725,5 +786,61 @@ public final class RepairRunnerTopologyChangeFailureTest {
     } catch (Exception e) {
       throw new ReaperException("Failed to create RepairRunner", e);
     }
+  }
+
+  // Reflection-based helper methods to invoke private methods
+
+  private boolean invokeDetectAndHandleTopologyChange(
+      RepairRunner runner, UUID segmentId, Segment segmentTokenRange) throws Exception {
+    java.lang.reflect.Method method =
+        RepairRunner.class.getDeclaredMethod(
+            "detectAndHandleTopologyChange", UUID.class, Segment.class);
+    method.setAccessible(true);
+    return (boolean) method.invoke(runner, segmentId, segmentTokenRange);
+  }
+
+  private List<RepairSegment> invokeComputeReplacementSegments(
+      RepairRunner runner, RepairSegment originalSegment, Segment segmentTokenRange)
+      throws Exception {
+    java.lang.reflect.Method method =
+        RepairRunner.class.getDeclaredMethod(
+            "computeReplacementSegments", RepairSegment.class, Segment.class);
+    method.setAccessible(true);
+    return (List<RepairSegment>) method.invoke(runner, originalSegment, segmentTokenRange);
+  }
+
+  private List<RepairSegment> invokeCreateMissingReplacementSegments(
+      RepairRunner runner, List<RepairSegment> replacementSegments) throws Exception {
+    java.lang.reflect.Method method =
+        RepairRunner.class.getDeclaredMethod("createMissingReplacementSegments", List.class);
+    method.setAccessible(true);
+    return (List<RepairSegment>) method.invoke(runner, replacementSegments);
+  }
+
+  private boolean invokeVerifyCompleteCoverage(
+      RepairRunner runner, RepairSegment originalSegment, List<RepairSegment> replacementSegments)
+      throws Exception {
+    java.lang.reflect.Method method =
+        RepairRunner.class.getDeclaredMethod(
+            "verifyCompleteCoverage", RepairSegment.class, List.class);
+    method.setAccessible(true);
+    return (boolean) method.invoke(runner, originalSegment, replacementSegments);
+  }
+
+  private boolean invokeRetireOriginalSegment(RepairRunner runner, RepairSegment originalSegment)
+      throws Exception {
+    java.lang.reflect.Method method =
+        RepairRunner.class.getDeclaredMethod("retireOriginalSegment", RepairSegment.class);
+    method.setAccessible(true);
+    return (boolean) method.invoke(runner, originalSegment);
+  }
+
+  private boolean invokeIsTokenInRange(
+      RepairRunner runner, BigInteger token, BigInteger start, BigInteger end) throws Exception {
+    java.lang.reflect.Method method =
+        RepairRunner.class.getDeclaredMethod(
+            "isTokenInRange", BigInteger.class, BigInteger.class, BigInteger.class);
+    method.setAccessible(true);
+    return (boolean) method.invoke(runner, token, start, end);
   }
 }
