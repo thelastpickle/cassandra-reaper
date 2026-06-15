@@ -366,4 +366,67 @@ public class CassandraRepairSegmentDaoConditionalUpdateTest {
 
     assertFalse("Update should fail when LWT returns null row", result);
   }
+
+  /**
+   * Test: addRepairSegments materializes each builder with runId and inserts. Covers line 381-398
+   * in CassandraRepairSegmentDao.java
+   */
+  @Test
+  public void testAddRepairSegments_materializesAndInserts() {
+    // Create multiple segment builders
+    RepairSegment.Builder builder1 =
+        RepairSegment.builder(
+                Segment.builder()
+                    .withTokenRange(
+                        new RingRange(BigInteger.valueOf(1000), BigInteger.valueOf(2000)))
+                    .build(),
+                repairUnitId)
+            .withState(RepairSegment.State.NOT_STARTED);
+
+    RepairSegment.Builder builder2 =
+        RepairSegment.builder(
+                Segment.builder()
+                    .withTokenRange(
+                        new RingRange(BigInteger.valueOf(2000), BigInteger.valueOf(3000)))
+                    .build(),
+                repairUnitId)
+            .withState(RepairSegment.State.NOT_STARTED);
+
+    java.util.List<RepairSegment.Builder> builders = new java.util.ArrayList<>();
+    builders.add(builder1);
+    builders.add(builder2);
+
+    // Mock the insert statement
+    PreparedStatement mockInsertStmt = mock(PreparedStatement.class);
+    dao.insertRepairSegmentPrepStmt = mockInsertStmt;
+    when(mockInsertStmt.bind(
+            any(UUID.class),
+            any(UUID.class),
+            any(UUID.class),
+            any(BigInteger.class),
+            any(BigInteger.class),
+            any(Integer.class),
+            any(Integer.class),
+            any(String.class),
+            any(),
+            any()))
+        .thenReturn(mockBoundStatement);
+
+    // Execute addRepairSegments
+    dao.addRepairSegments(builders, runId);
+
+    // Verify that session.execute was called twice (once for each segment)
+    verify(mockSession, times(2)).execute(any(BoundStatement.class));
+  }
+
+  /**
+   * Test: updateRepairSegmentStateConditional unsupported overload throws exception. Covers line
+   * 423-426 in CassandraRepairSegmentDao.java
+   */
+  @Test(expected = UnsupportedOperationException.class)
+  public void testUpdateRepairSegmentStateConditional_unsupportedOverload() {
+    // Call the 3-parameter overload which should throw UnsupportedOperationException
+    dao.updateRepairSegmentStateConditional(
+        segmentId, RepairSegment.State.DONE, RepairSegment.State.NOT_STARTED);
+  }
 }
