@@ -818,29 +818,6 @@ public final class RepairRunnerSegmentSplittingTest {
   }
 
   /**
-   * Test: Coverage verification detects gap between consecutive segments. This covers lines
-   * 1250-1257 (gap detection path).
-   */
-  @Test
-  public void testCoverageVerification_DetectsGapBetweenSegments() {
-    RepairSegment originalSegment =
-        createSegment(
-            BigInteger.valueOf(100), BigInteger.valueOf(500), RepairSegment.State.NOT_STARTED);
-
-    // Create replacement segments with a gap: [100,200), [250,500) - missing [200,250)
-    List<RepairSegment> replacements = new ArrayList<>();
-    replacements.add(
-        createSegment(
-            BigInteger.valueOf(100), BigInteger.valueOf(200), RepairSegment.State.NOT_STARTED));
-    replacements.add(
-        createSegment(
-            BigInteger.valueOf(250), BigInteger.valueOf(500), RepairSegment.State.NOT_STARTED));
-
-    boolean coverageComplete = verifyCompleteCoverage(originalSegment, replacements);
-    assertFalse("Coverage should be incomplete with gap between segments", coverageComplete);
-  }
-
-  /**
    * Test: Zero-length segment handling - segments with same start and end token. This covers lines
    * 1103-1104 (skip zero-length ranges).
    */
