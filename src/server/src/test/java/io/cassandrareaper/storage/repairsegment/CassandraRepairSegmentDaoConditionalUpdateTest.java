@@ -366,4 +366,15 @@ public class CassandraRepairSegmentDaoConditionalUpdateTest {
 
     assertFalse("Update should fail when LWT returns null row", result);
   }
+
+  /**
+   * Test: 3-parameter overload of updateRepairSegmentStateConditional throws
+   * UnsupportedOperationException. This covers lines 423-426 in CassandraRepairSegmentDao.
+   */
+  @Test(expected = UnsupportedOperationException.class)
+  public void testThreeParameterOverload_throwsUnsupportedException() {
+    // Call the 3-parameter overload (without runId)
+    dao.updateRepairSegmentStateConditional(
+        segmentId, RepairSegment.State.DONE, RepairSegment.State.NOT_STARTED);
+  }
 }
