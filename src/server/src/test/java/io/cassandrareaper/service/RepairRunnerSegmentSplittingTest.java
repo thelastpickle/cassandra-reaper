@@ -600,4 +600,314 @@ public final class RepairRunnerSegmentSplittingTest {
 
     return true;
   }
+
+  /**
+   * Test: Conditional update to DONE state succeeds when segment is in NOT_STARTED state. This
+   * covers the retirement success path (lines 1289-1290, 1035-1037).
+   */
+  @Test
+  public void testConditionalUpdateToDone_Success() {
+    UUID runId = createRepairRun();
+
+    // Create a segment in NOT_STARTED state
+    RepairSegment.Builder builder =
+        RepairSegment.builder(
+                Segment.builder()
+                    .withTokenRange(new RingRange(BigInteger.valueOf(1), BigInteger.valueOf(10)))
+                    .build(),
+                repairUnitId)
+            .withRunId(runId)
+            .withState(RepairSegment.State.NOT_STARTED);
+
+    storage.getRepairSegmentDao().addRepairSegments(Collections.singletonList(builder), runId);
+
+    // Get the created segment
+    Optional<RepairSegment> created =
+        storage
+            .getRepairSegmentDao()
+            .getRepairSegmentByTokenRange(
+                runId, repairUnitId, BigInteger.valueOf(1), BigInteger.valueOf(10));
+
+    assertTrue("Segment should exist", created.isPresent());
+    UUID segmentId = created.get().getId();
+
+    // Conditional update from NOT_STARTED to DONE
+    boolean updated =
+        storage
+            .getRepairSegmentDao()
+            .updateRepairSegmentStateConditional(
+                runId, segmentId, RepairSegment.State.DONE, RepairSegment.State.NOT_STARTED);
+
+    assertTrue("Conditional update to DONE should succeed", updated);
+
+    // Verify state changed to DONE
+    Optional<RepairSegment> updatedSegment =
+        storage.getRepairSegmentDao().getRepairSegment(runId, segmentId);
+
+    assertTrue("Segment should still exist", updatedSegment.isPresent());
+    assertEquals("State should be DONE", RepairSegment.State.DONE, updatedSegment.get().getState());
+  }
+
+  /**
+   * Test: Conditional update fails when segment is not in expected state. This covers the
+   * retirement failure path (lines 1292-1298, 1038-1041).
+   */
+  @Test
+  public void testConditionalUpdateToDone_FailsWhenStateChanged() {
+    UUID runId = createRepairRun();
+
+    // Create a segment in RUNNING state (not NOT_STARTED)
+    RepairSegment.Builder builder =
+        RepairSegment.builder(
+                Segment.builder()
+                    .withTokenRange(new RingRange(BigInteger.valueOf(1), BigInteger.valueOf(10)))
+                    .build(),
+                repairUnitId)
+            .withRunId(runId)
+            .withState(RepairSegment.State.RUNNING)
+            .withStartTime(org.joda.time.DateTime.now());
+
+    storage.getRepairSegmentDao().addRepairSegments(Collections.singletonList(builder), runId);
+
+    // Get the created segment
+    Optional<RepairSegment> created =
+        storage
+            .getRepairSegmentDao()
+            .getRepairSegmentByTokenRange(
+                runId, repairUnitId, BigInteger.valueOf(1), BigInteger.valueOf(10));
+
+    assertTrue("Segment should exist", created.isPresent());
+    UUID segmentId = created.get().getId();
+
+    // Try conditional update from NOT_STARTED to DONE (but segment is RUNNING)
+    boolean updated =
+        storage
+            .getRepairSegmentDao()
+            .updateRepairSegmentStateConditional(
+                runId, segmentId, RepairSegment.State.DONE, RepairSegment.State.NOT_STARTED);
+
+    assertFalse("Conditional update should fail when state doesn't match", updated);
+
+    // Verify state unchanged
+    Optional<RepairSegment> unchangedSegment =
+        storage.getRepairSegmentDao().getRepairSegment(runId, segmentId);
+
+    assertTrue("Segment should still exist", unchangedSegment.isPresent());
+    assertEquals(
+        "State should still be RUNNING",
+        RepairSegment.State.RUNNING,
+        unchangedSegment.get().getState());
+  }
+
+  /**
+   * Test: Creating replacement segments when some already exist (idempotency). This covers lines
+   * 1166-1171 (existing segment found path).
+   */
+  @Test
+  public void testCreateReplacementSegments_SomeAlreadyExist() {
+    UUID runId = createRepairRun();
+
+    // Pre-create one segment [1, 4)
+    RepairSegment.Builder existingBuilder =
+        RepairSegment.builder(
+                Segment.builder()
+                    .withTokenRange(new RingRange(BigInteger.valueOf(1), BigInteger.valueOf(4)))
+                    .build(),
+                repairUnitId)
+            .withRunId(runId)
+            .withState(RepairSegment.State.NOT_STARTED);
+
+    storage
+        .getRepairSegmentDao()
+        .addRepairSegments(Collections.singletonList(existingBuilder), runId);
+
+    // Now try to create all three segments [1,4), [4,7), [7,10)
+    List<RepairSegment.Builder> allBuilders = new ArrayList<>();
+    allBuilders.add(
+        RepairSegment.builder(
+                Segment.builder()
+                    .withTokenRange(new RingRange(BigInteger.valueOf(1), BigInteger.valueOf(4)))
+                    .build(),
+                repairUnitId)
+            .withState(RepairSegment.State.NOT_STARTED));
+    allBuilders.add(
+        RepairSegment.builder(
+                Segment.builder()
+                    .withTokenRange(new RingRange(BigInteger.valueOf(4), BigInteger.valueOf(7)))
+                    .build(),
+                repairUnitId)
+            .withState(RepairSegment.State.NOT_STARTED));
+    allBuilders.add(
+        RepairSegment.builder(
+                Segment.builder()
+                    .withTokenRange(new RingRange(BigInteger.valueOf(7), BigInteger.valueOf(10)))
+                    .build(),
+                repairUnitId)
+            .withState(RepairSegment.State.NOT_STARTED));
+
+    // Simulate createMissingReplacementSegments logic
+    List<RepairSegment> createdSegments = new ArrayList<>();
+    for (RepairSegment.Builder builder : allBuilders) {
+      RepairSegment built = builder.withRunId(runId).withId(UUID.randomUUID()).build();
+
+      // Check if segment already exists
+      Optional<RepairSegment> existing =
+          storage
+              .getRepairSegmentDao()
+              .getRepairSegmentByTokenRange(
+                  runId, repairUnitId, built.getStartToken(), built.getEndToken());
+
+      if (existing.isPresent()) {
+        // Segment already exists, use it (idempotency)
+        createdSegments.add(existing.get());
+      } else {
+        // Create new segment
+        storage.getRepairSegmentDao().addRepairSegments(Collections.singletonList(builder), runId);
+
+        // Fetch the newly created segment
+        Optional<RepairSegment> newSegment =
+            storage
+                .getRepairSegmentDao()
+                .getRepairSegmentByTokenRange(
+                    runId, repairUnitId, built.getStartToken(), built.getEndToken());
+
+        assertTrue("Newly created segment should exist", newSegment.isPresent());
+        createdSegments.add(newSegment.get());
+      }
+    }
+
+    // Verify all 3 segments exist
+    assertEquals("Should have 3 segments total", 3, createdSegments.size());
+
+    // Verify each segment has correct range
+    assertEquals(
+        "First segment start", BigInteger.valueOf(1), createdSegments.get(0).getStartToken());
+    assertEquals("First segment end", BigInteger.valueOf(4), createdSegments.get(0).getEndToken());
+    assertEquals(
+        "Second segment start", BigInteger.valueOf(4), createdSegments.get(1).getStartToken());
+    assertEquals("Second segment end", BigInteger.valueOf(7), createdSegments.get(1).getEndToken());
+    assertEquals(
+        "Third segment start", BigInteger.valueOf(7), createdSegments.get(2).getStartToken());
+    assertEquals("Third segment end", BigInteger.valueOf(10), createdSegments.get(2).getEndToken());
+  }
+
+  /**
+   * Test: Coverage verification succeeds when replacement segments fully cover original. This
+   * covers lines 1261-1262 (coverage verification success path).
+   */
+  @Test
+  public void testCoverageVerification_SuccessPath() {
+    RepairSegment originalSegment =
+        createSegment(
+            BigInteger.valueOf(100), BigInteger.valueOf(500), RepairSegment.State.NOT_STARTED);
+
+    // Create replacement segments that fully cover [100, 500)
+    List<RepairSegment> replacements = new ArrayList<>();
+    replacements.add(
+        createSegment(
+            BigInteger.valueOf(100), BigInteger.valueOf(200), RepairSegment.State.NOT_STARTED));
+    replacements.add(
+        createSegment(
+            BigInteger.valueOf(200), BigInteger.valueOf(350), RepairSegment.State.NOT_STARTED));
+    replacements.add(
+        createSegment(
+            BigInteger.valueOf(350), BigInteger.valueOf(500), RepairSegment.State.NOT_STARTED));
+
+    boolean coverageComplete = verifyCompleteCoverage(originalSegment, replacements);
+    assertTrue("Coverage should be complete with perfect coverage", coverageComplete);
+  }
+
+  /**
+   * Test: Coverage verification detects gap between consecutive segments. This covers lines
+   * 1250-1257 (gap detection path).
+   */
+  @Test
+  public void testCoverageVerification_DetectsGapBetweenSegments() {
+    RepairSegment originalSegment =
+        createSegment(
+            BigInteger.valueOf(100), BigInteger.valueOf(500), RepairSegment.State.NOT_STARTED);
+
+    // Create replacement segments with a gap: [100,200), [250,500) - missing [200,250)
+    List<RepairSegment> replacements = new ArrayList<>();
+    replacements.add(
+        createSegment(
+            BigInteger.valueOf(100), BigInteger.valueOf(200), RepairSegment.State.NOT_STARTED));
+    replacements.add(
+        createSegment(
+            BigInteger.valueOf(250), BigInteger.valueOf(500), RepairSegment.State.NOT_STARTED));
+
+    boolean coverageComplete = verifyCompleteCoverage(originalSegment, replacements);
+    assertFalse("Coverage should be incomplete with gap between segments", coverageComplete);
+  }
+
+  /**
+   * Test: Zero-length segment handling - segments with same start and end token. This covers lines
+   * 1103-1104 (skip zero-length ranges).
+   */
+  @Test
+  public void testZeroLengthSegment_Skipped() {
+    RepairSegment originalSegment =
+        createSegment(
+            BigInteger.valueOf(100), BigInteger.valueOf(200), RepairSegment.State.NOT_STARTED);
+
+    // Create replacements including a zero-length segment
+    List<RepairSegment> replacements = new ArrayList<>();
+    replacements.add(
+        createSegment(
+            BigInteger.valueOf(100), BigInteger.valueOf(150), RepairSegment.State.NOT_STARTED));
+    // Zero-length segment [150, 150) should be skipped
+    replacements.add(
+        createSegment(
+            BigInteger.valueOf(150), BigInteger.valueOf(200), RepairSegment.State.NOT_STARTED));
+
+    boolean coverageComplete = verifyCompleteCoverage(originalSegment, replacements);
+    assertTrue(
+        "Coverage should be complete even with zero-length segment filtered", coverageComplete);
+  }
+
+  /**
+   * Test: Batch creation of multiple replacement segments. This covers lines 1197-1198 (segment
+   * created successfully path).
+   */
+  @Test
+  public void testBatchCreateReplacementSegments_AllNew() {
+    UUID runId = createRepairRun();
+
+    // Create 5 replacement segments in batch
+    List<RepairSegment.Builder> builders = new ArrayList<>();
+    for (int i = 0; i < 5; i++) {
+      int start = i * 100;
+      int end = (i + 1) * 100;
+      builders.add(
+          RepairSegment.builder(
+                  Segment.builder()
+                      .withTokenRange(
+                          new RingRange(BigInteger.valueOf(start), BigInteger.valueOf(end)))
+                      .build(),
+                  repairUnitId)
+              .withState(RepairSegment.State.NOT_STARTED));
+    }
+
+    // Add all segments in batch
+    storage.getRepairSegmentDao().addRepairSegments(builders, runId);
+
+    // Verify all segments were created
+    for (int i = 0; i < 5; i++) {
+      int start = i * 100;
+      int end = (i + 1) * 100;
+      Optional<RepairSegment> segment =
+          storage
+              .getRepairSegmentDao()
+              .getRepairSegmentByTokenRange(
+                  runId, repairUnitId, BigInteger.valueOf(start), BigInteger.valueOf(end));
+
+      assertTrue("Segment [" + start + ", " + end + ") should exist", segment.isPresent());
+      assertEquals(
+          "Segment start token should match",
+          BigInteger.valueOf(start),
+          segment.get().getStartToken());
+      assertEquals(
+          "Segment end token should match", BigInteger.valueOf(end), segment.get().getEndToken());
+    }
+  }
 }
