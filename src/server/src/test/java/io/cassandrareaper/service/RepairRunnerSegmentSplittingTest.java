@@ -31,6 +31,7 @@ import io.cassandrareaper.storage.MemoryStorageFacade;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -562,6 +563,24 @@ public final class RepairRunnerSegmentSplittingTest {
     return run.getId();
   }
 
+  // Murmur3Partitioner token bounds for ring distance calculations
+  private static final BigInteger MURMUR3_MIN_TOKEN = BigInteger.valueOf(Long.MIN_VALUE);
+  private static final BigInteger MURMUR3_MAX_TOKEN = BigInteger.valueOf(Long.MAX_VALUE);
+
+  /**
+   * Calculates the ring distance from start token to target token, treating the ring as circular.
+   * This mirrors the logic in RepairRunner.ringDistanceFromStart()
+   */
+  private BigInteger ringDistanceFromStart(BigInteger token, BigInteger start) {
+    if (token.compareTo(start) >= 0) {
+      return token.subtract(start);
+    }
+    return token
+        .subtract(MURMUR3_MIN_TOKEN)
+        .add(MURMUR3_MAX_TOKEN.subtract(start))
+        .add(BigInteger.ONE);
+  }
+
   /**
    * Simplified coverage verification for testing. Mirrors the logic in
    * RepairRunner.verifyCompleteCoverage()
@@ -572,11 +591,14 @@ public final class RepairRunnerSegmentSplittingTest {
       return false;
     }
 
-    List<RepairSegment> sorted = new ArrayList<>(replacementSegments);
-    sorted.sort((a, b) -> a.getStartToken().compareTo(b.getStartToken()));
-
     BigInteger originalStart = originalSegment.getStartToken();
     BigInteger originalEnd = originalSegment.getEndToken();
+
+    // Sort replacement segments by ring distance from original start
+    // This handles both normal and wrap-around ranges correctly
+    List<RepairSegment> sorted = new ArrayList<>(replacementSegments);
+    sorted.sort(
+        Comparator.comparing(seg -> ringDistanceFromStart(seg.getStartToken(), originalStart)));
 
     // Check first segment starts at original start
     if (!sorted.get(0).getStartToken().equals(originalStart)) {
@@ -886,5 +908,208 @@ public final class RepairRunnerSegmentSplittingTest {
       assertEquals(
           "Segment end token should match", BigInteger.valueOf(end), segment.get().getEndToken());
     }
+  }
+
+  /**
+   * Test: Wrap-around segment split with one internal token. Original: [9000000000000000000,
+   * -5000000000000000000) Internal token: -8000000000000000000 Expected (ring traversal order from
+   * start): [9000000000000000000, -8000000000000000000) [-8000000000000000000,
+   * -5000000000000000000)
+   */
+  @Test
+  public void testWrapAroundSplitWithOneInternalToken() {
+    RepairSegment original =
+        createSegment(
+            new BigInteger("9000000000000000000"),
+            new BigInteger("-5000000000000000000"),
+            RepairSegment.State.NOT_STARTED);
+
+    // Expected replacements in ring traversal order
+    List<RepairSegment> replacements = new ArrayList<>();
+    replacements.add(
+        createSegment(
+            new BigInteger("9000000000000000000"),
+            new BigInteger("-8000000000000000000"),
+            RepairSegment.State.NOT_STARTED));
+    replacements.add(
+        createSegment(
+            new BigInteger("-8000000000000000000"),
+            new BigInteger("-5000000000000000000"),
+            RepairSegment.State.NOT_STARTED));
+
+    boolean coverageComplete = verifyCompleteCoverage(original, replacements);
+    assertTrue(
+        "Wrap-around split with one internal token should have complete coverage",
+        coverageComplete);
+  }
+
+  /**
+   * Test: Wrap-around segment split with multiple internal tokens. Verifies that tokens are ordered
+   * by ring traversal, not numeric sort. Original: [8000000000000000000, -7000000000000000000)
+   * Internal tokens: [-8000000000000000000, -5000000000000000000, 3000000000000000000] Ring
+   * traversal order from start: 8000000000000000000 → 9223372036854775807 (MAX) →
+   * -9223372036854775808 (MIN) → -8000000000000000000 → -5000000000000000000 → -7000000000000000000
+   * (end) Note: 3000000000000000000 is NOT in range [8000000000000000000, -7000000000000000000)
+   */
+  @Test
+  public void testWrapAroundSplitWithMultipleTokensPreservesRingOrder() {
+    RepairSegment original =
+        createSegment(
+            new BigInteger("8000000000000000000"),
+            new BigInteger("-7000000000000000000"),
+            RepairSegment.State.NOT_STARTED);
+
+    // Expected replacements in ring traversal order (3000000000000000000 excluded as not in range)
+    List<RepairSegment> replacements = new ArrayList<>();
+    replacements.add(
+        createSegment(
+            new BigInteger("8000000000000000000"),
+            new BigInteger("-8000000000000000000"),
+            RepairSegment.State.NOT_STARTED));
+    replacements.add(
+        createSegment(
+            new BigInteger("-8000000000000000000"),
+            new BigInteger("-5000000000000000000"),
+            RepairSegment.State.NOT_STARTED));
+    replacements.add(
+        createSegment(
+            new BigInteger("-5000000000000000000"),
+            new BigInteger("-7000000000000000000"),
+            RepairSegment.State.NOT_STARTED));
+
+    boolean coverageComplete = verifyCompleteCoverage(original, replacements);
+    assertTrue(
+        "Wrap-around split with multiple tokens should preserve ring order", coverageComplete);
+  }
+
+  /** Test: Wrap-around coverage verification succeeds for valid replacements. */
+  @Test
+  public void testWrapAroundCoverageVerificationSucceeds() {
+    RepairSegment original =
+        createSegment(
+            new BigInteger("9000000000000000000"),
+            new BigInteger("-8000000000000000000"),
+            RepairSegment.State.NOT_STARTED);
+
+    // Valid wrap-around replacements
+    List<RepairSegment> replacements = new ArrayList<>();
+    replacements.add(
+        createSegment(
+            new BigInteger("9000000000000000000"),
+            new BigInteger("-5000000000000000000"),
+            RepairSegment.State.NOT_STARTED));
+    replacements.add(
+        createSegment(
+            new BigInteger("-5000000000000000000"),
+            new BigInteger("-8000000000000000000"),
+            RepairSegment.State.NOT_STARTED));
+
+    boolean coverageComplete = verifyCompleteCoverage(original, replacements);
+    assertTrue(
+        "Valid wrap-around replacements should pass coverage verification", coverageComplete);
+  }
+
+  /** Test: Wrap-around coverage verification fails when there is a gap. */
+  @Test
+  public void testWrapAroundCoverageVerificationFailsWithGap() {
+    RepairSegment original =
+        createSegment(
+            new BigInteger("9000000000000000000"),
+            new BigInteger("-8000000000000000000"),
+            RepairSegment.State.NOT_STARTED);
+
+    // Gap: missing [-5000000000000000000, -8000000000000000000)
+    List<RepairSegment> replacements = new ArrayList<>();
+    replacements.add(
+        createSegment(
+            new BigInteger("9000000000000000000"),
+            new BigInteger("-5000000000000000000"),
+            RepairSegment.State.NOT_STARTED));
+
+    boolean coverageComplete = verifyCompleteCoverage(original, replacements);
+    assertFalse(
+        "Wrap-around replacements with gap should fail coverage verification", coverageComplete);
+  }
+
+  /**
+   * Test: Long.MAX_VALUE to Long.MIN_VALUE boundary ordering. Verifies that MIN_VALUE is ordered
+   * immediately after MAX_VALUE in ring traversal.
+   */
+  @Test
+  public void testLongMaxToMinBoundaryOrdering() {
+    RepairSegment original =
+        createSegment(
+            BigInteger.valueOf(Long.MAX_VALUE),
+            BigInteger.valueOf(Long.MIN_VALUE + 1000),
+            RepairSegment.State.NOT_STARTED);
+
+    // Replacement that wraps from MAX to MIN
+    List<RepairSegment> replacements = new ArrayList<>();
+    replacements.add(
+        createSegment(
+            BigInteger.valueOf(Long.MAX_VALUE),
+            BigInteger.valueOf(Long.MIN_VALUE),
+            RepairSegment.State.NOT_STARTED));
+    replacements.add(
+        createSegment(
+            BigInteger.valueOf(Long.MIN_VALUE),
+            BigInteger.valueOf(Long.MIN_VALUE + 1000),
+            RepairSegment.State.NOT_STARTED));
+
+    boolean coverageComplete = verifyCompleteCoverage(original, replacements);
+    assertTrue("MAX_VALUE to MIN_VALUE boundary should be handled correctly", coverageComplete);
+  }
+
+  /**
+   * Test: Normal range split still works after ring distance changes. Ensures backward
+   * compatibility with non-wrap-around ranges.
+   */
+  @Test
+  public void testNormalRangeSplitStillWorks() {
+    RepairSegment original =
+        createSegment(
+            BigInteger.valueOf(100), BigInteger.valueOf(500), RepairSegment.State.NOT_STARTED);
+
+    // Normal range split
+    List<RepairSegment> replacements = new ArrayList<>();
+    replacements.add(
+        createSegment(
+            BigInteger.valueOf(100), BigInteger.valueOf(300), RepairSegment.State.NOT_STARTED));
+    replacements.add(
+        createSegment(
+            BigInteger.valueOf(300), BigInteger.valueOf(500), RepairSegment.State.NOT_STARTED));
+
+    boolean coverageComplete = verifyCompleteCoverage(original, replacements);
+    assertTrue(
+        "Normal range split should still work with ring distance ordering", coverageComplete);
+  }
+
+  /**
+   * Test: Wrap-around coverage verification handles any input order. With ring distance ordering,
+   * segments can be provided in any order and will be sorted correctly.
+   */
+  @Test
+  public void testWrapAroundCoverageVerificationHandlesAnyOrder() {
+    RepairSegment original =
+        createSegment(
+            new BigInteger("9000000000000000000"),
+            new BigInteger("-8000000000000000000"),
+            RepairSegment.State.NOT_STARTED);
+
+    // Provide segments in reverse ring order - should still pass after sorting
+    List<RepairSegment> replacements = new ArrayList<>();
+    replacements.add(
+        createSegment(
+            new BigInteger("-5000000000000000000"),
+            new BigInteger("-8000000000000000000"),
+            RepairSegment.State.NOT_STARTED));
+    replacements.add(
+        createSegment(
+            new BigInteger("9000000000000000000"),
+            new BigInteger("-5000000000000000000"),
+            RepairSegment.State.NOT_STARTED));
+
+    boolean coverageComplete = verifyCompleteCoverage(original, replacements);
+    assertTrue("Wrap-around replacements should pass regardless of input order", coverageComplete);
   }
 }

@@ -905,8 +905,8 @@ final class RepairRunner implements Runnable {
             segmentId);
         return; // Topology change handled, don't fail the repair
       }
-    } catch (Exception e) {
-      LOG.error("Failed to handle topology change for segment #{}", segmentId, e);
+    } catch (RuntimeException e) {
+      LOG.error("Runtime error handling topology change for segment #{}", segmentId, e);
       // Fall through to original failure behavior
     }
 
@@ -1039,8 +1039,14 @@ final class RepairRunner implements Runnable {
         LOG.warn("Failed to retire original segment #{}", segmentId);
         return false;
       }
-    } catch (Exception e) {
-      LOG.error("Error detecting/handling topology change for segment #{}", segmentId, e);
+    } catch (ReaperException e) {
+      LOG.error("Reaper error detecting/handling topology change for segment #{}", segmentId, e);
+      return false;
+    } catch (RuntimeException e) {
+      LOG.error(
+          "Unexpected runtime error detecting/handling topology change for segment #{}",
+          segmentId,
+          e);
       return false;
     }
   }
@@ -1077,30 +1083,34 @@ final class RepairRunner implements Runnable {
 
       LOG.debug("Original segment range: [{}, {})", startToken, endToken);
 
-      // Find all ring tokens that fall within the original segment's range
-      List<BigInteger> tokensInRange = new ArrayList<>();
-      tokensInRange.add(startToken);
+      // Collect all split tokens: start + internal ring tokens + end
+      List<BigInteger> splitTokens = new ArrayList<>();
+      splitTokens.add(startToken);
 
       for (BigInteger token : ringTokens) {
         if (isTokenInRange(token, startToken, endToken)) {
-          tokensInRange.add(token);
+          splitTokens.add(token);
         }
       }
 
-      tokensInRange.add(endToken);
+      splitTokens.add(endToken);
 
-      // Remove duplicates and sort
-      tokensInRange = tokensInRange.stream().distinct().sorted().collect(Collectors.toList());
+      // Remove duplicates
+      splitTokens = splitTokens.stream().distinct().collect(Collectors.toList());
 
-      LOG.info("Found {} boundary tokens for splitting segment", tokensInRange.size());
+      // Sort by ring distance from start (handles both normal and wrap-around ranges)
+      splitTokens.sort(Comparator.comparing(token -> ringDistanceFromStart(token, startToken)));
 
-      // Create replacement segments for each sub-range
-      for (int i = 0; i < tokensInRange.size() - 1; i++) {
-        BigInteger subStart = tokensInRange.get(i);
-        BigInteger subEnd = tokensInRange.get(i + 1);
+      LOG.info("Found {} boundary tokens for splitting segment", splitTokens.size());
+
+      // Create replacement segments for each consecutive pair
+      for (int i = 0; i < splitTokens.size() - 1; i++) {
+        BigInteger subStart = splitTokens.get(i);
+        BigInteger subEnd = splitTokens.get(i + 1);
 
         // Skip zero-length ranges
         if (subStart.equals(subEnd)) {
+          LOG.debug("Skipping zero-length range [{}, {})", subStart, subEnd);
           continue;
         }
 
@@ -1120,12 +1130,18 @@ final class RepairRunner implements Runnable {
 
       LOG.info("Computed {} replacement segments", replacements.size());
 
-    } catch (Exception e) {
-      LOG.error("Error computing replacement segments", e);
+    } catch (ReaperException e) {
+      LOG.error("Reaper error computing replacement segments", e);
+    } catch (RuntimeException e) {
+      LOG.error("Runtime error computing replacement segments", e);
     }
 
     return replacements;
   }
+
+  // Murmur3Partitioner token bounds for ring distance calculations
+  private static final BigInteger MURMUR3_MIN_TOKEN = BigInteger.valueOf(Long.MIN_VALUE);
+  private static final BigInteger MURMUR3_MAX_TOKEN = BigInteger.valueOf(Long.MAX_VALUE);
 
   /** Checks if a token falls within a given range, handling wrap-around. */
   private boolean isTokenInRange(BigInteger token, BigInteger start, BigInteger end) {
@@ -1136,6 +1152,27 @@ final class RepairRunner implements Runnable {
       // Wrap-around range
       return token.compareTo(start) > 0 || token.compareTo(end) < 0;
     }
+  }
+
+  /**
+   * Calculates the ring distance from start token to target token, treating the ring as circular.
+   * This is used to order tokens by their position in ring traversal order starting from start.
+   *
+   * @param token the token to measure distance to
+   * @param start the starting token
+   * @return the ring distance from start to token
+   */
+  private BigInteger ringDistanceFromStart(BigInteger token, BigInteger start) {
+    if (token.compareTo(start) >= 0) {
+      // Token is after start in numeric order, distance is simple subtraction
+      return token.subtract(start);
+    }
+    // Token is before start numerically, so it wraps around the ring
+    // Distance = (token - MIN) + (MAX - start) + 1
+    return token
+        .subtract(MURMUR3_MIN_TOKEN)
+        .add(MURMUR3_MAX_TOKEN.subtract(start))
+        .add(BigInteger.ONE);
   }
 
   /**
@@ -1199,9 +1236,9 @@ final class RepairRunner implements Runnable {
             createdSegments.add(created.get());
           }
         }
-      } catch (Exception e) {
+      } catch (RuntimeException e) {
         LOG.error(
-            "Error creating replacement segment for range [{}, {})",
+            "Runtime error creating replacement segment for range [{}, {})",
             replacement.getStartToken(),
             replacement.getEndToken(),
             e);
@@ -1226,24 +1263,32 @@ final class RepairRunner implements Runnable {
       return false;
     }
 
-    // Sort replacement segments by start token
-    List<RepairSegment> sorted = new ArrayList<>(replacementSegments);
-    sorted.sort(Comparator.comparing(RepairSegment::getStartToken));
-
     BigInteger originalStart = originalSegment.getStartToken();
     BigInteger originalEnd = originalSegment.getEndToken();
 
     LOG.debug("Verifying coverage for original range [{}, {})", originalStart, originalEnd);
 
+    // Sort replacement segments by ring distance from original start
+    // This handles both normal and wrap-around ranges correctly
+    List<RepairSegment> sorted = new ArrayList<>(replacementSegments);
+    sorted.sort(
+        Comparator.comparing(seg -> ringDistanceFromStart(seg.getStartToken(), originalStart)));
+
     // Check that first replacement starts at original start
     if (!sorted.get(0).getStartToken().equals(originalStart)) {
-      LOG.warn("First replacement segment does not start at original start token");
+      LOG.warn(
+          "First replacement segment does not start at original start token. Expected: {}, Got: {}",
+          originalStart,
+          sorted.get(0).getStartToken());
       return false;
     }
 
     // Check that last replacement ends at original end
     if (!sorted.get(sorted.size() - 1).getEndToken().equals(originalEnd)) {
-      LOG.warn("Last replacement segment does not end at original end token");
+      LOG.warn(
+          "Last replacement segment does not end at original end token. Expected: {}, Got: {}",
+          originalEnd,
+          sorted.get(sorted.size() - 1).getEndToken());
       return false;
     }
 
@@ -1293,8 +1338,8 @@ final class RepairRunner implements Runnable {
       }
 
       return retired;
-    } catch (Exception e) {
-      LOG.error("Error retiring original segment #{}", originalSegment.getId(), e);
+    } catch (RuntimeException e) {
+      LOG.error("Runtime error retiring original segment #{}", originalSegment.getId(), e);
       return false;
     }
   }
