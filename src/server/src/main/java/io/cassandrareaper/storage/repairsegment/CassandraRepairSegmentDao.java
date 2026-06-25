@@ -411,30 +411,9 @@ public class CassandraRepairSegmentDao implements IRepairSegmentDao {
         .findFirst();
   }
 
-  @Override
-  public boolean updateRepairSegmentStateConditional(
-      UUID segmentId, RepairSegment.State newState, RepairSegment.State expectedCurrentState) {
-    // For Cassandra backend, we need to use lightweight transactions (LWT) for conditional updates
-    // CQL: UPDATE repair_run SET segment_state = ? WHERE id = ? AND segment_id = ? IF segment_state
-    // = ?
-
-    // This method requires runId context which is not available with just segmentId.
-    // Use the overloaded version that accepts runId parameter.
-    throw new UnsupportedOperationException(
-        "updateRepairSegmentStateConditional requires runId context. "
-            + "This will be implemented in Phase 2 when integrated with RepairRunner. "
-            + "For now, use the overloaded version that accepts runId.");
-  }
-
   /**
-   * Conditionally update a repair segment's state only if it currently has the expected state. This
-   * version accepts runId for efficient querying in Cassandra.
-   *
-   * @param runId the repair run ID
-   * @param segmentId the segment ID to update
-   * @param newState the new state to set
-   * @param expectedCurrentState the expected current state (condition)
-   * @return true if the segment was updated (condition matched), false otherwise
+   * Conditionally update a repair segment's state only if it currently has the expected state. Uses
+   * the runId for efficient querying since Cassandra partitions segments by runId.
    */
   @Override
   public boolean updateRepairSegmentStateConditional(
