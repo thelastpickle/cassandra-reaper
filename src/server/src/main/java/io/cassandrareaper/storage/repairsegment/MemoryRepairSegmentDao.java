@@ -295,7 +295,10 @@ public class MemoryRepairSegmentDao implements IRepairSegmentDao {
 
   @Override
   public boolean updateRepairSegmentStateConditional(
-      UUID segmentId, RepairSegment.State newState, RepairSegment.State expectedCurrentState) {
+      UUID runId,
+      UUID segmentId,
+      RepairSegment.State newState,
+      RepairSegment.State expectedCurrentState) {
     synchronized (getSegmentByIdStmt) {
       try {
         RepairSegment currentSegment = getCurrentSegmentForUpdate(segmentId);

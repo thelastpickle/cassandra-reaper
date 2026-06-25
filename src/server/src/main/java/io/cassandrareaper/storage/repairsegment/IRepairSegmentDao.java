@@ -80,30 +80,17 @@ public interface IRepairSegmentDao {
    * provides atomic compare-and-swap semantics for segment state transitions. Used to safely retire
    * original segments after topology-change splitting.
    *
+   * <p>Implementations that do not require {@code runId} for querying may ignore that parameter.
+   *
+   * @param runId the repair run ID (used by storage backends that partition by runId)
    * @param segmentId the segment ID to update
    * @param newState the new state to set
    * @param expectedCurrentState the expected current state (condition)
    * @return true if the segment was updated (condition matched), false otherwise
    */
   boolean updateRepairSegmentStateConditional(
-      UUID segmentId, RepairSegment.State newState, RepairSegment.State expectedCurrentState);
-
-  /**
-   * Conditionally update a repair segment's state only if it currently has the expected state. This
-   * overload accepts runId for efficient querying in storage backends that partition by runId.
-   *
-   * @param runId the repair run ID
-   * @param segmentId the segment ID to update
-   * @param newState the new state to set
-   * @param expectedCurrentState the expected current state (condition)
-   * @return true if the segment was updated (condition matched), false otherwise
-   */
-  default boolean updateRepairSegmentStateConditional(
       UUID runId,
       UUID segmentId,
       RepairSegment.State newState,
-      RepairSegment.State expectedCurrentState) {
-    // Default implementation delegates to the version without runId
-    return updateRepairSegmentStateConditional(segmentId, newState, expectedCurrentState);
-  }
+      RepairSegment.State expectedCurrentState);
 }

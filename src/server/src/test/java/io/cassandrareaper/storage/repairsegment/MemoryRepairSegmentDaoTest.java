@@ -356,7 +356,10 @@ public class MemoryRepairSegmentDaoTest {
     // Conditionally update from NOT_STARTED to DONE
     boolean updated =
         memoryRepairSegmentDao.updateRepairSegmentStateConditional(
-            segment.getId(), RepairSegment.State.DONE, RepairSegment.State.NOT_STARTED);
+            repairRunId,
+            segment.getId(),
+            RepairSegment.State.DONE,
+            RepairSegment.State.NOT_STARTED);
 
     assertTrue("Update should succeed", updated);
 
@@ -393,7 +396,10 @@ public class MemoryRepairSegmentDaoTest {
     // Try to conditionally update from NOT_STARTED to DONE (but segment is RUNNING)
     boolean updated =
         memoryRepairSegmentDao.updateRepairSegmentStateConditional(
-            segment.getId(), RepairSegment.State.DONE, RepairSegment.State.NOT_STARTED);
+            repairRunId,
+            segment.getId(),
+            RepairSegment.State.DONE,
+            RepairSegment.State.NOT_STARTED);
 
     assertTrue("Update should fail", !updated);
 
@@ -432,14 +438,20 @@ public class MemoryRepairSegmentDaoTest {
     // First update: NOT_STARTED -> DONE
     boolean firstUpdate =
         memoryRepairSegmentDao.updateRepairSegmentStateConditional(
-            segment.getId(), RepairSegment.State.DONE, RepairSegment.State.NOT_STARTED);
+            repairRunId,
+            segment.getId(),
+            RepairSegment.State.DONE,
+            RepairSegment.State.NOT_STARTED);
 
     assertTrue("First update should succeed", firstUpdate);
 
     // Second update: try NOT_STARTED -> DONE again (should fail because state is now DONE)
     boolean secondUpdate =
         memoryRepairSegmentDao.updateRepairSegmentStateConditional(
-            segment.getId(), RepairSegment.State.DONE, RepairSegment.State.NOT_STARTED);
+            repairRunId,
+            segment.getId(),
+            RepairSegment.State.DONE,
+            RepairSegment.State.NOT_STARTED);
 
     assertTrue("Second update should fail", !secondUpdate);
 
@@ -475,7 +487,10 @@ public class MemoryRepairSegmentDaoTest {
     // Conditionally update from NOT_STARTED to DONE
     boolean updated =
         memoryRepairSegmentDao.updateRepairSegmentStateConditional(
-            segment.getId(), RepairSegment.State.DONE, RepairSegment.State.NOT_STARTED);
+            repairRunId,
+            segment.getId(),
+            RepairSegment.State.DONE,
+            RepairSegment.State.NOT_STARTED);
 
     assertTrue("Update should succeed", updated);
 
@@ -515,7 +530,10 @@ public class MemoryRepairSegmentDaoTest {
     // Conditionally update from NOT_STARTED to RUNNING
     boolean updated =
         memoryRepairSegmentDao.updateRepairSegmentStateConditional(
-            segment.getId(), RepairSegment.State.RUNNING, RepairSegment.State.NOT_STARTED);
+            repairRunId,
+            segment.getId(),
+            RepairSegment.State.RUNNING,
+            RepairSegment.State.NOT_STARTED);
 
     assertTrue("Update should succeed", updated);
 
