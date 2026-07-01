@@ -117,6 +117,24 @@
             <artifactId>jackson-datatype-joda</artifactId>
             <version>2.21.1</version>
         </dependency>
+        <!-- Explicitly override Jackson core trio to fix CVE-2026-54512, CVE-2026-54513,
+             CVE-2026-54514. Dropwizard 4.0.15 pulls these in at 2.19.2 transitively.
+             jackson-annotations uses a short version (no patch) starting from 2.20. -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>2.21.4</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-core</artifactId>
+            <version>2.21.4</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-annotations</artifactId>
+            <version>2.21</version>
+        </dependency>
         <dependency>
             <groupId>org.apache.cassandra</groupId>
             <artifactId>cassandra-all</artifactId>
