@@ -58,6 +58,7 @@ case "${TEST_TYPE}" in
         exit 1
         ;;
     "deploy")
+        set_java_home 17
         mvn --version -B
         if [ "${TRAVIS_BRANCH}" = "master" ]
             then
@@ -79,8 +80,8 @@ case "${TEST_TYPE}" in
         echo "${TEST_TYPE}" | grep -q ccm && sleep 30 || sleep 120
         ccm status
         ccm node1 nodetool -- -u cassandra -pw cassandrapassword status
-        # Reaper requires JDK11 for compilation
-        set_java_home 11
+        # Reaper requires JDK17 for compilation
+        set_java_home 17
         case "${STORAGE_TYPE}" in
             "")
                 echo "ERROR: Environment variable STORAGE_TYPE is unspecified."
@@ -137,8 +138,8 @@ case "${TEST_TYPE}" in
                 fi
                 sleep 5
             done
-            # Reaper requires JDK11 for compilation
-            set_java_home 11
+            # Reaper requires JDK17 for compilation
+            set_java_home 17
             case "${STORAGE_TYPE}" in
                 "")
                     echo "ERROR: Environment variable STORAGE_TYPE is unspecified."
@@ -163,7 +164,7 @@ case "${TEST_TYPE}" in
         ccm start -v --no-wait --skip-wait-other-notice || true
         sleep 30
         ccm status
-        set_java_home 11
+        set_java_home 17
         case "${STORAGE_TYPE}" in
             "")
                 echo "ERROR: Environment variable STORAGE_TYPE is unspecified."
@@ -187,7 +188,7 @@ case "${TEST_TYPE}" in
         ccm start -v --no-wait --skip-wait-other-notice || true
         sleep 30
         ccm status
-        set_java_home 11
+        set_java_home 17
         case "${STORAGE_TYPE}" in
             "")
                 echo "ERROR: Environment variable STORAGE_TYPE is unspecified."
@@ -211,7 +212,7 @@ case "${TEST_TYPE}" in
         sleep 30
         ccm status
         ccm node1 cqlsh -e "DROP KEYSPACE reaper_db" || true
-        set_java_home 11
+        set_java_home 17
         mvn package -B -DskipTests -Pintegration-upgrade-tests
         MAVEN_OPTS="-Xmx384m" mvn -B surefire:test -Dtest=ReaperCassandraIT
         ;;
