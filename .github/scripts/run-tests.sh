@@ -14,8 +14,16 @@
 # limitations under the License.
 
 echo "Starting Script step..."
-JACOCO_VERSION="0.8.6"
+JACOCO_VERSION="0.8.12"
 REAPER_ENCRYPTION_KEY="SECRET_KEY"
+
+# cucumber.options is no longer supported in Cucumber 7+; convert to cucumber.filter.tags.
+# CUCUMBER_OPTIONS is expected to be in the form '--tags @<expression>'.
+if [[ -n "${CUCUMBER_OPTIONS}" ]]; then
+  CUCUMBER_FILTER_TAGS="-Dcucumber.filter.tags=$(echo "${CUCUMBER_OPTIONS}" | sed 's/--tags //')"
+else
+  CUCUMBER_FILTER_TAGS=""
+fi
 
 set -xe
 
@@ -58,6 +66,7 @@ case "${TEST_TYPE}" in
         exit 1
         ;;
     "deploy")
+        set_java_home 17
         mvn --version -B
         if [ "${TRAVIS_BRANCH}" = "master" ]
             then
@@ -79,8 +88,8 @@ case "${TEST_TYPE}" in
         echo "${TEST_TYPE}" | grep -q ccm && sleep 30 || sleep 120
         ccm status
         ccm node1 nodetool -- -u cassandra -pw cassandrapassword status
-        # Reaper requires JDK11 for compilation
-        set_java_home 11
+        # Reaper requires JDK17 for compilation
+        set_java_home 17
         case "${STORAGE_TYPE}" in
             "")
                 echo "ERROR: Environment variable STORAGE_TYPE is unspecified."
@@ -88,14 +97,14 @@ case "${TEST_TYPE}" in
                 ;;
             "local")
                 mvn -B package -DskipTests
-                mvn -B org.jacoco:jacoco-maven-plugin:${JACOCO_VERSION}:prepare-agent surefire:test -DsurefireArgLine="-Xmx256m"  -Dtest=ReaperShiroIT -Dcucumber.options="$CUCUMBER_OPTIONS" org.jacoco:jacoco-maven-plugin:${JACOCO_VERSION}:report
-                mvn -B org.jacoco:jacoco-maven-plugin:${JACOCO_VERSION}:prepare-agent surefire:test -DsurefireArgLine="-Xmx256m"  -Dtest=ReaperIT -Dcucumber.options="$CUCUMBER_OPTIONS" org.jacoco:jacoco-maven-plugin:${JACOCO_VERSION}:report
+                mvn -B org.jacoco:jacoco-maven-plugin:${JACOCO_VERSION}:prepare-agent surefire:test -DsurefireArgLine="-Xmx256m"  -Dtest=ReaperShiroIT $CUCUMBER_FILTER_TAGS org.jacoco:jacoco-maven-plugin:${JACOCO_VERSION}:report
+                mvn -B org.jacoco:jacoco-maven-plugin:${JACOCO_VERSION}:prepare-agent surefire:test -DsurefireArgLine="-Xmx256m"  -Dtest=ReaperIT $CUCUMBER_FILTER_TAGS org.jacoco:jacoco-maven-plugin:${JACOCO_VERSION}:report
                 ;;
             "cassandra"|"elassandra")
                 ccm node1 cqlsh -e "DROP KEYSPACE reaper_db" || true
                 mvn -B package -DskipTests
-                mvn -B org.jacoco:jacoco-maven-plugin:${JACOCO_VERSION}:prepare-agent surefire:test -DsurefireArgLine="-Xmx384m" -Dtest=ReaperCassandraIT -Dgrim.reaper.min=${GRIM_MIN} -Dgrim.reaper.max=${GRIM_MAX} -Dcucumber.options="$CUCUMBER_OPTIONS" org.jacoco:jacoco-maven-plugin:${JACOCO_VERSION}:report
-                mvn -B org.jacoco:jacoco-maven-plugin:${JACOCO_VERSION}:prepare-agent surefire:test -DsurefireArgLine="-Xmx384m" -Dtest=ReaperMetricsIT -Dgrim.reaper.min=${GRIM_MIN} -Dgrim.reaper.max=${GRIM_MAX} -Dcucumber.options="$CUCUMBER_OPTIONS" org.jacoco:jacoco-maven-plugin:${JACOCO_VERSION}:report
+                mvn -B org.jacoco:jacoco-maven-plugin:${JACOCO_VERSION}:prepare-agent surefire:test -DsurefireArgLine="-Xmx384m" -Dtest=ReaperCassandraIT -Dgrim.reaper.min=${GRIM_MIN} -Dgrim.reaper.max=${GRIM_MAX} $CUCUMBER_FILTER_TAGS org.jacoco:jacoco-maven-plugin:${JACOCO_VERSION}:report
+                mvn -B org.jacoco:jacoco-maven-plugin:${JACOCO_VERSION}:prepare-agent surefire:test -DsurefireArgLine="-Xmx384m" -Dtest=ReaperMetricsIT -Dgrim.reaper.min=${GRIM_MIN} -Dgrim.reaper.max=${GRIM_MAX} $CUCUMBER_FILTER_TAGS org.jacoco:jacoco-maven-plugin:${JACOCO_VERSION}:report
                 ;;
             *)
                 echo "Skipping, no actions for STORAGE_TYPE=${STORAGE_TYPE}."
@@ -137,8 +146,8 @@ case "${TEST_TYPE}" in
                 fi
                 sleep 5
             done
-            # Reaper requires JDK11 for compilation
-            set_java_home 11
+            # Reaper requires JDK17 for compilation
+            set_java_home 17
             case "${STORAGE_TYPE}" in
                 "")
                     echo "ERROR: Environment variable STORAGE_TYPE is unspecified."
@@ -147,7 +156,7 @@ case "${TEST_TYPE}" in
                 "ccm")
                     mvn -B package -DskipTests
                     ccm node1 cqlsh -e "DROP KEYSPACE reaper_db" || true
-                    mvn -B org.jacoco:jacoco-maven-plugin:${JACOCO_VERSION}:prepare-agent surefire:test -DsurefireArgLine="-Xmx256m"  -Dtest=ReaperHttpIT -Dcucumber.options="$CUCUMBER_OPTIONS" org.jacoco:jacoco-maven-plugin:${JACOCO_VERSION}:report
+                    mvn -B org.jacoco:jacoco-maven-plugin:${JACOCO_VERSION}:prepare-agent surefire:test -DsurefireArgLine="-Xmx256m"  -Dtest=ReaperHttpIT $CUCUMBER_FILTER_TAGS org.jacoco:jacoco-maven-plugin:${JACOCO_VERSION}:report
                     ;;
                 *)
                     echo "Skipping, no actions for STORAGE_TYPE=${STORAGE_TYPE}."
@@ -163,7 +172,7 @@ case "${TEST_TYPE}" in
         ccm start -v --no-wait --skip-wait-other-notice || true
         sleep 30
         ccm status
-        set_java_home 11
+        set_java_home 17
         case "${STORAGE_TYPE}" in
             "")
                 echo "ERROR: Environment variable STORAGE_TYPE is unspecified."
@@ -171,7 +180,7 @@ case "${TEST_TYPE}" in
                 ;;
             "cassandra")
                 ccm node1 cqlsh -e "DROP KEYSPACE reaper_db" || true
-                mvn -B org.jacoco:jacoco-maven-plugin:${JACOCO_VERSION}:prepare-agent surefire:test -DsurefireArgLine="-Xmx512m" -Dtest=ReaperCassandraSidecarIT -Dcucumber.options="$CUCUMBER_OPTIONS" org.jacoco:jacoco-maven-plugin:${JACOCO_VERSION}:report
+                mvn -B org.jacoco:jacoco-maven-plugin:${JACOCO_VERSION}:prepare-agent surefire:test -DsurefireArgLine="-Xmx512m" -Dtest=ReaperCassandraSidecarIT $CUCUMBER_FILTER_TAGS org.jacoco:jacoco-maven-plugin:${JACOCO_VERSION}:report
                 ;;
             *)
                 echo "Skipping, no actions for STORAGE_TYPE=${STORAGE_TYPE}."
@@ -187,7 +196,7 @@ case "${TEST_TYPE}" in
         ccm start -v --no-wait --skip-wait-other-notice || true
         sleep 30
         ccm status
-        set_java_home 11
+        set_java_home 17
         case "${STORAGE_TYPE}" in
             "")
                 echo "ERROR: Environment variable STORAGE_TYPE is unspecified."
@@ -195,7 +204,7 @@ case "${TEST_TYPE}" in
                 ;;
             "cassandra")
                 ccm node1 cqlsh -e "DROP KEYSPACE reaper_db" || true
-                mvn -B org.jacoco:jacoco-maven-plugin:${JACOCO_VERSION}:prepare-agent surefire:test -DsurefireArgLine="-Xmx512m" -Dtest=ReaperCassandraEachIT -Dcucumber.options="$CUCUMBER_OPTIONS" org.jacoco:jacoco-maven-plugin:${JACOCO_VERSION}:report
+                mvn -B org.jacoco:jacoco-maven-plugin:${JACOCO_VERSION}:prepare-agent surefire:test -DsurefireArgLine="-Xmx512m" -Dtest=ReaperCassandraEachIT $CUCUMBER_FILTER_TAGS org.jacoco:jacoco-maven-plugin:${JACOCO_VERSION}:report
                 ;;
             *)
                 echo "Skipping, no actions for STORAGE_TYPE=${STORAGE_TYPE}."
@@ -211,7 +220,7 @@ case "${TEST_TYPE}" in
         sleep 30
         ccm status
         ccm node1 cqlsh -e "DROP KEYSPACE reaper_db" || true
-        set_java_home 11
+        set_java_home 17
         mvn package -B -DskipTests -Pintegration-upgrade-tests
         MAVEN_OPTS="-Xmx384m" mvn -B surefire:test -Dtest=ReaperCassandraIT
         ;;

@@ -32,7 +32,7 @@ javac_path=""
 javadoc_path=""
 if [ "$(cut -d'.' -f1 <<<${VERSION})" -ge 3 ] && [ "$(cut -d'.' -f2 <<<${VERSION})" -ge 1 ]
 then
-  java_home="/usr/lib/jvm/java-11-openjdk-${arch}"
+  java_home="/usr/lib/jvm/java-17-openjdk-${arch}"
   java_path="bin/java"
   javac_path="bin/javac"
   javadoc_path="bin/javadoc"

@@ -269,7 +269,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-enforcer-plugin</artifactId>
-                <version>1.4.1</version>
+                <version>3.4.1</version>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -370,8 +370,8 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <release.jdk>11</release.jdk>
-        <build.jdk.minimum>1.11</build.jdk.minimum>
+        <release.jdk>17</release.jdk>
+        <build.jdk.minimum>17</build.jdk.minimum>
         <!-- travis of July 2018 was still using maven-3.5.2 but our Docker image for building packages ships with 3.3.8 -->
         <maven.version.minimum>3.6.3</maven.version.minimum>
         <surefireArgLine></surefireArgLine>
