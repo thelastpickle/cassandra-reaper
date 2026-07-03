@@ -1054,7 +1054,7 @@ public final class BasicSteps {
     return Double.valueOf(metricIncludingValue.split(" ")[1]);
   }
 
-  @And("^metrics contain no repair schedule metrics")
+  @And("^metrics contain no repair schedule metrics for cluster$")
   public void metrics_contain_no_repair_schedule_metrics() throws Throwable {
     List<String> actualMetrics = getMetrics();
     assertThat(
