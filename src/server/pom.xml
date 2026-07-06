@@ -30,7 +30,7 @@
 
     <properties>
         <dropwizard.version>5.0.2</dropwizard.version>
-        <jetty.version>12.1.9</jetty.version>
+        <jetty.version>12.1.10</jetty.version>
         <jersey.version>3.1.10</jersey.version>
         <logback.version>1.5.25</logback.version>
         <cxf.version>3.4.5</cxf.version>
@@ -171,7 +171,7 @@
         <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty-handler</artifactId>
-            <version>4.2.4.Final</version> 
+            <version>4.2.15.Final</version>
         </dependency>
         <dependency>
             <groupId>org.cognitor.cassandra</groupId>
@@ -376,6 +376,63 @@
             <version>${jetty.version}</version>
         </dependency>
     </dependencies>
+
+    <dependencyManagement>
+        <dependencies>
+            <!-- Pin transitive Jetty artifacts from dropwizard-core to ${jetty.version}.
+                 The directly-declared jetty-http and jetty-io already use ${jetty.version};
+                 these entries ensure all Jetty artifacts resolve to the same patched version. -->
+            <dependency>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-security</artifactId>
+                <version>${jetty.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-server</artifactId>
+                <version>${jetty.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.eclipse.jetty.ee10</groupId>
+                <artifactId>jetty-ee10-servlet</artifactId>
+                <version>${jetty.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-session</artifactId>
+                <version>${jetty.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-util</artifactId>
+                <version>${jetty.version}</version>
+            </dependency>
+            <!-- Pin netty-codec* to fix CVE — transitive via dropwizard-metrics-graphite
+                 -> metrics-graphite:4.2.39 -> amqp-client:5.30.0 which pins netty 4.2.12.Final.
+                 dependencyManagement overrides the resolved version without adding these
+                 artifacts as new direct compile dependencies to the classpath. -->
+            <dependency>
+                <groupId>io.netty</groupId>
+                <artifactId>netty-codec</artifactId>
+                <version>4.2.15.Final</version>
+            </dependency>
+            <dependency>
+                <groupId>io.netty</groupId>
+                <artifactId>netty-codec-compression</artifactId>
+                <version>4.2.15.Final</version>
+            </dependency>
+            <dependency>
+                <groupId>io.netty</groupId>
+                <artifactId>netty-codec-protobuf</artifactId>
+                <version>4.2.15.Final</version>
+            </dependency>
+            <dependency>
+                <groupId>io.netty</groupId>
+                <artifactId>netty-codec-marshalling</artifactId>
+                <version>4.2.15.Final</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
     <build>
       <directory>${build.output}</directory>
