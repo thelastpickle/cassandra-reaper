@@ -95,6 +95,7 @@ RUN apk add --update \
     bash \
     curl \
     py3-requests \
+  && apk upgrade --no-cache openssl \
   && rm -rf /var/cache/apk/*
 
 
