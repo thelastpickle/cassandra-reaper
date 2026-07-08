@@ -180,7 +180,7 @@
         <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty-transport-native-epoll</artifactId>
-            <version>4.1.35.Final</version>
+            <version>4.2.15.Final</version>
         </dependency>
         <dependency>
             <groupId>org.cognitor.cassandra</groupId>
