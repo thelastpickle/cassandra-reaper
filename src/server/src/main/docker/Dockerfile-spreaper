@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM amazoncorretto:11-alpine
+FROM amazoncorretto:17-alpine
 
 ARG SHADED_JAR
 
@@ -95,6 +95,7 @@ RUN apk add --update \
     bash \
     curl \
     py3-requests \
+  && apk upgrade --no-cache openssl \
   && rm -rf /var/cache/apk/*
 
 
