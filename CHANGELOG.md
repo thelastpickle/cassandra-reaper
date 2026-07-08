@@ -1,5 +1,12 @@
 ## Change Log
 
+### 5.0.0 (2026/07/08 13:21 +00:00)
+- [#1692](https://github.com/thelastpickle/cassandra-reaper/pull/1692) This PR provides fix for the following Netty vulnerabilities: CVE-2026-45416, CVE-2026-44249, CVE-2026-50010 (netty-handler) and CVE-2026-45536 (netty-transport-native-epoll) (#1692) (@dheerajmogaveera)
+- [#1693](https://github.com/thelastpickle/cassandra-reaper/pull/1693) bumped jackson-databind, jackson-core and jackson-annotations to resolve CVE-2026-54512, CVE-2026-54513 and CVE-2026-54514 (#1693) (@dheerajmogaveera)
+- [#1695](https://github.com/thelastpickle/cassandra-reaper/pull/1695) build(deps): bump ch.qos.logback:logback-core in /src/server (#1695) (@dependabot[bot])
+- [#1697](https://github.com/thelastpickle/cassandra-reaper/pull/1697) Fix Reaper image CVEs (#1697) (@gmanojDS)
+- [#1687](https://github.com/thelastpickle/cassandra-reaper/pull/1687) Upgrade to Java 17 + Dropwizard 5 (Jakarta EE 10 / Jetty 12.1) (#1687) (@vasiliy-mikhailov)
+
 ### 4.2.5 (2026/06/11 11:02 +00:00)
 - [#1683](https://github.com/thelastpickle/cassandra-reaper/pull/1683) fix: scheduled repairs never re-fire after a completed run (#1683) (#1686) (@onnos)
 
