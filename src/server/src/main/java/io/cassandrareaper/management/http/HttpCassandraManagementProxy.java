@@ -633,76 +633,69 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
       for (Map.Entry<String, JobStatusTracker> entry : jobTracker.entrySet()) {
         try {
           final String jobId = entry.getKey();
-          Job job;
-          try {
-            job = getJobStatus(jobId);
-          } catch (Exception e) {
-            LOG.warn("Failed to get job status for jobId={}, will retry on next tick", jobId, e);
-            continue;
-          }
-
+          Job job = getJobStatus(jobId);
           int availableNotifications = job.getStatusChanges().size();
           int currentNotificationCount = entry.getValue().latestNotificationCount.get();
-
           if (currentNotificationCount < availableNotifications) {
             // remove "repair-" prefix once per job, not per notification
             int repairNo = Integer.parseInt(job.getId().substring(7));
             for (int i = currentNotificationCount; i < availableNotifications; i++) {
-              StatusChange statusChange = job.getStatusChanges().get(i);
-              ProgressEventType progressType = ProgressEventType.valueOf(statusChange.getStatus());
-
-              ExecutorService executor = repairStatusExecutors.get(repairNo);
-              if (executor == null) {
-                // The repair was cleaned up concurrently; skip this event safely.
-                LOG.warn(
-                    "Executor for repairNo={} is null while processing jobId={} notification"
-                        + " index={}, skipping",
-                    repairNo,
-                    jobId,
-                    i);
-                entry.getValue().latestNotificationCount.incrementAndGet();
-                continue;
-              }
-
-              RepairStatusHandler handler = repairStatusHandlers.get(repairNo);
-              if (handler == null) {
-                LOG.warn(
-                    "Handler for repairNo={} is null while processing jobId={} notification"
-                        + " index={}, skipping",
-                    repairNo,
-                    jobId,
-                    i);
-                entry.getValue().latestNotificationCount.incrementAndGet();
-                continue;
-              }
-
-              try {
-                executor.submit(
-                    () ->
-                        handler.handle(
-                            repairNo, Optional.of(progressType), statusChange.getMessage(), this));
-              } catch (Exception e) {
-                // Covers RejectedExecutionException if the executor was shut down
-                // concurrently between the null check above and this call.
-                LOG.warn(
-                    "Failed to submit notification for repairNo={} jobId={} index={}",
-                    repairNo,
-                    jobId,
-                    i,
-                    e);
-              }
+              dispatchNotification(repairNo, jobId, i, job.getStatusChanges().get(i));
               entry.getValue().latestNotificationCount.incrementAndGet();
             }
           }
         } catch (Exception e) {
-          LOG.error(
-              "Unexpected error processing job entry key={} in notificationsTracker, skipping"
+          LOG.warn(
+              "Failed to process jobTracker entry key={} in notificationsTracker, skipping"
                   + " to next job",
               entry.getKey(),
               e);
         }
       }
     };
+  }
+
+  private void dispatchNotification(
+      int repairNo, String jobId, int index, StatusChange statusChange) {
+    ProgressEventType progressType = ProgressEventType.valueOf(statusChange.getStatus());
+
+    ExecutorService executor = repairStatusExecutors.get(repairNo);
+    if (executor == null) {
+      // The repair was cleaned up concurrently; skip this event safely.
+      LOG.warn(
+          "Executor for repairNo={} is null while processing jobId={} notification index={},"
+              + " skipping",
+          repairNo,
+          jobId,
+          index);
+      return;
+    }
+
+    RepairStatusHandler handler = repairStatusHandlers.get(repairNo);
+    if (handler == null) {
+      LOG.warn(
+          "Handler for repairNo={} is null while processing jobId={} notification index={},"
+              + " skipping",
+          repairNo,
+          jobId,
+          index);
+      return;
+    }
+
+    try {
+      executor.submit(
+          () ->
+              handler.handle(repairNo, Optional.of(progressType), statusChange.getMessage(), this));
+    } catch (Exception e) {
+      // Covers RejectedExecutionException if the executor was shut down
+      // concurrently between the null check above and this call.
+      LOG.warn(
+          "Failed to submit notification for repairNo={} jobId={} index={}",
+          repairNo,
+          jobId,
+          index,
+          e);
+    }
   }
 
   // Coordinator nodes such as Stargate instances do not have tokens
