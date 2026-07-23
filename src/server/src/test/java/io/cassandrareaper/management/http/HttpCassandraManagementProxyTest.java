@@ -43,8 +43,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
@@ -270,6 +273,143 @@ public class HttpCassandraManagementProxyTest {
     jobStatus = httpCassandraManagementProxy.jobTracker.get(jobId);
     assertEquals(2, jobStatus.latestNotificationCount.get());
     assertEquals(2, callTimes.get());
+  }
+
+  /**
+   * Reproduces the cleanup race: the poller commits to a jobTracker entry then blocks on the
+   * HTTP response; concurrently, removeRepairStatusHandler() removes the executor from
+   * repairStatusExecutors. When the poller resumes, repairStatusExecutors.get(repairNo) returns
+   * null — the pre-fix crash site.
+   *
+   * <p>The critical contract is that {@code notificationsTracker().run()} must not throw. Per the
+   * {@link java.util.concurrent.ScheduledExecutorService} contract for {@code
+   * scheduleWithFixedDelay}, any unchecked exception escaping the Runnable permanently suppresses
+   * all future executions.
+   */
+  @Test
+  public void testNotificationsTrackerSurvivesRaceWithRemoveHandler() throws Exception {
+    // pollerReady: poller signals it has entered getJobStatus() and is past the point of no return
+    CountDownLatch pollerReady = new CountDownLatch(1);
+    // cleanupDone: cleanup thread signals removeRepairStatusHandler() has finished
+    CountDownLatch cleanupDone = new CountDownLatch(1);
+
+    DefaultApi mockClient = mock(DefaultApi.class);
+    doReturn((new RepairRequestResponse()).repairId("repair-999"))
+        .when(mockClient)
+        .putRepairV2(any());
+
+    HttpCassandraManagementProxy proxy = mockProxy(mockClient);
+
+    final AtomicInteger callTimes = new AtomicInteger(0);
+    RepairStatusHandler handler =
+        (repairNumber, progress, message, mgmtProxy) -> callTimes.incrementAndGet();
+
+    int repairNo =
+        proxy.triggerRepair(
+            "ks",
+            RepairParallelism.PARALLEL,
+            Collections.singleton("table"),
+            RepairType.SUBRANGE_FULL,
+            Collections.emptyList(),
+            handler,
+            Collections.emptyList(),
+            1);
+
+    // One START notification waiting for the poller to pick up.
+    Job job = new Job();
+    job.setId("repair-999");
+    StatusChange sc = new StatusChange();
+    sc.setStatus("START");
+    sc.setMessage("");
+    List<StatusChange> statusChanges = new ArrayList<>();
+    statusChanges.add(sc);
+    job.setStatusChanges(statusChanges);
+
+    // Block inside getJobStatus() to pin the race window: signal cleanup, then wait for it.
+    when(mockClient.getJobStatus("repair-999"))
+        .thenAnswer(
+            invocation -> {
+              pollerReady.countDown(); // unblock the cleanup thread
+              cleanupDone.await();     // wait until executor has been removed
+              return job;
+            });
+
+    // Capture any exception that would have killed the ScheduledExecutorService.
+    AtomicReference<Throwable> pollerException = new AtomicReference<>();
+    Thread pollerThread =
+        new Thread(
+            () -> {
+              try {
+                proxy.notificationsTracker().run();
+              } catch (Throwable t) {
+                pollerException.set(t);
+              }
+            },
+            "test-poller");
+
+    // Remove the executor while the poller is blocked inside getJobStatus().
+    Thread cleanupThread =
+        new Thread(
+            () -> {
+              try {
+                pollerReady.await();
+              } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                return;
+              }
+              proxy.removeRepairStatusHandler(repairNo);
+              cleanupDone.countDown();
+            },
+            "test-cleanup");
+
+    pollerThread.start();
+    cleanupThread.start();
+    pollerThread.join(5000);
+    cleanupThread.join(5000);
+
+    assertFalse("test-poller thread must not still be running", pollerThread.isAlive());
+    assertFalse("test-cleanup thread must not still be running", cleanupThread.isAlive());
+
+    // The Runnable must not throw — an escaping exception permanently kills scheduleWithFixedDelay.
+    assertThat(pollerException.get())
+        .as("notificationsTracker().run() must not throw when executor is null (cleanup race)")
+        .isNull();
+
+    // Confirm the Runnable still delivers events correctly on a subsequent invocation.
+    doReturn((new RepairRequestResponse()).repairId("repair-1000"))
+        .when(mockClient)
+        .putRepairV2(any());
+
+    final AtomicInteger secondCallTimes = new AtomicInteger(0);
+    RepairStatusHandler secondHandler =
+        (repairNumber, progress, message, mgmtProxy) -> secondCallTimes.incrementAndGet();
+
+    int repairNo2 =
+        proxy.triggerRepair(
+            "ks",
+            RepairParallelism.PARALLEL,
+            Collections.singleton("table"),
+            RepairType.SUBRANGE_FULL,
+            Collections.emptyList(),
+            secondHandler,
+            Collections.emptyList(),
+            1);
+
+    proxy.repairStatusExecutors.put(repairNo2, MoreExecutors.newDirectExecutorService());
+
+    Job job2 = new Job();
+    job2.setId("repair-1000");
+    StatusChange sc2 = new StatusChange();
+    sc2.setStatus("START");
+    sc2.setMessage("");
+    List<StatusChange> statusChanges2 = new ArrayList<>();
+    statusChanges2.add(sc2);
+    job2.setStatusChanges(statusChanges2);
+    when(mockClient.getJobStatus("repair-1000")).thenReturn(job2);
+
+    proxy.notificationsTracker().run();
+
+    assertEquals(1, secondCallTimes.get());
   }
 
   @Test

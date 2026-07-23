@@ -410,13 +410,16 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
 
   @Override
   public void removeRepairStatusHandler(int repairNo) {
+    String jobId = String.format("repair-%d", repairNo);
+    // Remove the job from jobTracker first so the poller stops seeing it before the
+    // executor is torn down.  This closes the window where the poller could observe a
+    // live jobTracker entry whose executor has already been removed.
+    jobTracker.remove(jobId);
     repairStatusHandlers.remove(repairNo);
     ExecutorService repairStatusExecutor = repairStatusExecutors.remove(repairNo);
     if (null != repairStatusExecutor) {
       repairStatusExecutor.shutdown();
     }
-    String jobId = String.format("repair-%d", repairNo);
-    jobTracker.remove(jobId);
   }
 
   @Override
@@ -627,36 +630,80 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
   @VisibleForTesting
   Runnable notificationsTracker() {
     return () -> {
-      if (jobTracker.size() > 0) {
-        for (Map.Entry<String, JobStatusTracker> entry : jobTracker.entrySet()) {
-          Job job = getJobStatus(entry.getKey());
+      for (Map.Entry<String, JobStatusTracker> entry : jobTracker.entrySet()) {
+        try {
+          final String jobId = entry.getKey();
+          Job job;
+          try {
+            job = getJobStatus(jobId);
+          } catch (Exception e) {
+            LOG.warn("Failed to get job status for jobId={}, will retry on next tick", jobId, e);
+            continue;
+          }
+
           int availableNotifications = job.getStatusChanges().size();
           int currentNotificationCount = entry.getValue().latestNotificationCount.get();
 
           if (currentNotificationCount < availableNotifications) {
-            // We need to process the new ones
+            // remove "repair-" prefix once per job, not per notification
+            int repairNo = Integer.parseInt(job.getId().substring(7));
             for (int i = currentNotificationCount; i < availableNotifications; i++) {
               StatusChange statusChange = job.getStatusChanges().get(i);
-              // remove "repair-" prefix
-              int repairNo = Integer.parseInt(job.getId().substring(7));
-              ProgressEventType progressType = ProgressEventType.valueOf(statusChange.getStatus());
-              repairStatusExecutors
-                  .get(repairNo)
-                  .submit(
-                      () -> {
-                        repairStatusHandlers
-                            .get(repairNo)
-                            .handle(
-                                repairNo,
-                                Optional.of(progressType),
-                                statusChange.getMessage(),
-                                this);
-                      });
+              ProgressEventType progressType =
+                  ProgressEventType.valueOf(statusChange.getStatus());
 
-              // Update the count as we process them
+              ExecutorService executor = repairStatusExecutors.get(repairNo);
+              if (executor == null) {
+                // The repair was cleaned up concurrently; skip this event safely.
+                LOG.warn(
+                    "Executor for repairNo={} is null while processing jobId={} notification"
+                        + " index={}, skipping",
+                    repairNo,
+                    jobId,
+                    i);
+                entry.getValue().latestNotificationCount.incrementAndGet();
+                continue;
+              }
+
+              RepairStatusHandler handler = repairStatusHandlers.get(repairNo);
+              if (handler == null) {
+                LOG.warn(
+                    "Handler for repairNo={} is null while processing jobId={} notification"
+                        + " index={}, skipping",
+                    repairNo,
+                    jobId,
+                    i);
+                entry.getValue().latestNotificationCount.incrementAndGet();
+                continue;
+              }
+
+              try {
+                executor.submit(
+                    () ->
+                        handler.handle(
+                            repairNo,
+                            Optional.of(progressType),
+                            statusChange.getMessage(),
+                            this));
+              } catch (Exception e) {
+                // Covers RejectedExecutionException if the executor was shut down
+                // concurrently between the null check above and this call.
+                LOG.warn(
+                    "Failed to submit notification for repairNo={} jobId={} index={}",
+                    repairNo,
+                    jobId,
+                    i,
+                    e);
+              }
               entry.getValue().latestNotificationCount.incrementAndGet();
             }
           }
+        } catch (Exception e) {
+          LOG.error(
+              "Unexpected error processing job entry key={} in notificationsTracker, skipping"
+                  + " to next job",
+              entry.getKey(),
+              e);
         }
       }
     };
