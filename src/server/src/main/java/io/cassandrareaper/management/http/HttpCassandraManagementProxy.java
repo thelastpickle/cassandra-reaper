@@ -649,8 +649,7 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
             int repairNo = Integer.parseInt(job.getId().substring(7));
             for (int i = currentNotificationCount; i < availableNotifications; i++) {
               StatusChange statusChange = job.getStatusChanges().get(i);
-              ProgressEventType progressType =
-                  ProgressEventType.valueOf(statusChange.getStatus());
+              ProgressEventType progressType = ProgressEventType.valueOf(statusChange.getStatus());
 
               ExecutorService executor = repairStatusExecutors.get(repairNo);
               if (executor == null) {
@@ -681,10 +680,7 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
                 executor.submit(
                     () ->
                         handler.handle(
-                            repairNo,
-                            Optional.of(progressType),
-                            statusChange.getMessage(),
-                            this));
+                            repairNo, Optional.of(progressType), statusChange.getMessage(), this));
               } catch (Exception e) {
                 // Covers RejectedExecutionException if the executor was shut down
                 // concurrently between the null check above and this call.

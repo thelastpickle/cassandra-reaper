@@ -44,7 +44,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -276,8 +275,8 @@ public class HttpCassandraManagementProxyTest {
   }
 
   /**
-   * Reproduces the cleanup race: the poller commits to a jobTracker entry then blocks on the
-   * HTTP response; concurrently, removeRepairStatusHandler() removes the executor from
+   * Reproduces the cleanup race: the poller commits to a jobTracker entry then blocks on the HTTP
+   * response; concurrently, removeRepairStatusHandler() removes the executor from
    * repairStatusExecutors. When the poller resumes, repairStatusExecutors.get(repairNo) returns
    * null — the pre-fix crash site.
    *
@@ -330,7 +329,7 @@ public class HttpCassandraManagementProxyTest {
         .thenAnswer(
             invocation -> {
               pollerReady.countDown(); // unblock the cleanup thread
-              cleanupDone.await();     // wait until executor has been removed
+              cleanupDone.await(); // wait until executor has been removed
               return job;
             });
 
