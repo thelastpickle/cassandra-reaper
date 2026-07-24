@@ -219,11 +219,14 @@ public class CassandraConcurrencyDao {
     }
 
     ResultSet results = session.execute(batch.build());
-    if (!results.wasApplied()) {
+    // wasApplied() must be read before logFailedLead() consumes the rows,
+    // otherwise the driver throws IllegalStateException (see #1632).
+    boolean applied = results.wasApplied();
+    if (!applied) {
       logFailedLead(results, repairId, segmentId);
     }
 
-    return results.wasApplied();
+    return applied;
   }
 
   public boolean renewRunningRepairsForNodes(UUID repairId, UUID segmentId, Set<String> replicas) {
@@ -242,11 +245,14 @@ public class CassandraConcurrencyDao {
     }
 
     ResultSet results = session.execute(batch.build());
-    if (!results.wasApplied()) {
+    // wasApplied() must be read before logFailedLead() consumes the rows,
+    // otherwise the driver throws IllegalStateException (see #1632).
+    boolean applied = results.wasApplied();
+    if (!applied) {
       logFailedLead(results, repairId, segmentId);
     }
 
-    return results.wasApplied();
+    return applied;
   }
 
   void logFailedLead(ResultSet results, UUID repairId, UUID segmentId) {
@@ -283,11 +289,14 @@ public class CassandraConcurrencyDao {
     }
 
     ResultSet results = session.execute(batch.build());
-    if (!results.wasApplied()) {
+    // wasApplied() must be read before logFailedLead() consumes the rows,
+    // otherwise the driver throws IllegalStateException (see #1632).
+    boolean applied = results.wasApplied();
+    if (!applied) {
       logFailedLead(results, repairId, segmentId);
     }
 
-    return results.wasApplied();
+    return applied;
   }
 
   public Set<UUID> getLockedSegmentsForRun(UUID runId) {
