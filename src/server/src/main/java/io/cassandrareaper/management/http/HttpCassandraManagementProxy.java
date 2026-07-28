@@ -632,18 +632,21 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
       // repair completions are never observed again and segments stay STARTED
       // forever. Nothing thrown here may escape.
       try {
-        for (Map.Entry<String, JobStatusTracker> entry : jobTracker.entrySet()) {
-          try {
-            processJobNotifications(entry);
-          } catch (RuntimeException e) {
-            LOG.warn(
-                "Failed to poll status of job {}, will retry on the next poll", entry.getKey(), e);
-          }
-        }
+        pollTrackedJobs();
       } catch (Throwable t) {
         LOG.error("Job status poller iteration failed, will retry on the next poll", t);
       }
     };
+  }
+
+  private void pollTrackedJobs() {
+    for (Map.Entry<String, JobStatusTracker> entry : jobTracker.entrySet()) {
+      try {
+        processJobNotifications(entry);
+      } catch (RuntimeException e) {
+        LOG.warn("Failed to poll status of job {}, will retry on the next poll", entry.getKey(), e);
+      }
+    }
   }
 
   private void processJobNotifications(Map.Entry<String, JobStatusTracker> entry) {
