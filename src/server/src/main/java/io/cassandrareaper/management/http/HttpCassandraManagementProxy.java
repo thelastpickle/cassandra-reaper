@@ -633,8 +633,8 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
       // forever. Nothing thrown here may escape.
       try {
         pollTrackedJobs();
-      } catch (Throwable t) {
-        LOG.error("Job status poller iteration failed, will retry on the next poll", t);
+      } catch (Exception e) {
+        LOG.error("Job status poller iteration failed, will retry on the next poll", e);
       }
     };
   }
