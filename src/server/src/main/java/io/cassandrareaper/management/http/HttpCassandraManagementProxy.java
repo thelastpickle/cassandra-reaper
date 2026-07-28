@@ -627,37 +627,53 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
   @VisibleForTesting
   Runnable notificationsTracker() {
     return () -> {
-      if (jobTracker.size() > 0) {
-        for (Map.Entry<String, JobStatusTracker> entry : jobTracker.entrySet()) {
-          Job job = getJobStatus(entry.getKey());
-          int availableNotifications = job.getStatusChanges().size();
-          int currentNotificationCount = entry.getValue().latestNotificationCount.get();
+      // This runnable runs via scheduleWithFixedDelay, which permanently and
+      // silently cancels the task on the first uncaught exception — after which
+      // repair completions are never observed again and segments stay STARTED
+      // forever. Nothing thrown here may escape.
+      try {
+        if (jobTracker.size() > 0) {
+          for (Map.Entry<String, JobStatusTracker> entry : jobTracker.entrySet()) {
+            try {
+              Job job = getJobStatus(entry.getKey());
+              int availableNotifications = job.getStatusChanges().size();
+              int currentNotificationCount = entry.getValue().latestNotificationCount.get();
 
-          if (currentNotificationCount < availableNotifications) {
-            // We need to process the new ones
-            for (int i = currentNotificationCount; i < availableNotifications; i++) {
-              StatusChange statusChange = job.getStatusChanges().get(i);
-              // remove "repair-" prefix
-              int repairNo = Integer.parseInt(job.getId().substring(7));
-              ProgressEventType progressType = ProgressEventType.valueOf(statusChange.getStatus());
-              repairStatusExecutors
-                  .get(repairNo)
-                  .submit(
-                      () -> {
-                        repairStatusHandlers
-                            .get(repairNo)
-                            .handle(
-                                repairNo,
-                                Optional.of(progressType),
-                                statusChange.getMessage(),
-                                this);
-                      });
+              if (currentNotificationCount < availableNotifications) {
+                // We need to process the new ones
+                for (int i = currentNotificationCount; i < availableNotifications; i++) {
+                  StatusChange statusChange = job.getStatusChanges().get(i);
+                  // remove "repair-" prefix
+                  int repairNo = Integer.parseInt(job.getId().substring(7));
+                  ProgressEventType progressType =
+                      ProgressEventType.valueOf(statusChange.getStatus());
+                  repairStatusExecutors
+                      .get(repairNo)
+                      .submit(
+                          () -> {
+                            repairStatusHandlers
+                                .get(repairNo)
+                                .handle(
+                                    repairNo,
+                                    Optional.of(progressType),
+                                    statusChange.getMessage(),
+                                    this);
+                          });
 
-              // Update the count as we process them
-              entry.getValue().latestNotificationCount.incrementAndGet();
+                  // Update the count as we process them
+                  entry.getValue().latestNotificationCount.incrementAndGet();
+                }
+              }
+            } catch (RuntimeException e) {
+              LOG.warn(
+                  "Failed to poll status of job {}, will retry on the next poll",
+                  entry.getKey(),
+                  e);
             }
           }
         }
+      } catch (Throwable t) {
+        LOG.error("Job status poller iteration failed, will retry on the next poll", t);
       }
     };
   }
