@@ -411,6 +411,184 @@ public class HttpCassandraManagementProxyTest {
     assertEquals(1, secondCallTimes.get());
   }
 
+  /**
+   * When the Management API returns a Job whose {@code statusChanges} list is null, the poller must
+   * log a warning and skip that entry — it must not throw NullPointerException, which would
+   * permanently kill the {@code scheduleWithFixedDelay} task.
+   */
+  @Test
+  public void testNotificationsTrackerSkipsJobWithNullStatusChanges() throws Exception {
+    DefaultApi mockClient = mock(DefaultApi.class);
+    doReturn((new RepairRequestResponse()).repairId("repair-111"))
+        .when(mockClient)
+        .putRepairV2(any());
+
+    HttpCassandraManagementProxy proxy = mockProxy(mockClient);
+
+    final AtomicInteger callTimes = new AtomicInteger(0);
+    RepairStatusHandler handler =
+        (repairNumber, progress, message, mgmtProxy) -> callTimes.incrementAndGet();
+
+    int repairNo =
+        proxy.triggerRepair(
+            "ks",
+            RepairParallelism.PARALLEL,
+            Collections.singleton("table"),
+            RepairType.SUBRANGE_FULL,
+            Collections.emptyList(),
+            handler,
+            Collections.emptyList(),
+            1);
+
+    // Return a Job with null statusChanges — simulates a malformed / in-progress response.
+    Job job = new Job();
+    job.setId("repair-111");
+    job.setStatusChanges(null);
+    when(mockClient.getJobStatus("repair-111")).thenReturn(job);
+
+    // Must not throw — a NPE here would permanently kill scheduleWithFixedDelay.
+    AtomicReference<Throwable> thrown = new AtomicReference<>();
+    try {
+      proxy.notificationsTracker().run();
+    } catch (Throwable t) {
+      thrown.set(t);
+    }
+    assertThat(thrown.get())
+        .as("notificationsTracker().run() must not throw when statusChanges is null")
+        .isNull();
+
+    // No handler calls expected; notification count stays at 0.
+    assertEquals(0, callTimes.get());
+    assertEquals(
+        0,
+        proxy.jobTracker.get(String.format("repair-%d", repairNo)).latestNotificationCount.get());
+  }
+
+  /**
+   * When the Management API returns a Job whose status string does not map to a known {@link
+   * io.cassandrareaper.management.ProgressEventType}, {@code dispatchNotification} must log a
+   * warning and return — it must not throw {@link IllegalArgumentException}, which would propagate
+   * through the per-entry try/catch and prevent subsequent notifications for that job from being
+   * processed.
+   *
+   * <p>The caller's {@code latestNotificationCount} increment is unconditional after {@code
+   * dispatchNotification} returns, so the poller advances past the unknown status and does not
+   * stall in an infinite retry loop.
+   */
+  @Test
+  public void testNotificationsTrackerSkipsUnknownProgressEventType() throws Exception {
+    DefaultApi mockClient = mock(DefaultApi.class);
+    doReturn((new RepairRequestResponse()).repairId("repair-222"))
+        .when(mockClient)
+        .putRepairV2(any());
+
+    HttpCassandraManagementProxy proxy = mockProxy(mockClient);
+
+    final AtomicInteger callTimes = new AtomicInteger(0);
+    RepairStatusHandler handler =
+        (repairNumber, progress, message, mgmtProxy) -> callTimes.incrementAndGet();
+
+    int repairNo =
+        proxy.triggerRepair(
+            "ks",
+            RepairParallelism.PARALLEL,
+            Collections.singleton("table"),
+            RepairType.SUBRANGE_FULL,
+            Collections.emptyList(),
+            handler,
+            Collections.emptyList(),
+            1);
+
+    proxy.repairStatusExecutors.put(repairNo, MoreExecutors.newDirectExecutorService());
+
+    // First notification: unknown status. Second notification: valid START.
+    Job job = new Job();
+    job.setId("repair-222");
+    StatusChange unknownSc = new StatusChange();
+    unknownSc.setStatus("TOTALLY_UNKNOWN_STATUS_XYZ");
+    unknownSc.setMessage("");
+    StatusChange knownSc = new StatusChange();
+    knownSc.setStatus("START");
+    knownSc.setMessage("");
+    List<StatusChange> statusChanges = new ArrayList<>();
+    statusChanges.add(unknownSc);
+    statusChanges.add(knownSc);
+    job.setStatusChanges(statusChanges);
+    when(mockClient.getJobStatus("repair-222")).thenReturn(job);
+
+    // Must not throw.
+    AtomicReference<Throwable> thrown = new AtomicReference<>();
+    try {
+      proxy.notificationsTracker().run();
+    } catch (Throwable t) {
+      thrown.set(t);
+    }
+    assertThat(thrown.get())
+        .as("notificationsTracker().run() must not throw on unknown ProgressEventType")
+        .isNull();
+
+    // The unknown-status notification is skipped (no handler call) but the count advances past it;
+    // the subsequent START notification is dispatched normally.
+    String jobId = String.format("repair-%d", repairNo);
+    assertEquals(
+        "notification count must advance past both notifications",
+        2,
+        proxy.jobTracker.get(jobId).latestNotificationCount.get());
+    assertEquals("only the START notification should reach the handler", 1, callTimes.get());
+  }
+
+  /**
+   * When the Management API returns a Job whose {@code id} does not start with the expected {@code
+   * "repair-"} prefix (or is too short), the poller must log a warning and skip — it must not throw
+   * {@link StringIndexOutOfBoundsException} or {@link NumberFormatException}.
+   */
+  @Test
+  public void testNotificationsTrackerSkipsMalformedJobId() throws Exception {
+    DefaultApi mockClient = mock(DefaultApi.class);
+    doReturn((new RepairRequestResponse()).repairId("repair-333"))
+        .when(mockClient)
+        .putRepairV2(any());
+
+    HttpCassandraManagementProxy proxy = mockProxy(mockClient);
+
+    final AtomicInteger callTimes = new AtomicInteger(0);
+    RepairStatusHandler handler =
+        (repairNumber, progress, message, mgmtProxy) -> callTimes.incrementAndGet();
+
+    proxy.triggerRepair(
+        "ks",
+        RepairParallelism.PARALLEL,
+        Collections.singleton("table"),
+        RepairType.SUBRANGE_FULL,
+        Collections.emptyList(),
+        handler,
+        Collections.emptyList(),
+        1);
+
+    // Simulate a response where the server returns a job with a completely unexpected id format.
+    Job job = new Job();
+    job.setId("bad"); // too short and wrong prefix
+    StatusChange sc = new StatusChange();
+    sc.setStatus("START");
+    sc.setMessage("");
+    job.setStatusChanges(Collections.singletonList(sc));
+    when(mockClient.getJobStatus("repair-333")).thenReturn(job);
+
+    // Must not throw.
+    AtomicReference<Throwable> thrown = new AtomicReference<>();
+    try {
+      proxy.notificationsTracker().run();
+    } catch (Throwable t) {
+      thrown.set(t);
+    }
+    assertThat(thrown.get())
+        .as("notificationsTracker().run() must not throw on malformed job id")
+        .isNull();
+
+    // Handler should not have been called since the job was skipped.
+    assertEquals(0, callTimes.get());
+  }
+
   @Test
   public void testGetKeyspaces() throws Exception {
     DefaultApi mockClient = Mockito.mock(DefaultApi.class);

@@ -634,11 +634,21 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
         try {
           final String jobId = entry.getKey();
           Job job = getJobStatus(jobId);
+          if (job.getStatusChanges() == null) {
+            LOG.warn("Job {} returned null statusChanges in notificationsTracker, skipping", jobId);
+            continue;
+          }
           int availableNotifications = job.getStatusChanges().size();
           int currentNotificationCount = entry.getValue().latestNotificationCount.get();
           if (currentNotificationCount < availableNotifications) {
+            String rawId = job.getId();
+            if (rawId == null || !rawId.startsWith("repair-") || rawId.length() <= 7) {
+              LOG.warn(
+                  "Job {} has malformed id '{}' in notificationsTracker, skipping", jobId, rawId);
+              continue;
+            }
             // remove "repair-" prefix once per job, not per notification
-            int repairNo = Integer.parseInt(job.getId().substring(7));
+            int repairNo = Integer.parseInt(rawId.substring(7));
             for (int i = currentNotificationCount; i < availableNotifications; i++) {
               dispatchNotification(repairNo, jobId, i, job.getStatusChanges().get(i));
               entry.getValue().latestNotificationCount.incrementAndGet();
@@ -657,7 +667,18 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
 
   private void dispatchNotification(
       int repairNo, String jobId, int index, StatusChange statusChange) {
-    ProgressEventType progressType = ProgressEventType.valueOf(statusChange.getStatus());
+    ProgressEventType progressType;
+    try {
+      progressType = ProgressEventType.valueOf(statusChange.getStatus());
+    } catch (IllegalArgumentException e) {
+      LOG.warn(
+          "Unknown ProgressEventType '{}' for repairNo={} jobId={} index={}, skipping",
+          statusChange.getStatus(),
+          repairNo,
+          jobId,
+          index);
+      return;
+    }
 
     ExecutorService executor = repairStatusExecutors.get(repairNo);
     if (executor == null) {
