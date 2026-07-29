@@ -658,8 +658,7 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
     }
     String rawId = job.getId();
     if (rawId == null || !rawId.startsWith("repair-") || rawId.length() <= 7) {
-      LOG.warn(
-          "Job {} has malformed id '{}' in notificationsTracker, skipping", jobId, rawId);
+      LOG.warn("Job {} has malformed id '{}' in notificationsTracker, skipping", jobId, rawId);
       return;
     }
     // remove "repair-" prefix once per job, not per notification
