@@ -632,28 +632,7 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
     return () -> {
       for (Map.Entry<String, JobStatusTracker> entry : jobTracker.entrySet()) {
         try {
-          final String jobId = entry.getKey();
-          Job job = getJobStatus(jobId);
-          if (job.getStatusChanges() == null) {
-            LOG.warn("Job {} returned null statusChanges in notificationsTracker, skipping", jobId);
-            continue;
-          }
-          int availableNotifications = job.getStatusChanges().size();
-          int currentNotificationCount = entry.getValue().latestNotificationCount.get();
-          if (currentNotificationCount < availableNotifications) {
-            String rawId = job.getId();
-            if (rawId == null || !rawId.startsWith("repair-") || rawId.length() <= 7) {
-              LOG.warn(
-                  "Job {} has malformed id '{}' in notificationsTracker, skipping", jobId, rawId);
-              continue;
-            }
-            // remove "repair-" prefix once per job, not per notification
-            int repairNo = Integer.parseInt(rawId.substring(7));
-            for (int i = currentNotificationCount; i < availableNotifications; i++) {
-              dispatchNotification(repairNo, jobId, i, job.getStatusChanges().get(i));
-              entry.getValue().latestNotificationCount.incrementAndGet();
-            }
-          }
+          processJobEntry(entry);
         } catch (Exception e) {
           LOG.warn(
               "Failed to process jobTracker entry key={} in notificationsTracker,"
@@ -663,6 +642,32 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
         }
       }
     };
+  }
+
+  private void processJobEntry(Map.Entry<String, JobStatusTracker> entry) {
+    final String jobId = entry.getKey();
+    Job job = getJobStatus(jobId);
+    if (job.getStatusChanges() == null) {
+      LOG.warn("Job {} returned null statusChanges in notificationsTracker, skipping", jobId);
+      return;
+    }
+    int availableNotifications = job.getStatusChanges().size();
+    int currentNotificationCount = entry.getValue().latestNotificationCount.get();
+    if (currentNotificationCount >= availableNotifications) {
+      return;
+    }
+    String rawId = job.getId();
+    if (rawId == null || !rawId.startsWith("repair-") || rawId.length() <= 7) {
+      LOG.warn(
+          "Job {} has malformed id '{}' in notificationsTracker, skipping", jobId, rawId);
+      return;
+    }
+    // remove "repair-" prefix once per job, not per notification
+    int repairNo = Integer.parseInt(rawId.substring(7));
+    for (int i = currentNotificationCount; i < availableNotifications; i++) {
+      dispatchNotification(repairNo, jobId, i, job.getStatusChanges().get(i));
+      entry.getValue().latestNotificationCount.incrementAndGet();
+    }
   }
 
   private void dispatchNotification(
