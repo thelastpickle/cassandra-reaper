@@ -411,9 +411,9 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
   @Override
   public void removeRepairStatusHandler(int repairNo) {
     String jobId = String.format("repair-%d", repairNo);
-    // Remove the job from jobTracker first so the poller stops seeing it before the
-    // executor is torn down.  This closes the window where the poller could observe a
-    // live jobTracker entry whose executor has already been removed.
+    // Remove the job from jobTracker first so new poller iterations do not pick it up.
+    // Entries already captured by an in-flight entrySet() iteration are handled safely
+    // by the null checks in dispatchNotification().
     jobTracker.remove(jobId);
     repairStatusHandlers.remove(repairNo);
     ExecutorService repairStatusExecutor = repairStatusExecutors.remove(repairNo);
@@ -656,8 +656,8 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
           }
         } catch (Exception e) {
           LOG.warn(
-              "Failed to process jobTracker entry key={} in notificationsTracker, skipping"
-                  + " to next job",
+              "Failed to process jobTracker entry key={} in notificationsTracker,"
+                  + " will retry on next poll",
               entry.getKey(),
               e);
         }
