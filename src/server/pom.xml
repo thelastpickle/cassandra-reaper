@@ -31,7 +31,7 @@
     <properties>
         <dropwizard.version>4.0.15</dropwizard.version>
         <jersey.version>3.1.10</jersey.version>
-        <logback.version>1.5.25</logback.version>
+        <logback.version>1.5.33</logback.version>
         <cxf.version>3.4.5</cxf.version>
         <prometheus.version>0.16.0</prometheus.version>
         <maven.compiler.source>11</maven.compiler.source>
@@ -115,7 +115,7 @@
         <dependency>
             <groupId>com.fasterxml.jackson.datatype</groupId>
             <artifactId>jackson-datatype-joda</artifactId>
-            <version>2.21.1</version>
+            <version>2.21.5</version>
         </dependency>
         <dependency>
             <groupId>org.apache.cassandra</groupId>
@@ -379,6 +379,111 @@
             <version>11.0.26</version>
         </dependency>
     </dependencies>
+
+    <dependencyManagement>
+        <dependencies>
+            <!-- ============================================================ -->
+            <!-- Jackson: align entire family to 2.21.5.                      -->
+            <!-- jackson-datatype-joda:2.21.5 pulls jackson-core:2.21.1 as a  -->
+            <!-- transitive dep, which conflicts with Dropwizard BOM           -->
+            <!-- (jackson-databind/annotations at 2.19.2). Pin all three core  -->
+            <!-- artifacts to 2.21.5 so the whole family is consistent.        -->
+            <!-- Note: jackson-annotations uses whole-minor versioning         -->
+            <!-- (2.21, not 2.21.5) per Jackson 2.20+ release policy.         -->
+            <!-- Fixes: CVE-2026-54512, CVE-2026-54513, CVE-2026-54514,        -->
+            <!--        CVE-2026-59888                                          -->
+            <!-- ============================================================ -->
+            <dependency>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-core</artifactId>
+                <version>2.21.5</version>
+            </dependency>
+            <dependency>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-databind</artifactId>
+                <version>2.21.5</version>
+            </dependency>
+            <dependency>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-annotations</artifactId>
+                <version>2.21</version>
+            </dependency>
+
+            <!-- ============================================================ -->
+            <!-- Jetty: align ALL modules to 11.0.26 (highest published       -->
+            <!-- Jetty 11 version on Maven Central as of this writing).        -->
+            <!-- Dropwizard 4.0.15 BOM resolves jetty-server/security/        -->
+            <!-- servlet/util/servlets to 11.0.25; jetty-http and jetty-io    -->
+            <!-- were already direct-pinned at 11.0.26. All modules now       -->
+            <!-- consistently pinned here via dependencyManagement.            -->
+            <!--                                                               -->
+            <!-- CVE-2026-10050 (jetty-security): fix is 11.0.31 per GHSA,   -->
+            <!-- but 11.0.31 is NOT yet published to Maven Central.            -->
+            <!-- Will be updated when 11.0.31 is available.                   -->
+            <!--                                                               -->
+            <!-- CVE-2026-6790 (jetty-server): GHSA shows Fixed=None for      -->
+            <!-- entire Jetty 11 line. No 11.x fix exists.                    -->
+            <!--                                                               -->
+            <!-- CVE-2026-2332 (jetty-http): Fixed=None for Jetty 11.         -->
+            <!-- CVE-2025-11143 (jetty-http): Fixed=None for Jetty 11.        -->
+            <!-- CVE-2024-6763 (jetty-http): no 11.x fix in GHSA data.        -->
+            <!-- The above three require Jetty 12 / Dropwizard 5 which is     -->
+            <!-- out of scope for the 4.2 branch.                              -->
+            <!-- ============================================================ -->
+            <dependency>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-server</artifactId>
+                <version>11.0.26</version>
+            </dependency>
+            <dependency>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-security</artifactId>
+                <version>11.0.26</version>
+            </dependency>
+            <dependency>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-servlet</artifactId>
+                <version>11.0.26</version>
+            </dependency>
+            <dependency>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-util</artifactId>
+                <version>11.0.26</version>
+            </dependency>
+            <dependency>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-servlets</artifactId>
+                <version>11.0.26</version>
+            </dependency>
+            <dependency>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-http</artifactId>
+                <version>11.0.26</version>
+            </dependency>
+            <dependency>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-io</artifactId>
+                <version>11.0.26</version>
+            </dependency>
+
+            <!-- ============================================================ -->
+            <!-- httpcomponents core5: override to 5.3.6.                     -->
+            <!-- dropwizard-client:4.0.15 -> httpclient5:5.5 ->               -->
+            <!-- httpclient5-parent pins httpcore.version=5.3.4.              -->
+            <!-- 5.3.6 is the patched version for CVE-2025-8671.              -->
+            <!-- ============================================================ -->
+            <dependency>
+                <groupId>org.apache.httpcomponents.core5</groupId>
+                <artifactId>httpcore5</artifactId>
+                <version>5.3.6</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.httpcomponents.core5</groupId>
+                <artifactId>httpcore5-h2</artifactId>
+                <version>5.3.6</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
     <build>
       <directory>${build.output}</directory>
