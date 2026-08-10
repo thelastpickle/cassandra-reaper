@@ -92,7 +92,8 @@ ENV REAPER_SEGMENT_COUNT_PER_NODE=64 \
     REAPER_PURGE_RECORDS_AFTER_IN_DAYS=30
 
 
-RUN microdnf install -y \
+RUN microdnf update -y \
+  && microdnf install -y \
     java-11-openjdk-headless \
     bash \
     shadow-utils \
