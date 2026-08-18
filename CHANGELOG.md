@@ -1,5 +1,8 @@
 ## Change Log
 
+### 4.2.6
+- [#1715](https://github.com/thelastpickle/cassandra-reaper/pull/1715) Fix Netty and UBI package vulnerabilities for the 4.2 UBI image.
+
 ### 4.2.5 (2026/06/11 11:02 +00:00)
 - [#1683](https://github.com/thelastpickle/cassandra-reaper/pull/1683) fix: scheduled repairs never re-fire after a completed run (#1683) (#1686) (@onnos)
 
