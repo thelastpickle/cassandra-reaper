@@ -1,5 +1,8 @@
 ## Change Log
 
+### 4.2.7
+- [#1718](https://github.com/thelastpickle/cassandra-reaper/pull/1718) Disable provenance and SBOM attestations for the Reaper UBI image.
+
 ### 4.2.6
 - [#1715](https://github.com/thelastpickle/cassandra-reaper/pull/1715) Fix Netty and UBI package vulnerabilities for the 4.2 UBI image.
 
