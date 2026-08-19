@@ -565,6 +565,8 @@ jobs:
         id: docker_build_ubi
         uses: docker/build-push-action@v4
         with:
+          provenance: false
+          sbom: false
           file: src/server/src/main/docker/Dockerfile-ubi
           context: .
           build-args: |
