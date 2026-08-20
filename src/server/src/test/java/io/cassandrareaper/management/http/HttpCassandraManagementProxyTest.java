@@ -273,6 +273,59 @@ public class HttpCassandraManagementProxyTest {
   }
 
   @Test
+  public void testNotificationsTrackerSurvivesPollingFailure() throws Exception {
+    DefaultApi mockClient = mock(DefaultApi.class);
+    doReturn((new RepairRequestResponse()).repairId("repair-123456789"))
+        .when(mockClient)
+        .putRepairV2(any());
+    HttpCassandraManagementProxy httpCassandraManagementProxy = mockProxy(mockClient);
+
+    final AtomicInteger callTimes = new AtomicInteger(0);
+    RepairStatusHandler workAroundHandler =
+        (repairNumber, progress, message, cassandraManagementProxy) -> callTimes.incrementAndGet();
+
+    int repairNo =
+        httpCassandraManagementProxy.triggerRepair(
+            "ks",
+            RepairParallelism.PARALLEL,
+            Collections.singleton("table"),
+            RepairType.SUBRANGE_FULL,
+            Collections.emptyList(),
+            workAroundHandler,
+            Collections.emptyList(),
+            1);
+
+    // We want the execution to happen in the same thread for this test
+    httpCassandraManagementProxy.repairStatusExecutors.put(
+        repairNo, MoreExecutors.newDirectExecutorService());
+
+    Job job = new Job();
+    job.setId("repair-123456789");
+    StatusChange sc = new StatusChange();
+    sc.setStatus("COMPLETE");
+    sc.setMessage("");
+    List<StatusChange> statusChanges = new ArrayList<>();
+    statusChanges.add(sc);
+    job.setStatusChanges(statusChanges);
+    // First poll fails, second poll succeeds
+    when(mockClient.getJobStatus("repair-123456789"))
+        .thenThrow(new ApiException("mgmt api hiccup"))
+        .thenReturn(job);
+
+    // The failed poll must not propagate — an escaped exception would cancel the
+    // scheduleWithFixedDelay task and repair completions would never be seen again.
+    httpCassandraManagementProxy.notificationsTracker().run();
+    assertEquals(0, callTimes.get());
+
+    // The tracker must still be alive and deliver the notification on the next poll.
+    httpCassandraManagementProxy.notificationsTracker().run();
+    assertEquals(1, callTimes.get());
+    String jobId = String.format("repair-%d", repairNo);
+    assertEquals(
+        1, httpCassandraManagementProxy.jobTracker.get(jobId).latestNotificationCount.get());
+  }
+
+  @Test
   public void testGetKeyspaces() throws Exception {
     DefaultApi mockClient = Mockito.mock(DefaultApi.class);
     when(mockClient.listKeyspaces("")).thenReturn(ImmutableList.of("ks1", "ks2", "ks3"));
