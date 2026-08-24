@@ -410,13 +410,16 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
 
   @Override
   public void removeRepairStatusHandler(int repairNo) {
+    String jobId = String.format("repair-%d", repairNo);
+    // Remove the job from jobTracker first so new poller iterations do not pick it up.
+    // Entries already captured by an in-flight entrySet() iteration are handled safely
+    // by the null checks in dispatchNotification().
+    jobTracker.remove(jobId);
     repairStatusHandlers.remove(repairNo);
     ExecutorService repairStatusExecutor = repairStatusExecutors.remove(repairNo);
     if (null != repairStatusExecutor) {
       repairStatusExecutor.shutdown();
     }
-    String jobId = String.format("repair-%d", repairNo);
-    jobTracker.remove(jobId);
   }
 
   @Override
@@ -627,39 +630,97 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
   @VisibleForTesting
   Runnable notificationsTracker() {
     return () -> {
-      if (jobTracker.size() > 0) {
-        for (Map.Entry<String, JobStatusTracker> entry : jobTracker.entrySet()) {
-          Job job = getJobStatus(entry.getKey());
-          int availableNotifications = job.getStatusChanges().size();
-          int currentNotificationCount = entry.getValue().latestNotificationCount.get();
-
-          if (currentNotificationCount < availableNotifications) {
-            // We need to process the new ones
-            for (int i = currentNotificationCount; i < availableNotifications; i++) {
-              StatusChange statusChange = job.getStatusChanges().get(i);
-              // remove "repair-" prefix
-              int repairNo = Integer.parseInt(job.getId().substring(7));
-              ProgressEventType progressType = ProgressEventType.valueOf(statusChange.getStatus());
-              repairStatusExecutors
-                  .get(repairNo)
-                  .submit(
-                      () -> {
-                        repairStatusHandlers
-                            .get(repairNo)
-                            .handle(
-                                repairNo,
-                                Optional.of(progressType),
-                                statusChange.getMessage(),
-                                this);
-                      });
-
-              // Update the count as we process them
-              entry.getValue().latestNotificationCount.incrementAndGet();
-            }
-          }
+      for (Map.Entry<String, JobStatusTracker> entry : jobTracker.entrySet()) {
+        try {
+          processJobEntry(entry);
+        } catch (RuntimeException e) {
+          LOG.warn(
+              "Failed to process jobTracker entry key={} in notificationsTracker,"
+                  + " will retry on next poll",
+              entry.getKey(),
+              e);
         }
       }
     };
+  }
+
+  private void processJobEntry(Map.Entry<String, JobStatusTracker> entry) {
+    final String jobId = entry.getKey();
+    Job job = getJobStatus(jobId);
+    if (job.getStatusChanges() == null) {
+      LOG.warn("Job {} returned null statusChanges in notificationsTracker, skipping", jobId);
+      return;
+    }
+    int availableNotifications = job.getStatusChanges().size();
+    int currentNotificationCount = entry.getValue().latestNotificationCount.get();
+    if (currentNotificationCount >= availableNotifications) {
+      return;
+    }
+    String rawId = job.getId();
+    if (rawId == null || !rawId.startsWith("repair-") || rawId.length() <= 7) {
+      LOG.warn("Job {} has malformed id '{}' in notificationsTracker, skipping", jobId, rawId);
+      return;
+    }
+    // remove "repair-" prefix once per job, not per notification
+    int repairNo = Integer.parseInt(rawId.substring(7));
+    for (int i = currentNotificationCount; i < availableNotifications; i++) {
+      dispatchNotification(repairNo, jobId, i, job.getStatusChanges().get(i));
+      entry.getValue().latestNotificationCount.incrementAndGet();
+    }
+  }
+
+  private void dispatchNotification(
+      int repairNo, String jobId, int index, StatusChange statusChange) {
+    ProgressEventType progressType;
+    try {
+      progressType = ProgressEventType.valueOf(statusChange.getStatus());
+    } catch (IllegalArgumentException e) {
+      LOG.warn(
+          "Unknown ProgressEventType '{}' for repairNo={} jobId={} index={}, skipping",
+          statusChange.getStatus(),
+          repairNo,
+          jobId,
+          index);
+      return;
+    }
+
+    ExecutorService executor = repairStatusExecutors.get(repairNo);
+    if (executor == null) {
+      // The repair was cleaned up concurrently; skip this event safely.
+      LOG.warn(
+          "Executor for repairNo={} is null while processing jobId={} notification index={},"
+              + " skipping",
+          repairNo,
+          jobId,
+          index);
+      return;
+    }
+
+    RepairStatusHandler handler = repairStatusHandlers.get(repairNo);
+    if (handler == null) {
+      LOG.warn(
+          "Handler for repairNo={} is null while processing jobId={} notification index={},"
+              + " skipping",
+          repairNo,
+          jobId,
+          index);
+      return;
+    }
+
+    try {
+      executor.submit(
+          () ->
+              handler.handle(repairNo, Optional.of(progressType), statusChange.getMessage(), this));
+    } catch (RuntimeException e) {
+      // Covers RejectedExecutionException if the executor was shut down
+      // concurrently between the null check above and this call.
+      LOG.warn(
+          "Failed to submit notification for repairNo={} jobId={} index={}",
+          repairNo,
+          jobId,
+          index,
+          e);
+    }
   }
 
   // Coordinator nodes such as Stargate instances do not have tokens

@@ -43,8 +43,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
@@ -270,6 +272,321 @@ public class HttpCassandraManagementProxyTest {
     jobStatus = httpCassandraManagementProxy.jobTracker.get(jobId);
     assertEquals(2, jobStatus.latestNotificationCount.get());
     assertEquals(2, callTimes.get());
+  }
+
+  /**
+   * Reproduces the cleanup race: the poller commits to a jobTracker entry then blocks on the HTTP
+   * response; concurrently, removeRepairStatusHandler() removes the executor from
+   * repairStatusExecutors. When the poller resumes, repairStatusExecutors.get(repairNo) returns
+   * null — the pre-fix crash site.
+   *
+   * <p>The critical contract is that {@code notificationsTracker().run()} must not throw. Per the
+   * {@link java.util.concurrent.ScheduledExecutorService} contract for {@code
+   * scheduleWithFixedDelay}, any unchecked exception escaping the Runnable permanently suppresses
+   * all future executions.
+   */
+  @Test
+  public void testNotificationsTrackerSurvivesRaceWithRemoveHandler() throws Exception {
+    // pollerReady: poller signals it has entered getJobStatus() and is past the point of no return
+    CountDownLatch pollerReady = new CountDownLatch(1);
+    // cleanupDone: cleanup thread signals removeRepairStatusHandler() has finished
+    CountDownLatch cleanupDone = new CountDownLatch(1);
+
+    DefaultApi mockClient = mock(DefaultApi.class);
+    doReturn((new RepairRequestResponse()).repairId("repair-999"))
+        .when(mockClient)
+        .putRepairV2(any());
+
+    HttpCassandraManagementProxy proxy = mockProxy(mockClient);
+
+    final AtomicInteger callTimes = new AtomicInteger(0);
+    RepairStatusHandler handler =
+        (repairNumber, progress, message, mgmtProxy) -> callTimes.incrementAndGet();
+
+    int repairNo =
+        proxy.triggerRepair(
+            "ks",
+            RepairParallelism.PARALLEL,
+            Collections.singleton("table"),
+            RepairType.SUBRANGE_FULL,
+            Collections.emptyList(),
+            handler,
+            Collections.emptyList(),
+            1);
+
+    // One START notification waiting for the poller to pick up.
+    Job job = new Job();
+    job.setId("repair-999");
+    StatusChange sc = new StatusChange();
+    sc.setStatus("START");
+    sc.setMessage("");
+    List<StatusChange> statusChanges = new ArrayList<>();
+    statusChanges.add(sc);
+    job.setStatusChanges(statusChanges);
+
+    // Block inside getJobStatus() to pin the race window: signal cleanup, then wait for it.
+    when(mockClient.getJobStatus("repair-999"))
+        .thenAnswer(
+            invocation -> {
+              pollerReady.countDown(); // unblock the cleanup thread
+              cleanupDone.await(); // wait until executor has been removed
+              return job;
+            });
+
+    // Capture any exception that would have killed the ScheduledExecutorService.
+    AtomicReference<Throwable> pollerException = new AtomicReference<>();
+    Thread pollerThread =
+        new Thread(
+            () -> {
+              try {
+                proxy.notificationsTracker().run();
+              } catch (Throwable t) {
+                pollerException.set(t);
+              }
+            },
+            "test-poller");
+
+    // Remove the executor while the poller is blocked inside getJobStatus().
+    Thread cleanupThread =
+        new Thread(
+            () -> {
+              try {
+                pollerReady.await();
+              } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                return;
+              }
+              proxy.removeRepairStatusHandler(repairNo);
+              cleanupDone.countDown();
+            },
+            "test-cleanup");
+
+    pollerThread.start();
+    cleanupThread.start();
+    pollerThread.join(5000);
+    cleanupThread.join(5000);
+
+    assertFalse("test-poller thread must not still be running", pollerThread.isAlive());
+    assertFalse("test-cleanup thread must not still be running", cleanupThread.isAlive());
+
+    // The Runnable must not throw — an escaping exception permanently kills scheduleWithFixedDelay.
+    assertThat(pollerException.get())
+        .as("notificationsTracker().run() must not throw when executor is null (cleanup race)")
+        .isNull();
+
+    // Confirm the Runnable still delivers events correctly on a subsequent invocation.
+    doReturn((new RepairRequestResponse()).repairId("repair-1000"))
+        .when(mockClient)
+        .putRepairV2(any());
+
+    final AtomicInteger secondCallTimes = new AtomicInteger(0);
+    RepairStatusHandler secondHandler =
+        (repairNumber, progress, message, mgmtProxy) -> secondCallTimes.incrementAndGet();
+
+    int repairNo2 =
+        proxy.triggerRepair(
+            "ks",
+            RepairParallelism.PARALLEL,
+            Collections.singleton("table"),
+            RepairType.SUBRANGE_FULL,
+            Collections.emptyList(),
+            secondHandler,
+            Collections.emptyList(),
+            1);
+
+    proxy.repairStatusExecutors.put(repairNo2, MoreExecutors.newDirectExecutorService());
+
+    Job job2 = new Job();
+    job2.setId("repair-1000");
+    StatusChange sc2 = new StatusChange();
+    sc2.setStatus("START");
+    sc2.setMessage("");
+    List<StatusChange> statusChanges2 = new ArrayList<>();
+    statusChanges2.add(sc2);
+    job2.setStatusChanges(statusChanges2);
+    when(mockClient.getJobStatus("repair-1000")).thenReturn(job2);
+
+    proxy.notificationsTracker().run();
+
+    assertEquals(1, secondCallTimes.get());
+  }
+
+  /**
+   * When the Management API returns a Job whose {@code statusChanges} list is null, the poller must
+   * log a warning and skip that entry — it must not throw NullPointerException, which would
+   * permanently kill the {@code scheduleWithFixedDelay} task.
+   */
+  @Test
+  public void testNotificationsTrackerSkipsJobWithNullStatusChanges() throws Exception {
+    DefaultApi mockClient = mock(DefaultApi.class);
+    doReturn((new RepairRequestResponse()).repairId("repair-111"))
+        .when(mockClient)
+        .putRepairV2(any());
+
+    HttpCassandraManagementProxy proxy = mockProxy(mockClient);
+
+    final AtomicInteger callTimes = new AtomicInteger(0);
+    RepairStatusHandler handler =
+        (repairNumber, progress, message, mgmtProxy) -> callTimes.incrementAndGet();
+
+    int repairNo =
+        proxy.triggerRepair(
+            "ks",
+            RepairParallelism.PARALLEL,
+            Collections.singleton("table"),
+            RepairType.SUBRANGE_FULL,
+            Collections.emptyList(),
+            handler,
+            Collections.emptyList(),
+            1);
+
+    // Return a Job with null statusChanges — simulates a malformed / in-progress response.
+    Job job = new Job();
+    job.setId("repair-111");
+    job.setStatusChanges(null);
+    when(mockClient.getJobStatus("repair-111")).thenReturn(job);
+
+    // Must not throw — a NPE here would permanently kill scheduleWithFixedDelay.
+    AtomicReference<Throwable> thrown = new AtomicReference<>();
+    try {
+      proxy.notificationsTracker().run();
+    } catch (Throwable t) {
+      thrown.set(t);
+    }
+    assertThat(thrown.get())
+        .as("notificationsTracker().run() must not throw when statusChanges is null")
+        .isNull();
+
+    // No handler calls expected; notification count stays at 0.
+    assertEquals(0, callTimes.get());
+    assertEquals(
+        0,
+        proxy.jobTracker.get(String.format("repair-%d", repairNo)).latestNotificationCount.get());
+  }
+
+  /**
+   * When the Management API returns a Job whose status string does not map to a known {@link
+   * io.cassandrareaper.management.ProgressEventType}, {@code dispatchNotification} must log a
+   * warning and return — it must not throw {@link IllegalArgumentException}, which would propagate
+   * through the per-entry try/catch and prevent subsequent notifications for that job from being
+   * processed.
+   *
+   * <p>The caller's {@code latestNotificationCount} increment is unconditional after {@code
+   * dispatchNotification} returns, so the poller advances past the unknown status and does not
+   * stall in an infinite retry loop.
+   */
+  @Test
+  public void testNotificationsTrackerSkipsUnknownProgressEventType() throws Exception {
+    DefaultApi mockClient = mock(DefaultApi.class);
+    doReturn((new RepairRequestResponse()).repairId("repair-222"))
+        .when(mockClient)
+        .putRepairV2(any());
+
+    HttpCassandraManagementProxy proxy = mockProxy(mockClient);
+
+    final AtomicInteger callTimes = new AtomicInteger(0);
+    RepairStatusHandler handler =
+        (repairNumber, progress, message, mgmtProxy) -> callTimes.incrementAndGet();
+
+    int repairNo =
+        proxy.triggerRepair(
+            "ks",
+            RepairParallelism.PARALLEL,
+            Collections.singleton("table"),
+            RepairType.SUBRANGE_FULL,
+            Collections.emptyList(),
+            handler,
+            Collections.emptyList(),
+            1);
+
+    proxy.repairStatusExecutors.put(repairNo, MoreExecutors.newDirectExecutorService());
+
+    // First notification: unknown status. Second notification: valid START.
+    Job job = new Job();
+    job.setId("repair-222");
+    StatusChange unknownSc = new StatusChange();
+    unknownSc.setStatus("TOTALLY_UNKNOWN_STATUS_XYZ");
+    unknownSc.setMessage("");
+    StatusChange knownSc = new StatusChange();
+    knownSc.setStatus("START");
+    knownSc.setMessage("");
+    List<StatusChange> statusChanges = new ArrayList<>();
+    statusChanges.add(unknownSc);
+    statusChanges.add(knownSc);
+    job.setStatusChanges(statusChanges);
+    when(mockClient.getJobStatus("repair-222")).thenReturn(job);
+
+    // Must not throw.
+    AtomicReference<Throwable> thrown = new AtomicReference<>();
+    try {
+      proxy.notificationsTracker().run();
+    } catch (Throwable t) {
+      thrown.set(t);
+    }
+    assertThat(thrown.get())
+        .as("notificationsTracker().run() must not throw on unknown ProgressEventType")
+        .isNull();
+
+    // The unknown-status notification is skipped (no handler call) but the count advances past it;
+    // the subsequent START notification is dispatched normally.
+    String jobId = String.format("repair-%d", repairNo);
+    assertEquals(
+        "notification count must advance past both notifications",
+        2,
+        proxy.jobTracker.get(jobId).latestNotificationCount.get());
+    assertEquals("only the START notification should reach the handler", 1, callTimes.get());
+  }
+
+  /**
+   * When the Management API returns a Job whose {@code id} does not start with the expected {@code
+   * "repair-"} prefix (or is too short), the poller must log a warning and skip — it must not throw
+   * {@link StringIndexOutOfBoundsException} or {@link NumberFormatException}.
+   */
+  @Test
+  public void testNotificationsTrackerSkipsMalformedJobId() throws Exception {
+    DefaultApi mockClient = mock(DefaultApi.class);
+    doReturn((new RepairRequestResponse()).repairId("repair-333"))
+        .when(mockClient)
+        .putRepairV2(any());
+
+    HttpCassandraManagementProxy proxy = mockProxy(mockClient);
+
+    final AtomicInteger callTimes = new AtomicInteger(0);
+    RepairStatusHandler handler =
+        (repairNumber, progress, message, mgmtProxy) -> callTimes.incrementAndGet();
+
+    proxy.triggerRepair(
+        "ks",
+        RepairParallelism.PARALLEL,
+        Collections.singleton("table"),
+        RepairType.SUBRANGE_FULL,
+        Collections.emptyList(),
+        handler,
+        Collections.emptyList(),
+        1);
+
+    // Simulate a response where the server returns a job with a completely unexpected id format.
+    Job job = new Job();
+    job.setId("bad"); // too short and wrong prefix
+    StatusChange sc = new StatusChange();
+    sc.setStatus("START");
+    sc.setMessage("");
+    job.setStatusChanges(Collections.singletonList(sc));
+    when(mockClient.getJobStatus("repair-333")).thenReturn(job);
+
+    // Must not throw.
+    AtomicReference<Throwable> thrown = new AtomicReference<>();
+    try {
+      proxy.notificationsTracker().run();
+    } catch (Throwable t) {
+      thrown.set(t);
+    }
+    assertThat(thrown.get())
+        .as("notificationsTracker().run() must not throw on malformed job id")
+        .isNull();
+
+    // Handler should not have been called since the job was skipped.
+    assertEquals(0, callTimes.get());
   }
 
   @Test
