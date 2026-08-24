@@ -633,7 +633,7 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
       for (Map.Entry<String, JobStatusTracker> entry : jobTracker.entrySet()) {
         try {
           processJobEntry(entry);
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
           LOG.warn(
               "Failed to process jobTracker entry key={} in notificationsTracker,"
                   + " will retry on next poll",
@@ -711,7 +711,7 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
       executor.submit(
           () ->
               handler.handle(repairNo, Optional.of(progressType), statusChange.getMessage(), this));
-    } catch (Exception e) {
+    } catch (RuntimeException e) {
       // Covers RejectedExecutionException if the executor was shut down
       // concurrently between the null check above and this call.
       LOG.warn(
