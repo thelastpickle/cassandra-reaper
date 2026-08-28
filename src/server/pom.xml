@@ -193,12 +193,32 @@
         <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty-handler</artifactId>
-            <version>4.2.15.Final</version>
+            <version>4.2.16.Final</version>
         </dependency>
         <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty-transport-native-epoll</artifactId>
-            <version>4.2.15.Final</version>
+            <version>4.2.16.Final</version>
+        </dependency>
+        <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-codec-compression</artifactId>
+            <version>4.2.16.Final</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.httpcomponents.core5</groupId>
+            <artifactId>httpcore5</artifactId>
+            <version>5.4.3</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.httpcomponents.core5</groupId>
+            <artifactId>httpcore5-h2</artifactId>
+            <version>5.4.3</version>
+        </dependency>
+        <dependency>
+            <groupId>com.rabbitmq</groupId>
+            <artifactId>amqp-client</artifactId>
+            <version>5.33.1</version>
         </dependency>
         <dependency>
             <groupId>org.cognitor.cassandra</groupId>
@@ -434,29 +454,28 @@
                 <artifactId>jetty-util</artifactId>
                 <version>${jetty.version}</version>
             </dependency>
-            <!-- Pin netty-codec* to fix CVE — transitive via dropwizard-metrics-graphite
-                 -> metrics-graphite:4.2.39 -> amqp-client:5.30.0 which pins netty 4.2.12.Final.
-                 dependencyManagement overrides the resolved version without adding these
-                 artifacts as new direct compile dependencies to the classpath. -->
+            <!-- Pin netty-codec* to fix CVE — transitive via amqp-client which
+                 pins netty 4.2.12.Final. dependencyManagement overrides the resolved version
+                 without adding these artifacts as new direct compile dependencies to the classpath. -->
             <dependency>
                 <groupId>io.netty</groupId>
                 <artifactId>netty-codec</artifactId>
-                <version>4.2.15.Final</version>
+                <version>4.2.16.Final</version>
             </dependency>
             <dependency>
                 <groupId>io.netty</groupId>
                 <artifactId>netty-codec-compression</artifactId>
-                <version>4.2.15.Final</version>
+                <version>4.2.16.Final</version>
             </dependency>
             <dependency>
                 <groupId>io.netty</groupId>
                 <artifactId>netty-codec-protobuf</artifactId>
-                <version>4.2.15.Final</version>
+                <version>4.2.16.Final</version>
             </dependency>
             <dependency>
                 <groupId>io.netty</groupId>
                 <artifactId>netty-codec-marshalling</artifactId>
-                <version>4.2.15.Final</version>
+                <version>4.2.16.Final</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
