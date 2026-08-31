@@ -193,17 +193,17 @@
         <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty-handler</artifactId>
-            <version>4.2.16.Final</version>
+            <version>4.2.17.Final</version>
         </dependency>
         <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty-transport-native-epoll</artifactId>
-            <version>4.2.16.Final</version>
+            <version>4.2.17.Final</version>
         </dependency>
         <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty-codec-compression</artifactId>
-            <version>4.2.16.Final</version>
+            <version>4.2.17.Final</version>
         </dependency>
         <dependency>
             <groupId>org.apache.httpcomponents.core5</groupId>
@@ -460,22 +460,22 @@
             <dependency>
                 <groupId>io.netty</groupId>
                 <artifactId>netty-codec</artifactId>
-                <version>4.2.16.Final</version>
+                <version>4.2.17.Final</version>
             </dependency>
             <dependency>
                 <groupId>io.netty</groupId>
                 <artifactId>netty-codec-compression</artifactId>
-                <version>4.2.16.Final</version>
+                <version>4.2.17.Final</version>
             </dependency>
             <dependency>
                 <groupId>io.netty</groupId>
                 <artifactId>netty-codec-protobuf</artifactId>
-                <version>4.2.16.Final</version>
+                <version>4.2.17.Final</version>
             </dependency>
             <dependency>
                 <groupId>io.netty</groupId>
                 <artifactId>netty-codec-marshalling</artifactId>
-                <version>4.2.16.Final</version>
+                <version>4.2.17.Final</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
