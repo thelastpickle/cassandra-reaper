@@ -1,5 +1,9 @@
 ## Change Log
 
+### 5.0.1 (2026/09/01 08:36 +00:00)
+- [#1719](https://github.com/thelastpickle/cassandra-reaper/pull/1719) Fix CVEs (#1719) (@ShreyashD333)
+- [#1704](https://github.com/thelastpickle/cassandra-reaper/pull/1704) Prevent poller termination during concurrent repair cleanup (#1704) (@gmanojDS)
+
 ### 5.0.0 (2026/07/08 13:21 +00:00)
 - [#1692](https://github.com/thelastpickle/cassandra-reaper/pull/1692) This PR provides fix for the following Netty vulnerabilities: CVE-2026-45416, CVE-2026-44249, CVE-2026-50010 (netty-handler) and CVE-2026-45536 (netty-transport-native-epoll) (#1692) (@dheerajmogaveera)
 - [#1693](https://github.com/thelastpickle/cassandra-reaper/pull/1693) bumped jackson-databind, jackson-core and jackson-annotations to resolve CVE-2026-54512, CVE-2026-54513 and CVE-2026-54514 (#1693) (@dheerajmogaveera)
