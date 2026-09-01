@@ -135,7 +135,12 @@ public final class CassandraStorageFacade implements IStorageDao, IDistributedSt
     this.cassMetricsDao = new CassandraMetricsDao(cassandra);
     this.cassSnapshotDao = new CassandraSnapshotDao(cassandra);
     this.operationsDao = new CassandraOperationsDao(cassandra);
-    this.concurrency = new CassandraConcurrencyDao(version, reaperInstanceId, cassandra);
+    ConsistencyLevel serialCl = Optional.ofNullable(cassandraFactory.getRequestOptionsFactory())
+        .map(RequestOptionsFactory::getRequestSerialConsistency)
+        .filter(s -> !s.isBlank())
+        .map(s -> ConsistencyLevel.valueOf(s.toUpperCase()))
+        .orElse(ConsistencyLevel.SERIAL);
+    this.concurrency = new CassandraConcurrencyDao(version, reaperInstanceId, cassandra, serialCl);
     this.cassRepairUnitDao = new CassandraRepairUnitDao(defaultTimeout, cassandra);
     this.cassRepairSegmentDao =
         new CassandraRepairSegmentDao(concurrency, cassRepairUnitDao, cassandra);
