@@ -33,7 +33,7 @@ RUN apt-get update \
         openjdk-17-jdk \
         maven \
         nodejs \
-        python2 \
+        python \
         rpm \
         ruby-dev \
     && mvn --version \
