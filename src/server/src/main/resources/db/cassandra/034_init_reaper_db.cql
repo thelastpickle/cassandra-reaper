@@ -22,12 +22,12 @@ CREATE TABLE IF NOT EXISTS cluster (
     properties text,
     state text,
     seed_hosts set<text>
-) WITH additional_write_policy = '99p'
+) WITH speculative_retry = '99PERCENTILE'
     AND bloom_filter_fp_chance = 0.01
     AND caching = {'keys': 'ALL', 'rows_per_partition': 'ALL'}
     AND cdc = false
     AND comment = ''
-    AND compaction = {'class': 'org.apache.cassandra.db.compaction.LeveledCompactionStrategy', 'max_threshold': '32', 'min_threshold': '4'}
+    AND compaction = {'class': 'org.apache.cassandra.db.compaction.SizeTieredCompactionStrategy', 'max_threshold': '32', 'min_threshold': '4'}
     AND compression = {'chunk_length_in_kb': '16', 'class': 'org.apache.cassandra.io.compress.LZ4Compressor'}
     AND crc_check_chance = 1.0
     AND default_time_to_live = 0
@@ -45,12 +45,12 @@ CREATE TABLE IF NOT EXISTS diagnostic_event_subscription (
     export_sse boolean,
     events set<text>,
     nodes set<text>
-) WITH additional_write_policy = '99p'
+) WITH speculative_retry = '99PERCENTILE'
     AND bloom_filter_fp_chance = 0.1
     AND caching = {'keys': 'ALL', 'rows_per_partition': 'ALL'}
     AND cdc = false
     AND comment = ''
-    AND compaction = {'class': 'org.apache.cassandra.db.compaction.LeveledCompactionStrategy', 'max_threshold': '32', 'min_threshold': '4'}
+    AND compaction = {'class': 'org.apache.cassandra.db.compaction.SizeTieredCompactionStrategy', 'max_threshold': '32', 'min_threshold': '4'}
     AND compression = {'chunk_length_in_kb': '16', 'class': 'org.apache.cassandra.io.compress.LZ4Compressor'}
     AND crc_check_chance = 1.0
     AND default_time_to_live = 0
@@ -64,12 +64,12 @@ CREATE TABLE IF NOT EXISTS leader (
     last_heartbeat timestamp,
     reaper_instance_host text,
     reaper_instance_id uuid
-) WITH additional_write_policy = '99p'
+) WITH speculative_retry = '99PERCENTILE'
     AND bloom_filter_fp_chance = 0.1
     AND caching = {'keys': 'ALL', 'rows_per_partition': 'NONE'}
     AND cdc = false
     AND comment = ''
-    AND compaction = {'class': 'org.apache.cassandra.db.compaction.LeveledCompactionStrategy', 'max_threshold': '32', 'min_threshold': '4'}
+    AND compaction = {'class': 'org.apache.cassandra.db.compaction.SizeTieredCompactionStrategy', 'max_threshold': '32', 'min_threshold': '4'}
     AND compression = {'chunk_length_in_kb': '16', 'class': 'org.apache.cassandra.io.compress.LZ4Compressor'}
     AND crc_check_chance = 1.0
     AND default_time_to_live = 600
@@ -90,7 +90,7 @@ CREATE TABLE IF NOT EXISTS node_metrics_v1 (
     requested boolean,
     PRIMARY KEY ((run_id, time_partition), node)
 ) WITH CLUSTERING ORDER BY (node ASC)
-    AND additional_write_policy = '99p'
+    AND speculative_retry = '99PERCENTILE'
     AND bloom_filter_fp_chance = 0.01
     AND caching = {'keys': 'ALL', 'rows_per_partition': 'NONE'}
     AND cdc = false
@@ -117,7 +117,7 @@ CREATE TABLE IF NOT EXISTS node_metrics_v3 (
     value double,
     PRIMARY KEY ((cluster, metric_domain, metric_type, time_bucket, host), ts, metric_scope, metric_name, metric_attribute)
 ) WITH CLUSTERING ORDER BY (ts DESC, metric_scope ASC, metric_name ASC, metric_attribute ASC)
-    AND additional_write_policy = '99p'
+    AND speculative_retry = '99PERCENTILE'
     AND bloom_filter_fp_chance = 0.01
     AND caching = {'keys': 'ALL', 'rows_per_partition': 'NONE'}
     AND cdc = false
@@ -140,7 +140,7 @@ CREATE TABLE IF NOT EXISTS node_operations (
     ts timestamp,
     PRIMARY KEY ((cluster, type, time_bucket), host)
 ) WITH CLUSTERING ORDER BY (host ASC)
-    AND additional_write_policy = '99p'
+    AND speculative_retry = '99PERCENTILE'
     AND bloom_filter_fp_chance = 0.01
     AND caching = {'keys': 'ALL', 'rows_per_partition': 'NONE'}
     AND cdc = false
@@ -165,12 +165,12 @@ CREATE TABLE IF NOT EXISTS percent_repaired_by_schedule (
     ts timestamp,
     PRIMARY KEY ((cluster_name, repair_schedule_id, time_bucket), node)
 ) WITH CLUSTERING ORDER BY (node ASC)
-    AND additional_write_policy = '99p'
+    AND speculative_retry = '99PERCENTILE'
     AND bloom_filter_fp_chance = 0.1
     AND caching = {'keys': 'ALL', 'rows_per_partition': 'NONE'}
     AND cdc = false
     AND comment = ''
-    AND compaction = {'class': 'org.apache.cassandra.db.compaction.LeveledCompactionStrategy', 'max_threshold': '32', 'min_threshold': '4'}
+    AND compaction = {'class': 'org.apache.cassandra.db.compaction.SizeTieredCompactionStrategy', 'max_threshold': '32', 'min_threshold': '4'}
     AND compression = {'chunk_length_in_kb': '16', 'class': 'org.apache.cassandra.io.compress.LZ4Compressor'}
     AND crc_check_chance = 1.0
     AND default_time_to_live = 3600
@@ -209,12 +209,12 @@ CREATE TABLE IF NOT EXISTS repair_run (
     token_ranges text,
     PRIMARY KEY (id, segment_id)
 ) WITH CLUSTERING ORDER BY (segment_id ASC)
-    AND additional_write_policy = '99p'
+    AND speculative_retry = '99PERCENTILE'
     AND bloom_filter_fp_chance = 0.1
     AND caching = {'keys': 'ALL', 'rows_per_partition': '5000'}
     AND cdc = false
     AND comment = ''
-    AND compaction = {'class': 'org.apache.cassandra.db.compaction.LeveledCompactionStrategy', 'max_threshold': '32', 'min_threshold': '4'}
+    AND compaction = {'class': 'org.apache.cassandra.db.compaction.SizeTieredCompactionStrategy', 'max_threshold': '32', 'min_threshold': '4'}
     AND compression = {'chunk_length_in_kb': '16', 'class': 'org.apache.cassandra.io.compress.LZ4Compressor'}
     AND crc_check_chance = 1.0
     AND default_time_to_live = 0
@@ -228,12 +228,12 @@ CREATE TABLE IF NOT EXISTS repair_run_by_cluster (
     id timeuuid,
     PRIMARY KEY (cluster_name, id)
 ) WITH CLUSTERING ORDER BY (id ASC)
-    AND additional_write_policy = '99p'
+    AND speculative_retry = '99PERCENTILE'
     AND bloom_filter_fp_chance = 0.1
     AND caching = {'keys': 'ALL', 'rows_per_partition': 'NONE'}
     AND cdc = false
     AND comment = ''
-    AND compaction = {'class': 'org.apache.cassandra.db.compaction.LeveledCompactionStrategy', 'max_threshold': '32', 'min_threshold': '4'}
+    AND compaction = {'class': 'org.apache.cassandra.db.compaction.SizeTieredCompactionStrategy', 'max_threshold': '32', 'min_threshold': '4'}
     AND compression = {'chunk_length_in_kb': '16', 'class': 'org.apache.cassandra.io.compress.LZ4Compressor'}
     AND crc_check_chance = 1.0
     AND default_time_to_live = 0
@@ -248,12 +248,12 @@ CREATE TABLE IF NOT EXISTS repair_run_by_cluster_v2 (
     repair_run_state text,
     PRIMARY KEY (cluster_name, id)
 ) WITH CLUSTERING ORDER BY (id DESC)
-    AND additional_write_policy = '99p'
+    AND speculative_retry = '99PERCENTILE'
     AND bloom_filter_fp_chance = 0.1
     AND caching = {'keys': 'ALL', 'rows_per_partition': 'NONE'}
     AND cdc = false
     AND comment = ''
-    AND compaction = {'class': 'org.apache.cassandra.db.compaction.LeveledCompactionStrategy', 'max_threshold': '32', 'min_threshold': '4'}
+    AND compaction = {'class': 'org.apache.cassandra.db.compaction.SizeTieredCompactionStrategy', 'max_threshold': '32', 'min_threshold': '4'}
     AND compression = {'chunk_length_in_kb': '16', 'class': 'org.apache.cassandra.io.compress.LZ4Compressor'}
     AND crc_check_chance = 1.0
     AND default_time_to_live = 0
@@ -269,12 +269,12 @@ CREATE TABLE IF NOT EXISTS repair_run_by_unit (
     id timeuuid,
     PRIMARY KEY (repair_unit_id, id)
 ) WITH CLUSTERING ORDER BY (id ASC)
-    AND additional_write_policy = '99p'
+    AND speculative_retry = '99PERCENTILE'
     AND bloom_filter_fp_chance = 0.1
     AND caching = {'keys': 'ALL', 'rows_per_partition': 'ALL'}
     AND cdc = false
     AND comment = ''
-    AND compaction = {'class': 'org.apache.cassandra.db.compaction.LeveledCompactionStrategy', 'max_threshold': '32', 'min_threshold': '4'}
+    AND compaction = {'class': 'org.apache.cassandra.db.compaction.SizeTieredCompactionStrategy', 'max_threshold': '32', 'min_threshold': '4'}
     AND compression = {'chunk_length_in_kb': '16', 'class': 'org.apache.cassandra.io.compress.LZ4Compressor'}
     AND crc_check_chance = 1.0
     AND default_time_to_live = 0
@@ -289,12 +289,12 @@ CREATE TABLE IF NOT EXISTS repair_schedule_by_cluster_and_keyspace (
     repair_schedule_id timeuuid,
     PRIMARY KEY ((cluster_name, keyspace_name), repair_schedule_id)
 ) WITH CLUSTERING ORDER BY (repair_schedule_id ASC)
-    AND additional_write_policy = '99p'
+    AND speculative_retry = '99PERCENTILE'
     AND bloom_filter_fp_chance = 0.1
     AND caching = {'keys': 'ALL', 'rows_per_partition': 'NONE'}
     AND cdc = false
     AND comment = ''
-    AND compaction = {'class': 'org.apache.cassandra.db.compaction.LeveledCompactionStrategy', 'max_threshold': '32', 'min_threshold': '4'}
+    AND compaction = {'class': 'org.apache.cassandra.db.compaction.SizeTieredCompactionStrategy', 'max_threshold': '32', 'min_threshold': '4'}
     AND compression = {'chunk_length_in_kb': '16', 'class': 'org.apache.cassandra.io.compress.LZ4Compressor'}
     AND crc_check_chance = 1.0
     AND default_time_to_live = 0
@@ -320,12 +320,12 @@ CREATE TABLE IF NOT EXISTS repair_schedule_v1 (
     segment_count_per_node int,
     state text,
     run_history set<timeuuid>
-) WITH additional_write_policy = '99p'
+) WITH speculative_retry = '99PERCENTILE'
     AND bloom_filter_fp_chance = 0.1
     AND caching = {'keys': 'ALL', 'rows_per_partition': 'NONE'}
     AND cdc = false
     AND comment = ''
-    AND compaction = {'class': 'org.apache.cassandra.db.compaction.LeveledCompactionStrategy', 'max_threshold': '32', 'min_threshold': '4'}
+    AND compaction = {'class': 'org.apache.cassandra.db.compaction.SizeTieredCompactionStrategy', 'max_threshold': '32', 'min_threshold': '4'}
     AND compression = {'chunk_length_in_kb': '16', 'class': 'org.apache.cassandra.io.compress.LZ4Compressor'}
     AND crc_check_chance = 1.0
     AND default_time_to_live = 0
@@ -346,12 +346,12 @@ CREATE TABLE IF NOT EXISTS repair_unit_v1 (
     column_families set<text>,
     datacenters set<text>,
     nodes set<text>
-) WITH additional_write_policy = '99p'
+) WITH speculative_retry = '99PERCENTILE'
     AND bloom_filter_fp_chance = 0.1
     AND caching = {'keys': 'ALL', 'rows_per_partition': 'NONE'}
     AND cdc = false
     AND comment = ''
-    AND compaction = {'class': 'org.apache.cassandra.db.compaction.LeveledCompactionStrategy', 'max_threshold': '32', 'min_threshold': '4'}
+    AND compaction = {'class': 'org.apache.cassandra.db.compaction.SizeTieredCompactionStrategy', 'max_threshold': '32', 'min_threshold': '4'}
     AND compression = {'chunk_length_in_kb': '16', 'class': 'org.apache.cassandra.io.compress.LZ4Compressor'}
     AND crc_check_chance = 1.0
     AND default_time_to_live = 0
@@ -364,12 +364,12 @@ CREATE TABLE IF NOT EXISTS running_reapers (
     reaper_instance_id uuid PRIMARY KEY,
     last_heartbeat timestamp,
     reaper_instance_host text
-) WITH additional_write_policy = '99p'
+) WITH speculative_retry = '99PERCENTILE'
     AND bloom_filter_fp_chance = 0.1
     AND caching = {'keys': 'ALL', 'rows_per_partition': 'NONE'}
     AND cdc = false
     AND comment = ''
-    AND compaction = {'class': 'org.apache.cassandra.db.compaction.LeveledCompactionStrategy', 'max_threshold': '32', 'min_threshold': '4'}
+    AND compaction = {'class': 'org.apache.cassandra.db.compaction.SizeTieredCompactionStrategy', 'max_threshold': '32', 'min_threshold': '4'}
     AND compression = {'chunk_length_in_kb': '16', 'class': 'org.apache.cassandra.io.compress.LZ4Compressor'}
     AND crc_check_chance = 1.0
     AND default_time_to_live = 180
@@ -386,12 +386,12 @@ CREATE TABLE IF NOT EXISTS running_repairs (
     segment_id uuid,
     PRIMARY KEY (repair_id, node)
 ) WITH CLUSTERING ORDER BY (node ASC)
-    AND additional_write_policy = '99p'
+    AND speculative_retry = '99PERCENTILE'
     AND bloom_filter_fp_chance = 0.1
     AND caching = {'keys': 'ALL', 'rows_per_partition': 'NONE'}
     AND cdc = false
     AND comment = ''
-    AND compaction = {'class': 'org.apache.cassandra.db.compaction.LeveledCompactionStrategy', 'max_threshold': '32', 'min_threshold': '4'}
+    AND compaction = {'class': 'org.apache.cassandra.db.compaction.SizeTieredCompactionStrategy', 'max_threshold': '32', 'min_threshold': '4'}
     AND compression = {'chunk_length_in_kb': '16', 'class': 'org.apache.cassandra.io.compress.LZ4Compressor'}
     AND crc_check_chance = 1.0
     AND default_time_to_live = 300
@@ -408,7 +408,7 @@ CREATE TABLE IF NOT EXISTS schema_migration (
     script_name text,
     PRIMARY KEY (applied_successful, version)
 ) WITH CLUSTERING ORDER BY (version ASC)
-    AND additional_write_policy = '99p'
+    AND speculative_retry = '99PERCENTILE'
     AND bloom_filter_fp_chance = 0.01
     AND caching = {'keys': 'ALL', 'rows_per_partition': 'NONE'}
     AND cdc = false
@@ -427,7 +427,7 @@ CREATE TABLE IF NOT EXISTS schema_migration_leader (
     leader uuid,
     leader_hostname text,
     took_lead_at timestamp
-) WITH additional_write_policy = '99p'
+) WITH speculative_retry = '99PERCENTILE'
     AND bloom_filter_fp_chance = 0.01
     AND caching = {'keys': 'ALL', 'rows_per_partition': 'NONE'}
     AND cdc = false
@@ -448,12 +448,12 @@ CREATE TABLE IF NOT EXISTS snapshot (
     creation_time timestamp,
     owner text,
     PRIMARY KEY ((cluster, snapshot_name))
-) WITH additional_write_policy = '99p'
+) WITH speculative_retry = '99PERCENTILE'
     AND bloom_filter_fp_chance = 0.1
     AND caching = {'keys': 'ALL', 'rows_per_partition': 'ALL'}
     AND cdc = false
     AND comment = ''
-    AND compaction = {'class': 'org.apache.cassandra.db.compaction.LeveledCompactionStrategy', 'max_threshold': '32', 'min_threshold': '4'}
+    AND compaction = {'class': 'org.apache.cassandra.db.compaction.SizeTieredCompactionStrategy', 'max_threshold': '32', 'min_threshold': '4'}
     AND compression = {'chunk_length_in_kb': '16', 'class': 'org.apache.cassandra.io.compress.LZ4Compressor'}
     AND crc_check_chance = 1.0
     AND default_time_to_live = 0
