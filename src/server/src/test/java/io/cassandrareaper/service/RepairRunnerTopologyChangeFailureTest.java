@@ -32,6 +32,7 @@ import io.cassandrareaper.storage.repairrun.IRepairRunDao;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -40,6 +41,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -752,7 +754,268 @@ public final class RepairRunnerTopologyChangeFailureTest {
     assertFalse("Token 95 should NOT be in range [10, 90)", result3);
   }
 
+  // --- New tests: coalesced (multi-range) segment handling in topology recovery ---
+
+  /**
+   * Test: computeReplacementSegments splits every coalesced token range independently, not just the
+   * base range. Covers the fix for the multi-range topology recovery issue raised in review.
+   */
+  @Test
+  public void testComputeReplacementSegments_MultipleNonWrapRanges() throws Exception {
+    UUID runId = createRepairRun();
+    RepairRunner runner = createRepairRunner(runId);
+
+    RingRange range1 = new RingRange(BigInteger.valueOf(1), BigInteger.valueOf(10));
+    RingRange range2 = new RingRange(BigInteger.valueOf(20), BigInteger.valueOf(30));
+
+    Segment segmentTokenRange =
+        Segment.builder().withTokenRanges(Arrays.asList(range1, range2)).build();
+
+    RepairSegment originalSegment =
+        RepairSegment.builder(segmentTokenRange, repairUnitId)
+            .withRunId(runId)
+            .withState(RepairSegment.State.NOT_STARTED)
+            .withId(UUID.randomUUID())
+            .build();
+
+    // Ring tokens split each original range once.
+    List<BigInteger> ringTokens = new ArrayList<>();
+    ringTokens.add(BigInteger.valueOf(5));
+    ringTokens.add(BigInteger.valueOf(25));
+    when(mockClusterFacade.getTokens(any())).thenReturn(ringTokens);
+
+    List<RepairSegment> result =
+        invokeComputeReplacementSegments(runner, originalSegment, segmentTokenRange);
+
+    assertEquals("Should produce 4 replacement segments across both ranges", 4, result.size());
+
+    List<RepairSegment> range1Replacements = new ArrayList<>();
+    List<RepairSegment> range2Replacements = new ArrayList<>();
+    for (RepairSegment seg : result) {
+      RingRange segRange = new RingRange(seg.getStartToken(), seg.getEndToken());
+      assertEquals(
+          "Replacement segments must not be coalesced",
+          1,
+          seg.getTokenRange().getTokenRanges().size());
+      if (range1.encloses(segRange)) {
+        range1Replacements.add(seg);
+      } else if (range2.encloses(segRange)) {
+        range2Replacements.add(seg);
+      }
+    }
+
+    assertEquals("First range should be split into 2 replacements", 2, range1Replacements.size());
+    assertEquals("Second range should be split into 2 replacements", 2, range2Replacements.size());
+  }
+
+  /**
+   * Test: computeReplacementSegments correctly splits a coalesced segment where one of the original
+   * ranges wraps around the ring, while the other does not, without mixing ring-distance
+   * calculations across ranges.
+   */
+  @Test
+  public void testComputeReplacementSegments_MultiRangeWithOneWrapping() throws Exception {
+    UUID runId = createRepairRun();
+    RepairRunner runner = createRepairRunner(runId);
+
+    RingRange normalRange = new RingRange(BigInteger.valueOf(100), BigInteger.valueOf(500));
+    RingRange wrapRange =
+        new RingRange(
+            new BigInteger("9000000000000000000"), new BigInteger("-5000000000000000000"));
+
+    Segment segmentTokenRange =
+        Segment.builder().withTokenRanges(Arrays.asList(normalRange, wrapRange)).build();
+
+    RepairSegment originalSegment =
+        RepairSegment.builder(segmentTokenRange, repairUnitId)
+            .withRunId(runId)
+            .withState(RepairSegment.State.NOT_STARTED)
+            .withId(UUID.randomUUID())
+            .build();
+
+    List<BigInteger> ringTokens = new ArrayList<>();
+    ringTokens.add(BigInteger.valueOf(300));
+    ringTokens.add(new BigInteger("-8000000000000000000"));
+    when(mockClusterFacade.getTokens(any())).thenReturn(ringTokens);
+
+    List<RepairSegment> result =
+        invokeComputeReplacementSegments(runner, originalSegment, segmentTokenRange);
+
+    assertEquals("Should produce 4 replacement segments across both ranges", 4, result.size());
+
+    List<RepairSegment> normalReplacements = new ArrayList<>();
+    List<RepairSegment> wrapReplacements = new ArrayList<>();
+    for (RepairSegment seg : result) {
+      RingRange segRange = new RingRange(seg.getStartToken(), seg.getEndToken());
+      if (normalRange.encloses(segRange)) {
+        normalReplacements.add(seg);
+      } else if (wrapRange.encloses(segRange)) {
+        wrapReplacements.add(seg);
+      }
+    }
+
+    assertEquals("Normal range should be split into 2 replacements", 2, normalReplacements.size());
+    assertEquals("Wrapping range should be split into 2 replacements", 2, wrapReplacements.size());
+  }
+
+  /**
+   * Test: computeReplacementSegments still splits a single-range (non-coalesced) segment exactly as
+   * before. Ensures no regression for the common case.
+   */
+  @Test
+  public void testComputeReplacementSegments_SingleRangeNoRegression() throws Exception {
+    UUID runId = createRepairRun();
+    RepairRunner runner = createRepairRunner(runId);
+
+    Segment segmentTokenRange =
+        Segment.builder()
+            .withTokenRange(new RingRange(BigInteger.valueOf(1), BigInteger.valueOf(10)))
+            .build();
+
+    RepairSegment originalSegment =
+        RepairSegment.builder(segmentTokenRange, repairUnitId)
+            .withRunId(runId)
+            .withState(RepairSegment.State.NOT_STARTED)
+            .withId(UUID.randomUUID())
+            .build();
+
+    List<BigInteger> ringTokens = new ArrayList<>();
+    ringTokens.add(BigInteger.valueOf(5));
+    when(mockClusterFacade.getTokens(any())).thenReturn(ringTokens);
+
+    List<RepairSegment> result =
+        invokeComputeReplacementSegments(runner, originalSegment, segmentTokenRange);
+
+    assertEquals("Single range should still split into 2 replacements", 2, result.size());
+    assertEquals(BigInteger.valueOf(1), result.get(0).getStartToken());
+    assertEquals(BigInteger.valueOf(5), result.get(0).getEndToken());
+    assertEquals(BigInteger.valueOf(5), result.get(1).getStartToken());
+    assertEquals(BigInteger.valueOf(10), result.get(1).getEndToken());
+  }
+
+  /**
+   * Test: verifyCompleteCoverage returns true when replacement segments fully cover every original
+   * coalesced token range independently.
+   */
+  @Test
+  public void testVerifyCompleteCoverage_MultipleRanges_CompleteCoverage() throws Exception {
+    UUID runId = createRepairRun();
+    RepairRunner runner = createRepairRunner(runId);
+
+    RingRange range1 = new RingRange(BigInteger.valueOf(1), BigInteger.valueOf(10));
+    RingRange range2 = new RingRange(BigInteger.valueOf(20), BigInteger.valueOf(30));
+
+    Segment segmentTokenRange =
+        Segment.builder().withTokenRanges(Arrays.asList(range1, range2)).build();
+
+    RepairSegment originalSegment =
+        RepairSegment.builder(segmentTokenRange, repairUnitId)
+            .withRunId(runId)
+            .withState(RepairSegment.State.NOT_STARTED)
+            .withId(UUID.randomUUID())
+            .build();
+
+    List<RepairSegment> replacements = new ArrayList<>();
+    replacements.add(buildReplacementSegment(runId, BigInteger.valueOf(1), BigInteger.valueOf(5)));
+    replacements.add(buildReplacementSegment(runId, BigInteger.valueOf(5), BigInteger.valueOf(10)));
+    replacements.add(
+        buildReplacementSegment(runId, BigInteger.valueOf(20), BigInteger.valueOf(25)));
+    replacements.add(
+        buildReplacementSegment(runId, BigInteger.valueOf(25), BigInteger.valueOf(30)));
+
+    boolean result = invokeVerifyCompleteCoverage(runner, originalSegment, replacements);
+
+    assertTrue("Coverage should be complete across both coalesced ranges", result);
+  }
+
+  /**
+   * Test: verifyCompleteCoverage returns false when one coalesced original range is not covered at
+   * all, even though another original range is fully covered. This is the exact scenario described
+   * in the topology recovery review comment: splitting and verifying only the base range must no
+   * longer produce a false-positive complete-coverage result.
+   */
+  @Test
+  public void testVerifyCompleteCoverage_MultipleRanges_OneRangeNotCovered() throws Exception {
+    UUID runId = createRepairRun();
+    RepairRunner runner = createRepairRunner(runId);
+
+    RingRange range1 = new RingRange(BigInteger.valueOf(1), BigInteger.valueOf(10));
+    RingRange range2 = new RingRange(BigInteger.valueOf(20), BigInteger.valueOf(30));
+
+    Segment segmentTokenRange =
+        Segment.builder().withTokenRanges(Arrays.asList(range1, range2)).build();
+
+    RepairSegment originalSegment =
+        RepairSegment.builder(segmentTokenRange, repairUnitId)
+            .withRunId(runId)
+            .withState(RepairSegment.State.NOT_STARTED)
+            .withId(UUID.randomUUID())
+            .build();
+
+    // range1 is fully covered, range2 (the second coalesced range) has no replacements at all.
+    List<RepairSegment> replacements = new ArrayList<>();
+    replacements.add(buildReplacementSegment(runId, BigInteger.valueOf(1), BigInteger.valueOf(5)));
+    replacements.add(buildReplacementSegment(runId, BigInteger.valueOf(5), BigInteger.valueOf(10)));
+
+    boolean result = invokeVerifyCompleteCoverage(runner, originalSegment, replacements);
+
+    assertFalse(
+        "Coverage must be incomplete when one coalesced range has no replacement coverage", result);
+  }
+
+  /**
+   * Test: rangesUnchanged returns true when the computed replacement ranges exactly match every
+   * original coalesced range (topology split did not change anything).
+   */
+  @Test
+  public void testRangesUnchanged_MultiRangeIdentical() throws Exception {
+    UUID runId = createRepairRun();
+    RepairRunner runner = createRepairRunner(runId);
+
+    RingRange range1 = new RingRange(BigInteger.valueOf(1), BigInteger.valueOf(10));
+    RingRange range2 = new RingRange(BigInteger.valueOf(20), BigInteger.valueOf(30));
+
+    List<RepairSegment> replacements = new ArrayList<>();
+    replacements.add(buildReplacementSegment(runId, range1.getStart(), range1.getEnd()));
+    replacements.add(buildReplacementSegment(runId, range2.getStart(), range2.getEnd()));
+
+    boolean result = invokeRangesUnchanged(runner, Arrays.asList(range1, range2), replacements);
+
+    assertTrue("Ranges should be considered unchanged when they match exactly", result);
+  }
+
+  /** Test: rangesUnchanged returns false when one of the coalesced ranges was actually split. */
+  @Test
+  public void testRangesUnchanged_MultiRangeChanged() throws Exception {
+    UUID runId = createRepairRun();
+    RepairRunner runner = createRepairRunner(runId);
+
+    RingRange range1 = new RingRange(BigInteger.valueOf(1), BigInteger.valueOf(10));
+    RingRange range2 = new RingRange(BigInteger.valueOf(20), BigInteger.valueOf(30));
+
+    // range2 is split into two replacements instead of staying whole.
+    List<RepairSegment> replacements = new ArrayList<>();
+    replacements.add(buildReplacementSegment(runId, range1.getStart(), range1.getEnd()));
+    replacements.add(
+        buildReplacementSegment(runId, BigInteger.valueOf(20), BigInteger.valueOf(25)));
+    replacements.add(
+        buildReplacementSegment(runId, BigInteger.valueOf(25), BigInteger.valueOf(30)));
+
+    boolean result = invokeRangesUnchanged(runner, Arrays.asList(range1, range2), replacements);
+
+    assertFalse("Ranges should be considered changed when a range was split", result);
+  }
+
   // Helper methods
+
+  private RepairSegment buildReplacementSegment(UUID runId, BigInteger start, BigInteger end) {
+    return RepairSegment.builder(
+            Segment.builder().withTokenRange(new RingRange(start, end)).build(), repairUnitId)
+        .withRunId(runId)
+        .withState(RepairSegment.State.NOT_STARTED)
+        .withId(UUID.randomUUID())
+        .build();
+  }
 
   private UUID createRepairRun() {
     RepairRun run =
@@ -842,5 +1105,14 @@ public final class RepairRunnerTopologyChangeFailureTest {
             "isTokenInRange", BigInteger.class, BigInteger.class, BigInteger.class);
     method.setAccessible(true);
     return (boolean) method.invoke(runner, token, start, end);
+  }
+
+  private boolean invokeRangesUnchanged(
+      RepairRunner runner, List<RingRange> originalRanges, List<RepairSegment> replacementSegments)
+      throws Exception {
+    java.lang.reflect.Method method =
+        RepairRunner.class.getDeclaredMethod("rangesUnchanged", List.class, List.class);
+    method.setAccessible(true);
+    return (boolean) method.invoke(runner, originalRanges, replacementSegments);
   }
 }
