@@ -20,6 +20,7 @@ package io.cassandrareaper.storage.repairsegment;
 
 import io.cassandrareaper.core.RepairSegment;
 
+import java.math.BigInteger;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -51,4 +52,45 @@ public interface IRepairSegmentDao {
   int getSegmentAmountForRepairRun(UUID runId);
 
   int getSegmentAmountForRepairRunWithState(UUID runId, RepairSegment.State state);
+
+  /**
+   * Add multiple repair segments to a repair run. Implementations should generate unique IDs for
+   * each segment.
+   *
+   * @param segments collection of segment builders to add
+   * @param runId the repair run ID
+   */
+  void addRepairSegments(Collection<RepairSegment.Builder> segments, UUID runId);
+
+  /**
+   * Find a repair segment by its token range within a repair run. Used for idempotent segment
+   * splitting to detect if a replacement segment already exists.
+   *
+   * @param runId the repair run ID
+   * @param repairUnitId the repair unit ID
+   * @param startToken the start token of the range
+   * @param endToken the end token of the range
+   * @return the segment if found, empty otherwise
+   */
+  Optional<RepairSegment> getRepairSegmentByTokenRange(
+      UUID runId, UUID repairUnitId, BigInteger startToken, BigInteger endToken);
+
+  /**
+   * Conditionally update a repair segment's state only if it currently has the expected state. This
+   * provides atomic compare-and-swap semantics for segment state transitions. Used to safely retire
+   * original segments after topology-change splitting.
+   *
+   * <p>Implementations that do not require {@code runId} for querying may ignore that parameter.
+   *
+   * @param runId the repair run ID (used by storage backends that partition by runId)
+   * @param segmentId the segment ID to update
+   * @param newState the new state to set
+   * @param expectedCurrentState the expected current state (condition)
+   * @return true if the segment was updated (condition matched), false otherwise
+   */
+  boolean updateRepairSegmentStateConditional(
+      UUID runId,
+      UUID segmentId,
+      RepairSegment.State newState,
+      RepairSegment.State expectedCurrentState);
 }

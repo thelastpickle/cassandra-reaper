@@ -35,9 +35,11 @@ import io.cassandrareaper.metrics.PrometheusMetricsFilter;
 import io.cassandrareaper.storage.IDistributedStorage;
 import io.cassandrareaper.storage.repairrun.IRepairRunDao;
 
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -889,11 +891,28 @@ final class RepairRunner implements Runnable {
 
   private synchronized void failRepairDueToOutdatedSegment(UUID segmentId, Segment segment) {
     // This segment has a faulty token range possibly due to an additive change in cluster topology
-    // during repair. Abort the entire repair run.
+    // during repair. Try to handle topology change before aborting.
     LOG.warn(
         "Segment #{} is faulty, no potential coordinators for range: {}",
         segmentId,
         segment.toString());
+
+    // Try to handle topology change by splitting the segment
+    try {
+      if (detectAndHandleTopologyChange(segmentId, segment)) {
+        LOG.info(
+            "Successfully handled topology change for segment #{}, repair will continue",
+            segmentId);
+        return; // Topology change handled, don't fail the repair
+      }
+    } catch (RuntimeException e) {
+      LOG.error("Runtime error handling topology change for segment #{}", segmentId, e);
+      // Fall through to original failure behavior
+    }
+
+    // If topology change handling failed or wasn't applicable, abort the repair run
+    LOG.warn("Aborting repair run {} due to segment #{} failure", repairRunId, segmentId);
+
     // If the segment has been removed, ignore. Should only happen in tests on backends
     // that delete repair segments.
     Optional<RepairRun> repairRun = repairRunDao.getRepairRun(repairRunId);
@@ -920,6 +939,532 @@ final class RepairRunner implements Runnable {
       } finally {
         killAndCleanupRunner();
       }
+    }
+  }
+
+  /**
+   * Detects if a segment failure is due to topology changes and handles it by splitting the
+   * segment.
+   *
+   * @param segmentId the ID of the failed segment
+   * @param segmentTokenRange the token range of the failed segment
+   * @return true if topology change was detected and handled successfully, false otherwise
+   */
+  private boolean detectAndHandleTopologyChange(UUID segmentId, Segment segmentTokenRange) {
+    LOG.info(
+        "Detecting topology change for segment #{} with range {}", segmentId, segmentTokenRange);
+
+    try {
+      // Get the original segment from storage
+      Optional<RepairSegment> originalSegmentOpt =
+          context.storage.getRepairSegmentDao().getRepairSegment(repairRunId, segmentId);
+
+      if (!originalSegmentOpt.isPresent()) {
+        LOG.warn("Original segment #{} not found in storage", segmentId);
+        return false;
+      }
+
+      RepairSegment originalSegment = originalSegmentOpt.get();
+
+      // Compute replacement segments based on CURRENT topology
+      // This will split the segment using current ring token boundaries
+      List<RepairSegment> replacementSegments =
+          computeReplacementSegments(originalSegment, segmentTokenRange);
+
+      if (replacementSegments.isEmpty()) {
+        LOG.warn("No replacement segments computed for segment #{}", segmentId);
+        return false;
+      }
+
+      // If the computed replacements exactly match the original segment's token ranges, then
+      // topology hasn't changed in a way that would help. This covers segments with a single
+      // token range as well as coalesced segments with several token ranges.
+      if (rangesUnchanged(segmentTokenRange.getTokenRanges(), replacementSegments)) {
+        LOG.info(
+            "Segment #{} ranges unchanged after topology split, not a topology change", segmentId);
+        return false;
+      }
+
+      LOG.info(
+          "Computed {} replacement segments for segment #{}, validating each has coordinators",
+          replacementSegments.size(),
+          segmentId);
+
+      // Validate that EACH replacement segment has valid coordinators
+      // This is critical - we must not create segments that will also fail
+      for (RepairSegment replacement : replacementSegments) {
+        Segment replacementRange =
+            Segment.builder()
+                .withTokenRange(
+                    new RingRange(replacement.getStartToken(), replacement.getEndToken()))
+                .build();
+
+        Map<String, String> replacementTopology =
+            repairRunService.getDCsByNodeForRepairSegment(
+                cluster, replacementRange, repairUnit.getKeyspaceName(), repairUnit);
+
+        if (replacementTopology.isEmpty()) {
+          LOG.warn(
+              "Replacement segment range [{}, {}) has no valid coordinators, cannot split segment #{}",
+              replacement.getStartToken(),
+              replacement.getEndToken(),
+              segmentId);
+          return false;
+        }
+      }
+
+      LOG.info("All {} replacement segments have valid coordinators", replacementSegments.size());
+
+      // Create-first approach: create all replacement segments before retiring original
+      List<RepairSegment> createdSegments = createMissingReplacementSegments(replacementSegments);
+
+      LOG.info("Created {} new replacement segments", createdSegments.size());
+
+      // Verify that replacement segments fully cover the original range
+      if (!verifyCompleteCoverage(originalSegment, createdSegments)) {
+        LOG.error("Replacement segments do not fully cover original segment #{}", segmentId);
+        return false;
+      }
+
+      // Retire the original segment by marking it DONE
+      boolean retired = retireOriginalSegment(originalSegment);
+
+      if (retired) {
+        LOG.info("Successfully retired original segment #{} after topology change", segmentId);
+        return true;
+      } else {
+        LOG.warn("Failed to retire original segment #{}", segmentId);
+        return false;
+      }
+    } catch (ReaperException e) {
+      LOG.error("Reaper error detecting/handling topology change for segment #{}", segmentId, e);
+      return false;
+    } catch (RuntimeException e) {
+      LOG.error(
+          "Unexpected runtime error detecting/handling topology change for segment #{}",
+          segmentId,
+          e);
+      return false;
+    }
+  }
+
+  /**
+   * Computes replacement segments for an original segment based on current topology.
+   *
+   * <p>A segment can contain multiple coalesced token ranges (see {@link
+   * Segment#getTokenRanges()}), so every original range from {@code segmentTokenRange} is split
+   * independently using the current ring token boundaries. The resulting replacement segments are
+   * never coalesced back together in this recovery path: each replacement carries exactly one token
+   * range, which keeps per-range coverage verification simple and correct.
+   *
+   * @param originalSegment the original segment to replace
+   * @param segmentTokenRange the token range(s) of the segment
+   * @return list of replacement segments covering every original range
+   */
+  private List<RepairSegment> computeReplacementSegments(
+      RepairSegment originalSegment, Segment segmentTokenRange) {
+
+    LOG.info("Computing replacement segments for original segment #{}", originalSegment.getId());
+
+    List<RepairSegment> replacements = new ArrayList<>();
+
+    try {
+      // Get current ring tokens from the cluster
+      List<BigInteger> ringTokens = clusterFacade.getTokens(cluster);
+
+      if (ringTokens.isEmpty()) {
+        LOG.warn("No ring tokens available from cluster");
+        return replacements;
+      }
+
+      // Sort ring tokens
+      Collections.sort(ringTokens);
+
+      // Process every original token range independently so that segments with multiple
+      // coalesced ranges are fully covered by the replacements, not just the base range.
+      for (RingRange originalRange : segmentTokenRange.getTokenRanges()) {
+        replacements.addAll(splitTokenRange(originalRange, ringTokens, originalSegment));
+      }
+
+      LOG.info(
+          "Computed {} replacement segments across {} original token range(s)",
+          replacements.size(),
+          segmentTokenRange.getTokenRanges().size());
+
+    } catch (ReaperException e) {
+      LOG.error("Reaper error computing replacement segments", e);
+    } catch (RuntimeException e) {
+      LOG.error("Runtime error computing replacement segments", e);
+    }
+
+    return replacements;
+  }
+
+  /**
+   * Splits a single original token range into replacement segments using the current ring token
+   * boundaries. Each replacement segment carries exactly one token range (coalescing is disabled
+   * for this recovery path).
+   *
+   * @param originalRange the original token range to split
+   * @param sortedRingTokens the sorted list of current ring tokens
+   * @param originalSegment the original segment being replaced, used for run/unit metadata
+   * @return list of replacement segments covering {@code originalRange}
+   */
+  private List<RepairSegment> splitTokenRange(
+      RingRange originalRange, List<BigInteger> sortedRingTokens, RepairSegment originalSegment) {
+
+    List<RepairSegment> replacements = new ArrayList<>();
+
+    BigInteger startToken = originalRange.getStart();
+    BigInteger endToken = originalRange.getEnd();
+
+    LOG.debug("Original token range: [{}, {})", startToken, endToken);
+
+    // Collect all split tokens: start + internal ring tokens + end
+    List<BigInteger> splitTokens = new ArrayList<>();
+    splitTokens.add(startToken);
+
+    for (BigInteger token : sortedRingTokens) {
+      if (isTokenInRange(token, startToken, endToken)) {
+        splitTokens.add(token);
+      }
+    }
+
+    splitTokens.add(endToken);
+
+    // Remove duplicates
+    splitTokens = splitTokens.stream().distinct().collect(Collectors.toList());
+
+    // Sort by ring distance from start (handles both normal and wrap-around ranges)
+    splitTokens.sort(Comparator.comparing(token -> ringDistanceFromStart(token, startToken)));
+
+    LOG.info(
+        "Found {} boundary tokens for splitting range [{}, {})",
+        splitTokens.size(),
+        startToken,
+        endToken);
+
+    // Create replacement segments for each consecutive pair
+    for (int i = 0; i < splitTokens.size() - 1; i++) {
+      BigInteger subStart = splitTokens.get(i);
+      BigInteger subEnd = splitTokens.get(i + 1);
+
+      // Skip zero-length ranges
+      if (subStart.equals(subEnd)) {
+        LOG.debug("Skipping zero-length range [{}, {})", subStart, subEnd);
+        continue;
+      }
+
+      RingRange subRange = new RingRange(subStart, subEnd);
+      // Coalescing is intentionally disabled here: each replacement segment gets its own single
+      // token range so coverage of every original range can be verified independently.
+      Segment subSegment = Segment.builder().withTokenRange(subRange).build();
+
+      RepairSegment replacement =
+          RepairSegment.builder(subSegment, originalSegment.getRepairUnitId())
+              .withRunId(originalSegment.getRunId())
+              .withState(RepairSegment.State.NOT_STARTED)
+              .build();
+
+      replacements.add(replacement);
+
+      LOG.debug("Created replacement segment for range [{}, {})", subStart, subEnd);
+    }
+
+    return replacements;
+  }
+
+  /**
+   * Checks whether the computed replacement ranges are identical to the original segment's token
+   * ranges, meaning the topology split did not actually change anything worth applying. Handles
+   * segments with a single token range as well as coalesced segments with several ranges.
+   *
+   * @param originalRanges the original segment's token ranges
+   * @param replacementSegments the computed replacement segments
+   * @return true if the replacement ranges exactly match the original ranges
+   */
+  private boolean rangesUnchanged(
+      List<RingRange> originalRanges, List<RepairSegment> replacementSegments) {
+    if (originalRanges.size() != replacementSegments.size()) {
+      return false;
+    }
+
+    List<RingRange> sortedOriginal = new ArrayList<>(originalRanges);
+    Collections.sort(sortedOriginal, RingRange.START_COMPARATOR);
+
+    List<RingRange> sortedReplacements =
+        replacementSegments.stream()
+            .map(seg -> new RingRange(seg.getStartToken(), seg.getEndToken()))
+            .sorted(RingRange.START_COMPARATOR)
+            .collect(Collectors.toList());
+
+    for (int i = 0; i < sortedOriginal.size(); i++) {
+      RingRange original = sortedOriginal.get(i);
+      RingRange replacement = sortedReplacements.get(i);
+      if (!original.getStart().equals(replacement.getStart())
+          || !original.getEnd().equals(replacement.getEnd())) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  // Murmur3Partitioner token bounds for ring distance calculations
+  private static final BigInteger MURMUR3_MIN_TOKEN = BigInteger.valueOf(Long.MIN_VALUE);
+  private static final BigInteger MURMUR3_MAX_TOKEN = BigInteger.valueOf(Long.MAX_VALUE);
+
+  /** Checks if a token falls within a given range, handling wrap-around. */
+  private boolean isTokenInRange(BigInteger token, BigInteger start, BigInteger end) {
+    if (start.compareTo(end) < 0) {
+      // Normal range (no wrap-around)
+      return token.compareTo(start) > 0 && token.compareTo(end) < 0;
+    } else {
+      // Wrap-around range
+      return token.compareTo(start) > 0 || token.compareTo(end) < 0;
+    }
+  }
+
+  /**
+   * Calculates the ring distance from start token to target token, treating the ring as circular.
+   * This is used to order tokens by their position in ring traversal order starting from start.
+   *
+   * @param token the token to measure distance to
+   * @param start the starting token
+   * @return the ring distance from start to token
+   */
+  private BigInteger ringDistanceFromStart(BigInteger token, BigInteger start) {
+    if (token.compareTo(start) >= 0) {
+      // Token is after start in numeric order, distance is simple subtraction
+      return token.subtract(start);
+    }
+    // Token is before start numerically, so it wraps around the ring
+    // Distance = (token - MIN) + (MAX - start) + 1
+    return token
+        .subtract(MURMUR3_MIN_TOKEN)
+        .add(MURMUR3_MAX_TOKEN.subtract(start))
+        .add(BigInteger.ONE);
+  }
+
+  /**
+   * Creates missing replacement segments, checking for existing segments to ensure idempotency.
+   *
+   * @param replacementSegments the list of replacement segments to create
+   * @return list of actually created segments (may be fewer if some already exist)
+   */
+  private List<RepairSegment> createMissingReplacementSegments(
+      List<RepairSegment> replacementSegments) {
+
+    List<RepairSegment> createdSegments = new ArrayList<>();
+
+    for (RepairSegment replacement : replacementSegments) {
+      try {
+        // Check if a segment with this token range already exists (idempotency)
+        Optional<RepairSegment> existing =
+            context
+                .storage
+                .getRepairSegmentDao()
+                .getRepairSegmentByTokenRange(
+                    replacement.getRunId(),
+                    replacement.getRepairUnitId(),
+                    replacement.getStartToken(),
+                    replacement.getEndToken());
+
+        if (existing.isPresent()) {
+          LOG.debug(
+              "Replacement segment for range [{}, {}) already exists with ID {}",
+              replacement.getStartToken(),
+              replacement.getEndToken(),
+              existing.get().getId());
+          createdSegments.add(existing.get());
+        } else {
+          // Create new segment using the DAO interface method
+          RepairSegment.Builder builder =
+              RepairSegment.builder(replacement.getTokenRange(), replacement.getRepairUnitId())
+                  .withRunId(replacement.getRunId())
+                  .withState(RepairSegment.State.NOT_STARTED);
+
+          Collection<RepairSegment.Builder> builders = Collections.singletonList(builder);
+          context.storage.getRepairSegmentDao().addRepairSegments(builders, replacement.getRunId());
+
+          LOG.info(
+              "Created new replacement segment for range [{}, {})",
+              replacement.getStartToken(),
+              replacement.getEndToken());
+
+          // Fetch the created segment to get its ID
+          Optional<RepairSegment> created =
+              context
+                  .storage
+                  .getRepairSegmentDao()
+                  .getRepairSegmentByTokenRange(
+                      replacement.getRunId(),
+                      replacement.getRepairUnitId(),
+                      replacement.getStartToken(),
+                      replacement.getEndToken());
+
+          if (created.isPresent()) {
+            createdSegments.add(created.get());
+          }
+        }
+      } catch (RuntimeException e) {
+        LOG.error(
+            "Runtime error creating replacement segment for range [{}, {})",
+            replacement.getStartToken(),
+            replacement.getEndToken(),
+            e);
+      }
+    }
+
+    return createdSegments;
+  }
+
+  /**
+   * Verifies that replacement segments fully cover the original segment's token range(s).
+   *
+   * <p>A segment can be coalesced from multiple token ranges (see {@link
+   * Segment#getTokenRanges()}). Coverage is verified independently for every original range so that
+   * splitting only the base range can no longer skip tokens belonging to other coalesced ranges.
+   *
+   * @param originalSegment the original segment
+   * @param replacementSegments the replacement segments
+   * @return true if coverage is complete for every original token range, false otherwise
+   */
+  private boolean verifyCompleteCoverage(
+      RepairSegment originalSegment, List<RepairSegment> replacementSegments) {
+
+    if (replacementSegments.isEmpty()) {
+      LOG.warn("No replacement segments to verify coverage");
+      return false;
+    }
+
+    List<RingRange> originalRanges = originalSegment.getTokenRange().getTokenRanges();
+
+    for (RingRange originalRange : originalRanges) {
+      List<RepairSegment> matchingReplacements =
+          replacementSegments.stream()
+              .filter(
+                  seg ->
+                      originalRange.encloses(new RingRange(seg.getStartToken(), seg.getEndToken())))
+              .collect(Collectors.toList());
+
+      if (!verifyRangeCoverage(originalRange, matchingReplacements)) {
+        LOG.warn(
+            "Replacement segments do not fully cover original token range [{}, {})",
+            originalRange.getStart(),
+            originalRange.getEnd());
+        return false;
+      }
+    }
+
+    LOG.info(
+        "Verified complete coverage with {} replacement segments across {} original token range(s)",
+        replacementSegments.size(),
+        originalRanges.size());
+    return true;
+  }
+
+  /**
+   * Verifies that the given replacement segments fully and contiguously cover a single original
+   * token range, with no gaps.
+   *
+   * @param originalRange the original token range to verify coverage for
+   * @param replacementSegments the replacement segments assigned to this original range
+   * @return true if coverage is complete for this range, false otherwise
+   */
+  private boolean verifyRangeCoverage(
+      RingRange originalRange, List<RepairSegment> replacementSegments) {
+
+    if (replacementSegments.isEmpty()) {
+      LOG.warn(
+          "No replacement segments cover original token range [{}, {})",
+          originalRange.getStart(),
+          originalRange.getEnd());
+      return false;
+    }
+
+    BigInteger originalStart = originalRange.getStart();
+    BigInteger originalEnd = originalRange.getEnd();
+
+    LOG.debug("Verifying coverage for original range [{}, {})", originalStart, originalEnd);
+
+    // Sort replacement segments by ring distance from original start
+    // This handles both normal and wrap-around ranges correctly
+    List<RepairSegment> sorted = new ArrayList<>(replacementSegments);
+    sorted.sort(
+        Comparator.comparing(seg -> ringDistanceFromStart(seg.getStartToken(), originalStart)));
+
+    // Check that first replacement starts at original start
+    if (!sorted.get(0).getStartToken().equals(originalStart)) {
+      LOG.warn(
+          "First replacement segment does not start at original start token. Expected: {}, Got: {}",
+          originalStart,
+          sorted.get(0).getStartToken());
+      return false;
+    }
+
+    // Check that last replacement ends at original end
+    if (!sorted.get(sorted.size() - 1).getEndToken().equals(originalEnd)) {
+      LOG.warn(
+          "Last replacement segment does not end at original end token. Expected: {}, Got: {}",
+          originalEnd,
+          sorted.get(sorted.size() - 1).getEndToken());
+      return false;
+    }
+
+    // Check for gaps between replacement segments
+    for (int i = 0; i < sorted.size() - 1; i++) {
+      BigInteger currentEnd = sorted.get(i).getEndToken();
+      BigInteger nextStart = sorted.get(i + 1).getStartToken();
+
+      if (!currentEnd.equals(nextStart)) {
+        LOG.warn("Gap detected between replacement segments: {} to {}", currentEnd, nextStart);
+        return false;
+      }
+    }
+
+    LOG.info(
+        "Verified complete coverage for range [{}, {}) with {} replacement segments",
+        originalStart,
+        originalEnd,
+        sorted.size());
+    return true;
+  }
+
+  /**
+   * Retires the original segment by conditionally updating its state to DONE.
+   *
+   * @param originalSegment the segment to retire
+   * @return true if retirement succeeded, false otherwise
+   */
+  private boolean retireOriginalSegment(RepairSegment originalSegment) {
+    LOG.info("Retiring original segment #{}", originalSegment.getId());
+
+    try {
+      // Use conditional update to safely retire the segment
+      // Only retire if it's still in NOT_STARTED state
+      boolean retired =
+          context
+              .storage
+              .getRepairSegmentDao()
+              .updateRepairSegmentStateConditional(
+                  originalSegment.getRunId(),
+                  originalSegment.getId(),
+                  RepairSegment.State.DONE,
+                  RepairSegment.State.NOT_STARTED);
+
+      if (retired) {
+        LOG.info("Successfully retired original segment #{}", originalSegment.getId());
+      } else {
+        LOG.warn(
+            "Failed to retire original segment #{} - state may have changed",
+            originalSegment.getId());
+      }
+
+      return retired;
+    } catch (RuntimeException e) {
+      LOG.error("Runtime error retiring original segment #{}", originalSegment.getId(), e);
+      return false;
     }
   }
 

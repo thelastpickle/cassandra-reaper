@@ -41,6 +41,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import com.datastax.oss.driver.api.core.uuid.Uuids;
+import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -267,6 +268,194 @@ public class MemoryRepairSegmentDao implements IRepairSegmentDao {
       throw new RuntimeException(e);
     }
     return 0;
+  }
+
+  @Override
+  public Optional<RepairSegment> getRepairSegmentByTokenRange(
+      UUID runId, UUID repairUnitId, BigInteger startToken, BigInteger endToken) {
+    try {
+      // Use existing method to get all segments for the run, then filter by token range
+      Collection<RepairSegment> segments = getRepairSegmentsForRun(runId);
+
+      return segments.stream()
+          .filter(seg -> seg.getRepairUnitId().equals(repairUnitId))
+          .filter(seg -> seg.getStartToken().equals(startToken))
+          .filter(seg -> seg.getEndToken().equals(endToken))
+          .findFirst();
+    } catch (RuntimeException e) {
+      LOG.error(
+          "Failed to get repair segment by token range for run {} with range [{}, {}]",
+          runId,
+          startToken,
+          endToken,
+          e);
+      throw new IllegalStateException("Database error while retrieving segment by token range", e);
+    }
+  }
+
+  @Override
+  public boolean updateRepairSegmentStateConditional(
+      UUID runId,
+      UUID segmentId,
+      RepairSegment.State newState,
+      RepairSegment.State expectedCurrentState) {
+    synchronized (getSegmentByIdStmt) {
+      try {
+        RepairSegment currentSegment = getCurrentSegmentForUpdate(segmentId);
+        if (currentSegment == null) {
+          return false;
+        }
+
+        if (!validateExpectedState(currentSegment, expectedCurrentState, segmentId)) {
+          return false;
+        }
+
+        return executeConditionalUpdate(segmentId, newState, expectedCurrentState, currentSegment);
+      } catch (SQLException e) {
+        LOG.error(
+            "Failed to conditionally update segment {} from {} to {}",
+            segmentId,
+            expectedCurrentState,
+            newState,
+            e);
+        throw new IllegalStateException("Database error during conditional segment update", e);
+      }
+    }
+  }
+
+  private RepairSegment getCurrentSegmentForUpdate(UUID segmentId) throws SQLException {
+    getSegmentByIdStmt.clearParameters();
+    getSegmentByIdStmt.setBytes(1, UuidUtil.toBytes(segmentId));
+    try (ResultSet rs = getSegmentByIdStmt.executeQuery()) {
+      if (!rs.next()) {
+        LOG.debug("Segment {} not found for conditional update", segmentId);
+        return null;
+      }
+      return mapRowToRepairSegment(rs);
+    }
+  }
+
+  private boolean validateExpectedState(
+      RepairSegment currentSegment, RepairSegment.State expectedState, UUID segmentId) {
+    if (!currentSegment.getState().equals(expectedState)) {
+      LOG.debug(
+          "Segment {} state mismatch: expected {}, found {}",
+          segmentId,
+          expectedState,
+          currentSegment.getState());
+      return false;
+    }
+    return true;
+  }
+
+  private boolean executeConditionalUpdate(
+      UUID segmentId,
+      RepairSegment.State newState,
+      RepairSegment.State expectedState,
+      RepairSegment currentSegment)
+      throws SQLException {
+
+    String updateSql = buildUpdateSql(newState);
+
+    try (PreparedStatement stmt = connection.prepareStatement(updateSql)) {
+      bindUpdateParameters(stmt, segmentId, newState, expectedState, currentSegment);
+
+      int rowsUpdated = stmt.executeUpdate();
+      boolean success = rowsUpdated > 0;
+
+      logUpdateResult(segmentId, expectedState, newState, success);
+      return success;
+    }
+  }
+
+  private String buildUpdateSql(RepairSegment.State newState) {
+    if (newState == RepairSegment.State.DONE) {
+      return "UPDATE repair_segment SET state = ?, start_time = ?, end_time = ? "
+          + "WHERE id = ? AND state = ?";
+    } else if (newState == RepairSegment.State.RUNNING) {
+      return "UPDATE repair_segment SET state = ?, start_time = ? " + "WHERE id = ? AND state = ?";
+    } else {
+      return "UPDATE repair_segment SET state = ? WHERE id = ? AND state = ?";
+    }
+  }
+
+  private void bindUpdateParameters(
+      PreparedStatement stmt,
+      UUID segmentId,
+      RepairSegment.State newState,
+      RepairSegment.State expectedState,
+      RepairSegment currentSegment)
+      throws SQLException {
+
+    long nowMillis = DateTime.now().getMillis();
+    stmt.setString(1, newState.name());
+
+    if (newState == RepairSegment.State.DONE) {
+      bindDoneStateParameters(stmt, segmentId, expectedState, currentSegment, nowMillis);
+    } else if (newState == RepairSegment.State.RUNNING) {
+      bindRunningStateParameters(stmt, segmentId, expectedState, currentSegment, nowMillis);
+    } else {
+      bindDefaultStateParameters(stmt, segmentId, expectedState);
+    }
+  }
+
+  private void bindDoneStateParameters(
+      PreparedStatement stmt,
+      UUID segmentId,
+      RepairSegment.State expectedState,
+      RepairSegment currentSegment,
+      long nowMillis)
+      throws SQLException {
+
+    long startTime =
+        currentSegment.getStartTime() != null
+            ? currentSegment.getStartTime().getMillis()
+            : nowMillis;
+    long endTime =
+        currentSegment.getEndTime() != null ? currentSegment.getEndTime().getMillis() : nowMillis;
+
+    stmt.setLong(2, startTime);
+    stmt.setLong(3, endTime);
+    stmt.setBytes(4, UuidUtil.toBytes(segmentId));
+    stmt.setString(5, expectedState.name());
+  }
+
+  private void bindRunningStateParameters(
+      PreparedStatement stmt,
+      UUID segmentId,
+      RepairSegment.State expectedState,
+      RepairSegment currentSegment,
+      long nowMillis)
+      throws SQLException {
+
+    long startTime =
+        currentSegment.getStartTime() != null
+            ? currentSegment.getStartTime().getMillis()
+            : nowMillis;
+
+    stmt.setLong(2, startTime);
+    stmt.setBytes(3, UuidUtil.toBytes(segmentId));
+    stmt.setString(4, expectedState.name());
+  }
+
+  private void bindDefaultStateParameters(
+      PreparedStatement stmt, UUID segmentId, RepairSegment.State expectedState)
+      throws SQLException {
+    stmt.setBytes(2, UuidUtil.toBytes(segmentId));
+    stmt.setString(3, expectedState.name());
+  }
+
+  private void logUpdateResult(
+      UUID segmentId,
+      RepairSegment.State expectedState,
+      RepairSegment.State newState,
+      boolean success) {
+    if (success) {
+      LOG.debug(
+          "Successfully updated segment {} from {} to {}", segmentId, expectedState, newState);
+    } else {
+      LOG.debug("Failed to update segment {} - state changed concurrently", segmentId);
+    }
   }
 
   private void insertSegment(RepairSegment segment) throws SQLException {
