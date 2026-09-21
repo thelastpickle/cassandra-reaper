@@ -25,13 +25,13 @@ import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairSegment;
 import io.cassandrareaper.core.RepairUnit;
 import io.cassandrareaper.core.Segment;
+import io.cassandrareaper.management.ClusterFacade;
 import io.cassandrareaper.storage.IStorageDao;
 import io.cassandrareaper.storage.MemoryStorageFacade;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -40,6 +40,7 @@ import java.util.UUID;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
@@ -59,6 +60,9 @@ public final class RepairRunnerSegmentSplittingTest {
   private AppContext context;
   private Cluster cluster;
   private UUID repairUnitId;
+
+  /** A RepairRunner instance used solely to invoke private production methods via reflection. */
+  private RepairRunner runner;
 
   @Before
   public void setUp() throws ReaperException {
@@ -95,6 +99,31 @@ public final class RepairRunnerSegmentSplittingTest {
                     .repairThreadCount(1)
                     .timeout(30))
             .getId();
+
+    // Create a RepairRunner via the package-private constructor so we can invoke its private
+    // coverage-verification methods via reflection. A dummy RepairRun is needed because the
+    // constructor looks it up from storage.
+    UUID bootstrapRunId =
+        storage
+            .getRepairRunDao()
+            .addRepairRun(
+                RepairRun.builder(cluster.getName(), repairUnitId)
+                    .intensity(0.5)
+                    .segmentCount(1)
+                    .repairParallelism(RepairParallelism.PARALLEL)
+                    .tables(TABLES),
+                Collections.emptyList())
+            .getId();
+
+    ClusterFacade mockClusterFacade = mock(ClusterFacade.class);
+    RepairRunService mockRepairRunService = mock(RepairRunService.class);
+    runner =
+        new RepairRunner(
+            context,
+            bootstrapRunId,
+            mockClusterFacade,
+            storage.getRepairRunDao(),
+            mockRepairRunService);
   }
 
   /**
@@ -102,7 +131,7 @@ public final class RepairRunnerSegmentSplittingTest {
    * replacements: [1,4), [4,7), [7,10)
    */
   @Test
-  public void testSimpleSegmentSplit() {
+  public void testSimpleSegmentSplit() throws Exception {
     // Create original segment [1, 10)
     RepairSegment originalSegment =
         createSegment(
@@ -121,13 +150,13 @@ public final class RepairRunnerSegmentSplittingTest {
             BigInteger.valueOf(7), BigInteger.valueOf(10), RepairSegment.State.NOT_STARTED));
 
     // Verify coverage
-    boolean coverageComplete = verifyCompleteCoverage(originalSegment, replacements);
+    boolean coverageComplete = invokeVerifyCompleteCoverage(runner, originalSegment, replacements);
     assertTrue("Coverage should be complete for simple split", coverageComplete);
   }
 
   /** Test: No split required (single replacement equals original) */
   @Test
-  public void testNoSplitRequired() {
+  public void testNoSplitRequired() throws Exception {
     RepairSegment originalSegment =
         createSegment(
             BigInteger.valueOf(1), BigInteger.valueOf(10), RepairSegment.State.NOT_STARTED);
@@ -137,13 +166,13 @@ public final class RepairRunnerSegmentSplittingTest {
         createSegment(
             BigInteger.valueOf(1), BigInteger.valueOf(10), RepairSegment.State.NOT_STARTED));
 
-    boolean coverageComplete = verifyCompleteCoverage(originalSegment, replacements);
+    boolean coverageComplete = invokeVerifyCompleteCoverage(runner, originalSegment, replacements);
     assertTrue("Coverage should be complete when no split needed", coverageComplete);
   }
 
   /** Test: Single boundary creates 2 segments */
   @Test
-  public void testSingleBoundarySplit() {
+  public void testSingleBoundarySplit() throws Exception {
     RepairSegment originalSegment =
         createSegment(
             BigInteger.valueOf(0), BigInteger.valueOf(100), RepairSegment.State.NOT_STARTED);
@@ -156,13 +185,13 @@ public final class RepairRunnerSegmentSplittingTest {
         createSegment(
             BigInteger.valueOf(50), BigInteger.valueOf(100), RepairSegment.State.NOT_STARTED));
 
-    boolean coverageComplete = verifyCompleteCoverage(originalSegment, replacements);
+    boolean coverageComplete = invokeVerifyCompleteCoverage(runner, originalSegment, replacements);
     assertTrue("Coverage should be complete for single boundary split", coverageComplete);
   }
 
   /** Test: Multiple boundaries create many segments */
   @Test
-  public void testMultipleBoundariesSplit() {
+  public void testMultipleBoundariesSplit() throws Exception {
     RepairSegment originalSegment =
         createSegment(
             BigInteger.valueOf(0), BigInteger.valueOf(1000), RepairSegment.State.NOT_STARTED);
@@ -184,13 +213,13 @@ public final class RepairRunnerSegmentSplittingTest {
         createSegment(
             BigInteger.valueOf(800), BigInteger.valueOf(1000), RepairSegment.State.NOT_STARTED));
 
-    boolean coverageComplete = verifyCompleteCoverage(originalSegment, replacements);
+    boolean coverageComplete = invokeVerifyCompleteCoverage(runner, originalSegment, replacements);
     assertTrue("Coverage should be complete for multiple boundaries", coverageComplete);
   }
 
   /** Test: Coverage verification detects missing range */
   @Test
-  public void testMissingRangeDetected() {
+  public void testMissingRangeDetected() throws Exception {
     RepairSegment originalSegment =
         createSegment(
             BigInteger.valueOf(1), BigInteger.valueOf(10), RepairSegment.State.NOT_STARTED);
@@ -204,13 +233,13 @@ public final class RepairRunnerSegmentSplittingTest {
         createSegment(
             BigInteger.valueOf(7), BigInteger.valueOf(10), RepairSegment.State.NOT_STARTED));
 
-    boolean coverageComplete = verifyCompleteCoverage(originalSegment, replacements);
+    boolean coverageComplete = invokeVerifyCompleteCoverage(runner, originalSegment, replacements);
     assertFalse("Coverage should be incomplete with missing range", coverageComplete);
   }
 
   /** Test: Coverage verification detects overlapping ranges */
   @Test
-  public void testOverlappingRangesDetected() {
+  public void testOverlappingRangesDetected() throws Exception {
     RepairSegment originalSegment =
         createSegment(
             BigInteger.valueOf(1), BigInteger.valueOf(10), RepairSegment.State.NOT_STARTED);
@@ -224,26 +253,26 @@ public final class RepairRunnerSegmentSplittingTest {
         createSegment(
             BigInteger.valueOf(4), BigInteger.valueOf(10), RepairSegment.State.NOT_STARTED));
 
-    boolean coverageComplete = verifyCompleteCoverage(originalSegment, replacements);
+    boolean coverageComplete = invokeVerifyCompleteCoverage(runner, originalSegment, replacements);
     assertFalse("Coverage should be incomplete with overlapping ranges", coverageComplete);
   }
 
   /** Test: Coverage verification handles empty replacement set */
   @Test
-  public void testEmptyReplacementSet() {
+  public void testEmptyReplacementSet() throws Exception {
     RepairSegment originalSegment =
         createSegment(
             BigInteger.valueOf(1), BigInteger.valueOf(10), RepairSegment.State.NOT_STARTED);
 
     List<RepairSegment> replacements = new ArrayList<>();
 
-    boolean coverageComplete = verifyCompleteCoverage(originalSegment, replacements);
+    boolean coverageComplete = invokeVerifyCompleteCoverage(runner, originalSegment, replacements);
     assertFalse("Coverage should be incomplete with empty replacement set", coverageComplete);
   }
 
   /** Test: Coverage verification detects wrong start token */
   @Test
-  public void testWrongStartToken() {
+  public void testWrongStartToken() throws Exception {
     RepairSegment originalSegment =
         createSegment(
             BigInteger.valueOf(1), BigInteger.valueOf(10), RepairSegment.State.NOT_STARTED);
@@ -254,13 +283,13 @@ public final class RepairRunnerSegmentSplittingTest {
         createSegment(
             BigInteger.valueOf(2), BigInteger.valueOf(10), RepairSegment.State.NOT_STARTED));
 
-    boolean coverageComplete = verifyCompleteCoverage(originalSegment, replacements);
+    boolean coverageComplete = invokeVerifyCompleteCoverage(runner, originalSegment, replacements);
     assertFalse("Coverage should be incomplete with wrong start token", coverageComplete);
   }
 
   /** Test: Coverage verification detects wrong end token */
   @Test
-  public void testWrongEndToken() {
+  public void testWrongEndToken() throws Exception {
     RepairSegment originalSegment =
         createSegment(
             BigInteger.valueOf(1), BigInteger.valueOf(10), RepairSegment.State.NOT_STARTED);
@@ -271,13 +300,13 @@ public final class RepairRunnerSegmentSplittingTest {
         createSegment(
             BigInteger.valueOf(1), BigInteger.valueOf(9), RepairSegment.State.NOT_STARTED));
 
-    boolean coverageComplete = verifyCompleteCoverage(originalSegment, replacements);
+    boolean coverageComplete = invokeVerifyCompleteCoverage(runner, originalSegment, replacements);
     assertFalse("Coverage should be incomplete with wrong end token", coverageComplete);
   }
 
   /** Test: Boundary exactly matching start token */
   @Test
-  public void testBoundaryAtStartToken() {
+  public void testBoundaryAtStartToken() throws Exception {
     RepairSegment originalSegment =
         createSegment(
             BigInteger.valueOf(100), BigInteger.valueOf(200), RepairSegment.State.NOT_STARTED);
@@ -291,13 +320,13 @@ public final class RepairRunnerSegmentSplittingTest {
         createSegment(
             BigInteger.valueOf(150), BigInteger.valueOf(200), RepairSegment.State.NOT_STARTED));
 
-    boolean coverageComplete = verifyCompleteCoverage(originalSegment, replacements);
+    boolean coverageComplete = invokeVerifyCompleteCoverage(runner, originalSegment, replacements);
     assertTrue("Coverage should be complete with boundary at start", coverageComplete);
   }
 
   /** Test: Boundary exactly matching end token */
   @Test
-  public void testBoundaryAtEndToken() {
+  public void testBoundaryAtEndToken() throws Exception {
     RepairSegment originalSegment =
         createSegment(
             BigInteger.valueOf(100), BigInteger.valueOf(200), RepairSegment.State.NOT_STARTED);
@@ -311,7 +340,7 @@ public final class RepairRunnerSegmentSplittingTest {
         createSegment(
             BigInteger.valueOf(150), BigInteger.valueOf(200), RepairSegment.State.NOT_STARTED));
 
-    boolean coverageComplete = verifyCompleteCoverage(originalSegment, replacements);
+    boolean coverageComplete = invokeVerifyCompleteCoverage(runner, originalSegment, replacements);
     assertTrue("Coverage should be complete with boundary at end", coverageComplete);
   }
 
@@ -563,64 +592,20 @@ public final class RepairRunnerSegmentSplittingTest {
     return run.getId();
   }
 
-  // Murmur3Partitioner token bounds for ring distance calculations
-  private static final BigInteger MURMUR3_MIN_TOKEN = BigInteger.valueOf(Long.MIN_VALUE);
-  private static final BigInteger MURMUR3_MAX_TOKEN = BigInteger.valueOf(Long.MAX_VALUE);
-
   /**
-   * Calculates the ring distance from start token to target token, treating the ring as circular.
-   * This mirrors the logic in RepairRunner.ringDistanceFromStart()
+   * Invokes the production {@code RepairRunner.verifyCompleteCoverage} method via reflection so
+   * that coverage assertions exercise the real implementation, not a local copy.
    */
-  private BigInteger ringDistanceFromStart(BigInteger token, BigInteger start) {
-    if (token.compareTo(start) >= 0) {
-      return token.subtract(start);
-    }
-    return token
-        .subtract(MURMUR3_MIN_TOKEN)
-        .add(MURMUR3_MAX_TOKEN.subtract(start))
-        .add(BigInteger.ONE);
-  }
-
-  /**
-   * Simplified coverage verification for testing. Mirrors the logic in
-   * RepairRunner.verifyCompleteCoverage()
-   */
-  private boolean verifyCompleteCoverage(
-      RepairSegment originalSegment, List<RepairSegment> replacementSegments) {
-    if (replacementSegments.isEmpty()) {
-      return false;
-    }
-
-    BigInteger originalStart = originalSegment.getStartToken();
-    BigInteger originalEnd = originalSegment.getEndToken();
-
-    // Sort replacement segments by ring distance from original start
-    // This handles both normal and wrap-around ranges correctly
-    List<RepairSegment> sorted = new ArrayList<>(replacementSegments);
-    sorted.sort(
-        Comparator.comparing(seg -> ringDistanceFromStart(seg.getStartToken(), originalStart)));
-
-    // Check first segment starts at original start
-    if (!sorted.get(0).getStartToken().equals(originalStart)) {
-      return false;
-    }
-
-    // Check last segment ends at original end
-    if (!sorted.get(sorted.size() - 1).getEndToken().equals(originalEnd)) {
-      return false;
-    }
-
-    // Check for gaps
-    for (int i = 0; i < sorted.size() - 1; i++) {
-      BigInteger currentEnd = sorted.get(i).getEndToken();
-      BigInteger nextStart = sorted.get(i + 1).getStartToken();
-
-      if (!currentEnd.equals(nextStart)) {
-        return false;
-      }
-    }
-
-    return true;
+  private boolean invokeVerifyCompleteCoverage(
+      RepairRunner repairRunner,
+      RepairSegment originalSegment,
+      List<RepairSegment> replacementSegments)
+      throws Exception {
+    java.lang.reflect.Method method =
+        RepairRunner.class.getDeclaredMethod(
+            "verifyCompleteCoverage", RepairSegment.class, List.class);
+    method.setAccessible(true);
+    return (boolean) method.invoke(repairRunner, originalSegment, replacementSegments);
   }
 
   /**
@@ -818,7 +803,7 @@ public final class RepairRunnerSegmentSplittingTest {
    * covers lines 1261-1262 (coverage verification success path).
    */
   @Test
-  public void testCoverageVerification_SuccessPath() {
+  public void testCoverageVerification_SuccessPath() throws Exception {
     RepairSegment originalSegment =
         createSegment(
             BigInteger.valueOf(100), BigInteger.valueOf(500), RepairSegment.State.NOT_STARTED);
@@ -835,7 +820,7 @@ public final class RepairRunnerSegmentSplittingTest {
         createSegment(
             BigInteger.valueOf(350), BigInteger.valueOf(500), RepairSegment.State.NOT_STARTED));
 
-    boolean coverageComplete = verifyCompleteCoverage(originalSegment, replacements);
+    boolean coverageComplete = invokeVerifyCompleteCoverage(runner, originalSegment, replacements);
     assertTrue("Coverage should be complete with perfect coverage", coverageComplete);
   }
 
@@ -844,7 +829,7 @@ public final class RepairRunnerSegmentSplittingTest {
    * 1103-1104 (skip zero-length ranges).
    */
   @Test
-  public void testZeroLengthSegment_Skipped() {
+  public void testZeroLengthSegment_Skipped() throws Exception {
     RepairSegment originalSegment =
         createSegment(
             BigInteger.valueOf(100), BigInteger.valueOf(200), RepairSegment.State.NOT_STARTED);
@@ -859,7 +844,7 @@ public final class RepairRunnerSegmentSplittingTest {
         createSegment(
             BigInteger.valueOf(150), BigInteger.valueOf(200), RepairSegment.State.NOT_STARTED));
 
-    boolean coverageComplete = verifyCompleteCoverage(originalSegment, replacements);
+    boolean coverageComplete = invokeVerifyCompleteCoverage(runner, originalSegment, replacements);
     assertTrue(
         "Coverage should be complete even with zero-length segment filtered", coverageComplete);
   }
@@ -917,7 +902,7 @@ public final class RepairRunnerSegmentSplittingTest {
    * -5000000000000000000)
    */
   @Test
-  public void testWrapAroundSplitWithOneInternalToken() {
+  public void testWrapAroundSplitWithOneInternalToken() throws Exception {
     RepairSegment original =
         createSegment(
             new BigInteger("9000000000000000000"),
@@ -937,7 +922,7 @@ public final class RepairRunnerSegmentSplittingTest {
             new BigInteger("-5000000000000000000"),
             RepairSegment.State.NOT_STARTED));
 
-    boolean coverageComplete = verifyCompleteCoverage(original, replacements);
+    boolean coverageComplete = invokeVerifyCompleteCoverage(runner, original, replacements);
     assertTrue(
         "Wrap-around split with one internal token should have complete coverage",
         coverageComplete);
@@ -946,89 +931,123 @@ public final class RepairRunnerSegmentSplittingTest {
   /**
    * Test: Wrap-around segment split with multiple internal tokens. Verifies that tokens are ordered
    * by ring traversal, not numeric sort. Original: [8000000000000000000, -7000000000000000000)
-   * Internal tokens: [-8000000000000000000, -5000000000000000000, 3000000000000000000] Ring
-   * traversal order from start: 8000000000000000000 → 9223372036854775807 (MAX) →
-   * -9223372036854775808 (MIN) → -8000000000000000000 → -5000000000000000000 → -7000000000000000000
-   * (end) Note: 3000000000000000000 is NOT in range [8000000000000000000, -7000000000000000000)
+   * Split at Long.MAX_VALUE and Long.MIN_VALUE, both of which lie inside the wrap-around range.
+   * Ring traversal order from start: 8000000000000000000 → MAX → MIN → -7000000000000000000 (end)
    */
   @Test
-  public void testWrapAroundSplitWithMultipleTokensPreservesRingOrder() {
+  public void testWrapAroundSplitWithMultipleTokensPreservesRingOrder() throws Exception {
     RepairSegment original =
         createSegment(
             new BigInteger("8000000000000000000"),
             new BigInteger("-7000000000000000000"),
             RepairSegment.State.NOT_STARTED);
 
-    // Expected replacements in ring traversal order (3000000000000000000 excluded as not in range)
+    // Three sub-ranges that partition [8B, -7B) at MAX and MIN:
+    //   [8B, MAX)   – non-wrapping (8B < MAX)
+    //   [MAX, MIN)  – wrapping    (MAX > MIN)
+    //   [MIN, -7B)  – non-wrapping (MIN < -7B)
     List<RepairSegment> replacements = new ArrayList<>();
     replacements.add(
         createSegment(
-            new BigInteger("8000000000000000000"),
-            new BigInteger("-8000000000000000000"),
+            BigInteger.valueOf(8000000000000000000L),
+            BigInteger.valueOf(Long.MAX_VALUE),
             RepairSegment.State.NOT_STARTED));
     replacements.add(
         createSegment(
-            new BigInteger("-8000000000000000000"),
-            new BigInteger("-5000000000000000000"),
+            BigInteger.valueOf(Long.MAX_VALUE),
+            BigInteger.valueOf(Long.MIN_VALUE),
             RepairSegment.State.NOT_STARTED));
     replacements.add(
         createSegment(
-            new BigInteger("-5000000000000000000"),
+            BigInteger.valueOf(Long.MIN_VALUE),
             new BigInteger("-7000000000000000000"),
             RepairSegment.State.NOT_STARTED));
 
-    boolean coverageComplete = verifyCompleteCoverage(original, replacements);
+    boolean coverageComplete = invokeVerifyCompleteCoverage(runner, original, replacements);
     assertTrue(
         "Wrap-around split with multiple tokens should preserve ring order", coverageComplete);
   }
 
-  /** Test: Wrap-around coverage verification succeeds for valid replacements. */
+  /**
+   * Test: Wrap-around coverage verification succeeds for valid replacements. Original:
+   * [9000000000000000000, -8000000000000000000) split at Long.MIN_VALUE, which is the first token
+   * after MAX in ring traversal and is inside the wrap-around range.
+   */
   @Test
-  public void testWrapAroundCoverageVerificationSucceeds() {
+  public void testWrapAroundCoverageVerificationSucceeds() throws Exception {
     RepairSegment original =
         createSegment(
             new BigInteger("9000000000000000000"),
             new BigInteger("-8000000000000000000"),
             RepairSegment.State.NOT_STARTED);
 
-    // Valid wrap-around replacements
+    // Two sub-ranges that partition [9B, -8B) at Long.MIN_VALUE:
+    //   [9B, MIN)   – wrapping     (9B > MIN)
+    //   [MIN, -8B)  – non-wrapping (MIN < -8B)
     List<RepairSegment> replacements = new ArrayList<>();
     replacements.add(
         createSegment(
             new BigInteger("9000000000000000000"),
-            new BigInteger("-5000000000000000000"),
+            BigInteger.valueOf(Long.MIN_VALUE),
             RepairSegment.State.NOT_STARTED));
     replacements.add(
         createSegment(
-            new BigInteger("-5000000000000000000"),
+            BigInteger.valueOf(Long.MIN_VALUE),
             new BigInteger("-8000000000000000000"),
             RepairSegment.State.NOT_STARTED));
 
-    boolean coverageComplete = verifyCompleteCoverage(original, replacements);
+    boolean coverageComplete = invokeVerifyCompleteCoverage(runner, original, replacements);
     assertTrue(
         "Valid wrap-around replacements should pass coverage verification", coverageComplete);
   }
 
-  /** Test: Wrap-around coverage verification fails when there is a gap. */
+  /**
+   * Test: Wrap-around coverage verification fails when there is a genuine internal gap.
+   *
+   * <p>Original range: [9B, -8B) — a wrap-around range that covers [9_000_000_000_000_000_000 ..
+   * Long.MAX_VALUE] ∪ [Long.MIN_VALUE .. -8_000_000_000_000_000_001].
+   *
+   * <p>The range is partitioned into three valid sub-ranges at Long.MIN_VALUE and -9B:
+   *
+   * <ul>
+   *   <li>A = [9B, MIN) — wrapping, covers [9B..MAX]
+   *   <li>B = [MIN, -9B) — non-wrapping, covers [MIN..-9B-1] ← intentionally omitted
+   *   <li>C = [-9B, -8B) — non-wrapping, covers [-9B..-8B-1]
+   * </ul>
+   *
+   * Providing only A and C leaves the gap [MIN, -9B) uncovered. Both A and C are genuinely enclosed
+   * by the original, so they pass the containment filter and reach {@code verifyRangeCoverage}.
+   * There, after ring-distance sorting, A is first and C is second. The gap check compares A.end
+   * (MIN) with C.start (-9B) — they differ, so {@code verifyRangeCoverage} returns false through
+   * the gap-detection branch.
+   */
   @Test
-  public void testWrapAroundCoverageVerificationFailsWithGap() {
+  public void testWrapAroundCoverageVerificationFailsWithGap() throws Exception {
     RepairSegment original =
         createSegment(
             new BigInteger("9000000000000000000"),
             new BigInteger("-8000000000000000000"),
             RepairSegment.State.NOT_STARTED);
 
-    // Gap: missing [-5000000000000000000, -8000000000000000000)
+    // A = [9B, MIN): wrapping sub-range, encloses [9B..MAX]. Enclosed by original.
+    // C = [-9B, -8B): non-wrapping sub-range. Enclosed by original.
+    // B = [MIN, -9B) is intentionally absent, creating gap between A.end=MIN and C.start=-9B.
     List<RepairSegment> replacements = new ArrayList<>();
     replacements.add(
         createSegment(
             new BigInteger("9000000000000000000"),
-            new BigInteger("-5000000000000000000"),
+            BigInteger.valueOf(Long.MIN_VALUE),
+            RepairSegment.State.NOT_STARTED));
+    replacements.add(
+        createSegment(
+            new BigInteger("-9000000000000000000"),
+            new BigInteger("-8000000000000000000"),
             RepairSegment.State.NOT_STARTED));
 
-    boolean coverageComplete = verifyCompleteCoverage(original, replacements);
+    boolean coverageComplete = invokeVerifyCompleteCoverage(runner, original, replacements);
     assertFalse(
-        "Wrap-around replacements with gap should fail coverage verification", coverageComplete);
+        "verifyRangeCoverage must detect the gap between A.end=MIN and C.start=-9B",
+        coverageComplete);
   }
 
   /**
@@ -1036,7 +1055,7 @@ public final class RepairRunnerSegmentSplittingTest {
    * immediately after MAX_VALUE in ring traversal.
    */
   @Test
-  public void testLongMaxToMinBoundaryOrdering() {
+  public void testLongMaxToMinBoundaryOrdering() throws Exception {
     RepairSegment original =
         createSegment(
             BigInteger.valueOf(Long.MAX_VALUE),
@@ -1056,7 +1075,7 @@ public final class RepairRunnerSegmentSplittingTest {
             BigInteger.valueOf(Long.MIN_VALUE + 1000),
             RepairSegment.State.NOT_STARTED));
 
-    boolean coverageComplete = verifyCompleteCoverage(original, replacements);
+    boolean coverageComplete = invokeVerifyCompleteCoverage(runner, original, replacements);
     assertTrue("MAX_VALUE to MIN_VALUE boundary should be handled correctly", coverageComplete);
   }
 
@@ -1065,7 +1084,7 @@ public final class RepairRunnerSegmentSplittingTest {
    * compatibility with non-wrap-around ranges.
    */
   @Test
-  public void testNormalRangeSplitStillWorks() {
+  public void testNormalRangeSplitStillWorks() throws Exception {
     RepairSegment original =
         createSegment(
             BigInteger.valueOf(100), BigInteger.valueOf(500), RepairSegment.State.NOT_STARTED);
@@ -1079,37 +1098,39 @@ public final class RepairRunnerSegmentSplittingTest {
         createSegment(
             BigInteger.valueOf(300), BigInteger.valueOf(500), RepairSegment.State.NOT_STARTED));
 
-    boolean coverageComplete = verifyCompleteCoverage(original, replacements);
+    boolean coverageComplete = invokeVerifyCompleteCoverage(runner, original, replacements);
     assertTrue(
         "Normal range split should still work with ring distance ordering", coverageComplete);
   }
 
   /**
    * Test: Wrap-around coverage verification handles any input order. With ring distance ordering,
-   * segments can be provided in any order and will be sorted correctly.
+   * segments provided in reverse ring order are still sorted correctly. Uses the same valid split
+   * of [9B, -8B) at Long.MIN_VALUE as testWrapAroundCoverageVerificationSucceeds, but supplies the
+   * replacements in reverse order.
    */
   @Test
-  public void testWrapAroundCoverageVerificationHandlesAnyOrder() {
+  public void testWrapAroundCoverageVerificationHandlesAnyOrder() throws Exception {
     RepairSegment original =
         createSegment(
             new BigInteger("9000000000000000000"),
             new BigInteger("-8000000000000000000"),
             RepairSegment.State.NOT_STARTED);
 
-    // Provide segments in reverse ring order - should still pass after sorting
+    // Provide the two valid sub-ranges in reverse ring order: [MIN,-8B) before [9B,MIN).
     List<RepairSegment> replacements = new ArrayList<>();
     replacements.add(
         createSegment(
-            new BigInteger("-5000000000000000000"),
+            BigInteger.valueOf(Long.MIN_VALUE),
             new BigInteger("-8000000000000000000"),
             RepairSegment.State.NOT_STARTED));
     replacements.add(
         createSegment(
             new BigInteger("9000000000000000000"),
-            new BigInteger("-5000000000000000000"),
+            BigInteger.valueOf(Long.MIN_VALUE),
             RepairSegment.State.NOT_STARTED));
 
-    boolean coverageComplete = verifyCompleteCoverage(original, replacements);
+    boolean coverageComplete = invokeVerifyCompleteCoverage(runner, original, replacements);
     assertTrue("Wrap-around replacements should pass regardless of input order", coverageComplete);
   }
 }
