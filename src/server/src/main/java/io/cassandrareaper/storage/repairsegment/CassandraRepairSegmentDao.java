@@ -25,6 +25,7 @@ import io.cassandrareaper.storage.JsonParseUtils;
 import io.cassandrareaper.storage.cassandra.CassandraConcurrencyDao;
 import io.cassandrareaper.storage.repairunit.CassandraRepairUnitDao;
 
+import java.math.BigInteger;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.Collections;
@@ -46,13 +47,20 @@ import com.datastax.oss.driver.api.core.cql.ResultSet;
 import com.datastax.oss.driver.api.core.cql.Row;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.core.servererrors.InvalidQueryException;
+import com.datastax.oss.driver.api.core.uuid.Uuids;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import jakarta.annotation.Nullable;
 import org.joda.time.DateTime;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class CassandraRepairSegmentDao implements IRepairSegmentDao {
+
+  private static final Logger LOG = LoggerFactory.getLogger(CassandraRepairSegmentDao.class);
+  private static final String LWT_APPLIED_COLUMN = "[applied]";
+
   public PreparedStatement insertRepairSegmentPrepStmt;
   public PreparedStatement insertRepairSegmentIncrementalPrepStmt;
   PreparedStatement updateRepairSegmentPrepStmt;
@@ -366,5 +374,191 @@ public class CassandraRepairSegmentDao implements IRepairSegmentDao {
       }
     }
     return segments;
+  }
+
+  @Override
+  public void addRepairSegments(Collection<RepairSegment.Builder> segments, UUID runId) {
+    for (RepairSegment.Builder segmentBuilder : segments) {
+      RepairSegment segment = segmentBuilder.withRunId(runId).withId(Uuids.timeBased()).build();
+
+      BoundStatement insertStatement =
+          insertRepairSegmentPrepStmt.bind(
+              segment.getRunId(),
+              segment.getId(),
+              segment.getRepairUnitId(),
+              segment.getStartToken(),
+              segment.getEndToken(),
+              segment.getState().ordinal(),
+              segment.getFailCount(),
+              JsonParseUtils.writeTokenRangesTxt(segment.getTokenRange().getTokenRanges()),
+              segment.getReplicas(),
+              segment.getHostID());
+
+      session.execute(insertStatement);
+    }
+  }
+
+  @Override
+  public Optional<RepairSegment> getRepairSegmentByTokenRange(
+      UUID runId, UUID repairUnitId, BigInteger startToken, BigInteger endToken) {
+    // Use existing method to get all segments for the run, then filter by token range
+    Collection<RepairSegment> segments = getRepairSegmentsForRun(runId);
+
+    return segments.stream()
+        .filter(seg -> seg.getRepairUnitId().equals(repairUnitId))
+        .filter(seg -> seg.getStartToken().equals(startToken))
+        .filter(seg -> seg.getEndToken().equals(endToken))
+        .findFirst();
+  }
+
+  /**
+   * Conditionally update a repair segment's state only if it currently has the expected state. Uses
+   * the runId for efficient querying since Cassandra partitions segments by runId.
+   */
+  @Override
+  public boolean updateRepairSegmentStateConditional(
+      UUID runId,
+      UUID segmentId,
+      RepairSegment.State newState,
+      RepairSegment.State expectedCurrentState) {
+
+    Optional<RepairSegment> currentSegmentOpt = getRepairSegment(runId, segmentId);
+    if (!currentSegmentOpt.isPresent()) {
+      LOG.debug("Segment {} not found for conditional update", segmentId);
+      return false;
+    }
+
+    RepairSegment currentSegment = currentSegmentOpt.get();
+    if (!validateCurrentState(currentSegment, segmentId, expectedCurrentState)) {
+      return false;
+    }
+
+    Instant now = Instant.now();
+    if (newState == RepairSegment.State.DONE) {
+      return updateToDoneState(runId, segmentId, currentSegment, expectedCurrentState, now);
+    } else if (newState == RepairSegment.State.RUNNING) {
+      return updateToRunningState(runId, segmentId, currentSegment, expectedCurrentState, now);
+    } else {
+      return updateToOtherState(runId, segmentId, newState, expectedCurrentState);
+    }
+  }
+
+  private boolean validateCurrentState(
+      RepairSegment currentSegment, UUID segmentId, RepairSegment.State expectedCurrentState) {
+    if (!currentSegment.getState().equals(expectedCurrentState)) {
+      LOG.debug(
+          "Segment {} state mismatch: expected {}, found {}",
+          segmentId,
+          expectedCurrentState,
+          currentSegment.getState());
+      return false;
+    }
+    return true;
+  }
+
+  private boolean updateToDoneState(
+      UUID runId,
+      UUID segmentId,
+      RepairSegment currentSegment,
+      RepairSegment.State expectedCurrentState,
+      Instant now) {
+    String cql =
+        "UPDATE repair_run SET segment_state = ?, segment_start_time = ?, segment_end_time = ? "
+            + "WHERE id = ? AND segment_id = ? IF segment_state = ?";
+
+    PreparedStatement stmt = prepareConditionalStatement(cql);
+
+    Instant startTime = getTimestampOrNow(currentSegment.getStartTime(), now);
+    Instant endTime = getTimestampOrNow(currentSegment.getEndTime(), now);
+
+    BoundStatement boundStatement =
+        stmt.bind(
+            RepairSegment.State.DONE.ordinal(),
+            startTime,
+            endTime,
+            runId,
+            segmentId,
+            expectedCurrentState.ordinal());
+
+    return executeLwtUpdate(
+        boundStatement, segmentId, expectedCurrentState, RepairSegment.State.DONE);
+  }
+
+  private boolean updateToRunningState(
+      UUID runId,
+      UUID segmentId,
+      RepairSegment currentSegment,
+      RepairSegment.State expectedCurrentState,
+      Instant now) {
+    String cql =
+        "UPDATE repair_run SET segment_state = ?, segment_start_time = ? "
+            + "WHERE id = ? AND segment_id = ? IF segment_state = ?";
+
+    PreparedStatement stmt = prepareConditionalStatement(cql);
+
+    Instant startTime = getTimestampOrNow(currentSegment.getStartTime(), now);
+
+    BoundStatement boundStatement =
+        stmt.bind(
+            RepairSegment.State.RUNNING.ordinal(),
+            startTime,
+            runId,
+            segmentId,
+            expectedCurrentState.ordinal());
+
+    return executeLwtUpdate(boundStatement);
+  }
+
+  private boolean updateToOtherState(
+      UUID runId,
+      UUID segmentId,
+      RepairSegment.State newState,
+      RepairSegment.State expectedCurrentState) {
+    String cql =
+        "UPDATE repair_run SET segment_state = ? WHERE id = ? AND segment_id = ? IF segment_state = ?";
+
+    PreparedStatement stmt = prepareConditionalStatement(cql);
+
+    BoundStatement boundStatement =
+        stmt.bind(newState.ordinal(), runId, segmentId, expectedCurrentState.ordinal());
+
+    return executeLwtUpdate(boundStatement);
+  }
+
+  private PreparedStatement prepareConditionalStatement(String cql) {
+    return session.prepare(
+        SimpleStatement.builder(cql).setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM).build());
+  }
+
+  private Instant getTimestampOrNow(DateTime dateTime, Instant now) {
+    return dateTime != null ? Instant.ofEpochMilli(dateTime.getMillis()) : now;
+  }
+
+  private boolean executeLwtUpdate(BoundStatement boundStatement) {
+    ResultSet resultSet = session.execute(boundStatement);
+    Row row = resultSet.one();
+    return row != null && row.getBoolean(LWT_APPLIED_COLUMN);
+  }
+
+  private boolean executeLwtUpdate(
+      BoundStatement boundStatement,
+      UUID segmentId,
+      RepairSegment.State expectedState,
+      RepairSegment.State newState) {
+    ResultSet resultSet = session.execute(boundStatement);
+    Row row = resultSet.one();
+
+    if (row != null) {
+      boolean applied = row.getBoolean(LWT_APPLIED_COLUMN);
+      if (applied) {
+        LOG.debug(
+            "Successfully updated segment {} from {} to {} with timestamps",
+            segmentId,
+            expectedState,
+            newState);
+      }
+      return applied;
+    }
+    return false;
   }
 }
