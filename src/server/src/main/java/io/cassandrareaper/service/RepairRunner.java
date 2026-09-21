@@ -111,11 +111,30 @@ final class RepairRunner implements Runnable {
   private RepairRunner(
       AppContext context, UUID repairRunId, ClusterFacade clusterFacade, IRepairRunDao repairRunDao)
       throws ReaperException {
+    this(
+        context,
+        repairRunId,
+        clusterFacade,
+        repairRunDao,
+        RepairRunService.create(context, repairRunDao));
+  }
+
+  /**
+   * Package-private constructor that accepts an explicit {@link RepairRunService}. Intended for
+   * unit tests that need to inject a mock service without a live cluster connection.
+   */
+  RepairRunner(
+      AppContext context,
+      UUID repairRunId,
+      ClusterFacade clusterFacade,
+      IRepairRunDao repairRunDao,
+      RepairRunService repairRunService)
+      throws ReaperException {
 
     LOG.debug("Creating RepairRunner for run with ID {}", repairRunId);
     this.context = context;
     this.clusterFacade = clusterFacade;
-    this.repairRunService = RepairRunService.create(context, repairRunDao);
+    this.repairRunService = repairRunService;
     this.repairRunId = repairRunId;
     Optional<RepairRun> repairRun = repairRunDao.getRepairRun(repairRunId);
     assert repairRun.isPresent() : "No RepairRun with ID " + repairRunId + " found from storage";
