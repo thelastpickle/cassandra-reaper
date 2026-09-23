@@ -21,6 +21,7 @@ package io.cassandrareaper.storage.repairsegment;
 import io.cassandrareaper.core.RepairSegment;
 import io.cassandrareaper.core.Segment;
 import io.cassandrareaper.service.RingRange;
+import io.cassandrareaper.storage.JsonParseUtils;
 import io.cassandrareaper.storage.MemoryStorageFacade;
 import io.cassandrareaper.storage.sqlite.SqliteHelper;
 import io.cassandrareaper.storage.sqlite.UuidUtil;
@@ -465,7 +466,7 @@ public class MemoryRepairSegmentDao implements IRepairSegmentDao {
     insertSegmentStmt.setString(4, segment.getStartToken().toString());
     insertSegmentStmt.setString(5, segment.getEndToken().toString());
     insertSegmentStmt.setString(
-        6, SqliteHelper.toJson(Collections.emptySet())); // token_ranges not used
+        6, JsonParseUtils.writeTokenRangesTxt(segment.getTokenRange().getTokenRanges()));
     insertSegmentStmt.setString(7, segment.getState().name());
     insertSegmentStmt.setString(8, segment.getCoordinatorHost());
     insertSegmentStmt.setObject(9, SqliteHelper.toEpochMilli(segment.getStartTime()));
@@ -492,16 +493,27 @@ public class MemoryRepairSegmentDao implements IRepairSegmentDao {
     byte[] hostIdBytes = rs.getBytes("host_id");
     UUID hostId = hostIdBytes != null ? UuidUtil.fromBytes(hostIdBytes) : null;
 
-    // Create a Segment for the token range
-    RingRange range = new RingRange(startToken, endToken);
-    Segment tokenRange =
-        Segment.builder()
-            .withTokenRange(range)
-            .withReplicas(replicas != null ? replicas : Collections.emptyMap())
-            .build();
+    // Parse the persisted token_ranges list.  When non-empty (rows written by the fixed
+    // implementation) restore the complete set of ranges.  When empty or missing (rows written
+    // by the legacy implementation that stored "[]") fall back to reconstructing a single range
+    // from start_token / end_token for backward compatibility.
+    List<RingRange> tokenRanges =
+        JsonParseUtils.parseRingRangeList(Optional.ofNullable(rs.getString("token_ranges")));
+
+    Segment.Builder segmentBuilder = Segment.builder();
+    if (!tokenRanges.isEmpty()) {
+      segmentBuilder
+          .withTokenRanges(tokenRanges)
+          .withReplicas(replicas != null ? replicas : Collections.emptyMap());
+    } else {
+      // Legacy / backward-compat path: token_ranges column was "[]" or null.
+      segmentBuilder
+          .withTokenRange(new RingRange(startToken, endToken))
+          .withReplicas(replicas != null ? replicas : Collections.emptyMap());
+    }
 
     // Create the RepairSegment builder
-    RepairSegment.Builder builder = RepairSegment.builder(tokenRange, repairUnitId);
+    RepairSegment.Builder builder = RepairSegment.builder(segmentBuilder.build(), repairUnitId);
 
     builder
         .withRunId(runId)

@@ -23,6 +23,9 @@ import io.cassandrareaper.service.RingRange;
 import io.cassandrareaper.storage.MemoryStorageFacade;
 
 import java.math.BigInteger;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -675,5 +678,107 @@ public class MemoryRepairSegmentDaoTest {
             repairRunId, repairUnitId, BigInteger.valueOf(1000), BigInteger.valueOf(2000));
 
     assertTrue("Segment should be found", found.isPresent());
+  }
+
+  // ---------------------------------------------------------------------------
+  // Regression tests for the SQLite multi-token-range persistence bug
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Round-trip test: a coalesced RepairSegment with three RingRanges must survive a write-read
+   * cycle with every range intact and in order.
+   *
+   * <p>This test fails against the old implementation (which stored "[]" for token_ranges and
+   * reconstructed only the base range on read) and passes with the fix.
+   */
+  @Test
+  public void testMultiRangeSegmentRoundTrip_allRangesPreserved() {
+    // Build three disjoint token ranges that would be coalesced into a single Segment
+    RingRange r1 = new RingRange(BigInteger.valueOf(100), BigInteger.valueOf(200));
+    RingRange r2 = new RingRange(BigInteger.valueOf(300), BigInteger.valueOf(400));
+    RingRange r3 = new RingRange(BigInteger.valueOf(500), BigInteger.valueOf(600));
+
+    Segment coalesced = Segment.builder().withTokenRanges(Arrays.asList(r1, r2, r3)).build();
+
+    RepairSegment segment =
+        RepairSegment.builder(coalesced, repairUnitId)
+            .withRunId(repairRunId)
+            .withId(Uuids.timeBased())
+            .withState(RepairSegment.State.NOT_STARTED)
+            .build();
+
+    memoryRepairSegmentDao.addRepairSegmentWithId(segment);
+
+    // Read back via the primary key lookup
+    java.util.Optional<RepairSegment> read =
+        memoryRepairSegmentDao.getRepairSegment(repairRunId, segment.getId());
+
+    assertTrue("Segment must be found after insert", read.isPresent());
+
+    List<RingRange> persisted = read.get().getTokenRange().getTokenRanges();
+
+    assertEquals("All three token ranges must be persisted and restored", 3, persisted.size());
+    assertEquals("R1 start must match", r1.getStart(), persisted.get(0).getStart());
+    assertEquals("R1 end must match", r1.getEnd(), persisted.get(0).getEnd());
+    assertEquals("R2 start must match", r2.getStart(), persisted.get(1).getStart());
+    assertEquals("R2 end must match", r2.getEnd(), persisted.get(1).getEnd());
+    assertEquals("R3 start must match", r3.getStart(), persisted.get(2).getStart());
+    assertEquals("R3 end must match", r3.getEnd(), persisted.get(2).getEnd());
+
+    // The base range (used for coordinator lookup) must still reflect the first range
+    assertEquals(
+        "Base range start must equal first token range start",
+        r1.getStart(),
+        read.get().getTokenRange().getBaseRange().getStart());
+    assertEquals(
+        "Base range end must equal first token range end",
+        r1.getEnd(),
+        read.get().getTokenRange().getBaseRange().getEnd());
+  }
+
+  /**
+   * Backward-compatibility test: a legacy SQLite row whose token_ranges column contains the old
+   * empty-array value "[]" must still reconstruct correctly using start_token / end_token.
+   *
+   * <p>This simulates a row written by the pre-fix implementation and verifies that the read path
+   * falls back gracefully, keeping existing deployments' data readable after the upgrade.
+   */
+  @Test
+  public void testLegacyEmptyTokenRanges_fallsBackToStartEndToken() throws Exception {
+    RingRange expectedRange = new RingRange(BigInteger.valueOf(1000), BigInteger.valueOf(2000));
+
+    RepairSegment segment =
+        RepairSegment.builder(Segment.builder().withTokenRange(expectedRange).build(), repairUnitId)
+            .withRunId(repairRunId)
+            .withId(Uuids.timeBased())
+            .withState(RepairSegment.State.NOT_STARTED)
+            .build();
+
+    // Insert via the fixed DAO (correctly writes token_ranges)
+    memoryRepairSegmentDao.addRepairSegmentWithId(segment);
+
+    // Overwrite token_ranges with "[]" to simulate a row written by the old (buggy) implementation
+    Connection conn = memoryStorageFacade.getSqliteConnection();
+    try (PreparedStatement patch =
+        conn.prepareStatement("UPDATE repair_segment SET token_ranges = '[]' WHERE id = ?")) {
+      patch.setBytes(1, io.cassandrareaper.storage.sqlite.UuidUtil.toBytes(segment.getId()));
+      patch.executeUpdate();
+    }
+
+    // Reading back must fall through to the start_token / end_token fallback
+    java.util.Optional<RepairSegment> read =
+        memoryRepairSegmentDao.getRepairSegment(repairRunId, segment.getId());
+
+    assertTrue("Segment must still be found with legacy token_ranges", read.isPresent());
+
+    List<RingRange> restored = read.get().getTokenRange().getTokenRanges();
+
+    assertEquals("Legacy row must produce exactly one token range", 1, restored.size());
+    assertEquals(
+        "Legacy start_token must be preserved",
+        expectedRange.getStart(),
+        restored.get(0).getStart());
+    assertEquals(
+        "Legacy end_token must be preserved", expectedRange.getEnd(), restored.get(0).getEnd());
   }
 }
