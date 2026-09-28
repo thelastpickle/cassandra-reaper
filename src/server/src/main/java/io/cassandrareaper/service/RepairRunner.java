@@ -1196,8 +1196,8 @@ final class RepairRunner implements Runnable {
   /**
    * Checks whether the computed replacement ranges are identical to the original segment's token
    * ranges, meaning the topology split did not actually change anything worth applying. Handles
-   * segments with a single token range as well as coalesced segments with several ranges,
-   * including wrap-around ranges where numeric start-token ordering is not meaningful.
+   * segments with a single token range as well as coalesced segments with several ranges, including
+   * wrap-around ranges where numeric start-token ordering is not meaningful.
    *
    * @param originalRanges the original segment's token ranges
    * @param replacementSegments the computed replacement segments
@@ -1263,8 +1263,14 @@ final class RepairRunner implements Runnable {
   /**
    * Creates missing replacement segments, checking for existing segments to ensure idempotency.
    *
+   * <p>If any segment cannot be created or fetched, a {@link RuntimeException} is thrown
+   * immediately. A partial replacement set must not be returned: the caller relies on the returned
+   * list to verify complete coverage of the original range before retiring it, so silently
+   * continuing after a failure would leave the repair in an inconsistent state.
+   *
    * @param replacementSegments the list of replacement segments to create
-   * @return list of actually created segments (may be fewer if some already exist)
+   * @return list of actually created (or already-existing) segments, one per input segment
+   * @throws RuntimeException if any segment creation or post-create fetch fails
    */
   private List<RepairSegment> createMissingReplacementSegments(
       List<RepairSegment> replacementSegments) {
@@ -1272,9 +1278,41 @@ final class RepairRunner implements Runnable {
     List<RepairSegment> createdSegments = new ArrayList<>();
 
     for (RepairSegment replacement : replacementSegments) {
-      try {
-        // Check if a segment with this token range already exists (idempotency)
-        Optional<RepairSegment> existing =
+      // Check if a segment with this token range already exists (idempotency)
+      Optional<RepairSegment> existing =
+          context
+              .storage
+              .getRepairSegmentDao()
+              .getRepairSegmentByTokenRange(
+                  replacement.getRunId(),
+                  replacement.getRepairUnitId(),
+                  replacement.getStartToken(),
+                  replacement.getEndToken());
+
+      if (existing.isPresent()) {
+        LOG.debug(
+            "Replacement segment for range [{}, {}) already exists with ID {}",
+            replacement.getStartToken(),
+            replacement.getEndToken(),
+            existing.get().getId());
+        createdSegments.add(existing.get());
+      } else {
+        // Create new segment using the DAO interface method
+        RepairSegment.Builder builder =
+            RepairSegment.builder(replacement.getTokenRange(), replacement.getRepairUnitId())
+                .withRunId(replacement.getRunId())
+                .withState(RepairSegment.State.NOT_STARTED);
+
+        Collection<RepairSegment.Builder> builders = Collections.singletonList(builder);
+        context.storage.getRepairSegmentDao().addRepairSegments(builders, replacement.getRunId());
+
+        LOG.info(
+            "Created new replacement segment for range [{}, {})",
+            replacement.getStartToken(),
+            replacement.getEndToken());
+
+        // Fetch the created segment to get its ID; absence here means the write did not land.
+        Optional<RepairSegment> created =
             context
                 .storage
                 .getRepairSegmentDao()
@@ -1284,49 +1322,13 @@ final class RepairRunner implements Runnable {
                     replacement.getStartToken(),
                     replacement.getEndToken());
 
-        if (existing.isPresent()) {
-          LOG.debug(
-              "Replacement segment for range [{}, {}) already exists with ID {}",
-              replacement.getStartToken(),
-              replacement.getEndToken(),
-              existing.get().getId());
-          createdSegments.add(existing.get());
-        } else {
-          // Create new segment using the DAO interface method
-          RepairSegment.Builder builder =
-              RepairSegment.builder(replacement.getTokenRange(), replacement.getRepairUnitId())
-                  .withRunId(replacement.getRunId())
-                  .withState(RepairSegment.State.NOT_STARTED);
-
-          Collection<RepairSegment.Builder> builders = Collections.singletonList(builder);
-          context.storage.getRepairSegmentDao().addRepairSegments(builders, replacement.getRunId());
-
-          LOG.info(
-              "Created new replacement segment for range [{}, {})",
-              replacement.getStartToken(),
-              replacement.getEndToken());
-
-          // Fetch the created segment to get its ID
-          Optional<RepairSegment> created =
-              context
-                  .storage
-                  .getRepairSegmentDao()
-                  .getRepairSegmentByTokenRange(
-                      replacement.getRunId(),
-                      replacement.getRepairUnitId(),
-                      replacement.getStartToken(),
-                      replacement.getEndToken());
-
-          if (created.isPresent()) {
-            createdSegments.add(created.get());
-          }
+        if (!created.isPresent()) {
+          throw new IllegalStateException(
+              String.format(
+                  "Replacement segment for range [%s, %s) was not found after creation",
+                  replacement.getStartToken(), replacement.getEndToken()));
         }
-      } catch (RuntimeException e) {
-        LOG.error(
-            "Runtime error creating replacement segment for range [{}, {})",
-            replacement.getStartToken(),
-            replacement.getEndToken(),
-            e);
+        createdSegments.add(created.get());
       }
     }
 
