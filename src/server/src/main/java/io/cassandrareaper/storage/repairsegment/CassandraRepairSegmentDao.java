@@ -72,6 +72,10 @@ public class CassandraRepairSegmentDao implements IRepairSegmentDao {
   PreparedStatement getRepairSegmentsByRunIdAndStatePrepStmt = null;
   @Nullable // null on Cassandra-2 as it's not supported syntax
   PreparedStatement getRepairSegmentCountByRunIdAndStatePrepStmt = null;
+  // Prepared once at construction time to avoid a Cassandra round-trip per conditional update call.
+  private PreparedStatement lwtUpdateToDonePrepStmt;
+  private PreparedStatement lwtUpdateToRunningPrepStmt;
+  private PreparedStatement lwtUpdateToOtherPrepStmt;
   private final CassandraConcurrencyDao cassandraConcurrencyDao;
   private final CassandraRepairUnitDao cassRepairUnitDao;
   private final CqlSession session;
@@ -204,6 +208,27 @@ public class CassandraRepairSegmentDao implements IRepairSegmentDao {
           "Failure preparing `SELECT… FROM repair_run WHERE… ALLOW FILTERING` should only happen on Cassandra-2",
           ex);
     }
+    lwtUpdateToDonePrepStmt =
+        session.prepare(
+            SimpleStatement.builder(
+                    "UPDATE repair_run SET segment_state = ?, segment_start_time = ?,"
+                        + " segment_end_time = ? WHERE id = ? AND segment_id = ? IF segment_state = ?")
+                .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM)
+                .build());
+    lwtUpdateToRunningPrepStmt =
+        session.prepare(
+            SimpleStatement.builder(
+                    "UPDATE repair_run SET segment_state = ?, segment_start_time = ?"
+                        + " WHERE id = ? AND segment_id = ? IF segment_state = ?")
+                .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM)
+                .build());
+    lwtUpdateToOtherPrepStmt =
+        session.prepare(
+            SimpleStatement.builder(
+                    "UPDATE repair_run SET segment_state = ?"
+                        + " WHERE id = ? AND segment_id = ? IF segment_state = ?")
+                .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM)
+                .build());
   }
 
   @Override
@@ -462,17 +487,11 @@ public class CassandraRepairSegmentDao implements IRepairSegmentDao {
       RepairSegment currentSegment,
       RepairSegment.State expectedCurrentState,
       Instant now) {
-    String cql =
-        "UPDATE repair_run SET segment_state = ?, segment_start_time = ?, segment_end_time = ? "
-            + "WHERE id = ? AND segment_id = ? IF segment_state = ?";
-
-    PreparedStatement stmt = prepareConditionalStatement(cql);
-
     Instant startTime = getTimestampOrNow(currentSegment.getStartTime(), now);
     Instant endTime = getTimestampOrNow(currentSegment.getEndTime(), now);
 
     BoundStatement boundStatement =
-        stmt.bind(
+        lwtUpdateToDonePrepStmt.bind(
             RepairSegment.State.DONE.ordinal(),
             startTime,
             endTime,
@@ -490,16 +509,10 @@ public class CassandraRepairSegmentDao implements IRepairSegmentDao {
       RepairSegment currentSegment,
       RepairSegment.State expectedCurrentState,
       Instant now) {
-    String cql =
-        "UPDATE repair_run SET segment_state = ?, segment_start_time = ? "
-            + "WHERE id = ? AND segment_id = ? IF segment_state = ?";
-
-    PreparedStatement stmt = prepareConditionalStatement(cql);
-
     Instant startTime = getTimestampOrNow(currentSegment.getStartTime(), now);
 
     BoundStatement boundStatement =
-        stmt.bind(
+        lwtUpdateToRunningPrepStmt.bind(
             RepairSegment.State.RUNNING.ordinal(),
             startTime,
             runId,
@@ -514,20 +527,11 @@ public class CassandraRepairSegmentDao implements IRepairSegmentDao {
       UUID segmentId,
       RepairSegment.State newState,
       RepairSegment.State expectedCurrentState) {
-    String cql =
-        "UPDATE repair_run SET segment_state = ? WHERE id = ? AND segment_id = ? IF segment_state = ?";
-
-    PreparedStatement stmt = prepareConditionalStatement(cql);
-
     BoundStatement boundStatement =
-        stmt.bind(newState.ordinal(), runId, segmentId, expectedCurrentState.ordinal());
+        lwtUpdateToOtherPrepStmt.bind(
+            newState.ordinal(), runId, segmentId, expectedCurrentState.ordinal());
 
     return executeLwtUpdate(boundStatement);
-  }
-
-  private PreparedStatement prepareConditionalStatement(String cql) {
-    return session.prepare(
-        SimpleStatement.builder(cql).setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM).build());
   }
 
   private Instant getTimestampOrNow(DateTime dateTime, Instant now) {

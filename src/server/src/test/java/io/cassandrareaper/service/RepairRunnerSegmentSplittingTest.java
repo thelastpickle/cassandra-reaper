@@ -485,12 +485,18 @@ public final class RepairRunnerSegmentSplittingTest {
         unchangedSegment.get().getState());
   }
 
-  /** Test: Idempotent segment creation - existing segments are detected */
+  /**
+   * Test: {@code addRepairSegments} is append-only — calling it twice with the same builder inserts
+   * two rows (each with a new time-based UUID). It is the caller's responsibility (i.e. {@code
+   * createMissingReplacementSegments}) to check for an existing segment via {@code
+   * getRepairSegmentByTokenRange} before calling {@code addRepairSegments}. This test asserts the
+   * actual contract: the segment is findable after the first insert, and a second insert neither
+   * throws nor removes the first segment.
+   */
   @Test
-  public void testIdempotentSegmentCreation() {
+  public void testAddRepairSegments_IsAppendOnly() {
     UUID runId = createRepairRun();
 
-    // Create initial segment
     RepairSegment.Builder builder =
         RepairSegment.builder(
                 Segment.builder()
@@ -500,22 +506,25 @@ public final class RepairRunnerSegmentSplittingTest {
             .withRunId(runId)
             .withState(RepairSegment.State.NOT_STARTED);
 
+    // First insert: segment must be findable
     storage.getRepairSegmentDao().addRepairSegments(Collections.singletonList(builder), runId);
 
-    // Try to create same segment again
-    storage.getRepairSegmentDao().addRepairSegments(Collections.singletonList(builder), runId);
-
-    // Verify segment exists
-    Optional<RepairSegment> found =
+    Optional<RepairSegment> afterFirst =
         storage
             .getRepairSegmentDao()
             .getRepairSegmentByTokenRange(
                 runId, repairUnitId, BigInteger.valueOf(1), BigInteger.valueOf(10));
+    assertTrue("Segment must be findable after first insert", afterFirst.isPresent());
 
-    assertTrue("Segment should exist", found.isPresent());
+    // Second insert: must not throw and must leave the segment still findable
+    storage.getRepairSegmentDao().addRepairSegments(Collections.singletonList(builder), runId);
 
-    // Note: The current implementation creates duplicates. This test documents current behavior.
-    // In a production system, you might want to add duplicate detection logic.
+    Optional<RepairSegment> afterSecond =
+        storage
+            .getRepairSegmentDao()
+            .getRepairSegmentByTokenRange(
+                runId, repairUnitId, BigInteger.valueOf(1), BigInteger.valueOf(10));
+    assertTrue("Segment must still be findable after second insert", afterSecond.isPresent());
   }
 
   /** Test: addRepairSegments creates multiple segments in batch */

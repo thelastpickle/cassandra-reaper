@@ -299,7 +299,10 @@ public class MemoryRepairSegmentDao implements IRepairSegmentDao {
       UUID segmentId,
       RepairSegment.State newState,
       RepairSegment.State expectedCurrentState) {
-    synchronized (getSegmentByIdStmt) {
+    // Synchronize on the shared JDBC connection: SQLite allows only one writer at a time, and
+    // the check-then-update sequence must be atomic. Using the connection as the monitor makes
+    // the intent explicit — anything that holds this lock owns the connection exclusively.
+    synchronized (connection) {
       try {
         RepairSegment currentSegment = getCurrentSegmentForUpdate(segmentId);
         if (currentSegment == null) {
