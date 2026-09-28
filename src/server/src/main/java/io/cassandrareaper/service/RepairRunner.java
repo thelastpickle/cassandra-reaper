@@ -1196,7 +1196,8 @@ final class RepairRunner implements Runnable {
   /**
    * Checks whether the computed replacement ranges are identical to the original segment's token
    * ranges, meaning the topology split did not actually change anything worth applying. Handles
-   * segments with a single token range as well as coalesced segments with several ranges.
+   * segments with a single token range as well as coalesced segments with several ranges,
+   * including wrap-around ranges where numeric start-token ordering is not meaningful.
    *
    * @param originalRanges the original segment's token ranges
    * @param replacementSegments the computed replacement segments
@@ -1208,25 +1209,19 @@ final class RepairRunner implements Runnable {
       return false;
     }
 
-    List<RingRange> sortedOriginal = new ArrayList<>(originalRanges);
-    Collections.sort(sortedOriginal, RingRange.START_COMPARATOR);
+    // Compare as sets of (start, end) pairs to avoid ordering issues with wrap-around ranges
+    // whose numeric start values cannot be sorted into a meaningful ring-consistent order.
+    Set<String> originalKeys =
+        originalRanges.stream()
+            .map(r -> r.getStart() + ":" + r.getEnd())
+            .collect(Collectors.toSet());
 
-    List<RingRange> sortedReplacements =
+    Set<String> replacementKeys =
         replacementSegments.stream()
-            .map(seg -> new RingRange(seg.getStartToken(), seg.getEndToken()))
-            .sorted(RingRange.START_COMPARATOR)
-            .collect(Collectors.toList());
+            .map(seg -> seg.getStartToken() + ":" + seg.getEndToken())
+            .collect(Collectors.toSet());
 
-    for (int i = 0; i < sortedOriginal.size(); i++) {
-      RingRange original = sortedOriginal.get(i);
-      RingRange replacement = sortedReplacements.get(i);
-      if (!original.getStart().equals(replacement.getStart())
-          || !original.getEnd().equals(replacement.getEnd())) {
-        return false;
-      }
-    }
-
-    return true;
+    return originalKeys.equals(replacementKeys);
   }
 
   // Murmur3Partitioner token bounds for ring distance calculations
