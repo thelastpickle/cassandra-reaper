@@ -1273,7 +1273,7 @@ final class RepairRunner implements Runnable {
    * @throws RuntimeException if any segment creation or post-create fetch fails
    */
   private List<RepairSegment> createMissingReplacementSegments(
-      List<RepairSegment> replacementSegments) {
+      List<RepairSegment> replacementSegments) throws RuntimeException {
 
     List<RepairSegment> createdSegments = new ArrayList<>();
 
