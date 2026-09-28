@@ -1355,11 +1355,24 @@ final class RepairRunner implements Runnable {
     List<RingRange> originalRanges = originalSegment.getTokenRange().getTokenRanges();
 
     for (RingRange originalRange : originalRanges) {
+      // Match replacement segments by checking that their start token lies on or after the
+      // original range's start in ring-traversal order. We cannot use RingRange.encloses() here
+      // because it misclassifies wrapping sub-ranges (e.g. [9B, MIN)) produced when a wrapping
+      // original is split at Long.MIN_VALUE: the sub-range has start > end numerically, so
+      // encloses() treats it as wrapping and applies the wrong containment logic.
+      // Using isTokenInRange (which handles the wrap-around boundary correctly) on the sub-range's
+      // start token, plus a direct equality check for the boundary case, is sufficient because
+      // every replacement was produced by splitting exactly one original range — there is no risk
+      // of a replacement spanning two different original ranges.
       List<RepairSegment> matchingReplacements =
           replacementSegments.stream()
               .filter(
                   seg ->
-                      originalRange.encloses(new RingRange(seg.getStartToken(), seg.getEndToken())))
+                      seg.getStartToken().equals(originalRange.getStart())
+                          || isTokenInRange(
+                              seg.getStartToken(),
+                              originalRange.getStart(),
+                              originalRange.getEnd()))
               .collect(Collectors.toList());
 
       if (!verifyRangeCoverage(originalRange, matchingReplacements)) {
