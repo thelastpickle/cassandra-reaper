@@ -28,6 +28,7 @@ import io.cassandrareaper.core.Segment;
 import io.cassandrareaper.management.ClusterFacade;
 import io.cassandrareaper.storage.IStorageDao;
 import io.cassandrareaper.storage.MemoryStorageFacade;
+import io.cassandrareaper.storage.repairsegment.IRepairSegmentDao;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
@@ -40,7 +41,11 @@ import java.util.UUID;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
@@ -1132,5 +1137,272 @@ public final class RepairRunnerSegmentSplittingTest {
 
     boolean coverageComplete = invokeVerifyCompleteCoverage(runner, original, replacements);
     assertTrue("Wrap-around replacements should pass regardless of input order", coverageComplete);
+  }
+
+  // -------------------------------------------------------------------------
+  // Fix 1: rangesUnchanged — set comparison handles wrap-around coalesced ranges
+  // -------------------------------------------------------------------------
+
+  /**
+   * Before the fix, {@code rangesUnchanged} sorted both sides by numeric start token and compared
+   * pairwise. For a coalesced segment whose two ranges start at [9B, -5B) and [-3B, 2B), numeric
+   * sort puts the negative-start range first, while ring order requires the opposite. This caused a
+   * false "unchanged" verdict when the replacement set was actually different.
+   *
+   * <p>After the fix the comparison uses a set of "start:end" keys so order is irrelevant. This
+   * test verifies that two coalesced wrap-around ranges are correctly identified as unchanged when
+   * the replacement list carries exactly the same (start, end) pairs regardless of order.
+   */
+  @Test
+  public void testRangesUnchanged_WrapAroundCoalescedSameSet() throws Exception {
+    // Two wrap-around ranges that are numerically "out of ring order":
+    //   R1 = [9_000_000_000_000_000_000, -5_000_000_000_000_000_000)
+    //   R2 = [-3_000_000_000_000_000_000,  2_000_000_000_000_000_000)
+    BigInteger r1Start = new BigInteger("9000000000000000000");
+    BigInteger r1End = new BigInteger("-5000000000000000000");
+    BigInteger r2Start = new BigInteger("-3000000000000000000");
+    BigInteger r2End = new BigInteger("2000000000000000000");
+
+    List<RingRange> originalRanges = new ArrayList<>();
+    originalRanges.add(new RingRange(r1Start, r1End));
+    originalRanges.add(new RingRange(r2Start, r2End));
+
+    // Replacements carry the same pairs but listed in reverse order
+    List<RepairSegment> replacements = new ArrayList<>();
+    replacements.add(createSegment(r2Start, r2End, RepairSegment.State.NOT_STARTED));
+    replacements.add(createSegment(r1Start, r1End, RepairSegment.State.NOT_STARTED));
+
+    boolean unchanged = invokeRangesUnchanged(runner, originalRanges, replacements);
+    assertTrue(
+        "Wrap-around coalesced ranges with same (start,end) pairs must be considered unchanged"
+            + " regardless of list order",
+        unchanged);
+  }
+
+  /**
+   * Verifies that {@code rangesUnchanged} returns {@code false} when the replacement set contains a
+   * different range, even though the sizes match — ensuring the set comparison is not just a size
+   * check.
+   */
+  @Test
+  public void testRangesUnchanged_DifferentRangeReturnsFalse() throws Exception {
+    BigInteger r1Start = new BigInteger("9000000000000000000");
+    BigInteger r1End = new BigInteger("-5000000000000000000");
+
+    List<RingRange> originalRanges = new ArrayList<>();
+    originalRanges.add(new RingRange(r1Start, r1End));
+
+    // Replacement has a different end token
+    List<RepairSegment> replacements = new ArrayList<>();
+    replacements.add(
+        createSegment(
+            r1Start, new BigInteger("-4000000000000000000"), RepairSegment.State.NOT_STARTED));
+
+    boolean unchanged = invokeRangesUnchanged(runner, originalRanges, replacements);
+    assertFalse("A different replacement range must not be considered unchanged", unchanged);
+  }
+
+  // -------------------------------------------------------------------------
+  // Fix 2: verifyCompleteCoverage — wrapping sub-range not silently dropped
+  // -------------------------------------------------------------------------
+
+  /**
+   * When a wrapping original range [9B, -8B) is split at Long.MIN_VALUE, {@code splitTokenRange}
+   * produces [9B, MIN) — which is itself a wrapping range (9B > MIN numerically). The old filter
+   * used {@code RingRange.encloses()} which misclassified this as "not enclosed" and silently
+   * dropped it, making {@code verifyRangeCoverage} see an empty list and return false.
+   *
+   * <p>After the fix the filter uses {@code isTokenInRange} on the sub-range's start token plus an
+   * equality check for the boundary, which correctly retains [9B, MIN).
+   */
+  @Test
+  public void testVerifyCompleteCoverage_WrappingSubRangeNotDropped() throws Exception {
+    // Original wrapping range: [9B, -8B)
+    BigInteger origStart = new BigInteger("9000000000000000000");
+    BigInteger origEnd = new BigInteger("-8000000000000000000");
+    RepairSegment original = createSegment(origStart, origEnd, RepairSegment.State.NOT_STARTED);
+
+    // Split at Long.MIN_VALUE produces:
+    //   sub1 = [9B, MIN)   — wrapping (9B > MIN numerically)
+    //   sub2 = [MIN, -8B)  — non-wrapping
+    List<RepairSegment> replacements = new ArrayList<>();
+    replacements.add(
+        createSegment(
+            origStart, BigInteger.valueOf(Long.MIN_VALUE), RepairSegment.State.NOT_STARTED));
+    replacements.add(
+        createSegment(
+            BigInteger.valueOf(Long.MIN_VALUE), origEnd, RepairSegment.State.NOT_STARTED));
+
+    boolean coverageComplete = invokeVerifyCompleteCoverage(runner, original, replacements);
+    assertTrue(
+        "verifyCompleteCoverage must accept a wrapping sub-range [9B, MIN) as covering part of"
+            + " the wrapping original [9B, -8B)",
+        coverageComplete);
+  }
+
+  /**
+   * Confirms that the fix does not regress the gap-detection case: when the wrapping sub-range [9B,
+   * MIN) is present but [MIN, -9B) is absent (leaving a gap before [-9B, -8B)), coverage
+   * verification must still return false.
+   */
+  @Test
+  public void testVerifyCompleteCoverage_WrappingSubRangeWithGapStillFails() throws Exception {
+    BigInteger origStart = new BigInteger("9000000000000000000");
+    BigInteger origEnd = new BigInteger("-8000000000000000000");
+    RepairSegment original = createSegment(origStart, origEnd, RepairSegment.State.NOT_STARTED);
+
+    // A = [9B, MIN) — wrapping sub-range, enclosed by original
+    // C = [-9B, -8B) — non-wrapping, enclosed by original
+    // B = [MIN, -9B) is intentionally absent → gap between A.end=MIN and C.start=-9B
+    List<RepairSegment> replacements = new ArrayList<>();
+    replacements.add(
+        createSegment(
+            origStart, BigInteger.valueOf(Long.MIN_VALUE), RepairSegment.State.NOT_STARTED));
+    replacements.add(
+        createSegment(
+            new BigInteger("-9000000000000000000"), origEnd, RepairSegment.State.NOT_STARTED));
+
+    boolean coverageComplete = invokeVerifyCompleteCoverage(runner, original, replacements);
+    assertFalse(
+        "verifyCompleteCoverage must detect the gap between [9B,MIN).end=MIN and [-9B,-8B).start=-9B",
+        coverageComplete);
+  }
+
+  // -------------------------------------------------------------------------
+  // Fix 3: createMissingReplacementSegments — exception propagates on write failure
+  // -------------------------------------------------------------------------
+
+  /**
+   * Verifies that {@code createMissingReplacementSegments} throws {@link IllegalStateException}
+   * when a segment is written to the DAO but the subsequent fetch returns empty — simulating a
+   * write that appeared to succeed but is not visible on read (e.g. a lost write). Before the fix
+   * the exception was swallowed and the method returned a partial list, risking retirement of the
+   * original segment with incomplete replacements. After the fix the exception propagates
+   * immediately so the caller's {@code catch (RuntimeException)} block aborts the split.
+   */
+  @Test
+  public void testCreateMissingReplacementSegments_ThrowsWhenPostWriteFetchMissing()
+      throws Exception {
+    UUID runId = createRepairRun();
+
+    // Build a mock segment DAO: addRepairSegments is a no-op and getRepairSegmentByTokenRange
+    // always returns empty, simulating a lost write where the segment never appears on read-back.
+    IRepairSegmentDao mockDao = mock(IRepairSegmentDao.class);
+    doNothing().when(mockDao).addRepairSegments(any(), any());
+    when(mockDao.getRepairSegmentByTokenRange(any(), any(), any(), any()))
+        .thenReturn(Optional.empty());
+
+    // Swap the real storage on the existing runner's context for the duration of this test using
+    // reflection. This avoids constructing a second RepairRunner (whose constructor needs a fully
+    // wired AppContext with cluster/unit DAOs and a MetricRegistry).
+    java.lang.reflect.Field contextField = RepairRunner.class.getDeclaredField("context");
+    contextField.setAccessible(true);
+    AppContext originalContext = (AppContext) contextField.get(runner);
+
+    // Create a thin wrapper that delegates everything except getRepairSegmentDao().
+    IStorageDao wrappedStorage = mock(IStorageDao.class);
+    when(wrappedStorage.getRepairSegmentDao()).thenReturn(mockDao);
+    // Other DAO calls are not exercised by createMissingReplacementSegments, so no-stub is fine.
+
+    AppContext patchedContext = new AppContext();
+    patchedContext.storage = wrappedStorage;
+    patchedContext.config = originalContext.config;
+    patchedContext.metricRegistry = originalContext.metricRegistry;
+
+    contextField.set(runner, patchedContext);
+    try {
+      // A single replacement segment whose write will "succeed" but disappear on fetch
+      List<RepairSegment> toCreate = new ArrayList<>();
+      toCreate.add(
+          createSegment(
+              BigInteger.valueOf(1), BigInteger.valueOf(10), RepairSegment.State.NOT_STARTED));
+
+      try {
+        invokeCreateMissingReplacementSegments(runner, toCreate);
+        fail("Expected IllegalStateException when post-write fetch returns empty");
+      } catch (java.lang.reflect.InvocationTargetException ite) {
+        Throwable cause = ite.getCause();
+        assertTrue(
+            "Cause must be IllegalStateException, got: " + cause.getClass().getName(),
+            cause instanceof IllegalStateException);
+        assertTrue(
+            "Message must mention the token range",
+            cause.getMessage().contains("was not found after creation"));
+      }
+    } finally {
+      // Always restore the original context so other tests are not affected.
+      contextField.set(runner, originalContext);
+    }
+  }
+
+  /**
+   * Verifies the happy path of {@code createMissingReplacementSegments}: all three segments are
+   * created and returned when none pre-exist.
+   */
+  @Test
+  public void testCreateMissingReplacementSegments_AllCreatedSuccessfully() throws Exception {
+    UUID runId = createRepairRun();
+
+    // Build replacement segments whose runId matches the actual run so the MemoryStorageFacade
+    // can persist and retrieve them by token range.
+    List<RepairSegment> toCreate = new ArrayList<>();
+    toCreate.add(buildSegmentForRun(runId, BigInteger.valueOf(1), BigInteger.valueOf(4)));
+    toCreate.add(buildSegmentForRun(runId, BigInteger.valueOf(4), BigInteger.valueOf(7)));
+    toCreate.add(buildSegmentForRun(runId, BigInteger.valueOf(7), BigInteger.valueOf(10)));
+
+    List<RepairSegment> created = invokeCreateMissingReplacementSegments(runner, toCreate);
+
+    assertEquals("All three replacement segments must be returned", 3, created.size());
+    assertEquals(BigInteger.valueOf(1), created.get(0).getStartToken());
+    assertEquals(BigInteger.valueOf(4), created.get(0).getEndToken());
+    assertEquals(BigInteger.valueOf(4), created.get(1).getStartToken());
+    assertEquals(BigInteger.valueOf(7), created.get(1).getEndToken());
+    assertEquals(BigInteger.valueOf(7), created.get(2).getStartToken());
+    assertEquals(BigInteger.valueOf(10), created.get(2).getEndToken());
+  }
+
+  // -------------------------------------------------------------------------
+  // Additional reflection helpers
+  // -------------------------------------------------------------------------
+
+  /**
+   * Invokes the private {@code rangesUnchanged} method via reflection so the test exercises the
+   * real implementation.
+   */
+  private boolean invokeRangesUnchanged(
+      RepairRunner repairRunner,
+      List<RingRange> originalRanges,
+      List<RepairSegment> replacementSegments)
+      throws Exception {
+    java.lang.reflect.Method method =
+        RepairRunner.class.getDeclaredMethod("rangesUnchanged", List.class, List.class);
+    method.setAccessible(true);
+    return (boolean) method.invoke(repairRunner, originalRanges, replacementSegments);
+  }
+
+  /**
+   * Invokes the private {@code createMissingReplacementSegments} method via reflection.
+   *
+   * @throws java.lang.reflect.InvocationTargetException wrapping the real exception if the method
+   *     throws; callers that expect a failure should catch this and inspect {@link
+   *     java.lang.reflect.InvocationTargetException#getCause()}.
+   */
+  @SuppressWarnings("unchecked")
+  private List<RepairSegment> invokeCreateMissingReplacementSegments(
+      RepairRunner repairRunner, List<RepairSegment> replacementSegments) throws Exception {
+    java.lang.reflect.Method method =
+        RepairRunner.class.getDeclaredMethod("createMissingReplacementSegments", List.class);
+    method.setAccessible(true);
+    return (List<RepairSegment>) method.invoke(repairRunner, replacementSegments);
+  }
+
+  /** Creates a segment pre-wired with the given {@code runId} so storage lookups find it. */
+  private RepairSegment buildSegmentForRun(UUID runId, BigInteger start, BigInteger end) {
+    return RepairSegment.builder(
+            Segment.builder().withTokenRange(new RingRange(start, end)).build(), repairUnitId)
+        .withState(RepairSegment.State.NOT_STARTED)
+        .withRunId(runId)
+        .withId(UUID.randomUUID())
+        .build();
   }
 }
