@@ -61,6 +61,7 @@ The Docker environment variables listed in this section map directly to Reaper s
 | `REAPER_MAX_PARALLEL_REPAIRS` | [maxParallelRepairs]({{< relref "reaper_specific.md#maxParallelRepairs" >}}) | 2 |
 | `CRYPTO_SYSTEM_PROPERTY_SECRET` | [cryptograph/systemPropertySecret]({{< relref "reaper_specific.md#cryptograph" >}}) | Unset |
 | `REAPER_HTTP_MANAGEMENT_ENABLE` | [httpManagement/enabled]({{< relref "reaper_specific.md#httpManagement" >}}) | false |
+| `REAPER_HTTP_MANAGEMENT_PORT` | [managementApiPort]({{< relref "reaper_specific.md#managementapiport" >}}) | 8080 |
 | `REAPER_HTTP_MANAGEMENT_KEYSTORE_PATH` | [httpManagement/keystorePath]({{< relref "reaper_specific.md#httpManagement" >}}) | |
 | `REAPER_HTTP_MANAGEMENT_TRUSTSTORE_PATH` | [httpManagement/truststorePath]({{< relref "reaper_specific.md#httpManagement" >}}) | |
 | `REAPER_HTTP_MANAGEMENT_TRUSTSTORES_DIR` | [httpManagement/truststoresDir]({{< relref "reaper_specific.md#httpManagement" >}}) | |
