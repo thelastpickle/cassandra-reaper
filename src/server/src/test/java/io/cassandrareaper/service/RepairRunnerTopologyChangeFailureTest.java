@@ -1085,6 +1085,141 @@ public final class RepairRunnerTopologyChangeFailureTest {
     assertFalse("A multi-range replacement must not count as coverage", result);
   }
 
+  /**
+   * Regression test: the topology computed per replacement range must be persisted on the
+   * replacement segment as its replicas. Node locking and busy-host checks use
+   * segment.getReplicas(); empty replicas would bypass them.
+   */
+  @Test
+  public void testReplacementSegmentsPersistReplicasFromTopology() throws Exception {
+    UUID runId = createRepairRun();
+
+    RingRange range = new RingRange(BigInteger.valueOf(0), BigInteger.valueOf(100));
+    Segment original = Segment.builder().withTokenRange(range).build();
+    storage
+        .getRepairSegmentDao()
+        .addRepairSegments(
+            Collections.singletonList(
+                RepairSegment.builder(original, repairUnitId)
+                    .withRunId(runId)
+                    .withState(RepairSegment.State.NOT_STARTED)),
+            runId);
+    RepairSegment stored =
+        storage
+            .getRepairSegmentDao()
+            .getRepairSegmentByTokenRange(
+                runId, repairUnitId, BigInteger.valueOf(0), BigInteger.valueOf(100))
+            .get();
+
+    RepairRunner runner = createRepairRunner(runId);
+
+    List<BigInteger> ringTokens = new ArrayList<>();
+    ringTokens.add(BigInteger.valueOf(40));
+    when(mockClusterFacade.getTokens(any())).thenReturn(ringTokens);
+
+    // Distinct topology per range, so a copy of "some" topology cannot pass by accident.
+    Map<String, String> topologyLow = new HashMap<>();
+    topologyLow.put("127.0.0.1", "dc1");
+    topologyLow.put("127.0.0.2", "dc1");
+    Map<String, String> topologyHigh = new HashMap<>();
+    topologyHigh.put("127.0.0.2", "dc1");
+    topologyHigh.put("127.0.0.3", "dc1");
+    when(mockRepairRunService.getDCsByNodeForRepairSegment(any(), any(), anyString(), any()))
+        .thenAnswer(
+            invocation -> {
+              Segment seg = invocation.getArgument(1);
+              return seg.getBaseRange().getStart().equals(BigInteger.valueOf(0))
+                  ? topologyLow
+                  : topologyHigh;
+            });
+
+    assertTrue(invokeDetectAndHandleTopologyChange(runner, stored.getId(), original));
+
+    List<RepairSegment> notStarted =
+        new ArrayList<>(
+            storage
+                .getRepairSegmentDao()
+                .getSegmentsWithState(runId, RepairSegment.State.NOT_STARTED));
+    assertEquals(2, notStarted.size());
+    for (RepairSegment seg : notStarted) {
+      Map<String, String> expected =
+          seg.getStartToken().equals(BigInteger.valueOf(0)) ? topologyLow : topologyHigh;
+      assertFalse("Replicas must be persisted", seg.getReplicas().isEmpty());
+      assertEquals(expected, seg.getReplicas());
+    }
+  }
+
+  /**
+   * Incremental (non sub-range) runs are pinned to a segment hostID that replacements cannot
+   * inherit, so recovery must not be attempted: nothing is created and the original is untouched.
+   */
+  @Test
+  public void testIncrementalRunSkipsTopologyRecovery() throws Exception {
+    UUID incrementalUnitId =
+        storage
+            .getRepairUnitDao()
+            .addRepairUnit(
+                RepairUnit.builder()
+                    .clusterName(cluster.getName())
+                    .keyspaceName("test_keyspace")
+                    .columnFamilies(Sets.newHashSet("table1"))
+                    .incrementalRepair(true)
+                    .subrangeIncrementalRepair(false)
+                    .nodes(Sets.newHashSet("127.0.0.1"))
+                    .datacenters(Collections.emptySet())
+                    .blacklistedTables(Collections.emptySet())
+                    .repairThreadCount(1)
+                    .timeout(30))
+            .getId();
+    UUID runId =
+        storage
+            .getRepairRunDao()
+            .addRepairRun(
+                RepairRun.builder(cluster.getName(), incrementalUnitId)
+                    .intensity(0.5)
+                    .segmentCount(10)
+                    .repairParallelism(RepairParallelism.PARALLEL)
+                    .tables(TABLES),
+                Collections.emptyList())
+            .getId();
+
+    Segment original =
+        Segment.builder()
+            .withTokenRange(new RingRange(BigInteger.valueOf(0), BigInteger.valueOf(100)))
+            .build();
+    storage
+        .getRepairSegmentDao()
+        .addRepairSegments(
+            Collections.singletonList(
+                RepairSegment.builder(original, incrementalUnitId)
+                    .withRunId(runId)
+                    .withState(RepairSegment.State.NOT_STARTED)),
+            runId);
+    RepairSegment stored =
+        storage
+            .getRepairSegmentDao()
+            .getRepairSegmentByTokenRange(
+                runId, incrementalUnitId, BigInteger.valueOf(0), BigInteger.valueOf(100))
+            .get();
+
+    RepairRunner runner = createRepairRunner(runId);
+
+    List<BigInteger> ringTokens = new ArrayList<>();
+    ringTokens.add(BigInteger.valueOf(40));
+    when(mockClusterFacade.getTokens(any())).thenReturn(ringTokens);
+    Map<String, String> topology = new HashMap<>();
+    topology.put("127.0.0.1", "dc1");
+    when(mockRepairRunService.getDCsByNodeForRepairSegment(any(), any(), anyString(), any()))
+        .thenReturn(topology);
+
+    assertFalse(invokeDetectAndHandleTopologyChange(runner, stored.getId(), original));
+
+    assertEquals(1, storage.getRepairSegmentDao().getSegmentAmountForRepairRun(runId));
+    assertEquals(
+        RepairSegment.State.NOT_STARTED,
+        storage.getRepairSegmentDao().getRepairSegment(runId, stored.getId()).get().getState());
+  }
+
   // Helper methods
 
   private RepairSegment buildReplacementSegment(UUID runId, BigInteger start, BigInteger end) {
