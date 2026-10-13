@@ -972,6 +972,119 @@ public final class RepairRunnerTopologyChangeFailureTest {
     assertFalse("Ranges should be considered changed when a range was split", result);
   }
 
+  /**
+   * Regression test: when a coalesced segment's base range is unchanged by the topology split, the
+   * idempotency lookup by token range used to return the ORIGINAL segment, which was then treated
+   * as a replacement and retired to DONE. That range was then never repaired.
+   *
+   * <p>Uses the real {@code MemoryRepairSegmentDao} (no DAO mocks).
+   */
+  @Test
+  public void testCoalescedOriginalWithUnchangedBaseRange_OriginalNotReusedAsReplacement()
+      throws Exception {
+    UUID runId = createRepairRun();
+
+    RingRange range1 = new RingRange(BigInteger.valueOf(0), BigInteger.valueOf(100));
+    RingRange range2 = new RingRange(BigInteger.valueOf(200), BigInteger.valueOf(300));
+    Segment coalesced = Segment.builder().withTokenRanges(Arrays.asList(range1, range2)).build();
+
+    storage
+        .getRepairSegmentDao()
+        .addRepairSegments(
+            Collections.singletonList(
+                RepairSegment.builder(coalesced, repairUnitId)
+                    .withRunId(runId)
+                    .withState(RepairSegment.State.NOT_STARTED)),
+            runId);
+
+    RepairSegment original =
+        storage
+            .getRepairSegmentDao()
+            .getRepairSegmentByTokenRange(
+                runId, repairUnitId, BigInteger.valueOf(0), BigInteger.valueOf(100))
+            .get();
+
+    RepairRunner runner = createRepairRunner(runId);
+
+    // A single new ring token inside the second range; the base range (0,100) is untouched.
+    List<BigInteger> ringTokens = new ArrayList<>();
+    ringTokens.add(BigInteger.valueOf(250));
+    when(mockClusterFacade.getTokens(any())).thenReturn(ringTokens);
+
+    Map<String, String> topology = new HashMap<>();
+    topology.put("127.0.0.1", "dc1");
+    when(mockRepairRunService.getDCsByNodeForRepairSegment(any(), any(), anyString(), any()))
+        .thenReturn(topology);
+
+    boolean result = invokeDetectAndHandleTopologyChange(runner, original.getId(), coalesced);
+
+    assertTrue("Topology change should be handled", result);
+
+    RepairSegment retired =
+        storage.getRepairSegmentDao().getRepairSegment(runId, original.getId()).get();
+    assertEquals("Original must be retired", RepairSegment.State.DONE, retired.getState());
+
+    List<RepairSegment> notStarted =
+        new ArrayList<>(
+            storage
+                .getRepairSegmentDao()
+                .getSegmentsWithState(runId, RepairSegment.State.NOT_STARTED));
+
+    Set<String> actualRanges = new java.util.HashSet<>();
+    for (RepairSegment seg : notStarted) {
+      assertFalse(
+          "Original must not be reused as a replacement", original.getId().equals(seg.getId()));
+      assertEquals(
+          "Replacements must be single-range", 1, seg.getTokenRange().getTokenRanges().size());
+      actualRanges.add(seg.getStartToken() + ":" + seg.getEndToken());
+    }
+
+    assertEquals("Exactly three NOT_STARTED replacements expected", 3, notStarted.size());
+    assertEquals(Sets.newHashSet("0:100", "200:250", "250:300"), actualRanges);
+  }
+
+  /** verifyCompleteCoverage must reject a replacement that is the original segment itself. */
+  @Test
+  public void testVerifyCompleteCoverage_RejectsReplacementWithOriginalId() throws Exception {
+    UUID runId = createRepairRun();
+    RepairRunner runner = createRepairRunner(runId);
+
+    RepairSegment original = buildReplacementSegment(runId, BigInteger.ONE, BigInteger.TEN);
+
+    boolean result =
+        invokeVerifyCompleteCoverage(runner, original, Collections.singletonList(original));
+
+    assertFalse("A replacement with the original's id must not count as coverage", result);
+  }
+
+  /** verifyCompleteCoverage must reject a coalesced (multi-range) replacement. */
+  @Test
+  public void testVerifyCompleteCoverage_RejectsMultiRangeReplacement() throws Exception {
+    UUID runId = createRepairRun();
+    RepairRunner runner = createRepairRunner(runId);
+
+    RepairSegment original = buildReplacementSegment(runId, BigInteger.ONE, BigInteger.TEN);
+
+    Segment multi =
+        Segment.builder()
+            .withTokenRanges(
+                Arrays.asList(
+                    new RingRange(BigInteger.ONE, BigInteger.TEN),
+                    new RingRange(BigInteger.valueOf(20), BigInteger.valueOf(30))))
+            .build();
+    RepairSegment multiReplacement =
+        RepairSegment.builder(multi, repairUnitId)
+            .withRunId(runId)
+            .withState(RepairSegment.State.NOT_STARTED)
+            .withId(UUID.randomUUID())
+            .build();
+
+    boolean result =
+        invokeVerifyCompleteCoverage(runner, original, Collections.singletonList(multiReplacement));
+
+    assertFalse("A multi-range replacement must not count as coverage", result);
+  }
+
   // Helper methods
 
   private RepairSegment buildReplacementSegment(UUID runId, BigInteger start, BigInteger end) {
@@ -1031,9 +1144,16 @@ public final class RepairRunnerTopologyChangeFailureTest {
   private List<RepairSegment> invokeCreateMissingReplacementSegments(
       RepairRunner runner, List<RepairSegment> replacementSegments) throws Exception {
     java.lang.reflect.Method method =
-        RepairRunner.class.getDeclaredMethod("createMissingReplacementSegments", List.class);
+        RepairRunner.class.getDeclaredMethod(
+            "createMissingReplacementSegments", List.class, RepairSegment.class);
     method.setAccessible(true);
-    return (List<RepairSegment>) method.invoke(runner, replacementSegments);
+    // The original is not stored and has an unrelated range, so it never matches a lookup.
+    RepairSegment original =
+        buildReplacementSegment(
+            replacementSegments.get(0).getRunId(),
+            BigInteger.valueOf(-1000),
+            BigInteger.valueOf(-900));
+    return (List<RepairSegment>) method.invoke(runner, replacementSegments, original);
   }
 
   private boolean invokeVerifyCompleteCoverage(

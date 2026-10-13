@@ -1034,8 +1034,10 @@ final class RepairRunner implements Runnable {
 
       LOG.info("All {} replacement segments have valid coordinators", replacementSegments.size());
 
-      // Create-first approach: create all replacement segments before retiring original
-      List<RepairSegment> createdSegments = createMissingReplacementSegments(replacementSegments);
+      // Create-first approach: create all replacement segments before retiring original.
+      // Pass originalSegment so the idempotency lookup can exclude it by id.
+      List<RepairSegment> createdSegments =
+          createMissingReplacementSegments(replacementSegments, originalSegment);
 
       LOG.info("Created {} new replacement segments", createdSegments.size());
 
@@ -1268,26 +1270,26 @@ final class RepairRunner implements Runnable {
    * list to verify complete coverage of the original range before retiring it, so silently
    * continuing after a failure would leave the repair in an inconsistent state.
    *
+   * <p>If the idempotency lookup returns the original segment itself (its base range matches one of
+   * the replacement ranges), a new segment is created instead. Reusing the original as a
+   * replacement would retire it to DONE and skip that token range entirely.
+   *
    * @param replacementSegments the list of replacement segments to create
+   * @param originalSegment the segment being replaced; used to prevent it being reused by id
    * @return list of actually created (or already-existing) segments, one per input segment
    * @throws RuntimeException if any segment creation or post-create fetch fails
    */
   private List<RepairSegment> createMissingReplacementSegments(
-      List<RepairSegment> replacementSegments) throws RuntimeException {
+      List<RepairSegment> replacementSegments, RepairSegment originalSegment)
+      throws RuntimeException {
 
     List<RepairSegment> createdSegments = new ArrayList<>();
 
     for (RepairSegment replacement : replacementSegments) {
-      // Check if a segment with this token range already exists (idempotency)
-      Optional<RepairSegment> existing =
-          context
-              .storage
-              .getRepairSegmentDao()
-              .getRepairSegmentByTokenRange(
-                  replacement.getRunId(),
-                  replacement.getRepairUnitId(),
-                  replacement.getStartToken(),
-                  replacement.getEndToken());
+      // Check if a segment with this token range already exists (idempotency). The original
+      // segment is ignored: its base range may equal this replacement's range, and reusing it
+      // would retire it to DONE and leave that range unrepaired.
+      Optional<RepairSegment> existing = findSegmentByRangeExcluding(replacement, originalSegment);
 
       if (existing.isPresent()) {
         LOG.debug(
@@ -1312,15 +1314,7 @@ final class RepairRunner implements Runnable {
             replacement.getEndToken());
 
         // Fetch the created segment to get its ID; absence here means the write did not land.
-        Optional<RepairSegment> created =
-            context
-                .storage
-                .getRepairSegmentDao()
-                .getRepairSegmentByTokenRange(
-                    replacement.getRunId(),
-                    replacement.getRepairUnitId(),
-                    replacement.getStartToken(),
-                    replacement.getEndToken());
+        Optional<RepairSegment> created = findSegmentByRangeExcluding(replacement, originalSegment);
 
         if (!created.isPresent()) {
           throw new IllegalStateException(
@@ -1336,11 +1330,41 @@ final class RepairRunner implements Runnable {
   }
 
   /**
+   * Finds a segment of the run with the same repair unit and base token range as {@code
+   * replacement}, ignoring {@code originalSegment}. {@code getRepairSegmentByTokenRange} cannot be
+   * used for this because it returns the first match, which may be the original.
+   */
+  private Optional<RepairSegment> findSegmentByRangeExcluding(
+      RepairSegment replacement, RepairSegment originalSegment) {
+    return context
+        .storage
+        .getRepairSegmentDao()
+        .getRepairSegmentsForRun(replacement.getRunId())
+        .stream()
+        .filter(seg -> seg.getRepairUnitId().equals(replacement.getRepairUnitId()))
+        .filter(seg -> seg.getStartToken().equals(replacement.getStartToken()))
+        .filter(seg -> seg.getEndToken().equals(replacement.getEndToken()))
+        .filter(seg -> !seg.getId().equals(originalSegment.getId()))
+        .findFirst();
+  }
+
+  /**
    * Verifies that replacement segments fully cover the original segment's token range(s).
    *
    * <p>A segment can be coalesced from multiple token ranges (see {@link
    * Segment#getTokenRanges()}). Coverage is verified independently for every original range so that
    * splitting only the base range can no longer skip tokens belonging to other coalesced ranges.
+   *
+   * <p>Two additional sanity checks are applied to each replacement:
+   *
+   * <ul>
+   *   <li>Any replacement whose id equals the original's id is rejected — that would mean the
+   *       original was handed back by the idempotency lookup and counted as a replacement, which
+   *       would retire the original before repairing that range.
+   *   <li>Any replacement that is itself coalesced (more than one token range) is rejected — the
+   *       recovery path always produces single-range segments, so a multi-range one is a sign of an
+   *       unexpected state that would corrupt coverage accounting.
+   * </ul>
    *
    * @param originalSegment the original segment
    * @param replacementSegments the replacement segments
@@ -1352,6 +1376,22 @@ final class RepairRunner implements Runnable {
     if (replacementSegments.isEmpty()) {
       LOG.warn("No replacement segments to verify coverage");
       return false;
+    }
+
+    for (RepairSegment rep : replacementSegments) {
+      if (rep.getId() != null && rep.getId().equals(originalSegment.getId())) {
+        LOG.error(
+            "Replacement list contains the original segment {} itself — refusing coverage",
+            originalSegment.getId());
+        return false;
+      }
+      if (rep.getTokenRange().getTokenRanges().size() > 1) {
+        LOG.error(
+            "Replacement segment {} is coalesced ({} ranges) — expected exactly 1",
+            rep.getId(),
+            rep.getTokenRange().getTokenRanges().size());
+        return false;
+      }
     }
 
     List<RingRange> originalRanges = originalSegment.getTokenRange().getTokenRanges();

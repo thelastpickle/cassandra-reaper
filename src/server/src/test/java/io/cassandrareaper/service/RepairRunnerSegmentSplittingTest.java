@@ -1400,9 +1400,16 @@ public final class RepairRunnerSegmentSplittingTest {
   private List<RepairSegment> invokeCreateMissingReplacementSegments(
       RepairRunner repairRunner, List<RepairSegment> replacementSegments) throws Exception {
     java.lang.reflect.Method method =
-        RepairRunner.class.getDeclaredMethod("createMissingReplacementSegments", List.class);
+        RepairRunner.class.getDeclaredMethod(
+            "createMissingReplacementSegments", List.class, RepairSegment.class);
     method.setAccessible(true);
-    return (List<RepairSegment>) method.invoke(repairRunner, replacementSegments);
+    // The original is not stored and has an unrelated range, so it never matches a lookup.
+    RepairSegment original =
+        buildSegmentForRun(
+            replacementSegments.get(0).getRunId(),
+            BigInteger.valueOf(-1000),
+            BigInteger.valueOf(-900));
+    return (List<RepairSegment>) method.invoke(repairRunner, replacementSegments, original);
   }
 
   /** Creates a segment pre-wired with the given {@code runId} so storage lookups find it. */
