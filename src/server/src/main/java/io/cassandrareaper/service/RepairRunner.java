@@ -973,6 +973,16 @@ final class RepairRunner implements Runnable {
     LOG.info(
         "Detecting topology change for segment #{} with range {}", segmentId, segmentTokenRange);
 
+    // Incremental (non sub-range) repairs are pinned to a segment's hostID, which replacement
+    // segments cannot inherit meaningfully. Do not guess one: skip recovery.
+    if (repairUnit.getIncrementalRepair() && !repairUnit.getSubrangeIncrementalRepair()) {
+      LOG.warn(
+          "Topology change recovery is not supported for incremental repair runs, "
+              + "not splitting segment #{}",
+          segmentId);
+      return false;
+    }
+
     try {
       // Get the original segment from storage
       Optional<RepairSegment> originalSegmentOpt =
@@ -1010,7 +1020,10 @@ final class RepairRunner implements Runnable {
           segmentId);
 
       // Validate that EACH replacement segment has valid coordinators
-      // This is critical - we must not create segments that will also fail
+      // This is critical - we must not create segments that will also fail.
+      // The computed topology is carried onto the replacement as its replicas, since node locking
+      // and busy-host checks rely on segment.getReplicas().
+      List<RepairSegment> replacementsWithReplicas = new ArrayList<>();
       for (RepairSegment replacement : replacementSegments) {
         Segment replacementRange =
             Segment.builder()
@@ -1030,6 +1043,18 @@ final class RepairRunner implements Runnable {
               segmentId);
           return false;
         }
+
+        Segment replacementWithReplicas =
+            Segment.builder()
+                .withTokenRange(
+                    new RingRange(replacement.getStartToken(), replacement.getEndToken()))
+                .withReplicas(replacementTopology)
+                .build();
+        replacementsWithReplicas.add(
+            RepairSegment.builder(replacementWithReplicas, replacement.getRepairUnitId())
+                .withRunId(replacement.getRunId())
+                .withState(RepairSegment.State.NOT_STARTED)
+                .build());
       }
 
       LOG.info("All {} replacement segments have valid coordinators", replacementSegments.size());
@@ -1037,7 +1062,7 @@ final class RepairRunner implements Runnable {
       // Create-first approach: create all replacement segments before retiring original.
       // Pass originalSegment so the idempotency lookup can exclude it by id.
       List<RepairSegment> createdSegments =
-          createMissingReplacementSegments(replacementSegments, originalSegment);
+          createMissingReplacementSegments(replacementsWithReplicas, originalSegment);
 
       LOG.info("Created {} new replacement segments", createdSegments.size());
 
