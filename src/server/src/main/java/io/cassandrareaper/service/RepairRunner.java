@@ -1072,16 +1072,31 @@ final class RepairRunner implements Runnable {
         return false;
       }
 
-      // Retire the original segment by marking it DONE
+      // Retire the original segment by marking it DONE.
+      // If the conditional update is lost (returns false) re-read the segment: another instance
+      // may have already retired it. If it is DONE we can safely proceed; any other state means
+      // a genuine conflict and we should not continue.
       boolean retired = retireOriginalSegment(originalSegment);
 
       if (retired) {
         LOG.info("Successfully retired original segment #{} after topology change", segmentId);
         return true;
-      } else {
-        LOG.warn("Failed to retire original segment #{}", segmentId);
-        return false;
       }
+
+      // LWT lost — check whether the segment is already DONE (concurrent retirement)
+      Optional<RepairSegment> reRead =
+          context.storage.getRepairSegmentDao().getRepairSegment(repairRunId, segmentId);
+      if (reRead.isPresent() && reRead.get().getState() == RepairSegment.State.DONE) {
+        LOG.info(
+            "Segment #{} was already DONE (concurrent retirement); topology change handled",
+            segmentId);
+        return true;
+      }
+      LOG.warn(
+          "Failed to retire original segment #{}: state is {}",
+          segmentId,
+          reRead.map(s -> s.getState().toString()).orElse("not found"));
+      return false;
     } catch (ReaperException e) {
       LOG.error("Reaper error detecting/handling topology change for segment #{}", segmentId, e);
       return false;
