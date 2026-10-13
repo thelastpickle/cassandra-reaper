@@ -28,6 +28,7 @@ import io.cassandrareaper.core.Segment;
 import io.cassandrareaper.management.ClusterFacade;
 import io.cassandrareaper.storage.IStorageDao;
 import io.cassandrareaper.storage.MemoryStorageFacade;
+import io.cassandrareaper.storage.repairsegment.IRepairSegmentDao;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
@@ -46,7 +47,10 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableSet;
@@ -56,6 +60,7 @@ import org.apache.commons.lang3.RandomStringUtils;
 import org.joda.time.DateTime;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.AdditionalAnswers;
 
 /**
  * Tests for RepairRunner topology change failure and edge case paths. Focuses on increasing
@@ -1218,6 +1223,113 @@ public final class RepairRunnerTopologyChangeFailureTest {
     assertEquals(
         RepairSegment.State.NOT_STARTED,
         storage.getRepairSegmentDao().getRepairSegment(runId, stored.getId()).get().getState());
+  }
+
+  /**
+   * Wires a runner whose segment DAO loses the retire LWT: the conditional update first applies
+   * {@code concurrentState} to the stored original (as another Reaper instance would) and then
+   * reports {@code false} to this caller. Returns the id of the original segment.
+   */
+  private UUID setUpLostRetire(UUID runId, RepairSegment.State concurrentState, RepairRunner[] out)
+      throws Exception {
+    RingRange range = new RingRange(BigInteger.valueOf(0), BigInteger.valueOf(100));
+    Segment original = Segment.builder().withTokenRange(range).build();
+    IRepairSegmentDao realDao = storage.getRepairSegmentDao();
+    realDao.addRepairSegments(
+        Collections.singletonList(
+            RepairSegment.builder(original, repairUnitId)
+                .withRunId(runId)
+                .withState(RepairSegment.State.NOT_STARTED)),
+        runId);
+    UUID originalId =
+        realDao
+            .getRepairSegmentByTokenRange(
+                runId, repairUnitId, BigInteger.valueOf(0), BigInteger.valueOf(100))
+            .get()
+            .getId();
+
+    IRepairSegmentDao spyDao = spy(realDao);
+    doAnswer(
+            invocation -> {
+              realDao.updateRepairSegmentStateConditional(
+                  runId, originalId, concurrentState, RepairSegment.State.NOT_STARTED);
+              return false;
+            })
+        .when(spyDao)
+        .updateRepairSegmentStateConditional(
+            runId, originalId, RepairSegment.State.DONE, RepairSegment.State.NOT_STARTED);
+
+    IStorageDao wrapped = mock(IStorageDao.class, AdditionalAnswers.delegatesTo(storage));
+    doReturn(spyDao).when(wrapped).getRepairSegmentDao();
+
+    AppContext testContext = new AppContext();
+    testContext.storage = wrapped;
+    testContext.config = context.config;
+    out[0] =
+        new RepairRunner(
+            testContext, runId, mockClusterFacade, storage.getRepairRunDao(), mockRepairRunService);
+
+    List<BigInteger> ringTokens = new ArrayList<>();
+    ringTokens.add(BigInteger.valueOf(40));
+    when(mockClusterFacade.getTokens(any())).thenReturn(ringTokens);
+    Map<String, String> topology = new HashMap<>();
+    topology.put("127.0.0.1", "dc1");
+    when(mockRepairRunService.getDCsByNodeForRepairSegment(any(), any(), anyString(), any()))
+        .thenReturn(topology);
+    return originalId;
+  }
+
+  /**
+   * Regression test: losing the retire LWT because another instance already retired the original
+   * (re-read shows DONE) is a success, not a failure.
+   */
+  @Test
+  public void testLostRetireLwt_ReReadDone_ReturnsTrue() throws Exception {
+    UUID runId = createRepairRun();
+    RepairRunner[] runner = new RepairRunner[1];
+    UUID originalId = setUpLostRetire(runId, RepairSegment.State.DONE, runner);
+    Segment range =
+        Segment.builder()
+            .withTokenRange(new RingRange(BigInteger.valueOf(0), BigInteger.valueOf(100)))
+            .build();
+
+    assertTrue(invokeDetectAndHandleTopologyChange(runner[0], originalId, range));
+  }
+
+  /** The run must not be aborted when another instance already retired the original. */
+  @Test
+  public void testLostRetireLwt_ReReadDone_RunNotAborted() throws Exception {
+    UUID runId = createRepairRun();
+    RepairRunner[] runner = new RepairRunner[1];
+    UUID originalId = setUpLostRetire(runId, RepairSegment.State.DONE, runner);
+    Segment range =
+        Segment.builder()
+            .withTokenRange(new RingRange(BigInteger.valueOf(0), BigInteger.valueOf(100)))
+            .build();
+
+    java.lang.reflect.Method method =
+        RepairRunner.class.getDeclaredMethod(
+            "failRepairDueToOutdatedSegment", UUID.class, Segment.class);
+    method.setAccessible(true);
+    method.invoke(runner[0], originalId, range);
+
+    assertEquals(
+        RepairRun.RunState.NOT_STARTED,
+        storage.getRepairRunDao().getRepairRun(runId).get().getRunState());
+  }
+
+  /** Any state other than DONE after a lost retire LWT keeps the current behavior (false). */
+  @Test
+  public void testLostRetireLwt_ReReadRunning_ReturnsFalse() throws Exception {
+    UUID runId = createRepairRun();
+    RepairRunner[] runner = new RepairRunner[1];
+    UUID originalId = setUpLostRetire(runId, RepairSegment.State.RUNNING, runner);
+    Segment range =
+        Segment.builder()
+            .withTokenRange(new RingRange(BigInteger.valueOf(0), BigInteger.valueOf(100)))
+            .build();
+
+    assertFalse(invokeDetectAndHandleTopologyChange(runner[0], originalId, range));
   }
 
   // Helper methods
