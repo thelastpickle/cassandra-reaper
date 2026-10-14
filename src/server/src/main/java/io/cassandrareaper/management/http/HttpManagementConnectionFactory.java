@@ -159,6 +159,16 @@ public class HttpManagementConnectionFactory implements IManagementConnectionFac
     throw new ReaperException("no host could be reached through HTTP");
   }
 
+  /**
+   * Builds the management API base URL. An IPv6 literal must be bracketed in a URL (RFC 3986),
+   * otherwise the URL parser reads the first group as the host and the rest as the port.
+   */
+  @VisibleForTesting
+  static String managementApiBasePath(String protocol, String host, Integer port, String rootPath) {
+    String urlHost = host.contains(":") && !host.startsWith("[") ? "[" + host + "]" : host;
+    return protocol + "://" + urlHost + ":" + port + rootPath;
+  }
+
   @Override
   public HostConnectionCounters getHostConnectionCounters() {
     return hostConnectionCounters;
@@ -235,7 +245,8 @@ public class HttpManagementConnectionFactory implements IManagementConnectionFac
             ApiClient apiClient =
                 new ApiClient()
                     .setBasePath(
-                        protocol + "://" + node.getHostname() + ":" + managementPort + rootPath)
+                        managementApiBasePath(
+                            protocol, node.getHostname(), managementPort, rootPath))
                     .setHttpClient(okHttpClient);
 
             DefaultApi mgmtApiClient = new DefaultApi(apiClient);
