@@ -45,8 +45,6 @@ public class HttpManagementConnectionFactoryTest {
         HttpManagementConnectionFactory.managementApiBasePath(
             "http", "2001:db8:0:0:0:0:0:5", 8080, "");
     assertEquals("http://[2001:db8:0:0:0:0:0:5]:8080", basePath);
-    // The management API client parses the base path with OkHttp; before the fix this threw
-    // IllegalArgumentException: Invalid URL port: "db8:0:0:0:0:0:5:8080".
     HttpUrl url = HttpUrl.get(basePath);
     assertEquals("2001:db8::5", url.host());
     assertEquals(8080, url.port());
