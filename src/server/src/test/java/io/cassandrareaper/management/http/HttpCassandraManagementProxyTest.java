@@ -155,8 +155,6 @@ public class HttpCassandraManagementProxyTest {
         .putRepairV2(any());
     HttpCassandraManagementProxy proxy = mockProxy(mockClient);
 
-    // A non-subrange incremental segment holds one placeholder range per node. Like the JMX
-    // proxy, the HTTP proxy must not send it, so the coordinator repairs all of its ranges.
     proxy.triggerRepair(
         "ks",
         RepairParallelism.PARALLEL,

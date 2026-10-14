@@ -388,9 +388,6 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
                       RepairRequest.RepairParallelismEnum.fromValue(repairParallelism.getName()))
                   .repairThreadCount(repairThreadCount)
                   .associatedTokens(
-                      // As in the JMX proxy, only subrange repairs carry token ranges. An
-                      // incremental segment holds a single placeholder range; sending it would
-                      // repair that one range instead of every range the coordinator replicates.
                       (repairType.isSubrange()
                               ? associatedTokens
                               : Collections.<RingRange>emptyList())
