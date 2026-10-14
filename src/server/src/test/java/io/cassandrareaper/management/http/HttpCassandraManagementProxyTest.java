@@ -171,15 +171,14 @@ public class HttpCassandraManagementProxyTest {
 
     verify(mockClient)
         .putRepairV2(
-            eq(
-                (new RepairRequest())
-                    .keyspace("ks")
-                    .repairParallelism(RepairRequest.RepairParallelismEnum.PARALLEL)
-                    .tables(Arrays.asList("table"))
-                    .fullRepair(false)
-                    .datacenters(null)
-                    .repairThreadCount(1)
-                    .associatedTokens(Collections.emptyList())));
+            (new RepairRequest())
+                .keyspace("ks")
+                .repairParallelism(RepairRequest.RepairParallelismEnum.PARALLEL)
+                .tables(Arrays.asList("table"))
+                .fullRepair(false)
+                .datacenters(null)
+                .repairThreadCount(1)
+                .associatedTokens(Collections.emptyList()));
   }
 
   @Test
@@ -204,19 +203,16 @@ public class HttpCassandraManagementProxyTest {
 
     verify(mockClient)
         .putRepairV2(
-            eq(
-                (new RepairRequest())
-                    .keyspace("ks")
-                    .repairParallelism(RepairRequest.RepairParallelismEnum.PARALLEL)
-                    .tables(Arrays.asList("table"))
-                    .fullRepair(false)
-                    .datacenters(null)
-                    .repairThreadCount(1)
-                    .associatedTokens(
-                        Collections.singletonList(
-                            new com.datastax.mgmtapi.client.model.RingRange()
-                                .start(10L)
-                                .end(20L)))));
+            (new RepairRequest())
+                .keyspace("ks")
+                .repairParallelism(RepairRequest.RepairParallelismEnum.PARALLEL)
+                .tables(Arrays.asList("table"))
+                .fullRepair(false)
+                .datacenters(null)
+                .repairThreadCount(1)
+                .associatedTokens(
+                    Collections.singletonList(
+                        new com.datastax.mgmtapi.client.model.RingRange().start(10L).end(20L))));
   }
 
   // Verify all the maps are correctly updated in the triggerRepair and removeRepairHandler which
