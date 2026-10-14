@@ -147,6 +147,78 @@ public class HttpCassandraManagementProxyTest {
     return new ObjectMapper().readValue(this.getClass().getResource(filename).openStream(), clazz);
   }
 
+  @Test
+  public void testTriggerRepairIncrementalSendsNoTokenRanges() throws Exception {
+    DefaultApi mockClient = mock(DefaultApi.class);
+    doReturn((new RepairRequestResponse()).repairId("repair-1"))
+        .when(mockClient)
+        .putRepairV2(any());
+    HttpCassandraManagementProxy proxy = mockProxy(mockClient);
+
+    // A non-subrange incremental segment holds one placeholder range per node. Like the JMX
+    // proxy, the HTTP proxy must not send it, so the coordinator repairs all of its ranges.
+    proxy.triggerRepair(
+        "ks",
+        RepairParallelism.PARALLEL,
+        Collections.singleton("table"),
+        RepairType.INCREMENTAL,
+        Collections.emptyList(),
+        mock(RepairStatusHandler.class),
+        Collections.singletonList(
+            new io.cassandrareaper.service.RingRange(
+                BigInteger.valueOf(10), BigInteger.valueOf(20))),
+        1);
+
+    verify(mockClient)
+        .putRepairV2(
+            eq(
+                (new RepairRequest())
+                    .keyspace("ks")
+                    .repairParallelism(RepairRequest.RepairParallelismEnum.PARALLEL)
+                    .tables(Arrays.asList("table"))
+                    .fullRepair(false)
+                    .datacenters(null)
+                    .repairThreadCount(1)
+                    .associatedTokens(Collections.emptyList())));
+  }
+
+  @Test
+  public void testTriggerRepairSubrangeSendsTokenRanges() throws Exception {
+    DefaultApi mockClient = mock(DefaultApi.class);
+    doReturn((new RepairRequestResponse()).repairId("repair-2"))
+        .when(mockClient)
+        .putRepairV2(any());
+    HttpCassandraManagementProxy proxy = mockProxy(mockClient);
+
+    proxy.triggerRepair(
+        "ks",
+        RepairParallelism.PARALLEL,
+        Collections.singleton("table"),
+        RepairType.SUBRANGE_INCREMENTAL,
+        Collections.emptyList(),
+        mock(RepairStatusHandler.class),
+        Collections.singletonList(
+            new io.cassandrareaper.service.RingRange(
+                BigInteger.valueOf(10), BigInteger.valueOf(20))),
+        1);
+
+    verify(mockClient)
+        .putRepairV2(
+            eq(
+                (new RepairRequest())
+                    .keyspace("ks")
+                    .repairParallelism(RepairRequest.RepairParallelismEnum.PARALLEL)
+                    .tables(Arrays.asList("table"))
+                    .fullRepair(false)
+                    .datacenters(null)
+                    .repairThreadCount(1)
+                    .associatedTokens(
+                        Collections.singletonList(
+                            new com.datastax.mgmtapi.client.model.RingRange()
+                                .start(10L)
+                                .end(20L)))));
+  }
+
   // Verify all the maps are correctly updated in the triggerRepair and removeRepairHandler which
   // get called
   // from other classes

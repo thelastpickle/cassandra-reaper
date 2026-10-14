@@ -388,13 +388,19 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
                       RepairRequest.RepairParallelismEnum.fromValue(repairParallelism.getName()))
                   .repairThreadCount(repairThreadCount)
                   .associatedTokens(
-                      associatedTokens.stream()
-                          .map(
-                              i ->
-                                  (new com.datastax.mgmtapi.client.model.RingRange())
-                                      .start(i.getStart().longValue())
-                                      .end(i.getEnd().longValue()))
-                          .collect(Collectors.toList())));
+                      // As in the JMX proxy, only subrange repairs carry token ranges. An
+                      // incremental segment holds a single placeholder range; sending it would
+                      // repair that one range instead of every range the coordinator replicates.
+                      (repairType.isSubrange()
+                              ? associatedTokens
+                              : Collections.<RingRange>emptyList())
+                          .stream()
+                              .map(
+                                  i ->
+                                      (new com.datastax.mgmtapi.client.model.RingRange())
+                                          .start(i.getStart().longValue())
+                                          .end(i.getEnd().longValue()))
+                              .collect(Collectors.toList())));
       jobId = resp.getRepairId();
     } catch (ApiException e) {
       throw new ReaperException(e);
