@@ -619,10 +619,18 @@ final class RepairRunner implements Runnable {
     Optional<RepairSegment> nextRepairSegment = Optional.empty();
     final Collection<String> potentialReplicas = new HashSet<>();
     for (RepairSegment segment : nextRepairSegments) {
+      final boolean nonSubrangeIncremental =
+          repairUnit.getIncrementalRepair() && !repairUnit.getSubrangeIncrementalRepair();
+      // Non-subrange incremental segments hold all of a node's ranges, which have different
+      // replica sets and cannot be validated as one; only the base range's replicas are used.
+      Segment segmentForReplicas =
+          nonSubrangeIncremental
+              ? Segment.builder().withTokenRange(segment.getTokenRange().getBaseRange()).build()
+              : segment.getTokenRange();
       Map<String, String> potentialReplicaMap =
           this.repairRunService.getDCsByNodeForRepairSegment(
-              cluster, segment.getTokenRange(), repairUnit.getKeyspaceName(), repairUnit);
-      if (repairUnit.getIncrementalRepair() && !repairUnit.getSubrangeIncrementalRepair()) {
+              cluster, segmentForReplicas, repairUnit.getKeyspaceName(), repairUnit);
+      if (nonSubrangeIncremental) {
         Map<String, String> endpointHostIdMap = clusterFacade.getEndpointToHostId(cluster);
         if (segment.getHostID() == null) {
           throw new ReaperException(
