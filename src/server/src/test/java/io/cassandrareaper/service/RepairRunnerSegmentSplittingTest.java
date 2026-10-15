@@ -1292,7 +1292,7 @@ public final class RepairRunnerSegmentSplittingTest {
   @Test
   public void testCreateMissingReplacementSegments_ThrowsWhenPostWriteFetchMissing()
       throws Exception {
-    UUID runId = createRepairRun();
+    createRepairRun();
 
     // Build a mock segment DAO: addRepairSegments is a no-op and getRepairSegmentByTokenRange
     // always returns empty, simulating a lost write where the segment never appears on read-back.
