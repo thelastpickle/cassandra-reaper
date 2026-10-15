@@ -1100,10 +1100,12 @@ final class RepairRunner implements Runnable {
             segmentId);
         return true;
       }
-      LOG.warn(
-          "Failed to retire original segment #{}: state is {}",
-          segmentId,
-          reRead.map(s -> s.getState().toString()).orElse("not found"));
+      if (LOG.isWarnEnabled()) {
+        LOG.warn(
+            "Failed to retire original segment #{}: state is {}",
+            segmentId,
+            reRead.map(s -> s.getState().toString()).orElse("not found"));
+      }
       return false;
     } catch (ReaperException e) {
       LOG.error("Reaper error detecting/handling topology change for segment #{}", segmentId, e);

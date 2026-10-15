@@ -43,6 +43,7 @@ import java.util.UUID;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -1037,8 +1038,8 @@ public final class RepairRunnerTopologyChangeFailureTest {
 
     Set<String> actualRanges = new java.util.HashSet<>();
     for (RepairSegment seg : notStarted) {
-      assertFalse(
-          "Original must not be reused as a replacement", original.getId().equals(seg.getId()));
+      assertNotEquals(
+          "Original must not be reused as a replacement", original.getId(), seg.getId());
       assertEquals(
           "Replacements must be single-range", 1, seg.getTokenRange().getTokenRanges().size());
       actualRanges.add(seg.getStartToken() + ":" + seg.getEndToken());
