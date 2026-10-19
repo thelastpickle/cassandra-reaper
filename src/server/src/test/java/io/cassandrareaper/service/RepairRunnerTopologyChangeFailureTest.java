@@ -55,6 +55,7 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.apache.cassandra.repair.RepairParallelism;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -1042,6 +1043,70 @@ public final class RepairRunnerTopologyChangeFailureTest {
           "Original must not be reused as a replacement", original.getId(), seg.getId());
       assertEquals(
           "Replacements must be single-range", 1, seg.getTokenRange().getTokenRanges().size());
+      actualRanges.add(seg.getStartToken() + ":" + seg.getEndToken());
+    }
+
+    assertEquals("Exactly three NOT_STARTED replacements expected", 3, notStarted.size());
+    assertEquals(Sets.newHashSet("0:100", "200:250", "250:300"), actualRanges);
+  }
+
+  /**
+   * Regression test: JmxCassandraManagementProxy.getTokens() returns a read-only Lists.transform
+   * view. computeReplacementSegments sorts the ring tokens, so it must copy them first. Same
+   * scenario as the coalesced test above, with a JMX-shaped token list.
+   */
+  @Test
+  public void testRecoverySucceedsWithReadOnlyRingTokens_jmxProxy() throws Exception {
+    UUID runId = createRepairRun();
+
+    RingRange range1 = new RingRange(BigInteger.valueOf(0), BigInteger.valueOf(100));
+    RingRange range2 = new RingRange(BigInteger.valueOf(200), BigInteger.valueOf(300));
+    Segment coalesced = Segment.builder().withTokenRanges(Arrays.asList(range1, range2)).build();
+
+    storage
+        .getRepairSegmentDao()
+        .addRepairSegments(
+            Collections.singletonList(
+                RepairSegment.builder(coalesced, repairUnitId)
+                    .withRunId(runId)
+                    .withState(RepairSegment.State.NOT_STARTED)),
+            runId);
+
+    RepairSegment original =
+        storage
+            .getRepairSegmentDao()
+            .getRepairSegmentByTokenRange(
+                runId, repairUnitId, BigInteger.valueOf(0), BigInteger.valueOf(100))
+            .get();
+
+    RepairRunner runner = createRepairRunner(runId);
+
+    // Read-only view exactly like JmxCassandraManagementProxy.getTokens(): sorting it in place
+    // throws UnsupportedOperationException.
+    List<BigInteger> ringTokens = Lists.transform(Arrays.asList("250"), BigInteger::new);
+    when(mockClusterFacade.getTokens(any())).thenReturn(ringTokens);
+
+    Map<String, String> topology = new HashMap<>();
+    topology.put("127.0.0.1", "dc1");
+    when(mockRepairRunService.getDCsByNodeForRepairSegment(any(), any(), anyString(), any()))
+        .thenReturn(topology);
+
+    boolean result = invokeDetectAndHandleTopologyChange(runner, original.getId(), coalesced);
+
+    assertTrue("Topology change should be handled", result);
+
+    RepairSegment retired =
+        storage.getRepairSegmentDao().getRepairSegment(runId, original.getId()).get();
+    assertEquals("Original must be retired", RepairSegment.State.DONE, retired.getState());
+
+    List<RepairSegment> notStarted =
+        new ArrayList<>(
+            storage
+                .getRepairSegmentDao()
+                .getSegmentsWithState(runId, RepairSegment.State.NOT_STARTED));
+
+    Set<String> actualRanges = new java.util.HashSet<>();
+    for (RepairSegment seg : notStarted) {
       actualRanges.add(seg.getStartToken() + ":" + seg.getEndToken());
     }
 

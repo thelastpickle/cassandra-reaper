@@ -1140,8 +1140,9 @@ final class RepairRunner implements Runnable {
     List<RepairSegment> replacements = new ArrayList<>();
 
     try {
-      // Get current ring tokens from the cluster
-      List<BigInteger> ringTokens = clusterFacade.getTokens(cluster);
+      // Get current ring tokens from the cluster. Copy into a mutable list: the JMX proxy
+      // returns a read-only Lists.transform view, and the list is sorted in place below.
+      List<BigInteger> ringTokens = new ArrayList<>(clusterFacade.getTokens(cluster));
 
       if (ringTokens.isEmpty()) {
         LOG.warn("No ring tokens available from cluster");
@@ -1204,7 +1205,7 @@ final class RepairRunner implements Runnable {
     splitTokens.add(endToken);
 
     // Remove duplicates
-    splitTokens = splitTokens.stream().distinct().collect(Collectors.toList());
+    splitTokens = splitTokens.stream().distinct().collect(Collectors.toCollection(ArrayList::new));
 
     // Sort by ring distance from start (handles both normal and wrap-around ranges)
     splitTokens.sort(Comparator.comparing(token -> ringDistanceFromStart(token, startToken)));
