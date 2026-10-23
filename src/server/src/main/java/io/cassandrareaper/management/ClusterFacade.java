@@ -452,16 +452,53 @@ public final class ClusterFacade {
       return Lists.newArrayList();
     }
 
-    for (Map.Entry<List<String>, List<String>> entry : entries) {
-      BigInteger rangeStart = new BigInteger(entry.getKey().get(0));
-      BigInteger rangeEnd = new BigInteger(entry.getKey().get(1));
-      if (new RingRange(rangeStart, rangeEnd).encloses(segment.getTokenRanges().get(0))) {
-        return entry.getValue();
+    List<RingRange> segmentRanges = segment.getTokenRanges();
+
+    // For every sub-range of the segment, find the single ring entry that encloses it and
+    // collect its replica set.  If any range is not enclosed by any entry, or if the replica
+    // sets differ across ranges, the segment straddles ring boundaries introduced by a topology
+    // change and must be treated as faulty.
+    List<String> replicasForFirstRange = null;
+    for (RingRange segmentRange : segmentRanges) {
+      List<String> replicasForRange = null;
+      for (Map.Entry<List<String>, List<String>> entry : entries) {
+        BigInteger rangeStart = new BigInteger(entry.getKey().get(0));
+        BigInteger rangeEnd = new BigInteger(entry.getKey().get(1));
+        if (new RingRange(rangeStart, rangeEnd).encloses(segmentRange)) {
+          replicasForRange = entry.getValue();
+          break;
+        }
+      }
+      if (replicasForRange == null) {
+        LOG.warn(
+            "[tokenRangeToEndpoint] no enclosing ring entry for sub-range {} of segment {}; "
+                + "topology may have changed",
+            segmentRange,
+            segment);
+        LOG.debug("[tokenRangeToEndpoint] checked token ranges were {}", entries);
+        return Lists.newArrayList();
+      }
+      if (replicasForFirstRange == null) {
+        replicasForFirstRange = replicasForRange;
+      } else if (!new java.util.HashSet<>(replicasForFirstRange)
+          .equals(new java.util.HashSet<>(replicasForRange))) {
+        LOG.warn(
+            "[tokenRangeToEndpoint] replica sets differ between sub-ranges of segment {}; "
+                + "first range replicas={}, offending range {} replicas={}; "
+                + "topology may have changed",
+            segment,
+            replicasForFirstRange,
+            segmentRange,
+            replicasForRange);
+        return Lists.newArrayList();
       }
     }
-    LOG.error("[tokenRangeToEndpoint] no replicas found for token range {}", segment);
-    LOG.debug("[tokenRangeToEndpoint] checked token ranges were {}", entries);
-    return Lists.newArrayList();
+    if (replicasForFirstRange == null) {
+      LOG.error("[tokenRangeToEndpoint] no replicas found for token range {}", segment);
+      LOG.debug("[tokenRangeToEndpoint] checked token ranges were {}", entries);
+      return Lists.newArrayList();
+    }
+    return replicasForFirstRange;
   }
 
   /**
