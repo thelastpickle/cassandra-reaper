@@ -387,6 +387,18 @@ final class RepairRunner implements Runnable {
         try {
           DateTime repairRunCompleted = DateTime.now();
 
+          // Recompute the segment count before marking DONE so that any topology-change recovery
+          // that ran during this repair (and may have been clobbered by a racing stale-copy write
+          // from a concurrent pause/intensity update on another Reaper instance) is reflected in
+          // the final DONE row.  updateRunSegmentCount() re-reads from the segment DAO, so it is
+          // safe to call unconditionally; it is a no-op when the count is already correct.
+          updateRunSegmentCount();
+          // Re-read after the count update so the DONE write carries the fresh value.
+          repairRun = repairRunDao.getRepairRun(repairRunId);
+          if (!repairRun.isPresent()) {
+            return;
+          }
+
           repairRunDao.updateRepairRun(
               repairRun
                   .get()
@@ -1088,6 +1100,7 @@ final class RepairRunner implements Runnable {
 
       if (retired) {
         LOG.info("Successfully retired original segment #{} after topology change", segmentId);
+        updateRunSegmentCount();
         return true;
       }
 
@@ -1098,6 +1111,7 @@ final class RepairRunner implements Runnable {
         LOG.info(
             "Segment #{} was already DONE (concurrent retirement); topology change handled",
             segmentId);
+        updateRunSegmentCount();
         return true;
       }
       if (LOG.isWarnEnabled()) {
@@ -1549,6 +1563,38 @@ final class RepairRunner implements Runnable {
         originalEnd,
         sorted.size());
     return true;
+  }
+
+  /**
+   * Recomputes the repair run's total segment count from the segment DAO and persists it. This is
+   * called after a successful topology-change recovery so that the stored {@code segment_count}
+   * stays in sync with the actual number of segments (original + replacements - retired original,
+   * but the retired original is DONE so it still counts toward the total). The recomputation is
+   * idempotent: calling it multiple times (e.g., concurrent Reaper instances) is safe.
+   */
+  private void updateRunSegmentCount() {
+    int actualCount =
+        context.storage.getRepairSegmentDao().getSegmentAmountForRepairRun(repairRunId);
+    Optional<RepairRun> runOpt = repairRunDao.getRepairRun(repairRunId);
+    if (!runOpt.isPresent()) {
+      LOG.warn("Cannot update segment count: repair run {} not found", repairRunId);
+      return;
+    }
+    RepairRun run = runOpt.get();
+    if (run.getSegmentCount() == actualCount) {
+      LOG.debug(
+          "Repair run {} segment count already correct ({}), no update needed",
+          repairRunId,
+          actualCount);
+      return;
+    }
+    LOG.info(
+        "Updating repair run {} segment count from {} to {} after topology change recovery",
+        repairRunId,
+        run.getSegmentCount(),
+        actualCount);
+    repairRunDao.updateRepairRun(
+        run.with().segmentCount(actualCount).build(repairRunId), Optional.of(false));
   }
 
   /**

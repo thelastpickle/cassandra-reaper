@@ -49,6 +49,7 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
@@ -1503,5 +1504,376 @@ public final class RepairRunnerTopologyChangeFailureTest {
         RepairRunner.class.getDeclaredMethod("rangesUnchanged", List.class, List.class);
     method.setAccessible(true);
     return (boolean) method.invoke(runner, originalRanges, replacementSegments);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Tests for segment-count update after topology recovery (fix for issue #1647)
+  // ---------------------------------------------------------------------------
+
+  /**
+   * After a successful topology recovery the run's segment_count must equal the actual number of
+   * segments: original (DONE) + N replacements (NOT_STARTED). repaired==DONE count must therefore
+   * never exceed total at any point.
+   *
+   * <p>Scenario: one original segment [0, 100) split into 3 replacements [0,40), [40,70), [70,100).
+   * Original segmentCount was 1. After recovery segmentCount must be 4 (1 retired + 3 new).
+   */
+  @Test
+  public void testRunSegmentCountUpdatedAfterSuccessfulRecovery() throws Exception {
+    // Run created with segmentCount=1 (one segment)
+    UUID runId = createRepairRun(); // segmentCount=10 from createRepairRun helper
+
+    RingRange range = new RingRange(BigInteger.valueOf(0), BigInteger.valueOf(100));
+    Segment original = Segment.builder().withTokenRange(range).build();
+    storage
+        .getRepairSegmentDao()
+        .addRepairSegments(
+            Collections.singletonList(
+                RepairSegment.builder(original, repairUnitId)
+                    .withRunId(runId)
+                    .withState(RepairSegment.State.NOT_STARTED)),
+            runId);
+
+    RepairSegment stored =
+        storage
+            .getRepairSegmentDao()
+            .getRepairSegmentByTokenRange(
+                runId, repairUnitId, BigInteger.valueOf(0), BigInteger.valueOf(100))
+            .get();
+
+    int segmentsBefore = storage.getRepairSegmentDao().getSegmentAmountForRepairRun(runId);
+    assertEquals("One segment before recovery", 1, segmentsBefore);
+
+    RepairRunner runner = createRepairRunner(runId);
+
+    // Two split tokens inside the range → 3 replacement segments
+    List<BigInteger> ringTokens = new ArrayList<>();
+    ringTokens.add(BigInteger.valueOf(40));
+    ringTokens.add(BigInteger.valueOf(70));
+    when(mockClusterFacade.getTokens(any())).thenReturn(ringTokens);
+
+    Map<String, String> topology = new HashMap<>();
+    topology.put("127.0.0.1", "dc1");
+    when(mockRepairRunService.getDCsByNodeForRepairSegment(any(), any(), anyString(), any()))
+        .thenReturn(topology);
+
+    boolean result = invokeDetectAndHandleTopologyChange(runner, stored.getId(), original);
+    assertTrue("Recovery must succeed", result);
+
+    // Verify segment state after recovery: 1 DONE (retired) + 3 NOT_STARTED
+    int totalSegments = storage.getRepairSegmentDao().getSegmentAmountForRepairRun(runId);
+    int doneSegments =
+        storage
+            .getRepairSegmentDao()
+            .getSegmentAmountForRepairRunWithState(runId, RepairSegment.State.DONE);
+    assertEquals("Total segments must be 4 after recovery (1 retired + 3 new)", 4, totalSegments);
+    assertEquals("1 segment should be DONE (retired original)", 1, doneSegments);
+
+    // The run's persisted segmentCount must now equal the actual total
+    int persistedCount = storage.getRepairRunDao().getRepairRun(runId).get().getSegmentCount();
+    assertEquals(
+        "Persisted segmentCount must match actual segment count in DAO",
+        totalSegments,
+        persistedCount);
+
+    // Verify repaired never exceeds total: mark all replacements DONE and check
+    storage
+        .getRepairSegmentDao()
+        .getSegmentsWithState(runId, RepairSegment.State.NOT_STARTED)
+        .forEach(
+            seg ->
+                storage
+                    .getRepairSegmentDao()
+                    .updateRepairSegmentStateConditional(
+                        runId,
+                        seg.getId(),
+                        RepairSegment.State.DONE,
+                        RepairSegment.State.NOT_STARTED));
+
+    int finalDone =
+        storage
+            .getRepairSegmentDao()
+            .getSegmentAmountForRepairRunWithState(runId, RepairSegment.State.DONE);
+    int finalTotal = storage.getRepairRunDao().getRepairRun(runId).get().getSegmentCount();
+    assertEquals(
+        "repaired must equal total when all segments are DONE (never repaired > total)",
+        finalTotal,
+        finalDone);
+  }
+
+  /**
+   * When recovery fails (e.g., no valid coordinators for a replacement), the run's segmentCount
+   * must remain unchanged.
+   */
+  @Test
+  public void testRunSegmentCountUnchangedWhenRecoveryFails() throws Exception {
+    UUID runId = createRepairRun();
+
+    RingRange range = new RingRange(BigInteger.valueOf(0), BigInteger.valueOf(100));
+    Segment original = Segment.builder().withTokenRange(range).build();
+    storage
+        .getRepairSegmentDao()
+        .addRepairSegments(
+            Collections.singletonList(
+                RepairSegment.builder(original, repairUnitId)
+                    .withRunId(runId)
+                    .withState(RepairSegment.State.NOT_STARTED)),
+            runId);
+
+    RepairSegment stored =
+        storage
+            .getRepairSegmentDao()
+            .getRepairSegmentByTokenRange(
+                runId, repairUnitId, BigInteger.valueOf(0), BigInteger.valueOf(100))
+            .get();
+
+    int countBefore = storage.getRepairRunDao().getRepairRun(runId).get().getSegmentCount();
+
+    RepairRunner runner = createRepairRunner(runId);
+
+    // Split token inside range → two replacement candidates
+    List<BigInteger> ringTokens = new ArrayList<>();
+    ringTokens.add(BigInteger.valueOf(50));
+    when(mockClusterFacade.getTokens(any())).thenReturn(ringTokens);
+
+    // Empty topology → no valid coordinators → recovery must fail
+    when(mockRepairRunService.getDCsByNodeForRepairSegment(any(), any(), anyString(), any()))
+        .thenReturn(Collections.emptyMap());
+
+    boolean result = invokeDetectAndHandleTopologyChange(runner, stored.getId(), original);
+    assertFalse("Recovery must fail when no coordinators available", result);
+
+    int countAfter = storage.getRepairRunDao().getRepairRun(runId).get().getSegmentCount();
+    assertEquals("segmentCount must be unchanged when recovery fails", countBefore, countAfter);
+  }
+
+  /**
+   * Idempotency test: calling detectAndHandleTopologyChange twice (lost-LWT path: the second call
+   * finds the original already DONE) must not double-count segments. The persisted count must equal
+   * the actual segment total both times.
+   */
+  @Test
+  public void testRunSegmentCountIdempotentOnLostLwtPath() throws Exception {
+    UUID runId = createRepairRun();
+
+    RingRange range = new RingRange(BigInteger.valueOf(0), BigInteger.valueOf(100));
+    Segment original = Segment.builder().withTokenRange(range).build();
+    IRepairSegmentDao realDao = storage.getRepairSegmentDao();
+    realDao.addRepairSegments(
+        Collections.singletonList(
+            RepairSegment.builder(original, repairUnitId)
+                .withRunId(runId)
+                .withState(RepairSegment.State.NOT_STARTED)),
+        runId);
+    UUID originalId =
+        realDao
+            .getRepairSegmentByTokenRange(
+                runId, repairUnitId, BigInteger.valueOf(0), BigInteger.valueOf(100))
+            .get()
+            .getId();
+
+    // First recovery: normal retire succeeds (LWT wins)
+    RepairRunner runner1 = createRepairRunner(runId);
+    List<BigInteger> ringTokens = new ArrayList<>();
+    ringTokens.add(BigInteger.valueOf(50));
+    when(mockClusterFacade.getTokens(any())).thenReturn(ringTokens);
+    Map<String, String> topology = new HashMap<>();
+    topology.put("127.0.0.1", "dc1");
+    when(mockRepairRunService.getDCsByNodeForRepairSegment(any(), any(), anyString(), any()))
+        .thenReturn(topology);
+
+    assertTrue(
+        "First recovery must succeed",
+        invokeDetectAndHandleTopologyChange(runner1, originalId, original));
+
+    int countAfterFirst = storage.getRepairRunDao().getRepairRun(runId).get().getSegmentCount();
+    int actualAfterFirst = realDao.getSegmentAmountForRepairRun(runId);
+    assertEquals("Count after first recovery must match actual", actualAfterFirst, countAfterFirst);
+
+    // Second recovery: LWT fails, re-read shows DONE (already retired). Uses the spied dao to
+    // simulate the lost-LWT path without touching the already-DONE original.
+    IRepairSegmentDao spyDao = spy(realDao);
+    doAnswer(
+            invocation -> {
+              // LWT always returns false (another instance won), but the segment is already DONE
+              return false;
+            })
+        .when(spyDao)
+        .updateRepairSegmentStateConditional(
+            runId, originalId, RepairSegment.State.DONE, RepairSegment.State.NOT_STARTED);
+
+    IStorageDao wrapped =
+        mock(IStorageDao.class, org.mockito.AdditionalAnswers.delegatesTo(storage));
+    doReturn(spyDao).when(wrapped).getRepairSegmentDao();
+
+    AppContext testContext2 = new AppContext();
+    testContext2.storage = wrapped;
+    testContext2.config = context.config;
+    RepairRunner runner2 =
+        new RepairRunner(
+            testContext2,
+            runId,
+            mockClusterFacade,
+            storage.getRepairRunDao(),
+            mockRepairRunService);
+
+    // The original is already DONE, so the lost-LWT re-read path fires → updateRunSegmentCount
+    assertTrue(
+        "Second recovery (lost-LWT/already-DONE) must succeed",
+        invokeDetectAndHandleTopologyChange(runner2, originalId, original));
+
+    int countAfterSecond = storage.getRepairRunDao().getRepairRun(runId).get().getSegmentCount();
+    int actualAfterSecond = realDao.getSegmentAmountForRepairRun(runId);
+    assertEquals(
+        "Count after second recovery must still match actual", actualAfterSecond, countAfterSecond);
+    assertEquals(
+        "Count must not change between first and second recovery (idempotent)",
+        countAfterFirst,
+        countAfterSecond);
+  }
+
+  /**
+   * Regression guard for stale-copy clobber at DONE: after topology recovery has updated the run's
+   * segment_count, a racing stale-copy write (simulating a concurrent pause/intensity API call on
+   * another Reaper instance that had read the run before recovery) reverts the count. Invoking
+   * endRepairRun() must still produce a DONE row with the correct segment count, because
+   * endRepairRun() calls updateRunSegmentCount() before building the DONE update.
+   *
+   * <p>This test fails without the updateRunSegmentCount() call in endRepairRun() and passes with
+   * it.
+   */
+  @Test
+  public void testEndRepairRunWritesCorrectSegmentCountAfterStaleClobber() throws Exception {
+    UUID runId = createRepairRunWithSegments();
+
+    // Capture the run BEFORE recovery — this is the stale copy a racing writer would hold.
+    RepairRun preRecoverySnapshot = storage.getRepairRunDao().getRepairRun(runId).get();
+    int staleCount = preRecoverySnapshot.getSegmentCount(); // 1
+
+    RepairRunner runner = createRepairRunnerWithEndRepairRunSupport(runId);
+
+    // Topology split: [0,100) → [0,50) + [50,100).
+    // After recovery: 1 retired DONE + 2 NOT_STARTED replacements = 3 total segment rows.
+    UUID originalId =
+        storage
+            .getRepairSegmentDao()
+            .getRepairSegmentByTokenRange(
+                runId, repairUnitId, BigInteger.valueOf(0), BigInteger.valueOf(100))
+            .get()
+            .getId();
+    Segment originalRange =
+        Segment.builder()
+            .withTokenRange(new RingRange(BigInteger.valueOf(0), BigInteger.valueOf(100)))
+            .build();
+
+    List<BigInteger> ringTokens = new ArrayList<>();
+    ringTokens.add(BigInteger.valueOf(50));
+    when(mockClusterFacade.getTokens(any())).thenReturn(ringTokens);
+    Map<String, String> topology = new HashMap<>();
+    topology.put("127.0.0.1", "dc1");
+    when(mockRepairRunService.getDCsByNodeForRepairSegment(any(), any(), anyString(), any()))
+        .thenReturn(topology);
+
+    assertTrue(
+        "Recovery must succeed",
+        invokeDetectAndHandleTopologyChange(runner, originalId, originalRange));
+
+    // expectedCount = all segment rows in the DAO after recovery (retired + replacements).
+    int expectedCount = storage.getRepairSegmentDao().getSegmentAmountForRepairRun(runId);
+    assertEquals(
+        "segmentCount after recovery must equal actual DAO segment count",
+        expectedCount,
+        storage.getRepairRunDao().getRepairRun(runId).get().getSegmentCount());
+    assertNotEquals(
+        "expectedCount must differ from stale pre-recovery count", staleCount, expectedCount);
+
+    // Simulate a racing stale-copy write (pause/intensity update on another Reaper instance that
+    // read the run before recovery ran). This reverts segment_count back to staleCount.
+    storage
+        .getRepairRunDao()
+        .updateRepairRun(
+            preRecoverySnapshot.with().lastEvent("racing stale-copy write").build(runId),
+            Optional.of(false));
+
+    assertEquals(
+        "Stale-copy write must have clobbered the corrected count",
+        staleCount,
+        storage.getRepairRunDao().getRepairRun(runId).get().getSegmentCount());
+
+    // Mark all segments DONE so endRepairRun() sees segmentsDone == segmentsTotal.
+    storage
+        .getRepairSegmentDao()
+        .getRepairSegmentsForRun(runId)
+        .forEach(
+            seg -> {
+              if (seg.getState() != RepairSegment.State.DONE) {
+                storage
+                    .getRepairSegmentDao()
+                    .updateRepairSegmentStateConditional(
+                        runId, seg.getId(), RepairSegment.State.DONE, seg.getState());
+              }
+            });
+
+    // Invoke endRepairRun() directly via reflection.
+    java.lang.reflect.Method endMethod = RepairRunner.class.getDeclaredMethod("endRepairRun");
+    endMethod.setAccessible(true);
+    endMethod.invoke(runner);
+
+    RepairRun done = storage.getRepairRunDao().getRepairRun(runId).get();
+    assertEquals("Run must be DONE", RepairRun.RunState.DONE, done.getRunState());
+    assertEquals(
+        "segmentCount in DONE run must equal actual segments, not the stale pre-recovery value",
+        expectedCount,
+        done.getSegmentCount());
+  }
+
+  /**
+   * Creates a repair run in RUNNING state with a single segment [0, 100) and returns its id.
+   * Initial segmentCount is 1. Splitting at token 50 yields 3 total rows after recovery (1 retired
+   * DONE + 2 NOT_STARTED), so updateRunSegmentCount will set segmentCount=3.
+   */
+  private UUID createRepairRunWithSegments() {
+    RepairRun run =
+        storage
+            .getRepairRunDao()
+            .addRepairRun(
+                RepairRun.builder(cluster.getName(), repairUnitId)
+                    .intensity(0.5)
+                    .segmentCount(1)
+                    .repairParallelism(RepairParallelism.PARALLEL)
+                    .tables(TABLES),
+                Collections.singletonList(
+                    RepairSegment.builder(
+                        Segment.builder()
+                            .withTokenRange(
+                                new RingRange(BigInteger.valueOf(0), BigInteger.valueOf(100)))
+                            .build(),
+                        repairUnitId)));
+    // Transition to RUNNING so endRepairRun() can mark DONE (Builder requires startTime for DONE).
+    storage
+        .getRepairRunDao()
+        .updateRepairRun(
+            run.with()
+                .runState(RepairRun.RunState.RUNNING)
+                .startTime(org.joda.time.DateTime.now())
+                .build(run.getId()));
+    return run.getId();
+  }
+
+  /**
+   * Creates a RepairRunner with the extra AppContext fields that endRepairRun() needs:
+   * repairManager (for killAndCleanupRunner) and schedulingManager.
+   */
+  private RepairRunner createRepairRunnerWithEndRepairRunSupport(UUID runId)
+      throws ReaperException {
+    AppContext testContext = new AppContext();
+    testContext.storage = storage;
+    testContext.config = context.config;
+    testContext.repairManager = mock(RepairManager.class);
+    doNothing().when(testContext.repairManager).removeRunner(any());
+    testContext.schedulingManager = mock(SchedulingManager.class);
+    doNothing().when(testContext.schedulingManager).maybeRegisterRepairRunCompleted(any());
+    return new RepairRunner(
+        testContext, runId, mockClusterFacade, storage.getRepairRunDao(), mockRepairRunService);
   }
 }
