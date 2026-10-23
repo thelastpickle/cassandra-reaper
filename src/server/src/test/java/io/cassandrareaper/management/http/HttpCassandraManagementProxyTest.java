@@ -1017,6 +1017,71 @@ public class HttpCassandraManagementProxyTest {
   }
 
   @Test
+  public void testGetEndpointToHostIdSkipsLeftEndpointWithoutHostId() throws Exception {
+    DefaultApi mockClient = Mockito.mock(DefaultApi.class);
+    EndpointStates states = new EndpointStates();
+    states.addEntityItem(
+        ImmutableMap.of(
+            "ENDPOINT_IP", "10.0.0.1",
+            "HOST_ID", "1",
+            "IS_ALIVE", "true"));
+    states.addEntityItem(
+        ImmutableMap.of(
+            "ENDPOINT_IP", "10.0.0.2",
+            "HOST_ID", "2",
+            "IS_ALIVE", "true"));
+    // A node removed with removenode/assassinate can stay in gossip as LEFT without a HOST_ID
+    states.addEntityItem(
+        ImmutableMap.of(
+            "ENDPOINT_IP", "10.0.0.3",
+            "IS_ALIVE", "false",
+            "IS_LOCAL", "false",
+            "STATUS_WITH_PORT", "LEFT,-12345,12345"));
+    // A down ring member still has its HOST_ID and must stay in the map
+    states.addEntityItem(
+        ImmutableMap.of(
+            "ENDPOINT_IP", "10.0.0.4",
+            "HOST_ID", "4",
+            "IS_ALIVE", "false",
+            "STATUS_WITH_PORT", "NORMAL,1,1"));
+
+    when(mockClient.getEndpointStates()).thenReturn(states);
+
+    HttpCassandraManagementProxy proxy = mockProxy(mockClient);
+    assertThat(proxy.getEndpointToHostId())
+        .containsExactlyInAnyOrderEntriesOf(
+            ImmutableMap.of(
+                "10.0.0.1", "1",
+                "10.0.0.2", "2",
+                "10.0.0.4", "4"));
+    verify(mockClient).getEndpointStates();
+    verifyNoMoreInteractions(mockClient);
+  }
+
+  @Test
+  public void testGetEndpointToHostIdSkipsEndpointWithoutEndpointIp() throws Exception {
+    DefaultApi mockClient = Mockito.mock(DefaultApi.class);
+    EndpointStates states = new EndpointStates();
+    states.addEntityItem(
+        ImmutableMap.of(
+            "ENDPOINT_IP", "10.0.0.1",
+            "HOST_ID", "1"));
+    states.addEntityItem(
+        ImmutableMap.of(
+            "HOST_ID", "2",
+            "IS_ALIVE", "false"));
+
+    when(mockClient.getEndpointStates()).thenReturn(states);
+
+    HttpCassandraManagementProxy proxy = mockProxy(mockClient);
+    assertThat(proxy.getEndpointToHostId())
+        .containsExactlyInAnyOrderEntriesOf(ImmutableMap.of("10.0.0.1", "1"))
+        .doesNotContainKey(null);
+    verify(mockClient).getEndpointStates();
+    verifyNoMoreInteractions(mockClient);
+  }
+
+  @Test
   public void testGetPendingCompactions() throws ReaperException {
     DefaultApi mockClient = Mockito.mock(DefaultApi.class);
     HttpMetricsProxy metricsProxy = Mockito.mock(HttpMetricsProxy.class);
