@@ -23,12 +23,16 @@ import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.Compaction;
 import io.cassandrareaper.core.CompactionStats;
 import io.cassandrareaper.core.JmxCredentials;
+import io.cassandrareaper.core.Segment;
 import io.cassandrareaper.management.jmx.JmxCassandraManagementProxy;
 import io.cassandrareaper.management.jmx.JmxManagementConnectionFactory;
+import io.cassandrareaper.service.RingRange;
 
 import java.io.IOException;
+import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -188,6 +192,136 @@ public class ClusterFacadeTest {
     for (Map.Entry<List<String>, List<String>> entry : endpoints.entrySet()) {
       assertEquals(endpoints, threeNodeClusterWithIps());
     }
+  }
+
+  // -------------------------------------------------------------------------
+  // tokenRangeToEndpoint – all-ranges validation (Fix A regression tests)
+  // -------------------------------------------------------------------------
+
+  /**
+   * Builds a stubbed ClusterFacade whose getRangeToEndpointMap always returns the supplied map. The
+   * JMX proxy is configured to accept any connect call, so the facade can be instantiated without a
+   * real Cassandra cluster. Clears static caches so that each test exercises a fresh cache miss.
+   */
+  private ClusterFacade buildFacadeWithRangeMap(Map<List<String>, List<String>> rangeToEndpointMap)
+      throws ReaperException {
+    ClusterFacade.clearCaches();
+    AppContext ctx = new AppContext();
+    ctx.config = new ReaperApplicationConfiguration();
+    JmxManagementConnectionFactory factory = mock(JmxManagementConnectionFactory.class);
+    JmxCassandraManagementProxy proxy = mock(JmxCassandraManagementProxy.class);
+    when(factory.connectAny(any())).thenReturn(proxy);
+    when(proxy.getRangeToEndpointMap(any())).thenReturn(rangeToEndpointMap);
+    ctx.managementConnectionFactory = factory;
+    return ClusterFacade.create(ctx);
+  }
+
+  private static Cluster testCluster() {
+    return Cluster.builder()
+        .withName("test")
+        .withSeedHosts(new HashSet<>(Arrays.asList("127.0.0.1")))
+        .withState(Cluster.State.ACTIVE)
+        .build();
+  }
+
+  private static Map<List<String>, List<String>> rangeMap(
+      String start, String end, String... hosts) {
+    Map<List<String>, List<String>> m = new HashMap<>();
+    m.put(Arrays.asList(start, end), Arrays.asList(hosts));
+    return m;
+  }
+
+  /**
+   * Test A-a: coalesced segment with all ranges enclosed by the same replica set → replicas
+   * returned.
+   */
+  @Test
+  public void tokenRangeToEndpoint_allRangesEnclosedSameReplicas_returnsReplicas()
+      throws ReaperException {
+    // Ring: [0,100) → node1,node2 and [100,200) → node1,node2 (same replicas)
+    Map<List<String>, List<String>> ring = new HashMap<>();
+    ring.put(Arrays.asList("0", "100"), Arrays.asList("127.0.0.1", "127.0.0.2"));
+    ring.put(Arrays.asList("100", "200"), Arrays.asList("127.0.0.1", "127.0.0.2"));
+
+    // Coalesced segment: ranges [10,50) and [110,150) – both enclosed, same replicas
+    Segment segment =
+        Segment.builder()
+            .withTokenRanges(
+                Arrays.asList(
+                    new RingRange(BigInteger.valueOf(10), BigInteger.valueOf(50)),
+                    new RingRange(BigInteger.valueOf(110), BigInteger.valueOf(150))))
+            .build();
+
+    ClusterFacade facade = buildFacadeWithRangeMap(ring);
+    List<String> result = facade.tokenRangeToEndpoint(testCluster(), "ks", segment);
+    assertEquals(Arrays.asList("127.0.0.1", "127.0.0.2"), result);
+  }
+
+  /**
+   * Test A-b: second range of a coalesced segment spans two ring entries (no single entry encloses
+   * it) → empty list.
+   */
+  @Test
+  public void tokenRangeToEndpoint_secondRangeSpansTwoRingEntries_returnsEmpty()
+      throws ReaperException {
+    // Ring has a boundary at 50; a sub-range [20,80) crosses that boundary
+    Map<List<String>, List<String>> ring = new HashMap<>();
+    ring.put(Arrays.asList("0", "50"), Arrays.asList("127.0.0.1", "127.0.0.2"));
+    ring.put(Arrays.asList("50", "100"), Arrays.asList("127.0.0.1", "127.0.0.2"));
+
+    // First range [10,40) is enclosed; second range [20,80) crosses the 50 boundary
+    Segment segment =
+        Segment.builder()
+            .withTokenRanges(
+                Arrays.asList(
+                    new RingRange(BigInteger.valueOf(10), BigInteger.valueOf(40)),
+                    new RingRange(BigInteger.valueOf(20), BigInteger.valueOf(80))))
+            .build();
+
+    ClusterFacade facade = buildFacadeWithRangeMap(ring);
+    List<String> result = facade.tokenRangeToEndpoint(testCluster(), "ks", segment);
+    assertTrue("Expected empty list when second range crosses ring boundary", result.isEmpty());
+  }
+
+  /**
+   * Test A-c: ranges are each individually enclosed, but by ring entries with different replica
+   * sets → empty list.
+   */
+  @Test
+  public void tokenRangeToEndpoint_rangesEnclosedButDifferentReplicaSets_returnsEmpty()
+      throws ReaperException {
+    // Two ring entries covering [0,100) and [100,200), each with a different replica set
+    Map<List<String>, List<String>> ring = new HashMap<>();
+    ring.put(Arrays.asList("0", "100"), Arrays.asList("127.0.0.1", "127.0.0.2"));
+    ring.put(Arrays.asList("100", "200"), Arrays.asList("127.0.0.3", "127.0.0.4"));
+
+    // Coalesced segment: [10,50) enclosed in first entry, [110,150) enclosed in second entry
+    Segment segment =
+        Segment.builder()
+            .withTokenRanges(
+                Arrays.asList(
+                    new RingRange(BigInteger.valueOf(10), BigInteger.valueOf(50)),
+                    new RingRange(BigInteger.valueOf(110), BigInteger.valueOf(150))))
+            .build();
+
+    ClusterFacade facade = buildFacadeWithRangeMap(ring);
+    List<String> result = facade.tokenRangeToEndpoint(testCluster(), "ks", segment);
+    assertTrue("Expected empty list when sub-ranges have different replica sets", result.isEmpty());
+  }
+
+  /** Test A-d: single-range segment – behaviour must be identical to the pre-fix implementation. */
+  @Test
+  public void tokenRangeToEndpoint_singleRangeSegment_returnsReplicas() throws ReaperException {
+    Map<List<String>, List<String>> ring = rangeMap("0", "100", "127.0.0.1", "127.0.0.2");
+
+    Segment segment =
+        Segment.builder()
+            .withTokenRange(new RingRange(BigInteger.valueOf(10), BigInteger.valueOf(50)))
+            .build();
+
+    ClusterFacade facade = buildFacadeWithRangeMap(ring);
+    List<String> result = facade.tokenRangeToEndpoint(testCluster(), "ks", segment);
+    assertEquals(Arrays.asList("127.0.0.1", "127.0.0.2"), result);
   }
 
   @Test(expected = ReaperException.class)
