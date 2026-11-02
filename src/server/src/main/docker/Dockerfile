@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM amazoncorretto:11-alpine
+FROM amazoncorretto:17-alpine
 
 ARG SHADED_JAR
 
@@ -82,6 +82,7 @@ ENV REAPER_SEGMENT_COUNT_PER_NODE=64 \
     JAVA_OPTS="" \
     REAPER_MAX_PARALLEL_REPAIRS=2 \
     REAPER_MGMT_API_METRICS_PORT=9000 \
+    REAPER_HTTP_MANAGEMENT_PORT=8080 \
     REAPER_HTTP_MANAGEMENT_ENABLE="false" \
     REAPER_HTTP_MANAGEMENT_KEYSTORE_PATH="" \
     REAPER_HTTP_MANAGEMENT_TRUSTSTORE_PATH="" \
@@ -94,6 +95,7 @@ ENV REAPER_SEGMENT_COUNT_PER_NODE=64 \
 
 RUN apk add --update \
     bash curl \
+  && apk upgrade --no-cache openssl \
   && rm -rf /var/cache/apk/*
 
 ADD src/server/src/main/docker/cassandra-reaper.yml /etc/cassandra-reaper/cassandra-reaper.yml

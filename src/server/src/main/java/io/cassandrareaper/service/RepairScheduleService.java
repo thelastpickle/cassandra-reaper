@@ -38,8 +38,12 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import org.apache.cassandra.repair.RepairParallelism;
 import org.joda.time.DateTime;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class RepairScheduleService {
+
+  private static final Logger LOG = LoggerFactory.getLogger(RepairScheduleService.class);
 
   public static final String MILLIS_SINCE_LAST_REPAIR_METRIC_NAME =
       "millisSinceLastRepairForSchedule";
@@ -52,8 +56,8 @@ public final class RepairScheduleService {
   private RepairScheduleService(AppContext context, IRepairRunDao repairRunDao) {
     this.context = context;
     this.repairUnitService = RepairUnitService.create(context);
-    registerRepairScheduleMetrics(context.storage.getRepairScheduleDao().getAllRepairSchedules());
     this.repairRunDao = repairRunDao;
+    registerRepairScheduleMetrics(context.storage.getRepairScheduleDao().getAllRepairSchedules());
   }
 
   public static RepairScheduleService create(AppContext context, IRepairRunDao repairRunDao) {
@@ -167,6 +171,19 @@ public final class RepairScheduleService {
         context.storage.getRepairScheduleDao().getRepairSchedule(repairScheduleId).get();
     RepairUnit repairUnit =
         context.storage.getRepairUnitDao().getRepairUnit(schedule.getRepairUnitId());
+
+    // Initialize lastRun from repair history if not set
+    // This ensures metrics are accurate after restart
+    LOG.debug("Last run for schedule " + schedule.getId() + " is " + schedule.getLastRun());
+
+    Optional<UUID> lastCompletedRun = findLastCompletedRepairRun(repairUnit.getId());
+    if (lastCompletedRun.isPresent()) {
+      RepairSchedule updatedSchedule =
+          schedule.with().lastRun(lastCompletedRun.get()).build(schedule.getId());
+      context.storage.getRepairScheduleDao().updateRepairSchedule(updatedSchedule);
+      schedule = updatedSchedule;
+    }
+
     String metricName =
         metricName(
             MILLIS_SINCE_LAST_REPAIR_METRIC_NAME,
@@ -226,83 +243,180 @@ public final class RepairScheduleService {
         });
   }
 
+  private Long getMillisSinceLastRepairForScheduleAsLong(UUID repairSchedule) {
+    Optional<RepairSchedule> schedule =
+        context.storage.getRepairScheduleDao().getRepairSchedule(repairSchedule);
+
+    Optional<UUID> latestRepairUuid =
+        Optional.ofNullable(
+            schedule
+                .orElseThrow(() -> new IllegalArgumentException("Repair schedule not found"))
+                .getLastRun());
+
+    Long millisSinceLastRepair =
+        latestRepairUuid
+            .map(uuid -> repairRunDao.getRepairRun(uuid))
+            .filter(Optional::isPresent)
+            .map(Optional::get)
+            .map(RepairRun::getEndTime)
+            .filter(Objects::nonNull)
+            .map(dateTime -> DateTime.now().getMillis() - dateTime.getMillis())
+            .orElse(
+                DateTime.now()
+                    .getMillis()); // Return epoch if no repairs from this schedule were completed
+    return millisSinceLastRepair;
+  }
+
   private Gauge<Long> getMillisSinceLastRepairForSchedule(UUID repairSchedule) {
     return () -> {
-      Optional<RepairSchedule> schedule =
-          context.storage.getRepairScheduleDao().getRepairSchedule(repairSchedule);
-
-      Optional<UUID> latestRepairUuid =
-          Optional.ofNullable(
-              schedule
-                  .orElseThrow(() -> new IllegalArgumentException("Repair schedule not found"))
-                  .getLastRun());
-
-      Long millisSinceLastRepair =
-          latestRepairUuid
-              .map(uuid -> repairRunDao.getRepairRun(uuid))
-              .filter(Optional::isPresent)
-              .map(Optional::get)
-              .map(RepairRun::getEndTime)
-              .filter(Objects::nonNull)
-              .map(dateTime -> DateTime.now().getMillis() - dateTime.getMillis())
-              .orElse(
-                  DateTime.now()
-                      .getMillis()); // Return epoch if no repairs from this schedule were completed
-      return millisSinceLastRepair;
+      return getMillisSinceLastRepairForScheduleAsLong(repairSchedule);
     };
   }
 
   @VisibleForTesting
   Gauge<Integer> getUnfulfilledRepairSchedule(UUID repairSchedule) {
     return () -> {
-      Optional<RepairSchedule> schedule =
-          context.storage.getRepairScheduleDao().getRepairSchedule(repairSchedule);
-
-      Optional<UUID> latestRepairUuid =
-          Optional.ofNullable(
-              schedule
-                  .orElseThrow(() -> new IllegalArgumentException("Repair schedule not found"))
-                  .getLastRun());
+      RepairSchedule schedule =
+          context
+              .storage
+              .getRepairScheduleDao()
+              .getRepairSchedule(repairSchedule)
+              .orElseThrow(() -> new IllegalArgumentException("Repair schedule not found"));
 
       // Cases where it is not relevant to check if the repair schedule is unfulfilled
-      if (schedule.get().getDaysBetween() == 0
-          || schedule.get().getState() == RepairSchedule.State.PAUSED
-          || schedule.get().getState() == RepairSchedule.State.DELETED) {
+      if (schedule.getDaysBetween() == 0
+          || schedule.getState() == RepairSchedule.State.PAUSED
+          || schedule.getState() == RepairSchedule.State.DELETED) {
         return 0;
       }
 
-      long intervalInMillis = schedule.get().getDaysBetween() * 24 * 60 * 60 * 1000;
-      // Fail fast if we're past the next activation time by 10% of the cycle time
-      DateTime nextActivation = schedule.get().getNextActivation();
+      long now = DateTime.now().getMillis();
+      long intervalInMillis = schedule.getDaysBetween() * 24L * 60 * 60 * 1000;
+      long graceInMillis = intervalInMillis / 10;
+      long allowedDelayInMillis = intervalInMillis + graceInMillis;
+      DateTime nextActivation = schedule.getNextActivation();
+      Long millisSinceLastRepair = getMillisSinceLastRepairForScheduleAsLong(repairSchedule);
+
+      // If the last repair was more than a year ago, we don't care about the cycle window, means it
+      // didn't run at all
+      if (millisSinceLastRepair < 365 * 24 * 60 * 60 * 1000) {
+        boolean unfulfilled = millisSinceLastRepair > allowedDelayInMillis;
+        if (unfulfilled) {
+          LOG.debug(
+              "Setting {}=1 for schedule {} because last completed repair is older than the allowed cycle window "
+                  + "(state={}, daysBetween={}, intervalInMillis={}, graceInMillis={}, allowedDelayInMillis={}, "
+                  + "now={},"
+                  + "millisSinceLastRepair={}, nextActivation={}, millisPastNextActivation={})",
+              UNFULFILLED_REPAIR_SCHEDULE_METRIC_NAME,
+              schedule.getId(),
+              schedule.getState(),
+              schedule.getDaysBetween(),
+              intervalInMillis,
+              graceInMillis,
+              allowedDelayInMillis,
+              now,
+              millisSinceLastRepair,
+              nextActivation,
+              nextActivation == null ? null : now - nextActivation.getMillis());
+        }
+        return unfulfilled ? 1 : 0;
+      }
+
       if (nextActivation != null) {
-        if (DateTime.now().getMillis() - nextActivation.getMillis() > intervalInMillis * 0.1) {
-          return 1;
+        long millisPastNextActivation = now - nextActivation.getMillis();
+        boolean unfulfilled = millisPastNextActivation > allowedDelayInMillis;
+        if (unfulfilled) {
+          LOG.debug(
+              "Setting {}=1 for schedule {} because there is no completed repair in the schedule state and the "
+                  + "next activation is older than the allowed cycle window "
+                  + "(state={}, daysBetween={}, intervalInMillis={}, graceInMillis={}, allowedDelayInMillis={}, "
+                  + "now={}, "
+                  + "nextActivation={}, millisPastNextActivation={})",
+              UNFULFILLED_REPAIR_SCHEDULE_METRIC_NAME,
+              schedule.getId(),
+              schedule.getState(),
+              schedule.getDaysBetween(),
+              intervalInMillis,
+              graceInMillis,
+              allowedDelayInMillis,
+              now,
+              nextActivation,
+              millisPastNextActivation);
         }
+        return unfulfilled ? 1 : 0;
       }
 
-      Optional<Long> millisSinceLastRepair =
-          latestRepairUuid
-              .map(uuid -> repairRunDao.getRepairRun(uuid))
-              .filter(Optional::isPresent)
-              .map(Optional::get)
-              .filter(repairRun -> repairRun.getRunState() == RepairRun.RunState.DONE)
-              .map(RepairRun::getEndTime)
-              .filter(Objects::nonNull)
-              .map(dateTime -> DateTime.now().getMillis() - dateTime.getMillis());
-
-      if (millisSinceLastRepair.isPresent()) {
-        // we have a last repair that has finished successfully
-        if (millisSinceLastRepair.get() > intervalInMillis) {
-          // Return 1 if the last completed repair was not within the repair schedule interval
-          return 1;
-        }
-        return 0;
-      }
-
-      // Repair is still running or never started but the next activation time is still in the
-      // future
       return 0;
     };
+  }
+
+  /**
+   * Finds the most recent completed repair run for a given repair unit. This is used to initialize
+   * the lastRun field when it's null, ensuring metrics are accurate after restart.
+   *
+   * @param repairUnitId The repair unit ID to search for completed repairs
+   * @return Optional containing the UUID of the most recent completed repair run, or empty if none
+   *     found
+   */
+  private Optional<UUID> findLastCompletedRepairRun(UUID repairUnitId) {
+    Collection<RepairRun> repairRuns = repairRunDao.getRepairRunsForUnit(repairUnitId);
+
+    Optional<UUID> lastRepairRun =
+        repairRuns.stream()
+            .filter(run -> run.getRunState() == RepairRun.RunState.DONE)
+            .filter(run -> run.getEndTime() != null)
+            .min(RepairRun::compareTo)
+            .map(RepairRun::getId);
+
+    return lastRepairRun;
+  }
+
+  /**
+   * Updates the schedule metrics after a repair run completes. This re-registers the metrics with
+   * static gauges that capture the completion time, similar to how RepairRunner handles its
+   * metrics. This is more efficient than querying the database on every metric read.
+   *
+   * @param scheduleId The UUID of the repair schedule whose metrics should be updated
+   * @param repairRunCompleted The completion time of the repair run
+   */
+  public void updateScheduleMetricsAfterRepair(UUID scheduleId, DateTime repairRunCompleted) {
+    Optional<RepairSchedule> schedule =
+        context.storage.getRepairScheduleDao().getRepairSchedule(scheduleId);
+
+    if (schedule.isPresent()) {
+      RepairUnit repairUnit =
+          context.storage.getRepairUnitDao().getRepairUnit(schedule.get().getRepairUnitId());
+
+      String metricName =
+          metricName(
+              MILLIS_SINCE_LAST_REPAIR_METRIC_NAME,
+              repairUnit.getClusterName(),
+              repairUnit.getKeyspaceName(),
+              scheduleId);
+
+      // Remove the old dynamic gauge and register a new static one with the completion time
+      if (context.metricRegistry.getMetrics().containsKey(metricName)) {
+        context.metricRegistry.remove(metricName);
+      }
+      context.metricRegistry.register(
+          metricName,
+          (Gauge<Long>)
+              () -> DateTime.now().getMillis() - repairRunCompleted.toInstant().getMillis());
+
+      String unfulfilledRepairScheduleMetricName =
+          metricName(
+              UNFULFILLED_REPAIR_SCHEDULE_METRIC_NAME,
+              repairUnit.getClusterName(),
+              repairUnit.getKeyspaceName(),
+              scheduleId);
+
+      // Re-register the unfulfilled metric as well to reflect the latest state
+      if (context.metricRegistry.getMetrics().containsKey(unfulfilledRepairScheduleMetricName)) {
+        context.metricRegistry.remove(unfulfilledRepairScheduleMetricName);
+      }
+      context.metricRegistry.register(
+          unfulfilledRepairScheduleMetricName, getUnfulfilledRepairSchedule(scheduleId));
+    }
   }
 
   private String metricName(

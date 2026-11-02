@@ -172,6 +172,7 @@ Settings to configure HTTP management interface for integration with management 
 
     httpManagement:
       enabled: false
+      managementApiPort: 8080
       mgmtApiMetricsPort: 9000
       keystore: /path/to/keystore.jks
       truststore: /path/to/truststore.jks
@@ -185,6 +186,14 @@ Type: *Boolean*
 Default: *false*
 
 Enables or disables the HTTP management interface.
+
+#### `managementApiPort`
+
+Type: *Integer*
+
+Default: *8080*
+
+The port number for the Cassandra management API endpoint.
 
 #### `mgmtApiMetricsPort`
 

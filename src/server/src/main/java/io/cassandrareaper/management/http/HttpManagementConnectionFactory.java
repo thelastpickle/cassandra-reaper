@@ -244,7 +244,8 @@ public class HttpManagementConnectionFactory implements IManagementConnectionFac
                 new InstrumentedScheduledExecutorService(jobStatusPollerExecutor, metricRegistry);
 
             OkHttpClient.Builder metricsClientBuilder = new OkHttpClient().newBuilder();
-            if (httpConfig.isMetricsTLSEnabled()) {
+            boolean metricsTlsEnabled = httpConfig.isMetricsTLSEnabled();
+            if (metricsTlsEnabled) {
               // Pass the clientBuilder to the HttpCassandraManagementProxy
               LOG.debug("Using metrics TLS connection to " + node.getHostname());
               metricsClientBuilder = clientBuilder;
@@ -258,7 +259,8 @@ public class HttpManagementConnectionFactory implements IManagementConnectionFac
                 mgmtApiClient,
                 config.getHttpManagement().getMgmtApiMetricsPort(),
                 node,
-                metricsClientBuilder);
+                metricsClientBuilder,
+                metricsTlsEnabled);
           }
         });
   }

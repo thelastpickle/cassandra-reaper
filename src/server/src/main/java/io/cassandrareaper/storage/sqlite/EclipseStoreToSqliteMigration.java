@@ -132,6 +132,13 @@ public final class EclipseStoreToSqliteMigration {
       eclipseStore.start();
 
       Object root = eclipseStore.root();
+      if (root == null) {
+        LOG.warn(
+            "EclipseStore root is null - storage files exist but no migratable root was found");
+        LOG.warn("Treating legacy EclipseStore state as empty and skipping data migration");
+        return; // Exit gracefully, backup will still run
+      }
+
       Preconditions.checkState(
           root instanceof MemoryStorageRoot,
           "Unexpected root type: " + (root == null ? "null" : root.getClass()));
@@ -430,7 +437,11 @@ public final class EclipseStoreToSqliteMigration {
 
     File[] files =
         storageDir.listFiles(
-            (dir, name) -> name.startsWith("channel_") || name.startsWith("transactions_"));
+            (dir, name) ->
+                name.startsWith("channel_")
+                    || name.startsWith("transactions_")
+                    || name.equals("PersistenceTypeDictionary.ptd")
+                    || name.equals("PersistenceTypeDictionary.ptd.bak"));
 
     if (files != null) {
       for (File file : files) {

@@ -12,20 +12,20 @@
     <title>Local Backend :: Reaper: Easy Repair Management for Apache Cassandra</title>
 
     
-    <link href="/css/nucleus.css?1749638303" rel="stylesheet">
-    <link href="/css/fontawesome-all.min.css?1749638303" rel="stylesheet">
-    <link href="/css/hybrid.css?1749638303" rel="stylesheet">
-    <link href="/css/featherlight.min.css?1749638303" rel="stylesheet">
-    <link href="/css/perfect-scrollbar.min.css?1749638303" rel="stylesheet">
-    <link href="/css/auto-complete.css?1749638303" rel="stylesheet">
-    <link href="/css/atom-one-dark-reasonable.css?1749638303" rel="stylesheet">
-    <link href="/css/theme.css?1749638303" rel="stylesheet">
-    <link href="/css/tabs.css?1749638303" rel="stylesheet">
-    <link href="/css/hugo-theme.css?1749638303" rel="stylesheet">
+    <link href="/css/nucleus.css?1774538954" rel="stylesheet">
+    <link href="/css/fontawesome-all.min.css?1774538954" rel="stylesheet">
+    <link href="/css/hybrid.css?1774538954" rel="stylesheet">
+    <link href="/css/featherlight.min.css?1774538954" rel="stylesheet">
+    <link href="/css/perfect-scrollbar.min.css?1774538954" rel="stylesheet">
+    <link href="/css/auto-complete.css?1774538954" rel="stylesheet">
+    <link href="/css/atom-one-dark-reasonable.css?1774538954" rel="stylesheet">
+    <link href="/css/theme.css?1774538954" rel="stylesheet">
+    <link href="/css/tabs.css?1774538954" rel="stylesheet">
+    <link href="/css/hugo-theme.css?1774538954" rel="stylesheet">
     
     
 
-    <script src="/js/jquery-3.3.1.min.js?1749638303"></script>
+    <script src="/js/jquery-3.3.1.min.js?1774538954"></script>
 
     <style>
       :root #header + #content > #left > #rlblock_left{
@@ -53,14 +53,14 @@
     <span data-search-clear=""><i class="fas fa-times"></i></span>
 </div>
 
-<script type="text/javascript" src="/js/lunr.min.js?1749638303"></script>
-<script type="text/javascript" src="/js/auto-complete.js?1749638303"></script>
+<script type="text/javascript" src="/js/lunr.min.js?1774538954"></script>
+<script type="text/javascript" src="/js/auto-complete.js?1774538954"></script>
 <script type="text/javascript">
     
         var baseurl = "http:\/\/cassandra-reaper.io\/";
     
 </script>
-<script type="text/javascript" src="/js/search.js?1749638303"></script>
+<script type="text/javascript" src="/js/search.js?1774538954"></script>
 
     
   </div>
@@ -886,9 +886,12 @@
 <p>To use in memory storage as the storage type for Reaper, the <code>storageType</code> setting must be set to <strong>memory</strong> in the Reaper configuration YAML file. Note that the in memory storage is enabled by default. An example of how to configure Reaper with In-Menory storage can be found in the <em><a href="https://github.com/thelastpickle/cassandra-reaper/blob/master/src/packaging/resource/cassandra-reaper-memory.yaml">cassandra-reaper-memory.yaml</a></em>.</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#f92672">storageType</span>: <span style="color:#ae81ff">memory</span>
 </span></span><span style="display:flex;"><span><span style="color:#f92672">persistenceStoragePath</span>: <span style="color:#ae81ff">/var/lib/cassandra-reaper/storage</span>
-</span></span></code></pre></div><p>In-memory storage is volatile and as such all registered cluster, column families and repair information will be lost upon service restart. This storage setting is intended for testing purposes only.</p>
+</span></span></code></pre></div><p>In-memory storage is volatile unless a persistence storage path is provided. This is required for production use to avoid data loss on restart.</p>
 <blockquote>
 <p>Starting from 3.6.0, persistenceStoragePath is required for memory storage type. This enable lightweight deployments of Reaper, without requiring the use of a Cassandra database. It will store the data locally and reload them consistently upon startup.</p>
+</blockquote>
+<blockquote>
+<p>Starting from 4.2.0, this storage backend uses SQLite, and a migration from the EclipseStore (which was the previous persistence layer) is performed automatically on upgrade.</p>
 </blockquote>
 
 
@@ -1419,16 +1422,16 @@
     <div style="left: -1000px; overflow: scroll; position: absolute; top: -1000px; border: none; box-sizing: content-box; height: 200px; margin: 0px; padding: 0px; width: 200px;">
       <div style="border: none; box-sizing: content-box; height: 200px; margin: 0px; padding: 0px; width: 200px;"></div>
     </div>
-    <script src="/js/clipboard.min.js?1749638303"></script>
-    <script src="/js/perfect-scrollbar.min.js?1749638303"></script>
-    <script src="/js/perfect-scrollbar.jquery.min.js?1749638303"></script>
-    <script src="/js/jquery.sticky.js?1749638303"></script>
-    <script src="/js/featherlight.min.js?1749638303"></script>
-    <script src="/js/highlight.pack.js?1749638303"></script>
+    <script src="/js/clipboard.min.js?1774538954"></script>
+    <script src="/js/perfect-scrollbar.min.js?1774538954"></script>
+    <script src="/js/perfect-scrollbar.jquery.min.js?1774538954"></script>
+    <script src="/js/jquery.sticky.js?1774538954"></script>
+    <script src="/js/featherlight.min.js?1774538954"></script>
+    <script src="/js/highlight.pack.js?1774538954"></script>
     <script>hljs.initHighlightingOnLoad();</script>
-    <script src="/js/modernizr.custom-3.6.0.js?1749638303"></script>
-    <script src="/js/learn.js?1749638303"></script>
-    <script src="/js/hugo-learn.js?1749638303"></script>
+    <script src="/js/modernizr.custom-3.6.0.js?1774538954"></script>
+    <script src="/js/learn.js?1774538954"></script>
+    <script src="/js/hugo-learn.js?1774538954"></script>
     
         
             <script src="https://unpkg.com/mermaid@8.8.0/dist/mermaid.min.js"></script>

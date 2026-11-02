@@ -228,4 +228,42 @@ public final class ReaperApplicationConfigurationYamlTest {
     assertThat(config.getAccessControl().getUsers().get(0).getUsername()).isEqualTo("noroleuser");
     assertThat(config.getAccessControl().getUsers().get(0).getRoles()).isEmpty();
   }
+
+  @Test
+  public void testHttpManagementConfigurationFromYaml() throws Exception {
+    String yamlConfig =
+        "httpManagement:\n"
+            + "  enabled: true\n"
+            + "  managementApiPort: 8085\n"
+            + "  mgmtApiMetricsPort: 9005\n"
+            + "  keystore: '/path/to/keystore.jks'\n"
+            + "  truststore: '/path/to/truststore.jks'\n"
+            + "  truststoresDir: '/path/to/truststores'\n"
+            + "  metricsTLSEnabled: true";
+
+    ReaperApplicationConfiguration config =
+        objectMapper.readValue(yamlConfig, ReaperApplicationConfiguration.class);
+
+    assertThat(config.getHttpManagement()).isNotNull();
+    assertThat(config.getHttpManagement().isEnabled()).isTrue();
+    assertThat(config.getHttpManagement().getManagementApiPort()).isEqualTo(8085);
+    assertThat(config.getHttpManagement().getMgmtApiMetricsPort()).isEqualTo(9005);
+    assertThat(config.getHttpManagement().getKeystore()).isEqualTo("/path/to/keystore.jks");
+    assertThat(config.getHttpManagement().getTruststore()).isEqualTo("/path/to/truststore.jks");
+    assertThat(config.getHttpManagement().getTruststoresDir()).isEqualTo("/path/to/truststores");
+    assertThat(config.getHttpManagement().isMetricsTLSEnabled()).isTrue();
+  }
+
+  @Test
+  public void testHttpManagementDefaultPorts() throws Exception {
+    String yamlConfig = "httpManagement:\n" + "  enabled: true";
+
+    ReaperApplicationConfiguration config =
+        objectMapper.readValue(yamlConfig, ReaperApplicationConfiguration.class);
+
+    assertThat(config.getHttpManagement()).isNotNull();
+    assertThat(config.getHttpManagement().isEnabled()).isTrue();
+    assertThat(config.getHttpManagement().getManagementApiPort()).isEqualTo(8080);
+    assertThat(config.getHttpManagement().getMgmtApiMetricsPort()).isEqualTo(9000);
+  }
 }

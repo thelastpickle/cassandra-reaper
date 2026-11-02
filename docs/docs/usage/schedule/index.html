@@ -12,20 +12,20 @@
     <title>Scheduling a Cluster Repair :: Reaper: Easy Repair Management for Apache Cassandra</title>
 
     
-    <link href="/css/nucleus.css?1749638303" rel="stylesheet">
-    <link href="/css/fontawesome-all.min.css?1749638303" rel="stylesheet">
-    <link href="/css/hybrid.css?1749638303" rel="stylesheet">
-    <link href="/css/featherlight.min.css?1749638303" rel="stylesheet">
-    <link href="/css/perfect-scrollbar.min.css?1749638303" rel="stylesheet">
-    <link href="/css/auto-complete.css?1749638303" rel="stylesheet">
-    <link href="/css/atom-one-dark-reasonable.css?1749638303" rel="stylesheet">
-    <link href="/css/theme.css?1749638303" rel="stylesheet">
-    <link href="/css/tabs.css?1749638303" rel="stylesheet">
-    <link href="/css/hugo-theme.css?1749638303" rel="stylesheet">
+    <link href="/css/nucleus.css?1774538954" rel="stylesheet">
+    <link href="/css/fontawesome-all.min.css?1774538954" rel="stylesheet">
+    <link href="/css/hybrid.css?1774538954" rel="stylesheet">
+    <link href="/css/featherlight.min.css?1774538954" rel="stylesheet">
+    <link href="/css/perfect-scrollbar.min.css?1774538954" rel="stylesheet">
+    <link href="/css/auto-complete.css?1774538954" rel="stylesheet">
+    <link href="/css/atom-one-dark-reasonable.css?1774538954" rel="stylesheet">
+    <link href="/css/theme.css?1774538954" rel="stylesheet">
+    <link href="/css/tabs.css?1774538954" rel="stylesheet">
+    <link href="/css/hugo-theme.css?1774538954" rel="stylesheet">
     
     
 
-    <script src="/js/jquery-3.3.1.min.js?1749638303"></script>
+    <script src="/js/jquery-3.3.1.min.js?1774538954"></script>
 
     <style>
       :root #header + #content > #left > #rlblock_left{
@@ -53,14 +53,14 @@
     <span data-search-clear=""><i class="fas fa-times"></i></span>
 </div>
 
-<script type="text/javascript" src="/js/lunr.min.js?1749638303"></script>
-<script type="text/javascript" src="/js/auto-complete.js?1749638303"></script>
+<script type="text/javascript" src="/js/lunr.min.js?1774538954"></script>
+<script type="text/javascript" src="/js/auto-complete.js?1774538954"></script>
 <script type="text/javascript">
     
         var baseurl = "http:\/\/cassandra-reaper.io\/";
     
 </script>
-<script type="text/javascript" src="/js/search.js?1749638303"></script>
+<script type="text/javascript" src="/js/search.js?1774538954"></script>
 
     
   </div>
@@ -864,7 +864,7 @@
   <ul>
     <li>
       <ul>
-        <li><a href="#setup-a-repair-schedule">Setup a Repair Schedule</a></li>
+        <li><a href="#set-up-a-repair-schedule">Set up a Repair Schedule</a></li>
         <li><a href="#fill-in-the-details">Fill in the Details</a></li>
       </ul>
     </li>
@@ -893,7 +893,7 @@
 
 
 <p>Reaper has the ability to create and manage repair schedules for a cluster. This can be done in the following way.</p>
-<h2 id="setup-a-repair-schedule">Setup a Repair Schedule</h2>
+<h2 id="set-up-a-repair-schedule">Set up a Repair Schedule</h2>
 <p>Click the <em>schedule</em> menu item on the left side to navigate to the Schedules page. Click <em>Add schedule</em> to open the schedule details form.</p>
 <div class = "row">
     <div class = "col-md-6">
@@ -939,11 +939,28 @@
 
 
 <br/>
-<h4>Option</h4> | <h4>Description</h4>
----|---
-**Start time** | The time to trigger repairs, based in GMT.
-**Interval in days** | The frequency for the schedule to be run.
-**Percent unrepaired threshold** | *For incremental repair only!* Sets the percentage of unrepaired data over which a repair run will be started for this schedule. As soon as one table in the set of tables managed by this schedule gets over the threshold, the run will be triggered.
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Start time</strong></td>
+<td>The time to trigger repairs, based in GMT.</td>
+</tr>
+<tr>
+<td><strong>Interval in days</strong></td>
+<td>The frequency for the schedule to be run.</td>
+</tr>
+<tr>
+<td><strong>Percent unrepaired threshold</strong></td>
+<td><em>For incremental repair only!</em> Sets the percentage of unrepaired data over which a repair run will be started for this schedule. As soon as one table in the set of tables managed by this schedule gets over the threshold, the run will be triggered.</td>
+</tr>
+</tbody>
+</table>
 <br/>
 <p>After creating a scheduled repair, the page is updated with a list of active and paused repair schedules.</p>
 <p>Note that when choosing to add a new repair schedule, it is recommended to restrict the repair schedules to specific tables, instead of scheduling repairs for an entire keyspace. Creating different repair schedules will allow for simpler scheduling, fine-grain tuning for more valuable data, and easily grouping tables with smaller data load into different repair cycles.</p>
@@ -1481,16 +1498,16 @@
     <div style="left: -1000px; overflow: scroll; position: absolute; top: -1000px; border: none; box-sizing: content-box; height: 200px; margin: 0px; padding: 0px; width: 200px;">
       <div style="border: none; box-sizing: content-box; height: 200px; margin: 0px; padding: 0px; width: 200px;"></div>
     </div>
-    <script src="/js/clipboard.min.js?1749638303"></script>
-    <script src="/js/perfect-scrollbar.min.js?1749638303"></script>
-    <script src="/js/perfect-scrollbar.jquery.min.js?1749638303"></script>
-    <script src="/js/jquery.sticky.js?1749638303"></script>
-    <script src="/js/featherlight.min.js?1749638303"></script>
-    <script src="/js/highlight.pack.js?1749638303"></script>
+    <script src="/js/clipboard.min.js?1774538954"></script>
+    <script src="/js/perfect-scrollbar.min.js?1774538954"></script>
+    <script src="/js/perfect-scrollbar.jquery.min.js?1774538954"></script>
+    <script src="/js/jquery.sticky.js?1774538954"></script>
+    <script src="/js/featherlight.min.js?1774538954"></script>
+    <script src="/js/highlight.pack.js?1774538954"></script>
     <script>hljs.initHighlightingOnLoad();</script>
-    <script src="/js/modernizr.custom-3.6.0.js?1749638303"></script>
-    <script src="/js/learn.js?1749638303"></script>
-    <script src="/js/hugo-learn.js?1749638303"></script>
+    <script src="/js/modernizr.custom-3.6.0.js?1774538954"></script>
+    <script src="/js/learn.js?1774538954"></script>
+    <script src="/js/hugo-learn.js?1774538954"></script>
     
         
             <script src="https://unpkg.com/mermaid@8.8.0/dist/mermaid.min.js"></script>

@@ -12,20 +12,20 @@
     <title>Frequently Asked Questions :: Reaper: Easy Repair Management for Apache Cassandra</title>
 
     
-    <link href="/css/nucleus.css?1749638303" rel="stylesheet">
-    <link href="/css/fontawesome-all.min.css?1749638303" rel="stylesheet">
-    <link href="/css/hybrid.css?1749638303" rel="stylesheet">
-    <link href="/css/featherlight.min.css?1749638303" rel="stylesheet">
-    <link href="/css/perfect-scrollbar.min.css?1749638303" rel="stylesheet">
-    <link href="/css/auto-complete.css?1749638303" rel="stylesheet">
-    <link href="/css/atom-one-dark-reasonable.css?1749638303" rel="stylesheet">
-    <link href="/css/theme.css?1749638303" rel="stylesheet">
-    <link href="/css/tabs.css?1749638303" rel="stylesheet">
-    <link href="/css/hugo-theme.css?1749638303" rel="stylesheet">
+    <link href="/css/nucleus.css?1774538954" rel="stylesheet">
+    <link href="/css/fontawesome-all.min.css?1774538954" rel="stylesheet">
+    <link href="/css/hybrid.css?1774538954" rel="stylesheet">
+    <link href="/css/featherlight.min.css?1774538954" rel="stylesheet">
+    <link href="/css/perfect-scrollbar.min.css?1774538954" rel="stylesheet">
+    <link href="/css/auto-complete.css?1774538954" rel="stylesheet">
+    <link href="/css/atom-one-dark-reasonable.css?1774538954" rel="stylesheet">
+    <link href="/css/theme.css?1774538954" rel="stylesheet">
+    <link href="/css/tabs.css?1774538954" rel="stylesheet">
+    <link href="/css/hugo-theme.css?1774538954" rel="stylesheet">
     
     
 
-    <script src="/js/jquery-3.3.1.min.js?1749638303"></script>
+    <script src="/js/jquery-3.3.1.min.js?1774538954"></script>
 
     <style>
       :root #header + #content > #left > #rlblock_left{
@@ -53,14 +53,14 @@
     <span data-search-clear=""><i class="fas fa-times"></i></span>
 </div>
 
-<script type="text/javascript" src="/js/lunr.min.js?1749638303"></script>
-<script type="text/javascript" src="/js/auto-complete.js?1749638303"></script>
+<script type="text/javascript" src="/js/lunr.min.js?1774538954"></script>
+<script type="text/javascript" src="/js/auto-complete.js?1774538954"></script>
 <script type="text/javascript">
     
         var baseurl = "http:\/\/cassandra-reaper.io\/";
     
 </script>
-<script type="text/javascript" src="/js/search.js?1749638303"></script>
+<script type="text/javascript" src="/js/search.js?1774538954"></script>
 
     
   </div>
@@ -889,11 +889,11 @@
 <h3 id="why-use-reaper-instead-of-nodetool--cron">Why use Reaper instead of nodetool + cron?</h3>
 <p>While it&rsquo;s possible to set up crontab to call nodetool, it requires staggering the crons to ensure overlap is kept to a minimum.  Reaper is able to intelligently schedule repairs to avoid putting too much load on the cluster, avoiding impacting performance.  Reaper also offers a simple UI to schedule repairs as granularly as needed.</p>
 <h3 id="do-i-need-to-do-repairs-if-im-not-deleting-data">Do I need to do repairs if I&rsquo;m not deleting data?</h3>
-<p>Yes!  Repair is a necessary anti-entropy mechanism that keeps your cluster consistent.  Without repair, queries at LOCAL_ONE could return incorrect results.</p>
+<p>Yes! Repair is a necessary anti-entropy mechanism that keeps your cluster consistent.  Without repair, queries at LOCAL_ONE could return incorrect results.</p>
 <h3 id="which-backend-is-used-to-store-reapers-data">Which backend is used to store Reaper&rsquo;s data?</h3>
-<p>When we (The Last Pickle) took over development of Reaper, we found it cumbersome to require a PostGres database in addition to the Cassandra database.  We also knew Reaper would need to be fault tolerant and work across datacenters.  The most straightforward way to do this would be to leverage Cassandra&rsquo;s fault tolerance.</p>
-<p>Postgres and H2 were removed starting with v3.0.0 in order to simplify the codebase and feature addition.
-The memory backend is still available for testing purposes.</p>
+<p>When The Last Pickle took over development of Reaper, we found it cumbersome to require a PostGres database in addition to the Cassandra database.  We also knew Reaper would need to be fault tolerant and work across datacenters.  The most straightforward way to do this would be to leverage Cassandra&rsquo;s fault tolerance.</p>
+<p>Postgres and H2 were removed starting with v3.0.0 in order to simplify the codebase and feature addition.</p>
+<p>Later on, we wanted a more lightweight option to accommodate setups that didn&rsquo;t require multiple Reaper instances to run concurrently against the same clusters. EclipseStore was used between v3.6.0 and v4.1.x, but replaced with SQLite in v4.2.0 because of memory consumption of the backend when running Reaper instances on longer term.</p>
 
 
 <footer class="footline">
@@ -1415,16 +1415,16 @@ The memory backend is still available for testing purposes.</p>
     <div style="left: -1000px; overflow: scroll; position: absolute; top: -1000px; border: none; box-sizing: content-box; height: 200px; margin: 0px; padding: 0px; width: 200px;">
       <div style="border: none; box-sizing: content-box; height: 200px; margin: 0px; padding: 0px; width: 200px;"></div>
     </div>
-    <script src="/js/clipboard.min.js?1749638303"></script>
-    <script src="/js/perfect-scrollbar.min.js?1749638303"></script>
-    <script src="/js/perfect-scrollbar.jquery.min.js?1749638303"></script>
-    <script src="/js/jquery.sticky.js?1749638303"></script>
-    <script src="/js/featherlight.min.js?1749638303"></script>
-    <script src="/js/highlight.pack.js?1749638303"></script>
+    <script src="/js/clipboard.min.js?1774538954"></script>
+    <script src="/js/perfect-scrollbar.min.js?1774538954"></script>
+    <script src="/js/perfect-scrollbar.jquery.min.js?1774538954"></script>
+    <script src="/js/jquery.sticky.js?1774538954"></script>
+    <script src="/js/featherlight.min.js?1774538954"></script>
+    <script src="/js/highlight.pack.js?1774538954"></script>
     <script>hljs.initHighlightingOnLoad();</script>
-    <script src="/js/modernizr.custom-3.6.0.js?1749638303"></script>
-    <script src="/js/learn.js?1749638303"></script>
-    <script src="/js/hugo-learn.js?1749638303"></script>
+    <script src="/js/modernizr.custom-3.6.0.js?1774538954"></script>
+    <script src="/js/learn.js?1774538954"></script>
+    <script src="/js/hugo-learn.js?1774538954"></script>
     
         
             <script src="https://unpkg.com/mermaid@8.8.0/dist/mermaid.min.js"></script>

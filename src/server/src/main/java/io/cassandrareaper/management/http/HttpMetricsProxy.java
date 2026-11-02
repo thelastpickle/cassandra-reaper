@@ -100,9 +100,11 @@ public final class HttpMetricsProxy implements MetricsProxy {
 
   private List<GenericMetric> collectMetrics(String metricNamePrefix, Optional<String> keyspaceName)
       throws IOException {
+    // Use https scheme when TLS is enabled for metrics, otherwise use http
+    String scheme = proxy.isMetricsTlsEnabled() ? "https" : "http";
     HttpUrl url =
         new HttpUrl.Builder()
-            .scheme("http")
+            .scheme(scheme)
             .host(proxy.getHost())
             .port(proxy.getMetricsPort())
             .addPathSegment("metrics")

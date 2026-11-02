@@ -74,9 +74,18 @@ public final class SchedulingManager extends TimerTask {
   }
 
   private static boolean repairRunComesFromSchedule(RepairRun repairRun, RepairSchedule schedule) {
-    return repairRun.getRunState().isActive()
-        || (RepairRun.RunState.NOT_STARTED == repairRun.getRunState()
-            && repairRun.getCause().equals(getCauseName(schedule)));
+    return repairRun.getCause().equals(getCauseName(schedule));
+  }
+
+  /**
+   * Postpone a schedule only while one of its own runs is still in flight: an active or
+   * not-yet-started run that comes from this schedule. Terminated runs must not block it, else the
+   * schedule stays stuck until the completed run is purged.
+   */
+  private static boolean repairRunBlocksSchedule(RepairRun repairRun, RepairSchedule schedule) {
+    return (repairRun.getRunState().isActive()
+            || RepairRun.RunState.NOT_STARTED == repairRun.getRunState())
+        && repairRunComesFromSchedule(repairRun, schedule);
   }
 
   private static String getCauseName(RepairSchedule schedule) {
@@ -153,14 +162,6 @@ public final class SchedulingManager extends TimerTask {
           LOG.error("Failed managing repair schedules", ex);
         } else {
           LOG.error("Failed managing repair schedule with id '{}'", lastId, ex);
-        }
-        try {
-          assert false : "if assertions are enabled then exit the jvm";
-        } catch (AssertionError ae) {
-          if (context.isRunning.get()) {
-            LOG.error("SchedulingManager failed. Exiting JVM.");
-            System.exit(1);
-          }
         }
       }
     }
@@ -263,7 +264,7 @@ public final class SchedulingManager extends TimerTask {
     Collection<RepairRun> repairRuns =
         repairRunDao.getRepairRunsForUnit(schedule.getRepairUnitId());
     for (RepairRun repairRun : repairRuns) {
-      if (repairRunComesFromSchedule(repairRun, schedule)) {
+      if (repairRunBlocksSchedule(repairRun, schedule)) {
         LOG.info(
             "there is repair (id {}) in state '{}' for repair unit '{}', "
                 + "postponing current schedule trigger until next scheduling",

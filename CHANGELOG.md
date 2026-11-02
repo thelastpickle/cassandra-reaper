@@ -1,5 +1,54 @@
 ## Change Log
 
+### 5.1.0 (2026/10/26 09:25 +00:00)
+- [#1690](https://github.com/thelastpickle/cassandra-reaper/pull/1690) Handle topology changes by creating replacement repair segments (#1690) (@gmanojDS)
+- [#1696](https://github.com/thelastpickle/cassandra-reaper/pull/1696) build(deps-dev): bump @babel/core in /src/ui/theming/bootstrap (#1696) (@dependabot[bot])
+- [#1729](https://github.com/thelastpickle/cassandra-reaper/pull/1729) build(deps): bump brace-expansion in /src/ui/theming/bootstrap (#1729) (@dependabot[bot])
+- [#1730](https://github.com/thelastpickle/cassandra-reaper/pull/1730) build(deps-dev): bump markdown-it in /src/ui/theming/bootstrap (#1730) (@dependabot[bot])
+- [#1731](https://github.com/thelastpickle/cassandra-reaper/pull/1731) build(deps): bump com.fasterxml.jackson.core:jackson-databind (#1731) (@dependabot[bot])
+- [#1732](https://github.com/thelastpickle/cassandra-reaper/pull/1732) build(deps): bump com.fasterxml.jackson.core:jackson-core in /src/server (#1732) (@dependabot[bot])
+- [#1720](https://github.com/thelastpickle/cassandra-reaper/pull/1720) build(deps-dev): bump browserslist in /src/ui/theming/bootstrap (#1720) (@dependabot[bot])
+- [#1734](https://github.com/thelastpickle/cassandra-reaper/pull/1734) Add REAPER_HTTP_MANAGEMENT_PORT env variable as a configuration to the cassandra-reaper.yaml (#1734) (@burmanm)
+
+### 5.0.1 (2026/09/01 08:36 +00:00)
+- [#1719](https://github.com/thelastpickle/cassandra-reaper/pull/1719) Fix CVEs (#1719) (@ShreyashD333)
+- [#1704](https://github.com/thelastpickle/cassandra-reaper/pull/1704) Prevent poller termination during concurrent repair cleanup (#1704) (@gmanojDS)
+
+### 5.0.0 (2026/07/08 13:21 +00:00)
+- [#1692](https://github.com/thelastpickle/cassandra-reaper/pull/1692) This PR provides fix for the following Netty vulnerabilities: CVE-2026-45416, CVE-2026-44249, CVE-2026-50010 (netty-handler) and CVE-2026-45536 (netty-transport-native-epoll) (#1692) (@dheerajmogaveera)
+- [#1693](https://github.com/thelastpickle/cassandra-reaper/pull/1693) bumped jackson-databind, jackson-core and jackson-annotations to resolve CVE-2026-54512, CVE-2026-54513 and CVE-2026-54514 (#1693) (@dheerajmogaveera)
+- [#1695](https://github.com/thelastpickle/cassandra-reaper/pull/1695) build(deps): bump ch.qos.logback:logback-core in /src/server (#1695) (@dependabot[bot])
+- [#1697](https://github.com/thelastpickle/cassandra-reaper/pull/1697) Fix Reaper image CVEs (#1697) (@gmanojDS)
+- [#1687](https://github.com/thelastpickle/cassandra-reaper/pull/1687) Upgrade to Java 17 + Dropwizard 5 (Jakarta EE 10 / Jetty 12.1) (#1687) (@vasiliy-mikhailov)
+
+### 4.2.7
+- [#1718](https://github.com/thelastpickle/cassandra-reaper/pull/1718) Disable provenance and SBOM attestations for the Reaper UBI image.
+
+### 4.2.6
+- [#1715](https://github.com/thelastpickle/cassandra-reaper/pull/1715) Fix Netty and UBI package vulnerabilities for the 4.2 UBI image.
+
+### 4.2.5 (2026/06/11 11:02 +00:00)
+- [#1683](https://github.com/thelastpickle/cassandra-reaper/pull/1683) fix: scheduled repairs never re-fire after a completed run (#1683) (#1686) (@onnos)
+
+### 4.2.4 (2026/06/02 12:00 +00:00)
+- [#1684](https://github.com/thelastpickle/cassandra-reaper/pull/1684) fix: Fix CVEs in cassandra reaper (#1684) (@ShreyashD333)
+
+### 4.2.3 (2026/05/19 12:45 +00:00)
+- [#1679](https://github.com/thelastpickle/cassandra-reaper/pull/1679) Enable metrics collection through https when hitting TLS endpoints (#1679) (@adejanovski)
+- [#1666](https://github.com/thelastpickle/cassandra-reaper/pull/1666) Send jwt token when editing schedules (#1666) (@Skunnyk)
+- [#1669](https://github.com/thelastpickle/cassandra-reaper/pull/1669) build(deps): bump follow-redirects in /src/ui/theming/bootstrap (#1669) (@dependabot[bot])
+- [#1667](https://github.com/thelastpickle/cassandra-reaper/pull/1667) build(deps): bump org.apache.cassandra:cassandra-all in /src/server (#1667) (@dependabot[bot])
+
+### 4.2.2 (2026/05/13 06:27 +00:00)
+- [#1672](https://github.com/thelastpickle/cassandra-reaper/pull/1672) Populate schedule metrics on startup (#1672) (@adejanovski)
+- [#1668](https://github.com/thelastpickle/cassandra-reaper/pull/1668) fix: remove JVM exit on SchedulingManager errors (#1668) (@artsiom-bukhautsou)
+- [#1661](https://github.com/thelastpickle/cassandra-reaper/pull/1661) Fix metric registry leak in CompactionProxy due to unique executor names (#1661) (@a-pashchenko)
+
+### 4.2.1 (2026/03/26 08:00 +00:00)
+- [#1664](https://github.com/thelastpickle/cassandra-reaper/pull/1664) Fix: Handle null root in EclipseStore to SQLite migration (#1664) (@gmanojDS)
+- [#1656](https://github.com/thelastpickle/cassandra-reaper/pull/1656) Bump jackson from 2.20.0 to 2.21.1 to address GHSA-72hv-8253-57qq (#1656) (@tengu-alt)
+- [#1650](https://github.com/thelastpickle/cassandra-reaper/pull/1650) Fix NPE in RetryPolicyImpl from null request and nullable isIdempotent (#1650) (@emptyhammond)
+
 ### 4.2.0 (2026/01/30 08:43 +00:00)
 - [#1644](https://github.com/thelastpickle/cassandra-reaper/pull/1644) Upgrade Logback to 1.5.25 to address CVE-2026-1225 (#1644) (@tengu-alt)
 - [#1623](https://github.com/thelastpickle/cassandra-reaper/pull/1623) Add a new unfulfilledRepairSchedule metric to track efficiently repairs complete in due time (#1623) (@adejanovski)
