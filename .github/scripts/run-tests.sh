@@ -26,6 +26,7 @@ else
 fi
 
 set -xe
+exit 1
 
 function set_java_home() {
     major_version=$1
