@@ -91,7 +91,7 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
   final ConcurrentMap<String, JobStatusTracker> jobTracker = Maps.newConcurrentMap();
   final ConcurrentMap<Integer, ExecutorService> repairStatusExecutors = Maps.newConcurrentMap();
 
-  private ScheduledExecutorService statusTracker;
+  private final ScheduledExecutorService statusTracker;
 
   public HttpCassandraManagementProxy(
       MetricRegistry metricRegistry,
@@ -177,7 +177,7 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
                 }
               });
       // sort the list
-      Collections.sort(tokenList);
+      tokenList.sort(null);
       return tokenList;
     } catch (ApiException e) {
       LOG.error("Failed to retrieve endpoint states", e);
@@ -236,7 +236,9 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
   @Override
   public Map<String, String> getEndpointToHostId() {
     try {
+      // Dead gossip rows (e.g. LEFT after removenode/assassinate) have no HOST_ID, skip them
       return apiClient.getEndpointStates().getEntity().stream()
+          .filter(i -> i.get("ENDPOINT_IP") != null && i.get("HOST_ID") != null)
           .collect(Collectors.toMap(i -> i.get("ENDPOINT_IP"), i -> i.get("HOST_ID")));
     } catch (ApiException ae) {
       LOG.error("Failed to retrieve endpoint states - does the HTTP proxy have connectivity?", ae);
