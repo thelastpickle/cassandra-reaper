@@ -29,6 +29,7 @@ import io.cassandrareaper.core.Table;
 import io.cassandrareaper.management.RepairStatusHandler;
 import io.cassandrareaper.management.http.models.JobStatusTracker;
 import io.cassandrareaper.resources.view.NodesStatus;
+import io.cassandrareaper.service.RingRange;
 
 import java.math.BigInteger;
 import java.net.InetSocketAddress;
@@ -190,6 +191,64 @@ public class HttpCassandraManagementProxyTest {
     assertEquals(0, httpCassandraManagementProxy.jobTracker.size());
     assertEquals(0, httpCassandraManagementProxy.repairStatusExecutors.size());
     assertEquals(0, httpCassandraManagementProxy.repairStatusHandlers.size());
+  }
+
+  @Test
+  public void testTriggerRepairTokenRanges() throws Exception {
+    DefaultApi mockClient = mock(DefaultApi.class);
+    doReturn((new RepairRequestResponse()).repairId("repair-123456789"))
+        .when(mockClient)
+        .putRepairV2(any());
+    HttpCassandraManagementProxy proxy = mockProxy(mockClient);
+    List<RingRange> tokens =
+        Collections.singletonList(new RingRange(BigInteger.valueOf(-10), BigInteger.valueOf(10)));
+    RepairStatusHandler handler = mock(RepairStatusHandler.class);
+
+    proxy.triggerRepair(
+        "ks",
+        RepairParallelism.PARALLEL,
+        Collections.singleton("table"),
+        RepairType.INCREMENTAL,
+        Collections.emptyList(),
+        handler,
+        tokens,
+        1);
+    verify(mockClient)
+        .putRepairV2(
+            eq(
+                (new RepairRequest())
+                    .keyspace("ks")
+                    .repairParallelism(RepairRequest.RepairParallelismEnum.PARALLEL)
+                    .tables(Arrays.asList("table"))
+                    .fullRepair(false)
+                    .datacenters(null)
+                    .repairThreadCount(1)
+                    .associatedTokens(Collections.emptyList())));
+
+    proxy.triggerRepair(
+        "ks",
+        RepairParallelism.PARALLEL,
+        Collections.singleton("table"),
+        RepairType.SUBRANGE_INCREMENTAL,
+        Collections.emptyList(),
+        handler,
+        tokens,
+        1);
+    verify(mockClient)
+        .putRepairV2(
+            eq(
+                (new RepairRequest())
+                    .keyspace("ks")
+                    .repairParallelism(RepairRequest.RepairParallelismEnum.PARALLEL)
+                    .tables(Arrays.asList("table"))
+                    .fullRepair(false)
+                    .datacenters(null)
+                    .repairThreadCount(1)
+                    .associatedTokens(
+                        Collections.singletonList(
+                            (new com.datastax.mgmtapi.client.model.RingRange())
+                                .start(-10L)
+                                .end(10L)))));
   }
 
   @Test

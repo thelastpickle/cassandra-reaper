@@ -376,6 +376,17 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
       int repairThreadCount)
       throws ReaperException {
 
+    List<com.datastax.mgmtapi.client.model.RingRange> ranges =
+        repairType.isSubrange()
+            ? associatedTokens.stream()
+                .map(
+                    i ->
+                        (new com.datastax.mgmtapi.client.model.RingRange())
+                            .start(i.getStart().longValue())
+                            .end(i.getEnd().longValue()))
+                .collect(Collectors.toList())
+            : Collections.emptyList();
+
     String jobId;
     try {
       RepairRequestResponse resp =
@@ -387,14 +398,7 @@ public class HttpCassandraManagementProxy implements ICassandraManagementProxy {
                   .repairParallelism(
                       RepairRequest.RepairParallelismEnum.fromValue(repairParallelism.getName()))
                   .repairThreadCount(repairThreadCount)
-                  .associatedTokens(
-                      associatedTokens.stream()
-                          .map(
-                              i ->
-                                  (new com.datastax.mgmtapi.client.model.RingRange())
-                                      .start(i.getStart().longValue())
-                                      .end(i.getEnd().longValue()))
-                          .collect(Collectors.toList())));
+                  .associatedTokens(ranges));
       jobId = resp.getRepairId();
     } catch (ApiException e) {
       throw new ReaperException(e);
