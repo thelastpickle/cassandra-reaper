@@ -177,7 +177,8 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
     environment
         .admin()
         .addServlet("prometheusMetrics", new MetricsServlet(CollectorRegistry.defaultRegistry))
-        .addMapping("/prometheusMetrics");
+        .addMapping("/prometheusMetrics")
+        .addMapping("/prometheusmetrics");
 
     int repairThreads = config.getRepairRunThreadCount();
     int maxParallelRepairs = config.getMaxParallelRepairs();
